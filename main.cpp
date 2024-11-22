@@ -1,6 +1,6 @@
 /*********************************************************************************/
 /*                                                                               */
-/*  Copyright (C) 2024 Saif Kandil (k0T0z)                                       */
+/*  Copyright (C) 2024 Seif Kandil (k0T0z)                                       */
 /*                                                                               */
 /*  This file is a part of the ENIGMA Development Environment.                   */
 /*                                                                               */
@@ -33,9 +33,15 @@
 #include <filesystem>
 #include <iostream>
 
-#include "gui/visual_shader_editor.hpp"
+#include <google/protobuf/stubs/common.h>
+
+#include "gui/controller/visual_shader_editor.hpp"
 
 int main(int argc, char **argv) {
+	// Verify that the version of the library that we linked against is
+  	// compatible with the version of the headers we compiled against.
+	GOOGLE_PROTOBUF_VERIFY_VERSION;
+
 	QApplication shader_gen_app(argc, argv);
 	QCoreApplication::setOrganizationName(ENIGMA_ORG_NAME);
 	QCoreApplication::setApplicationName(SHADER_GEN_PROJECT_NAME);

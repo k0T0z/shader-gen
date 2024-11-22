@@ -1,0 +1,57 @@
+syntax = "proto3";
+package model.schema;
+
+import "google/protobuf/descriptor.proto";
+
+// https://protobuf.dev/programming-guides/proto3/#enum-default
+enum VisualShaderNodePortType {
+    PORT_TYPE_UNSPECIFIED = 0;
+    PORT_TYPE_SCALAR = 1;
+    PORT_TYPE_SCALAR_INT = 2;
+    PORT_TYPE_SCALAR_UINT = 3;
+    PORT_TYPE_VECTOR_2D = 4;
+    PORT_TYPE_VECTOR_3D = 5;
+    PORT_TYPE_VECTOR_4D = 6;
+    PORT_TYPE_BOOLEAN = 7;
+    PORT_TYPE_ENUM_SIZE = 8;
+};
+
+// TODO: Check Ids with mentors.
+extend google.protobuf.MessageOptions {
+    optional int32 id_start = 60000;
+    string node_caption = 60001;
+    int32 node_input_port_count = 60002;
+    VisualShaderNodePortType node_input_port_type = 60003;
+    string node_input_port_caption = 60004;
+    int32 node_output_port_count = 60005;
+    VisualShaderNodePortType node_output_port_type = 60006;
+    string node_output_port_caption = 60007;
+}
+
+// TODO: Can we create an interface for these messages?
+
+message VisualShaderNodeFloatConstant {
+    option (node_caption) = "Float Constant";
+    option (node_input_port_count) = 0;
+    option (node_input_port_type) = PORT_TYPE_SCALAR;
+    option (node_input_port_caption) = "";
+    
+    option (node_output_port_count) = 1;
+    option (node_output_port_type) = PORT_TYPE_SCALAR;
+    option (node_output_port_caption) = "";
+
+    optional double value = 1;
+}
+
+message VisualShaderNodeIntConstant {
+    option (node_caption) = "Int Constant";
+    option (node_input_port_count) = 0;
+    option (node_input_port_type) = PORT_TYPE_SCALAR_INT;
+    option (node_input_port_caption) = "";
+    
+    option (node_output_port_count) = 1;
+    option (node_output_port_type) = PORT_TYPE_SCALAR_INT;
+    option (node_output_port_caption) = "";
+
+    optional int32 value = 1;
+}

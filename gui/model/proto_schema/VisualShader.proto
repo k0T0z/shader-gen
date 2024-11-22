@@ -1,0 +1,31 @@
+syntax = "proto3";
+package model.schema;
+
+import "VisualShaderNodes.proto";
+
+message VisualShader {
+    message VisualShaderNode {
+        optional int32 id = 1;
+        
+        optional double x_coordinate = 2;
+        optional double y_coordinate = 3;
+        
+        oneof node_type {
+            VisualShaderNodeFloatConstant float_constant = 4;
+            VisualShaderNodeIntConstant int_constant = 5;
+        }
+    }
+    
+    message VisualShaderConnection {
+        optional int32 id = 1;
+        optional int32 from_node_id = 2;
+        optional int32 from_port_index = 3;
+        optional int32 to_node_id = 4;
+        optional int32 to_port_index = 5;
+    }
+    
+    optional int32 id = 1;
+    repeated VisualShaderNode nodes = 2;
+    repeated VisualShaderConnection connections = 3;
+    optional string fragment_shader_code = 4;
+}

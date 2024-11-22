@@ -1,6 +1,6 @@
 /*********************************************************************************/
 /*                                                                               */
-/*  Copyright (C) 2024 Saif Kandil (k0T0z)                                       */
+/*  Copyright (C) 2024 Seif Kandil (k0T0z)                                       */
 /*                                                                               */
 /*  This file is a part of the ENIGMA Development Environment.                   */
 /*                                                                               */

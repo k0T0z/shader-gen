@@ -1,6 +1,6 @@
 #################################################################################
 #                                                                               #
-#  Copyright (C) 2024 Saif Kandil (k0T0z)                                       #
+#  Copyright (C) 2024 Seif Kandil (k0T0z)                                       #
 #                                                                               #
 #  This file is a part of the ENIGMA Development Environment.                   #
 #                                                                               #
@@ -25,8 +25,7 @@
 #                                                                               #
 #################################################################################
 
-# TODO: We can use an older version of CMake.
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.15)
 
 # Set default build type
 if(NOT CMAKE_BUILD_TYPE)
@@ -112,47 +111,128 @@ file(GLOB SHADER_GEN_MAIN_ENTRY
 )
 
 file(GLOB SHADER_GEN_HPP_FILES 
-    ${CMAKE_CURRENT_SOURCE_DIR}/generator/visual_shader.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/generator/visual_shader_nodes.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/generator/vs_noise_nodes.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/gui/visual_shader_editor.hpp
+    # ${CMAKE_CURRENT_SOURCE_DIR}/generator/visual_shader.hpp
+    # ${CMAKE_CURRENT_SOURCE_DIR}/generator/visual_shader_nodes.hpp
+    # ${CMAKE_CURRENT_SOURCE_DIR}/generator/vs_noise_nodes.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/gui/model/proto_model.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/gui/controller/visual_shader_editor.hpp
 )
 
 file(GLOB SHADER_GEN_CPP_FILES 
-    ${CMAKE_CURRENT_SOURCE_DIR}/generator/visual_shader.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/generator/visual_shader_nodes.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/generator/vs_noise_nodes.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/gui/visual_shader_editor.cpp
+    # ${CMAKE_CURRENT_SOURCE_DIR}/generator/visual_shader.cpp
+    # ${CMAKE_CURRENT_SOURCE_DIR}/generator/visual_shader_nodes.cpp
+    # ${CMAKE_CURRENT_SOURCE_DIR}/generator/vs_noise_nodes.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/gui/model/proto_model.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/gui/controller/visual_shader_editor.cpp
 )
 
-# Safety check: Ensure that all the files exist.
-foreach(file ${SHADER_GEN_CPP_FILES} ${SHADER_GEN_HPP_FILES} ${SHADER_GEN_MAIN_ENTRY})
-    if(NOT EXISTS "${file}")
-        message(FATAL_ERROR "File '${file}' does not exist!")
-    endif()
-endforeach()
-
-set(${SHADER_GEN_EXECUTABLE_NAME}_INCLUDE_DIRECTORIES 
-    "${CMAKE_CURRENT_SOURCE_DIR}/" 
+file(GLOB SHADER_GEN_PROTO_FILES 
+    ${CMAKE_CURRENT_SOURCE_DIR}/gui/model/proto_schema/VisualShader.proto
+    ${CMAKE_CURRENT_SOURCE_DIR}/gui/model/proto_schema/VisualShaderNodes.proto
 )
 
+file(GLOB SHADER_GEN_UI_FILES 
+    ${CMAKE_CURRENT_SOURCE_DIR}/gui/view/visual_shader_editor.ui
+)
+
+if (WIN32)
+    add_executable(${SHADER_GEN_EXECUTABLE_NAME} WIN32
+        ${SHADER_GEN_MAIN_ENTRY} 
+        ${SHADER_GEN_CPP_FILES} 
+    )
+else()
+    add_executable(${SHADER_GEN_EXECUTABLE_NAME}  
+        ${SHADER_GEN_MAIN_ENTRY} 
+        ${SHADER_GEN_CPP_FILES} 
+    )
+endif()
+
+# OpenGLWidgets not required for Qt5 LTS
 find_package(Qt${SHADER_GEN_QT_VERSION} CONFIG REQUIRED COMPONENTS Widgets)
 
-add_executable(${SHADER_GEN_EXECUTABLE_NAME}  
-    ${SHADER_GEN_MAIN_ENTRY} 
-    ${SHADER_GEN_CPP_FILES} 
+# Find Protobuf
+find_package(Protobuf CONFIG REQUIRED)
+
+# Create the output directory for the generated protobuf files
+set(PROTOC_OUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/gui/model/proto_schema")
+file(MAKE_DIRECTORY ${PROTOC_OUT_DIRECTORY})
+
+# https://stackoverflow.com/a/54254098/14629018
+protobuf_generate(
+    TARGET ${SHADER_GEN_EXECUTABLE_NAME}
+    LANGUAGE cpp
+    PROTOC_OUT_DIR ${PROTOC_OUT_DIRECTORY} # Output directory for the generated files
+    PROTOS ${SHADER_GEN_PROTO_FILES} # The proto files
+    IMPORT_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/gui/model/proto_schema # For the imports in the proto files
 )
 
 target_link_libraries(${SHADER_GEN_EXECUTABLE_NAME} PRIVATE 
     Qt${SHADER_GEN_QT_VERSION}::Widgets 
+    protobuf::libprotobuf
 )
 
 target_include_directories(${SHADER_GEN_EXECUTABLE_NAME} PRIVATE 
-    ${${SHADER_GEN_EXECUTABLE_NAME}_INCLUDE_DIRECTORIES} 
+    "${CMAKE_CURRENT_SOURCE_DIR}/" 
 )
 
 target_compile_definitions(${SHADER_GEN_EXECUTABLE_NAME} PRIVATE 
     ENIGMA_ORG_NAME="${ENIGMA_ORG_NAME}"
     SHADER_GEN_PROJECT_NAME="${SHADER_GEN_PROJECT_NAME}"
     SHADER_GEN_PROJECT_VERSION="${SHADER_GEN_PROJECT_VERSION}"
+)
+
+#####################
+# Tests
+#####################
+
+set(SHADER_GEN_TESTS_EXECUTABLE_NAME "shader-gen-tests" CACHE STRING "The name of the tests executable.")
+
+file(GLOB SHADER_GEN_TESTS_CPP_FILES
+    ${CMAKE_CURRENT_SOURCE_DIR}/tests/gui/model/test_proto_model.cpp
+)
+
+# For Windows: Prevent overriding the parent project's compiler/linker settings as mentioned in the official documentation.
+if(WIN32)
+    set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+endif()
+
+# Check https://cmake.org/cmake/help/latest/module/FindGTest.html for more information.
+find_package(GTest CONFIG)
+if(NOT GTest_FOUND)
+    set(SHADER_GEN_TESTS_GTEST_MAIN_HEADER "${SHADER_GEN_ROOTDIR}/externals/googletest/googletest/include/gtest/gtest.h")
+
+    if (NOT EXISTS "${SHADER_GEN_TESTS_GTEST_MAIN_HEADER}")
+        message(FATAL_ERROR "Cannot find GTest package.")
+    endif()
+
+    message(STATUS "Found GTest: ${SHADER_GEN_TESTS_GTEST_MAIN_HEADER}")
+
+    option(BUILD_SHARED_LIBS "Build shared libraries (DLLs)." ON)
+    option(BUILD_GMOCK "Builds the googlemock subproject" OFF)
+    option(INSTALL_GTEST "Enable installation of googletest. (Projects embedding googletest may want to turn this OFF.)" OFF)
+    option(
+        gtest_force_shared_crt
+        "Use shared (DLL) run-time lib even when Google Test is built as static lib."
+        ON)
+    
+    set(SHADER_GEN_TESTS_GTEST_ROOTDIR "${SHADER_GEN_ROOTDIR}/externals/googletest")
+    set(SHADER_GEN_TESTS_GTEST_BUILD_ROOTDIR "${PROJECT_BINARY_DIR}/.googletest-build")
+    add_subdirectory(${SHADER_GEN_TESTS_GTEST_ROOTDIR} ${SHADER_GEN_TESTS_GTEST_BUILD_ROOTDIR})
+endif()
+
+add_executable(${SHADER_GEN_TESTS_EXECUTABLE_NAME} 
+    ${SHADER_GEN_TESTS_CPP_FILES} 
+    ${SHADER_GEN_CPP_FILES} 
+)
+
+target_link_libraries(${SHADER_GEN_TESTS_EXECUTABLE_NAME} PRIVATE 
+    GTest::gtest 
+    GTest::gtest_main 
+    Qt${SHADER_GEN_QT_VERSION}::Widgets 
+)
+
+target_include_directories(${SHADER_GEN_TESTS_EXECUTABLE_NAME} PRIVATE 
+    "${CMAKE_CURRENT_SOURCE_DIR}/"
+    "${SHADER_GEN_ROOTDIR}/externals/googletest/googletest/include" 
+    "${CMAKE_CURRENT_BINARY_DIR}/" # For the generated protobuf files
 )
