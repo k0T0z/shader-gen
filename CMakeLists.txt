@@ -116,6 +116,7 @@ file(GLOB SHADER_GEN_HPP_FILES
     # ${CMAKE_CURRENT_SOURCE_DIR}/generator/vs_noise_nodes.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/gui/model/proto_model.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/gui/controller/visual_shader_editor.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/gui/model/utils/field_path.hpp
 )
 
 file(GLOB SHADER_GEN_CPP_FILES 
@@ -161,6 +162,7 @@ file(MAKE_DIRECTORY ${PROTOC_OUT_DIRECTORY})
 protobuf_generate(
     TARGET ${SHADER_GEN_EXECUTABLE_NAME}
     LANGUAGE cpp
+    OUT_VAR SHADER_GEN_PROTO_GENERATED_SRCS
     PROTOC_OUT_DIR ${PROTOC_OUT_DIRECTORY} # Output directory for the generated files
     PROTOS ${SHADER_GEN_PROTO_FILES} # The proto files
     IMPORT_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/gui/model/proto_schema # For the imports in the proto files
@@ -189,6 +191,7 @@ set(SHADER_GEN_TESTS_EXECUTABLE_NAME "shader-gen-tests" CACHE STRING "The name o
 
 file(GLOB SHADER_GEN_TESTS_CPP_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/tests/gui/model/test_proto_model.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/tests/gui/model/utils/test_field_path.cpp
 )
 
 # For Windows: Prevent overriding the parent project's compiler/linker settings as mentioned in the official documentation.
@@ -223,12 +226,14 @@ endif()
 add_executable(${SHADER_GEN_TESTS_EXECUTABLE_NAME} 
     ${SHADER_GEN_TESTS_CPP_FILES} 
     ${SHADER_GEN_CPP_FILES} 
+    ${SHADER_GEN_PROTO_GENERATED_SRCS} # Include the generated protobuf files
 )
 
 target_link_libraries(${SHADER_GEN_TESTS_EXECUTABLE_NAME} PRIVATE 
     GTest::gtest 
     GTest::gtest_main 
     Qt${SHADER_GEN_QT_VERSION}::Widgets 
+    protobuf::libprotobuf 
 )
 
 target_include_directories(${SHADER_GEN_TESTS_EXECUTABLE_NAME} PRIVATE 
