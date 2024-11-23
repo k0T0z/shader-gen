@@ -115,6 +115,8 @@ file(GLOB SHADER_GEN_HPP_FILES
     # ${CMAKE_CURRENT_SOURCE_DIR}/generator/visual_shader_nodes.hpp
     # ${CMAKE_CURRENT_SOURCE_DIR}/generator/vs_noise_nodes.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/gui/model/proto_model.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/gui/model/message_model.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/gui/model/repeated_message_model.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/gui/controller/visual_shader_editor.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/gui/model/utils/field_path.hpp
 )
@@ -124,7 +126,10 @@ file(GLOB SHADER_GEN_CPP_FILES
     # ${CMAKE_CURRENT_SOURCE_DIR}/generator/visual_shader_nodes.cpp
     # ${CMAKE_CURRENT_SOURCE_DIR}/generator/vs_noise_nodes.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/gui/model/proto_model.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/gui/model/message_model.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/gui/model/repeated_message_model.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/gui/controller/visual_shader_editor.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/gui/model/utils/field_path.cpp
 )
 
 file(GLOB SHADER_GEN_PROTO_FILES 
@@ -191,6 +196,7 @@ set(SHADER_GEN_TESTS_EXECUTABLE_NAME "shader-gen-tests" CACHE STRING "The name o
 
 file(GLOB SHADER_GEN_TESTS_CPP_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/tests/gui/model/test_proto_model.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/tests/gui/model/test_message_model.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/tests/gui/model/utils/test_field_path.cpp
 )
 

@@ -33,8 +33,7 @@ public:
     }
 
     int columnCount(const QModelIndex &parent = QModelIndex()) const override {
-        // TODO: The oneof field `node_type` must be stored in only one column.
-        return m_message->GetDescriptor()->FindFieldByName("nodes")->message_type()->field_count();
+        return (m_message->GetDescriptor()->FindFieldByName("nodes")->message_type()->field_count() - m_message->GetDescriptor()->FindOneofByName("node_type")->field_count()) + 1;
     }
 
     QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override {
