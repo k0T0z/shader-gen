@@ -28,8 +28,9 @@
 #include "gui/controller/visual_shader_editor.hpp"
 
 #include <unordered_map>
-#include <iostream>
 #include <sstream>
+
+#include "error_macros.hpp"
 
 /**********************************************************************/
 /**********************************************************************/
@@ -439,14 +440,14 @@ void VisualShaderEditor::show_create_node_dialog(const QPointF& coordinate) {
   int status{create_node_dialog->exec()};
   switch (status) {
     case QDialog::Accepted:
-      std::cout << "Create node dialog accepted" << std::endl;
+      DEBUG_PRINT("Create node dialog accepted");
       VisualShaderEditor::create_node(coordinate);
       break;
     case QDialog::Rejected:
-      std::cout << "Create node dialog rejected" << std::endl;
+      DEBUG_PRINT("Create node dialog rejected");
       break;
     default:
-      std::cout << "Create node dialog unknown status" << std::endl;
+      DEBUG_PRINT("Create node dialog unknown status");
       break;
   }
 }
@@ -461,7 +462,7 @@ void VisualShaderEditor::on_create_node_button_pressed() {
 void VisualShaderEditor::on_preview_shader_button_pressed() {
   // bool result{visual_shader->generate_shader()};
   // if (!result) {
-  //   std::cout << "Failed to generate shader" << std::endl;
+  //   DEBUG_PRINT("Failed to generate shader");
   //   return;
   // }
   // code_previewer->setPlainText(QString::fromStdString(visual_shader->get_code()));
@@ -921,11 +922,11 @@ VisualShaderGraphicsScene::~VisualShaderGraphicsScene() {}
 //   } else if (type == "VisualShaderNodeDotProduct") {
 //     n = std::make_shared<VisualShaderNodeDotProduct>();
 //   } else {
-//     std::cout << "Unknown node type: " << type << std::endl;
+//     DEBUG_PRINT("Unknown node type: " + type);
 //   }
 
 //   if (!n) {
-//     std::cout << "Failed to create node of type: " << type << std::endl;
+//     DEBUG_PRINT("Failed to create node of type: " + type);
 //     return false;
 //   }
 
@@ -947,7 +948,7 @@ VisualShaderGraphicsScene::~VisualShaderGraphicsScene() {}
 
 //   QList<QGraphicsView*> views{this->views()};
 //   if (views.isEmpty()) {
-//     std::cout << "No views available" << std::endl;
+//     DEBUG_PRINT("No views available");
 //     return false;
 //   }
 
@@ -966,7 +967,7 @@ VisualShaderGraphicsScene::~VisualShaderGraphicsScene() {}
 //       vs->get_node_coordinate(n_id).x > view->get_x() + view->get_width() ||
 //       vs->get_node_coordinate(n_id).y < view->get_y() ||
 //       vs->get_node_coordinate(n_id).y > view->get_y() + view->get_height()) {
-//     std::cout << "Node is out of view bounds" << std::endl;
+//     DEBUG_PRINT("Node is out of view bounds");
 //   }
 
 //   VisualShaderNodeGraphicsObject* n_o{new VisualShaderNodeGraphicsObject(n_id, coordinate, n)};
@@ -1053,7 +1054,7 @@ VisualShaderGraphicsScene::~VisualShaderGraphicsScene() {}
 //     bool result{this->delete_connection(c_o->get_from_node_id(), c_o->get_from_port_index(), n_id, i)};
 
 //     if (!result) {
-//       std::cout << "Failed to delete connection" << std::endl;
+//       DEBUG_PRINT("Failed to delete connection");
 //       continue;
 //     }
 //   }
@@ -1075,7 +1076,7 @@ VisualShaderGraphicsScene::~VisualShaderGraphicsScene() {}
 //       bool result{this->delete_connection(n_id, i, c_o->get_to_node_id(), c_o->get_to_port_index())};
 
 //       if (!result) {
-//         std::cout << "Failed to delete connection" << std::endl;
+//         DEBUG_PRINT("Failed to delete connection");
 //         continue;
 //       }
 //     }
@@ -1140,7 +1141,7 @@ void VisualShaderGraphicsScene::on_out_port_remove_requested(VisualShaderOutputP
 //                                                const int& to_node_id, const int& to_port_index) {
 //   QList<QGraphicsView*> views{this->views()};
 //   if (views.isEmpty()) {
-//     std::cout << "No views available" << std::endl;
+//     DEBUG_PRINT("No views available");
 //     return false;
 //   }
 
@@ -1161,7 +1162,7 @@ void VisualShaderGraphicsScene::on_out_port_remove_requested(VisualShaderOutputP
 
 //   if (from_o_port->get_global_coordinate().x() < view->get_x() ||
 //       from_o_port->get_global_coordinate().x() > view->get_x() + view->get_width()) {
-//     std::cout << "Start of connection is out of view bounds" << std::endl;
+//     DEBUG_PRINT("Start of connection is out of view bounds");
 //   }
 
 //   if (!this->temporary_connection_graphics_object) {
@@ -1188,19 +1189,19 @@ void VisualShaderGraphicsScene::on_out_port_remove_requested(VisualShaderOutputP
 
 //     if (to_i_port->get_global_coordinate().y() < view->get_y() ||
 //         to_i_port->get_global_coordinate().y() > view->get_y() + view->get_height()) {
-//       std::cout << "End of connection is out of view bounds" << std::endl;
+//       DEBUG_PRINT("End of connection is out of view bounds");
 //     }
 
 //     // Connect the nodes in the VisualShader
 //     bool result{vs->can_connect_nodes(from_node_id, from_port_index, to_node_id, to_port_index)};
 //     if (!result) {
-//       std::cout << "Can't connect nodes" << std::endl;
+//       DEBUG_PRINT("Can't connect nodes");
 //       return false;
 //     }
 
 //     result = vs->connect_nodes(from_node_id, from_port_index, to_node_id, to_port_index);
 //     if (!result) {
-//       std::cout << "Failed to connect nodes" << std::endl;
+//       DEBUG_PRINT("Failed to connect nodes");
 //       return false;
 //     }
 
@@ -1344,7 +1345,7 @@ void VisualShaderGraphicsScene::on_node_deleted(const int& n_id) {
   // bool result{this->delete_node(n_id)};
 
   // if (!result) {
-  //   std::cout << "Failed to delete node" << std::endl;
+  //   DEBUG_PRINT("Failed to delete node");
   // }
 }
 
@@ -1370,7 +1371,7 @@ void VisualShaderGraphicsScene::on_node_deleted(const int& n_id) {
 //       bool result{vs->disconnect_nodes(c_o->get_from_node_id(), c_o->get_from_port_index(), c_o->get_to_node_id(),
 //                                        c_o->get_to_port_index())};
 //       if (!result) {
-//         std::cout << "Failed to disconnect nodes" << std::endl;
+//         DEBUG_PRINT("Failed to disconnect nodes");
 //       }
 //       i_port->detach_connection();
 //       c_o->detach_end();
@@ -1393,7 +1394,7 @@ void VisualShaderGraphicsScene::on_node_deleted(const int& n_id) {
 //   } else if (!temporary_connection_graphics_object) {
 //     bool result{this->add_connection(o_port->get_node_id(), o_port->get_port_index())};
 //     if (!result) {
-//       std::cout << "Failed to add connection" << std::endl;
+//       DEBUG_PRINT("Failed to add connection");
 //       return;
 //     }
 //     c_o = temporary_connection_graphics_object;
@@ -1437,7 +1438,7 @@ void VisualShaderGraphicsScene::on_node_deleted(const int& n_id) {
 //                                           temporary_connection_graphics_object->get_from_port_index())};
 
 //       if (!result) {
-//         std::cout << "Failed to delete connection" << std::endl;
+//         DEBUG_PRINT("Failed to delete connection");
 //       }
 
 //       return;  // Return because we dragging an input port and dropped on nothing
@@ -1452,7 +1453,7 @@ void VisualShaderGraphicsScene::on_node_deleted(const int& n_id) {
 //                                           temporary_connection_graphics_object->get_from_port_index())};
 
 //       if (!result) {
-//         std::cout << "Failed to delete connection" << std::endl;
+//         DEBUG_PRINT("Failed to delete connection");
 //       }
 
 //       return;  // Return because we dragging an input port and dropped on nothing
@@ -1466,7 +1467,7 @@ void VisualShaderGraphicsScene::on_node_deleted(const int& n_id) {
 //                                         temporary_connection_graphics_object->get_from_port_index())};
 
 //     if (!result) {
-//       std::cout << "Failed to delete connection" << std::endl;
+//       DEBUG_PRINT("Failed to delete connection");
 //     }
 
 //     return;  // Return because we dragging an output port and dropped on nothing
@@ -1480,7 +1481,7 @@ void VisualShaderGraphicsScene::on_node_deleted(const int& n_id) {
 //                                         temporary_connection_graphics_object->get_from_port_index())};
 
 //     if (!result) {
-//       std::cout << "Failed to delete connection" << std::endl;
+//       DEBUG_PRINT("Failed to delete connection");
 //     }
 
 //     return;
@@ -1727,7 +1728,7 @@ void VisualShaderGraphicsView::move_view_to_fit_items() {
     return;
   }
 
-  std::cout << "Changing view port to fit items..." << std::endl;
+  DEBUG_PRINT("Changing view port to fit items...");
 
   QRectF items_bounding_rect{scene->itemsBoundingRect()};
   items_bounding_rect.adjust(-fit_in_view_margin, -fit_in_view_margin, fit_in_view_margin, fit_in_view_margin);
@@ -1759,13 +1760,13 @@ void VisualShaderGraphicsView::move_view_to_fit_items() {
   centerOn(items_bounding_rect.center());
 
   if ((float)transform().m11() > zoom_max) {
-    std::cout << "Current zoom level is greater than the maximum zoom level." << std::endl;
-    std::cout << "Maybe due to having a very large distance between the nodes." << std::endl;
+    DEBUG_PRINT("Current zoom level is greater than the maximum zoom level.");
+    DEBUG_PRINT("Maybe due to having a very large distance between the nodes.");
   }
 
   if ((float)transform().m11() < zoom_min) {
-    std::cout << "Current zoom level is less than the minimum zoom level." << std::endl;
-    std::cout << "Maybe due to having all the nodes outside the scene bounds." << std::endl;
+    DEBUG_PRINT("Current zoom level is less than the minimum zoom level.");
+    DEBUG_PRINT("Maybe due to having all the nodes outside the scene bounds.");
   }
 }
 

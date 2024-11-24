@@ -1,31 +1,49 @@
 #ifndef ERROR_MACROS_HPP
 #define ERROR_MACROS_HPP
 
+#ifdef SHADER_GEN_DEBUG
 #include <iostream>
+#endif // SHADER_GEN_DEBUG
+
 #include <cstdint>
 #include <string>
 
 namespace shadergen_logger {
     inline static void print_error(const char* function, const char* file, const int& line, const char* error, const std::string& message) noexcept {
+#ifdef SHADER_GEN_DEBUG
         std::cerr << "ERROR: " << error << "\n";
         std::cerr << "   at: " << function << " (" << file << ":" << line << ")" << "\n";
         std::cerr << "   " << message << "\n";
+#endif // SHADER_GEN_DEBUG
     }
 
 	inline static void print_index_error(const char* function, const char* file, const int& line, const int64_t& index, const int64_t& size, const std::string& message, const bool& fatal = false) noexcept {
+#ifdef SHADER_GEN_DEBUG
         std::cerr << (fatal ? "FATAL: " : "ERROR: ") << "Index " << index << " is out of bounds (" << size << ")." << "\n";
         std::cerr << "   at: " << function << " (" << file << ":" << line << ")" << "\n";
         std::cerr << "   " << message << "\n";
+#endif // SHADER_GEN_DEBUG
     }
 
 	inline static void print_warning(const char* function, const char* file, const int& line, const char* warning, const std::string& message) noexcept {
+#ifdef SHADER_GEN_DEBUG
         std::cerr << "WARNING: " << warning << "\n";
         std::cerr << "   at: " << function << " (" << file << ":" << line << ")" << "\n";
         std::cerr << "   " << message << "\n";
+#endif // SHADER_GEN_DEBUG
+    }
+
+	inline static void print_debug(const char* function, const char* file, const int& line, const std::string& message) noexcept {
+#ifdef SHADER_GEN_DEBUG
+        std::cerr << "DEBUG at: " << function << " (" << file << ":" << line << ")" << "\n";
+        std::cerr << "   " << message << "\n";
+#endif // SHADER_GEN_DEBUG
     }
 
 	inline static void flush_stdout() noexcept {
-        fflush(stdout);
+#ifdef SHADER_GEN_DEBUG
+		fflush(stdout);
+#endif // SHADER_GEN_DEBUG
     }
 } // namespace shadergen_logger
 
@@ -277,6 +295,12 @@ namespace shadergen_logger {
 	if (true) {                                                                         \
 		shadergen_logger::print_warning(__FUNCTION__, __FILE__, __LINE__, "", DETAILS); \
 	} else                                                                              \
+		((void)0)
+
+#define DEBUG_PRINT(DETAILS)                                                      \
+	if (true) {                                                                   \
+		shadergen_logger::print_debug(__FUNCTION__, __FILE__, __LINE__, DETAILS); \
+	} else                                                                        \
 		((void)0)
 
 #define CRASH_NOW(DETAILS)                                                                                          \

@@ -1,1 +1,3 @@
-# shader-gen
+# ShaderGen
+
+Or mini-RGM.

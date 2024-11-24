@@ -29,7 +29,6 @@
 
 #include <algorithm>
 #include <iomanip>
-#include <iostream>
 #include <sstream>
 
 #include "generator/visual_shader_nodes.hpp"

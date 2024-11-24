@@ -85,6 +85,9 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 set(SHADER_GEN_ROOTDIR ${PROJECT_SOURCE_DIR})
 
+# Define a macro for Debug builds
+set(SHADER_GEN_DEBUG_MACRO_NAME "SHADER_GEN_DEBUG")
+
 if(MSVC)
     string(APPEND CMAKE_CXX_FLAGS " /EHsc /wd26812")
     string(APPEND CMAKE_C_FLAGS " /EHsc /wd26812")
@@ -119,6 +122,8 @@ file(GLOB SHADER_GEN_HPP_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/gui/model/repeated_message_model.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/gui/model/model_mapper.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/gui/model/oneof_model.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/gui/model/primitive_model.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/gui/model/repeated_primitive_model.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/gui/controller/visual_shader_editor.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/gui/model/utils/field_path.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/error_macros.hpp
@@ -133,6 +138,8 @@ file(GLOB SHADER_GEN_CPP_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/gui/model/repeated_message_model.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/gui/model/model_mapper.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/gui/model/oneof_model.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/gui/model/primitive_model.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/gui/model/repeated_primitive_model.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/gui/controller/visual_shader_editor.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/gui/model/utils/field_path.cpp
 )
@@ -191,6 +198,7 @@ target_compile_definitions(${SHADER_GEN_EXECUTABLE_NAME} PRIVATE
     ENIGMA_ORG_NAME="${ENIGMA_ORG_NAME}"
     SHADER_GEN_PROJECT_NAME="${SHADER_GEN_PROJECT_NAME}"
     SHADER_GEN_PROJECT_VERSION="${SHADER_GEN_PROJECT_VERSION}"
+    $<$<CONFIG:Debug>:${SHADER_GEN_DEBUG_MACRO_NAME}> # Define ${SHADER_GEN_DEBUG_MACRO_NAME} for Debug builds
 )
 
 #####################
@@ -200,7 +208,6 @@ target_compile_definitions(${SHADER_GEN_EXECUTABLE_NAME} PRIVATE
 set(SHADER_GEN_TESTS_EXECUTABLE_NAME "shader-gen-tests" CACHE STRING "The name of the tests executable.")
 
 file(GLOB SHADER_GEN_TESTS_CPP_FILES
-    ${CMAKE_CURRENT_SOURCE_DIR}/tests/gui/model/test_proto_model.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/tests/gui/model/test_message_model.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/tests/gui/model/utils/test_field_path.cpp
 )
@@ -251,4 +258,8 @@ target_include_directories(${SHADER_GEN_TESTS_EXECUTABLE_NAME} PRIVATE
     "${CMAKE_CURRENT_SOURCE_DIR}/"
     "${SHADER_GEN_ROOTDIR}/externals/googletest/googletest/include" 
     "${CMAKE_CURRENT_BINARY_DIR}/" # For the generated protobuf files
+)
+
+target_compile_definitions(${SHADER_GEN_TESTS_EXECUTABLE_NAME} PRIVATE 
+    $<$<CONFIG:Debug>:${SHADER_GEN_DEBUG_MACRO_NAME}> # Define ${SHADER_GEN_DEBUG_MACRO_NAME} for Debug builds
 )
