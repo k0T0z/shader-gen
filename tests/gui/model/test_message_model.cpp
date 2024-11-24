@@ -56,5 +56,8 @@ protected:
 };
 
 TEST_F(MessageModelTest, TestRebuildSubModels) {
-    
+    MessageModel model(&shader);
+
+    // Rebuild the sub-models
+    model.rebuild_sub_models();
 }
