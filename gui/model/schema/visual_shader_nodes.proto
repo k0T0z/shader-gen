@@ -1,5 +1,5 @@
 syntax = "proto3";
-package model.schema;
+package gui.model.schema;
 
 import "google/protobuf/descriptor.proto";
 

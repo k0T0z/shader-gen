@@ -5,6 +5,8 @@
 #include <QFile>
 #include <QDebug>
 
+#include "error_macros.hpp"
+
 using namespace google::protobuf::util;
 using Message = google::protobuf::Message;
 using Descriptor = google::protobuf::Descriptor;
@@ -13,6 +15,15 @@ using FieldDescriptor = google::protobuf::FieldDescriptor;
 
 ProtoModel::ProtoModel(ProtoModel* parent_model, const int& column_in_parent)
     : QAbstractItemModel(parent_model), m_parent_model(parent_model), m_column_in_parent(column_in_parent) {}
+
+void ProtoModel::parent_data_changed() const {
+    while (true) {
+        ProtoModel* m {get_parent_model()};
+        SILENT_CHECK_PARAM_NULLPTR(m);
+        emit m->dataChanged(m->index(0, 0), m->index(rowCount() - 1, columnCount() - 1));
+        m = m->get_parent_model();
+    }
+}
 
 // QByteArray ProtoModel::serializeToJson() const {
 //     std::string jsonString;
@@ -83,9 +94,13 @@ ProtoModel::ProtoModel(ProtoModel* parent_model, const int& column_in_parent)
 // }
 
 bool ProtoModel::set_data(const FieldPath& path, const QVariant& value) {
-    return true;
+    ProtoModel* model = get_sub_model(path);
+    SILENT_CHECK_PARAM_NULLPTR_NON_VOID(model, false);
+    return model->set_data(value);
 }
 
 QVariant ProtoModel::data(const FieldPath& path) const {
-    return {};
+    const ProtoModel* model = get_sub_model(path);
+    SILENT_CHECK_PARAM_NULLPTR_NON_VOID(model, QVariant());
+    return model->data();
 }

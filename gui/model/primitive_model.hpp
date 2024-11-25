@@ -14,38 +14,26 @@ class PrimitiveModel : public ProtoModel {
     Q_OBJECT
 
 public:
-    PrimitiveModel(FieldDescriptor* field_desc, ProtoModel* parent_model, const int& column_in_parent);
+    PrimitiveModel(const FieldDescriptor* field_desc, ProtoModel* parent_model, const int& column_in_parent);
 
-    QVariant data() const override { return QVariant(); }
-    bool set_data(const QVariant& value) override { return false; }
-    ProtoModel* get_sub_model(const FieldPath& path) const override { return nullptr; }
+    QVariant data() const override;
+    bool set_data(const QVariant& value) override;
+    
+    const ProtoModel* get_sub_model(const FieldPath& path) const override;
 
-    const FieldDescriptor* get_column_descriptor(const int& column) const override {
-        return nullptr;
-    }
+    const FieldDescriptor* get_column_descriptor(const int& column) const override;
 
-    QModelIndex index(int row, int column, const QModelIndex& parent = QModelIndex()) const override {
-        return QModelIndex();
-    }
-
-    QModelIndex parent(const QModelIndex& child) const override {
-        return QModelIndex();
-    }
-
+    QModelIndex index(int row, int column, const QModelIndex& parent = QModelIndex()) const override;
+    QModelIndex parent(const QModelIndex& child) const override;
     int rowCount(const QModelIndex& parent = QModelIndex()) const override { return 1; }
-
     int columnCount(const QModelIndex& parent = QModelIndex()) const override { return 1; }
+    QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const override;
+    bool setData(const QModelIndex& index, const QVariant& value, int role = Qt::DisplayRole) override;
 
-    QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const override {
-        return QVariant();
-    }
-
-    bool setData(const QModelIndex& index, const QVariant& value, int role = Qt::DisplayRole) override {
-        return false;
-    }
+    const FieldDescriptor* get_field_descriptor() const { return m_field_desc; }
 
 private:
-    FieldDescriptor* m_field_desc;
+    const FieldDescriptor* m_field_desc;
 };
 
 #endif // PRIMITIVE_MODEL_HPP

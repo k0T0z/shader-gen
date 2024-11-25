@@ -1,7 +1,7 @@
 syntax = "proto3";
-package model.schema;
+package gui.model.schema;
 
-import "VisualShaderNodes.proto";
+import "visual_shader_nodes.proto";
 
 message VisualShader {
     message VisualShaderNode {

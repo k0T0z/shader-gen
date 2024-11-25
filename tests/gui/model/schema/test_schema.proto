@@ -1,0 +1,4 @@
+syntax = "proto3";
+package tests.gui.model.schema;
+
+message TestSchema {}

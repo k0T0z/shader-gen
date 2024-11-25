@@ -1,5 +1,7 @@
 #include "gui/model/utils/field_path.hpp"
 
+#include "gui/model/utils/utils.hpp"
+
 bool FieldPath::is_valid() const {
     if (m_components.empty()) return false;
 
@@ -18,7 +20,7 @@ bool FieldPath::is_valid() const {
             const google::protobuf::FieldDescriptor* field {current_buffer_descriptor->FindFieldByNumber(fn)};
             if (!field) return false;
 
-            if (is_inside_real_oneof(field)) return false;
+            if (shadergen_utils::is_inside_real_oneof(field)) return false;
 
             if (field->cpp_type() == google::protobuf::FieldDescriptor::CPPTYPE_MESSAGE && field->is_repeated()) {
                 prev_fd = field;
@@ -52,7 +54,7 @@ bool FieldPath::is_valid() const {
             const google::protobuf::FieldDescriptor* field {current_buffer_descriptor->FindFieldByNumber(fn)};
             if (!field) return false;
 
-            if (!is_inside_real_oneof(field)) return false;
+            if (!shadergen_utils::is_inside_real_oneof(field)) return false;
 
             if (field->cpp_type() == google::protobuf::FieldDescriptor::CPPTYPE_MESSAGE) {
                 current_buffer_descriptor = field->message_type();

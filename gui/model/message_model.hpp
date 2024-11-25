@@ -31,52 +31,29 @@ public:
 
     void rebuild_sub_models();
 
-    QVariant data() const override { return QVariant(); }
-    bool set_data(const QVariant& value) override { return false; }
-    ProtoModel* get_sub_model(const FieldPath& path) const override { return nullptr; }
-
-    const FieldDescriptor* get_column_descriptor(const int& column) const override {
+    QVariant data() const override;
+    bool set_data(const QVariant& value) override;
+    
+    ProtoModel* get_sub_model(const FieldPath& path) override {
         return nullptr;
     }
+    
+    const ProtoModel* get_sub_model(const FieldPath& path) const override;
 
-    QModelIndex index(int row, int column, const QModelIndex& parent = QModelIndex()) const override {
-        return QModelIndex();
-    }
+    const FieldDescriptor* get_column_descriptor(const int& column) const override;
 
-    QModelIndex parent(const QModelIndex& child) const override {
-        return QModelIndex();
-    }
+    QModelIndex index(int row, int column, const QModelIndex& parent = QModelIndex()) const override;
+    QModelIndex parent(const QModelIndex& child) const override;
+    int rowCount(const QModelIndex& parent = QModelIndex()) const override { return 1; }
+    int columnCount(const QModelIndex& parent = QModelIndex()) const override;
+    QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const override;
+    bool setData(const QModelIndex& index, const QVariant& value, int role = Qt::DisplayRole) override;
+    QVariant headerData(int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const override;
 
-    int rowCount(const QModelIndex& parent = QModelIndex()) const override {
-        return 1;
-    }
-
-    int columnCount(const QModelIndex& parent = QModelIndex()) const override {
-        const Descriptor* desc {m_message_buffer->GetDescriptor()};
-
-        int total_fields {desc->field_count()};
-        int real_oneofs_count {desc->real_oneof_decl_count()};
-
-        for (int i = 0; i < real_oneofs_count; ++i) {
-            total_fields -= desc->oneof_decl(i)->field_count(); // Subtract the fields in the oneof
-            total_fields += 1; // One column for the oneof
-        }
-        
-        return total_fields;
-    }
-
-    QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const override {
-        return QVariant();
-    }
-
-    bool setData(const QModelIndex& index, const QVariant& value, int role = Qt::DisplayRole) override {
-        return false;
-    }
-
-protected:
-    google::protobuf::Message* m_message_buffer; // Pointer to the associated Protobuf message
+    google::protobuf::Message* get_message_buffer() const { return m_message_buffer; }
 
 private:
+    google::protobuf::Message* m_message_buffer; // Pointer to the associated Protobuf message
     std::vector<ProtoModel*> m_sub_models_by_column; // Stores child models
     std::unordered_map<int, ProtoModel*> m_sub_models_by_field; // Stores child models
 };
