@@ -34,7 +34,12 @@
 
 #include <google/protobuf/stubs/common.h>
 
+#include "gui/model/schema/visual_shader.pb.h"
+
+#include "gui/model/message_model.hpp"
 #include "gui/controller/visual_shader_editor.hpp"
+
+using VisualShader = gui::model::schema::VisualShader;
 
 int main(int argc, char **argv) {
 	// Verify that the version of the library that we linked against is
@@ -51,10 +56,19 @@ int main(int argc, char **argv) {
 	parser.addVersionOption();
 	parser.process(shader_gen_app);
 
-	VisualShaderEditor w;
+	VisualShader visual_shader;
 
-	w.resize(1440, 720);
-	w.show();
+	MessageModel* root_model = new MessageModel(&visual_shader);
 
-	return shader_gen_app.exec();
+	VisualShaderEditor* w = new VisualShaderEditor(root_model);
+
+	w->resize(1440, 720);
+	w->show();
+
+	int result {shader_gen_app.exec()};
+
+	delete w;
+	delete root_model;
+
+	return result;
 }

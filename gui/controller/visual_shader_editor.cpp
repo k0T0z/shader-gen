@@ -43,7 +43,8 @@
 /**********************************************************************/
 
 VisualShaderEditor::VisualShaderEditor(QWidget* parent)
-    : visual_shader(nullptr),
+    : QWidget(parent), 
+      // visual_shader(nullptr),
       layout(nullptr),
       side_widget(nullptr),
       side_outer_layout(nullptr),
@@ -56,23 +57,55 @@ VisualShaderEditor::VisualShaderEditor(QWidget* parent)
       view(nullptr),
       top_layer(nullptr),
       menu_bar(nullptr),
+      menu_button(nullptr),
       create_node_button(nullptr),
       preview_shader_button(nullptr),
-      create_node_action(nullptr),
       zoom_in_button(nullptr),
       reset_zoom_button(nullptr),
       zoom_out_button(nullptr),
       load_image_button(nullptr),
       match_image_button(nullptr),
-      create_node_dialog(nullptr),
+      create_node_action(nullptr),
       code_previewer_dialog(nullptr),
       code_previewer_layout(nullptr),
-      code_previewer(nullptr) {
+      code_previewer(nullptr),
+      create_node_dialog(nullptr) {
+  VisualShaderEditor::init();
+}
+
+VisualShaderEditor::VisualShaderEditor(MessageModel* model, QWidget* parent)
+    : QWidget(parent), 
+      // visual_shader(nullptr),
+      layout(nullptr),
+      side_widget(nullptr),
+      side_outer_layout(nullptr),
+      side_layout(nullptr),
+      name_edit(nullptr),
+      save_button(nullptr),
+      scene_layer_layout(nullptr),
+      scene_layer(nullptr),
+      scene(nullptr),
+      view(nullptr),
+      top_layer(nullptr),
+      menu_bar(nullptr),
+      menu_button(nullptr),
+      create_node_button(nullptr),
+      preview_shader_button(nullptr),
+      zoom_in_button(nullptr),
+      reset_zoom_button(nullptr),
+      zoom_out_button(nullptr),
+      load_image_button(nullptr),
+      match_image_button(nullptr),
+      create_node_action(nullptr),
+      code_previewer_dialog(nullptr),
+      code_previewer_layout(nullptr),
+      code_previewer(nullptr),
+      create_node_dialog(nullptr) {
   VisualShaderEditor::init();
 }
 
 VisualShaderEditor::~VisualShaderEditor() {
-  if (visual_shader) delete visual_shader;
+  // if (visual_shader) delete visual_shader;
 }
 
 void VisualShaderEditor::init() {
@@ -171,6 +204,14 @@ void VisualShaderEditor::init() {
   menu_bar->setSpacing(5);                       // Adjust spacing as needed
   menu_bar->setAlignment(Qt::AlignTop | Qt::AlignLeft);
   menu_bar->setSizeConstraint(QLayout::SetMinimumSize);
+
+  // Create the menu button
+  menu_button = new QPushButton("Show Menu", top_layer);
+  menu_button->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
+  menu_button->setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
+  menu_button->setToolTip("Toggle Menu");
+  menu_bar->addWidget(menu_button);
+  QObject::connect(menu_button, &QPushButton::pressed, this, &VisualShaderEditor::on_menu_button_pressed);
 
   // Create the create node button.
   create_node_button = new QPushButton("Create Node", top_layer);
@@ -467,6 +508,12 @@ void VisualShaderEditor::on_preview_shader_button_pressed() {
   // }
   // code_previewer->setPlainText(QString::fromStdString(visual_shader->get_code()));
   // code_previewer_dialog->exec();
+}
+
+void VisualShaderEditor::on_menu_button_pressed() {
+  bool is_visible{side_widget->isVisible()};
+  side_widget->setVisible(!is_visible);
+  menu_button->setText(!is_visible ? "Hide Menu" : "Show Menu");
 }
 
 void VisualShaderEditor::on_load_image_button_pressed() {

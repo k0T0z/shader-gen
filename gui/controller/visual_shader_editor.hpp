@@ -58,9 +58,11 @@
 #include <string>
 #include <vector>
 
-#include "generator/visual_shader.hpp"
-#include "generator/visual_shader_nodes.hpp"
-#include "generator/vs_noise_nodes.hpp"
+// #include "generator/visual_shader.hpp"
+// #include "generator/visual_shader_nodes.hpp"
+// #include "generator/vs_noise_nodes.hpp"
+
+#include "gui/model/message_model.hpp"
 
 class VisualShaderGraphicsScene;
 class VisualShaderGraphicsView;
@@ -93,6 +95,7 @@ class VisualShaderEditor : public QWidget {
    * @param parent 
    */
   VisualShaderEditor(QWidget* parent = nullptr);
+  VisualShaderEditor(MessageModel* model, QWidget* parent = nullptr);
   ~VisualShaderEditor() override;
 
   VisualShaderGraphicsScene* get_scene() const { return scene; }
@@ -126,11 +129,12 @@ class VisualShaderEditor : public QWidget {
   void on_create_node_button_pressed();
   void on_preview_shader_button_pressed();
 
+  void on_menu_button_pressed();
   void on_load_image_button_pressed();
   void on_match_image_button_pressed();
 
  private:
-  VisualShader* visual_shader;
+  // VisualShader* visual_shader;
 
   QHBoxLayout* layout;
 
@@ -148,6 +152,7 @@ class VisualShaderEditor : public QWidget {
   QWidget* top_layer;  // Layer having the menu bar.
   QHBoxLayout* menu_bar;
 
+  QPushButton* menu_button;
   QPushButton* create_node_button;
   QPushButton* preview_shader_button;
   QPushButton* zoom_in_button;
