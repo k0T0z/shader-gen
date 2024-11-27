@@ -29,6 +29,9 @@ class MessageModel : public ProtoModel {
 
 public:
     MessageModel(Message* message_buffer, ProtoModel* parent_model = nullptr, const int& index_in_parent = INVALID_COLUMN_INDEX);
+    ~MessageModel() override {
+        clear_sub_models();
+    }
 
     void build_sub_models();
 

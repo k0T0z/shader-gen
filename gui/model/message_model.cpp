@@ -16,9 +16,6 @@ MessageModel::MessageModel(Message* message_buffer, ProtoModel* parent_model, co
 }
 
 void MessageModel::build_sub_models() {
-    // Clear existing sub-models
-    clear_sub_models();
-
     SILENT_CHECK_PARAM_NULLPTR(m_message_buffer);
 
     // https://protobuf.dev/reference/cpp/api-docs/google.protobuf.descriptor/#Descriptor

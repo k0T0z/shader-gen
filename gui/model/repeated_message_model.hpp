@@ -23,6 +23,9 @@ class RepeatedMessageModel : public MessageModel {
 
 public:
     RepeatedMessageModel(Message* message_buffer, const FieldDescriptor* field_desc, ProtoModel* parent_model, const int& index_in_parent);
+    ~RepeatedMessageModel() override {
+        clear_sub_models();
+    }
 
     void build_sub_models();
 

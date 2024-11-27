@@ -115,3 +115,33 @@ TEST(FieldPathTest, EdgeCaseValidation) {
     auto path1 = FieldPath::Of<Person>();
     EXPECT_FALSE(path1.is_valid());
 }
+
+TEST(FieldPathTest, InvalidOneofName) {
+    auto path1 = FieldPath::Of<OrganizationTestSchema>(
+        FieldPath::OneOfFieldNumber(2, "headquarters")
+    );
+    EXPECT_FALSE(path1.is_valid());
+
+    auto path2 = FieldPath::Of<OrganizationTestSchema>(
+        FieldPath::FieldNumber(2),
+        FieldPath::RepeatedAt(0),
+        FieldPath::OneOfFieldNumber(5, "blah blah")
+
+    );
+    EXPECT_FALSE(path2.is_valid());
+}
+
+TEST(FieldPathTest, WrongOneofName) {
+    auto path1 = FieldPath::Of<OrganizationTestSchema>(
+        FieldPath::OneOfFieldNumber(3, "blah blah")
+    );
+    EXPECT_FALSE(path1.is_valid());
+
+    auto path2 = FieldPath::Of<OrganizationTestSchema>(
+        FieldPath::FieldNumber(2),
+        FieldPath::RepeatedAt(0),
+        FieldPath::OneOfFieldNumber(10, "blah blah")
+
+    );
+    EXPECT_FALSE(path2.is_valid());
+}
