@@ -1,70 +1,143 @@
 #include "gui/model/utils/field_path.hpp"
 
 #include "gui/model/utils/utils.hpp"
+#include "error_macros.hpp"
 
 bool FieldPath::is_valid() const {
-    if (m_components.empty()) return false;
-
-    if (!m_root_buffer_descriptor) return false;
+    SILENT_CHECK_CONDITION_TRUE_NON_VOID(m_components.empty(), false);
+    SILENT_CHECK_PARAM_NULLPTR_NON_VOID(m_root_buffer_descriptor, false);
 
     const google::protobuf::Descriptor* current_buffer_descriptor {m_root_buffer_descriptor};
 
     const google::protobuf::FieldDescriptor* prev_fd {nullptr};
 
-    for (const auto& component : m_components) {
-        if (!current_buffer_descriptor) return false;
+    int size {(int)m_components.size()};
+
+    for (int i {0}; i < size ; ++i) {
+        SILENT_CHECK_PARAM_NULLPTR_NON_VOID(current_buffer_descriptor, false);
+
+        PathComponent component {m_components.front()};
+        m_components.pop();
 
         if (std::holds_alternative<FieldPath::FieldNumber>(component)) {
             // Access field by number
-            unsigned fn {std::get<FieldPath::FieldNumber>(component).field};
+            int fn {std::get<FieldPath::FieldNumber>(component).field};
             const google::protobuf::FieldDescriptor* field {current_buffer_descriptor->FindFieldByNumber(fn)};
-            if (!field) return false;
+            SILENT_CHECK_PARAM_NULLPTR_NON_VOID(field, false);
+            SILENT_CHECK_CONDITION_TRUE_NON_VOID(shadergen_utils::is_inside_real_oneof(field), false);
 
-            if (shadergen_utils::is_inside_real_oneof(field)) return false;
-
-            if (field->cpp_type() == google::protobuf::FieldDescriptor::CPPTYPE_MESSAGE && field->is_repeated()) {
-                prev_fd = field;
-            } else if (field->cpp_type() == google::protobuf::FieldDescriptor::CPPTYPE_MESSAGE) {
-                current_buffer_descriptor = field->message_type();
-                prev_fd = field;
-            } else {
-                current_buffer_descriptor = nullptr;
-                prev_fd = nullptr;
+            switch (field->cpp_type()) {
+                case google::protobuf::FieldDescriptor::CPPTYPE_MESSAGE:
+                    if (field->is_repeated()) {
+                        prev_fd = field;
+                    } else {
+                        current_buffer_descriptor = field->message_type();
+                        prev_fd = field;
+                    }
+                    break;
+                default:
+                    current_buffer_descriptor = nullptr;
+                    prev_fd = nullptr;
+                    break;
             }
         } else if (std::holds_alternative<FieldPath::RepeatedAt>(component)) {
-            if (!prev_fd) return false;
-            if (!prev_fd->is_repeated()) return false;
+            SILENT_CHECK_PARAM_NULLPTR_NON_VOID(prev_fd, false);
+            SILENT_CHECK_CONDITION_TRUE_NON_VOID(!prev_fd->is_repeated(), false);
 
-            if (prev_fd->cpp_type() == google::protobuf::FieldDescriptor::CPPTYPE_MESSAGE) {
-                current_buffer_descriptor = prev_fd->message_type();
-                prev_fd = nullptr;
-            } else {
-                current_buffer_descriptor = nullptr;
-                prev_fd = nullptr;
+            switch (prev_fd->cpp_type()) {
+                case google::protobuf::FieldDescriptor::CPPTYPE_MESSAGE:
+                    current_buffer_descriptor = prev_fd->message_type();
+                    prev_fd = nullptr;
+                    break;
+                default:
+                    current_buffer_descriptor = nullptr;
+                    prev_fd = nullptr;
+                    break;
             }
         } else if (std::holds_alternative<FieldPath::OneOfFieldNumber>(component)) {
-            unsigned fn {std::get<FieldPath::OneOfFieldNumber>(component).field};
+            int fn {std::get<FieldPath::OneOfFieldNumber>(component).field};
             std::string oneof {std::get<FieldPath::OneOfFieldNumber>(component).oneof};
 
-            const google::protobuf::OneofDescriptor* oneof_field {current_buffer_descriptor->FindOneofByName(oneof)};
-            if (!oneof_field) return false;
-
-            if (oneof_field->name() != oneof) return false;
-
             const google::protobuf::FieldDescriptor* field {current_buffer_descriptor->FindFieldByNumber(fn)};
-            if (!field) return false;
+            SILENT_CHECK_PARAM_NULLPTR_NON_VOID(field, false);
 
-            if (!shadergen_utils::is_inside_real_oneof(field)) return false;
+            SILENT_CHECK_CONDITION_TRUE_NON_VOID(!shadergen_utils::is_inside_real_oneof(field), false);
 
-            if (field->cpp_type() == google::protobuf::FieldDescriptor::CPPTYPE_MESSAGE) {
-                current_buffer_descriptor = field->message_type();
-                prev_fd = field;
-            } else {
-                current_buffer_descriptor = nullptr;
-                prev_fd = nullptr;
+            const google::protobuf::OneofDescriptor* oneof_field {field->containing_oneof()};
+            SILENT_CHECK_PARAM_NULLPTR_NON_VOID(oneof_field, false);
+
+            SILENT_CHECK_CONDITION_TRUE_NON_VOID(oneof_field->name() != oneof, false);
+
+            switch (field->cpp_type()) {
+                case google::protobuf::FieldDescriptor::CPPTYPE_MESSAGE:
+                    current_buffer_descriptor = field->message_type();
+                    prev_fd = field;
+                    break;
+                default:
+                    current_buffer_descriptor = nullptr;
+                    prev_fd = nullptr;
+                    break;
             }
+        } else {
+            FAIL_AND_RETURN_NON_VOID(false, "Invalid path component type");
         }
+
+        m_components.push(component); // Put the component back :)
     }
 
+    return true;
+}
+
+bool FieldPath::is_upcoming_field() const {
+    SILENT_CHECK_CONDITION_TRUE_NON_VOID(m_components.empty(), false);
+    if (std::holds_alternative<FieldPath::FieldNumber>(m_components.front())) {
+        return true;
+    }
+    return false;
+}
+
+bool FieldPath::is_upcoming_repeated() const {
+    SILENT_CHECK_CONDITION_TRUE_NON_VOID(m_components.empty(), false);
+    if (std::holds_alternative<FieldPath::RepeatedAt>(m_components.front())) {
+        return true;
+    }
+    return false;
+}
+
+bool FieldPath::is_upcoming_oneof() const {
+    SILENT_CHECK_CONDITION_TRUE_NON_VOID(m_components.empty(), false);
+    if (std::holds_alternative<FieldPath::OneOfFieldNumber>(m_components.front())) {
+        return true;
+    }
+    return false;
+}
+
+bool FieldPath::skip_component() const {
+    SILENT_CHECK_CONDITION_TRUE_NON_VOID(m_components.empty(), false);
+    m_components.pop();
+    return true;
+}
+
+bool FieldPath::get_upcoming_field_num(int& num_buffer) const {
+    SILENT_CHECK_CONDITION_TRUE_NON_VOID(!is_upcoming_field(), false);
+    num_buffer = std::get<FieldPath::FieldNumber>(m_components.front()).field;
+    return true;
+}
+
+bool FieldPath::get_upcoming_repeated_index(int& index_buffer) const {
+    SILENT_CHECK_CONDITION_TRUE_NON_VOID(!is_upcoming_repeated(), false);
+    index_buffer = std::get<FieldPath::RepeatedAt>(m_components.front()).index;
+    return true;
+}
+
+bool FieldPath::get_upcoming_oneof_num(int& num_buffer) const {
+    SILENT_CHECK_CONDITION_TRUE_NON_VOID(!is_upcoming_oneof(), false);
+    num_buffer = std::get<FieldPath::OneOfFieldNumber>(m_components.front()).field;
+    return true;
+}
+
+bool FieldPath::get_upcoming_oneof_name(std::string& name_buffer) const {
+    SILENT_CHECK_CONDITION_TRUE_NON_VOID(!is_upcoming_oneof(), false);
+    name_buffer = std::get<FieldPath::OneOfFieldNumber>(m_components.front()).oneof;
     return true;
 }

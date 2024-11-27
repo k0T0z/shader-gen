@@ -1,4 +1,68 @@
 syntax = "proto3";
 package tests.gui.model.schema;
 
-message TestSchema {}
+message Address {
+    string street = 1;
+    string city = 2;
+    string zip_code = 3;
+}
+
+message PhoneNumber {
+    string number = 1;
+    PhoneType type = 2;
+
+    enum PhoneType {
+        MOBILE = 0;
+        HOME = 1;
+        WORK = 2;
+    }
+}
+
+message Person {
+    // Basic fields
+    int32 id = 1;
+    string name = 2;
+    
+    // Nested message
+    Address home_address = 3;
+    
+    // Repeated fields
+    repeated PhoneNumber phone_numbers = 4;
+    repeated string emails = 5;
+    
+    // Oneof fields for contact preference
+    oneof contact_method {
+        string preferred_email = 6;
+        PhoneNumber preferred_phone = 7;
+    }
+    
+    // Another oneof for employment status
+    oneof employment {
+        string company = 8;
+        string job_title = 9;
+        EmploymentDetails employment_details = 10;
+    }
+
+    // Complex nested message with its own oneof
+    message EmploymentDetails {
+        int32 years_of_experience = 1;
+        
+        oneof salary_info {
+            double annual_salary = 2;
+            string salary_range = 3;
+        }
+    }
+}
+
+message OrganizationTestSchema {
+    string name = 1;
+    
+    // Nested repeated message
+    repeated Person employees = 2;
+    
+    // Nested oneof
+    oneof headquarters {
+        Address main_office = 3;
+        string virtual_headquarters = 4;
+    }
+}

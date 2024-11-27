@@ -2,19 +2,20 @@
 #include <google/protobuf/util/json_util.h>
 #include "gui/model/message_model.hpp"
 #include "tests/gui/model/schema/test_schema.pb.h" // Generated Protobuf classes
+#include "error_macros.hpp"
 
 using namespace google::protobuf;
 
 using Descriptor = google::protobuf::Descriptor;
 using Reflection = google::protobuf::Reflection;
 using FieldDescriptor = google::protobuf::FieldDescriptor;
-using TestSchema = tests::gui::model::schema::TestSchema;
+using OrganizationTestSchema = tests::gui::model::schema::OrganizationTestSchema;
 
 // Test fixture for MessageModel
 class MessageModelTest : public ::testing::Test {
 protected:
     // Protobuf instance for testing
-    TestSchema test_schema_buffer;
+    OrganizationTestSchema test_buffer;
 
     void SetUp() override {
         // Load a sample JSON into the Protobuf message
@@ -23,13 +24,10 @@ protected:
             
         })json";
 
-        util::JsonStringToMessage(json, &test_schema_buffer);
+        util::JsonStringToMessage(json, &test_buffer);
     }
 };
 
-TEST_F(MessageModelTest, TestRebuildSubModels) {
-    MessageModel model(&test_schema_buffer);
-
-    // Rebuild the sub-models
-    model.rebuild_sub_models();
+TEST_F(MessageModelTest, TestBuildSubModels) {
+    MessageModel model(&test_buffer);
 }

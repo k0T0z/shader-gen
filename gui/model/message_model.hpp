@@ -6,6 +6,7 @@
 #include <google/protobuf/message.h>
 #include "gui/model/proto_model.hpp"
 
+using Message = google::protobuf::Message;
 using Descriptor = google::protobuf::Descriptor;
 using Reflection = google::protobuf::Reflection;
 using FieldDescriptor = google::protobuf::FieldDescriptor;
@@ -27,14 +28,14 @@ class MessageModel : public ProtoModel {
     Q_OBJECT
 
 public:
-    MessageModel(google::protobuf::Message* message_buffer, ProtoModel* parent_model = nullptr, const int& column_in_parent = INVALID_COLUMN_INDEX);
+    MessageModel(Message* message_buffer, ProtoModel* parent_model = nullptr, const int& index_in_parent = INVALID_COLUMN_INDEX);
 
-    void rebuild_sub_models();
+    void build_sub_models();
 
     QVariant data() const override;
     bool set_data(const QVariant& value) override;
     
-    ProtoModel* get_sub_model(const FieldPath& path) override {
+    ProtoModel* get_sub_model([[maybe_unused]] const FieldPath& path) override {
         return nullptr;
     }
     
@@ -44,18 +45,19 @@ public:
 
     QModelIndex index(int row, int column, const QModelIndex& parent = QModelIndex()) const override;
     QModelIndex parent(const QModelIndex& child) const override;
-    int rowCount(const QModelIndex& parent = QModelIndex()) const override { return 1; }
+    int rowCount([[maybe_unused]] const QModelIndex& parent = QModelIndex()) const override { return 1; }
     int columnCount(const QModelIndex& parent = QModelIndex()) const override;
     QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const override;
     bool setData(const QModelIndex& index, const QVariant& value, int role = Qt::DisplayRole) override;
     QVariant headerData(int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const override;
 
-    google::protobuf::Message* get_message_buffer() const { return m_message_buffer; }
+    Message* get_message_buffer() const { return m_message_buffer; }
 
 private:
-    google::protobuf::Message* m_message_buffer; // Pointer to the associated Protobuf message
-    std::vector<ProtoModel*> m_sub_models_by_column; // Stores child models
-    std::unordered_map<int, ProtoModel*> m_sub_models_by_field; // Stores child models
+    Message* m_message_buffer;
+    std::unordered_map<int, ProtoModel*> m_sub_models_by_field_number;
+
+    void clear_sub_models();
 };
 
 #endif // MESSAGE_MODEL_HPP

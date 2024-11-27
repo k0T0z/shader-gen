@@ -4,18 +4,20 @@
 #include <google/protobuf/descriptor.h>
 #include <google/protobuf/reflection.h>
 #include "gui/model/utils/utils.hpp"
+#include "gui/model/repeated_message_model.hpp"
 
 #include "error_macros.hpp"
 
-MessageModel::MessageModel(google::protobuf::Message* message_buffer, ProtoModel* parent_model, const int& column_in_parent)
-    : ProtoModel(parent_model, column_in_parent), m_message_buffer(message_buffer) {
-    rebuild_sub_models();
+using OneofDescriptor = google::protobuf::OneofDescriptor;
+
+MessageModel::MessageModel(Message* message_buffer, ProtoModel* parent_model, const int& index_in_parent)
+    : ProtoModel(parent_model, index_in_parent), m_message_buffer(message_buffer) {
+    build_sub_models();
 }
 
-void MessageModel::rebuild_sub_models() {
+void MessageModel::build_sub_models() {
     // Clear existing sub-models
-    m_sub_models_by_column.clear();
-    m_sub_models_by_field.clear();
+    clear_sub_models();
 
     SILENT_CHECK_PARAM_NULLPTR(m_message_buffer);
 
@@ -27,8 +29,6 @@ void MessageModel::rebuild_sub_models() {
 
     int total_fields {desc->field_count()};
 
-    m_sub_models_by_column.resize(total_fields);
-
     // Iterate through all fields in the message
     for (int i {0}; i < total_fields; ++i) {
         // https://protobuf.dev/reference/cpp/api-docs/google.protobuf.descriptor/#FieldDescriptor
@@ -37,64 +37,77 @@ void MessageModel::rebuild_sub_models() {
         DEBUG_PRINT("Field: " + field->full_name());
 
         if (field->is_repeated()) {
-            if (shadergen_utils::is_inside_real_oneof(field)) {
-                WARN_PRINT("Repeated fields inside oneof are not supported yet.");
-            } else {
-                SILENT_CONTINUE_IF_TRUE(refl->FieldSize(*m_message_buffer, field) <= 0);
+            SILENT_CONTINUE_IF_TRUE(refl->FieldSize(*m_message_buffer, field) <= 0);
 
-                switch (field->cpp_type()) {
-                    case FieldDescriptor::CppType::CPPTYPE_MESSAGE:
-                    case FieldDescriptor::CppType::CPPTYPE_INT32:
-                    case FieldDescriptor::CppType::CPPTYPE_INT64:
-                    case FieldDescriptor::CppType::CPPTYPE_UINT32:
-                    case FieldDescriptor::CppType::CPPTYPE_UINT64:
-                    case FieldDescriptor::CppType::CPPTYPE_DOUBLE:
-                    case FieldDescriptor::CppType::CPPTYPE_FLOAT:
-                    case FieldDescriptor::CppType::CPPTYPE_BOOL:
-                    case FieldDescriptor::CppType::CPPTYPE_STRING:
+            switch (field->cpp_type()) {
+                case FieldDescriptor::CppType::CPPTYPE_MESSAGE: {
+                        ProtoModel* sub_model {new RepeatedMessageModel(m_message_buffer, field, this, i)};
+                        m_sub_models_by_field_number[field->number()] = sub_model;
                         break;
-                    case FieldDescriptor::CppType::CPPTYPE_ENUM:
-                        WARN_PRINT("Enum is not supported yet");
-                        break;
-                    default:
-                        WARN_PRINT("Unsupported field type: " + std::to_string(field->cpp_type()));
-                        break;
-                }
+                    }
+                case FieldDescriptor::CppType::CPPTYPE_INT32:
+                case FieldDescriptor::CppType::CPPTYPE_INT64:
+                case FieldDescriptor::CppType::CPPTYPE_UINT32:
+                case FieldDescriptor::CppType::CPPTYPE_UINT64:
+                case FieldDescriptor::CppType::CPPTYPE_DOUBLE:
+                case FieldDescriptor::CppType::CPPTYPE_FLOAT:
+                case FieldDescriptor::CppType::CPPTYPE_BOOL:
+                case FieldDescriptor::CppType::CPPTYPE_STRING:
+                    break;
+                case FieldDescriptor::CppType::CPPTYPE_ENUM:
+                    WARN_PRINT("Enum is not supported yet");
+                    break;
+                default:
+                    WARN_PRINT("Unsupported field type: " + std::to_string(field->cpp_type()));
+                    break;
             }
         } else {
+            // Only build sub-models for field that is inside a real oneof and is set.
             if (shadergen_utils::is_inside_real_oneof(field)) {
-                WARN_PRINT("Oneof fields are not supported yet.");
+                const OneofDescriptor* oneof {field->containing_oneof()};
+
+                const FieldDescriptor* oneof_field {refl->GetOneofFieldDescriptor(*m_message_buffer, oneof)};
+                SILENT_CONTINUE_IF_TRUE(oneof_field == nullptr);
+                SILENT_CONTINUE_IF_TRUE(oneof_field->number() != field->number());
             } else {
-                switch (field->cpp_type()) {
-                    case FieldDescriptor::CppType::CPPTYPE_MESSAGE: {
-                            ProtoModel* sub_model {new MessageModel(refl->MutableMessage(m_message_buffer, field), this, i)};
-                            m_sub_models_by_field[field->number()] = sub_model;
-                            m_sub_models_by_column[i] = sub_model;
-                            break;
-                        }
-                    case FieldDescriptor::CppType::CPPTYPE_INT32:
-                    case FieldDescriptor::CppType::CPPTYPE_INT64:
-                    case FieldDescriptor::CppType::CPPTYPE_UINT32:
-                    case FieldDescriptor::CppType::CPPTYPE_UINT64:
-                    case FieldDescriptor::CppType::CPPTYPE_DOUBLE:
-                    case FieldDescriptor::CppType::CPPTYPE_FLOAT:
-                    case FieldDescriptor::CppType::CPPTYPE_BOOL:
-                    case FieldDescriptor::CppType::CPPTYPE_STRING: {
-                            ProtoModel* sub_model {new PrimitiveModel(field, this, i)};
-                            m_sub_models_by_field[field->number()] = sub_model;
-                            m_sub_models_by_column[i] = sub_model;
-                            break;
-                        }
-                    case FieldDescriptor::CppType::CPPTYPE_ENUM:
-                        WARN_PRINT("Enum is not supported yet.");
+                SILENT_CONTINUE_IF_TRUE(!refl->HasField(*m_message_buffer, field));
+            }
+
+            switch (field->cpp_type()) {
+                case FieldDescriptor::CppType::CPPTYPE_MESSAGE: {
+                        ProtoModel* sub_model {new MessageModel(refl->MutableMessage(m_message_buffer, field), this, i)};
+                        m_sub_models_by_field_number[field->number()] = sub_model;
                         break;
-                    default:
-                        WARN_PRINT("Unsupported field type: " + std::to_string(field->cpp_type()));
+                    }
+                case FieldDescriptor::CppType::CPPTYPE_INT32:
+                case FieldDescriptor::CppType::CPPTYPE_INT64:
+                case FieldDescriptor::CppType::CPPTYPE_UINT32:
+                case FieldDescriptor::CppType::CPPTYPE_UINT64:
+                case FieldDescriptor::CppType::CPPTYPE_DOUBLE:
+                case FieldDescriptor::CppType::CPPTYPE_FLOAT:
+                case FieldDescriptor::CppType::CPPTYPE_BOOL:
+                case FieldDescriptor::CppType::CPPTYPE_STRING: {
+                        ProtoModel* sub_model {new PrimitiveModel(field, this, i)};
+                        m_sub_models_by_field_number[field->number()] = sub_model;
                         break;
-                }
+                    }
+                case FieldDescriptor::CppType::CPPTYPE_ENUM:
+                    WARN_PRINT("Enum is not supported yet.");
+                    break;
+                default:
+                    WARN_PRINT("Unsupported field type: " + std::to_string(field->cpp_type()));
+                    break;
             }
         }
     }
+}
+
+void MessageModel::clear_sub_models() {
+    for (auto& [field_number, sub_model] : m_sub_models_by_field_number) {
+        delete sub_model;
+    }
+
+    m_sub_models_by_field_number.clear();
 }
 
 const FieldDescriptor* MessageModel::get_column_descriptor(const int& column) const {
@@ -140,7 +153,18 @@ bool MessageModel::setData(const QModelIndex& index, const QVariant& value, int 
 }
 
 const ProtoModel* MessageModel::get_sub_model(const FieldPath& path) const {
-    FAIL_AND_RETURN_NON_VOID(nullptr, "Method not implemented.");
+    CHECK_CONDITION_TRUE_NON_VOID(!path.is_valid(), nullptr, "");
+
+    int fn {-1};
+
+    SILENT_CHECK_CONDITION_TRUE_NON_VOID(!path.get_upcoming_field_num(fn), nullptr);
+
+    auto it {m_sub_models_by_field_number.find(fn)};
+    SILENT_CHECK_CONDITION_TRUE_NON_VOID(it == m_sub_models_by_field_number.end(), nullptr);
+
+    SILENT_CHECK_CONDITION_TRUE_NON_VOID(!path.skip_component(), nullptr);
+
+    return it->second->get_sub_model(path);
 }
 
 QVariant MessageModel::data() const {
@@ -148,11 +172,11 @@ QVariant MessageModel::data() const {
     return QVariant();
 }
 
-bool MessageModel::set_data(const QVariant& value) {
+bool MessageModel::set_data([[maybe_unused]] const QVariant& value) {
     FAIL_AND_RETURN_NON_VOID(false, "Method not implemented.");
 }
 
-QVariant MessageModel::data(const QModelIndex& index, int role) const {
+QVariant MessageModel::data(const QModelIndex& index, [[maybe_unused]] int role) const {
     SILENT_CHECK_PARAM_NULLPTR_NON_VOID(m_message_buffer, QVariant());
     CHECK_CONDITION_TRUE_NON_VOID(index.isValid(), false, "Supplied index was invalid: " + std::to_string(index.row()) + ", " + std::to_string(index.column()));
 
@@ -192,11 +216,11 @@ QVariant MessageModel::data(const QModelIndex& index, int role) const {
     return QVariant();
 }
 
-QModelIndex MessageModel::parent(const QModelIndex& child) const {
+QModelIndex MessageModel::parent([[maybe_unused]] const QModelIndex& child) const {
     return QModelIndex();
 }
 
-int MessageModel::columnCount(const QModelIndex& parent) const {
+int MessageModel::columnCount([[maybe_unused]] const QModelIndex& parent) const {
     const Descriptor* desc {m_message_buffer->GetDescriptor()};
 
     int total_fields {desc->field_count()};
@@ -210,7 +234,7 @@ int MessageModel::columnCount(const QModelIndex& parent) const {
     return total_fields;
 }
 
-QVariant MessageModel::headerData(int section, Qt::Orientation orientation, int role) const {
+QVariant MessageModel::headerData(int section, [[maybe_unused]] Qt::Orientation orientation, [[maybe_unused]] int role) const {
     SILENT_CHECK_PARAM_NULLPTR_NON_VOID(m_message_buffer, QVariant());
     const Descriptor* desc {m_message_buffer->GetDescriptor()};
 
@@ -224,7 +248,7 @@ QVariant MessageModel::headerData(int section, Qt::Orientation orientation, int 
     return QString::fromStdString(field->name());
 }
 
-QModelIndex MessageModel::index(int row, int column, const QModelIndex& parent) const {
+QModelIndex MessageModel::index(int row, int column, [[maybe_unused]] const QModelIndex& parent) const {
     return this->createIndex(row, column);
 }
 

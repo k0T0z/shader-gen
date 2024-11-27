@@ -13,8 +13,8 @@ using Descriptor = google::protobuf::Descriptor;
 using Reflection = google::protobuf::Reflection;
 using FieldDescriptor = google::protobuf::FieldDescriptor;
 
-ProtoModel::ProtoModel(ProtoModel* parent_model, const int& column_in_parent)
-    : QAbstractItemModel(parent_model), m_parent_model(parent_model), m_column_in_parent(column_in_parent) {}
+ProtoModel::ProtoModel(ProtoModel* parent_model, const int& index_in_parent)
+    : QAbstractItemModel(parent_model), m_parent_model(parent_model), m_index_in_parent(index_in_parent) {}
 
 void ProtoModel::parent_data_changed() const {
     while (true) {

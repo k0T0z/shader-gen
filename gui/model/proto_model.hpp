@@ -18,7 +18,7 @@ public:
         INVALID_COLUMN_INDEX = -1,
     };
 
-    explicit ProtoModel(ProtoModel* parent_model = nullptr, const int& column_in_parent = INVALID_COLUMN_INDEX);
+    explicit ProtoModel(ProtoModel* parent_model = nullptr, const int& index_in_parent = INVALID_COLUMN_INDEX);
     virtual ~ProtoModel() override = default;
 
     // JSON Serialization
@@ -32,11 +32,11 @@ public:
     ProtoModel* get_parent_model() const { return m_parent_model; }
     void parent_data_changed() const;
 
-    int get_column_in_parent() const { return m_column_in_parent; }
+    int get_index_in_parent() const { return m_index_in_parent; }
 
     virtual QVariant data() const = 0;
     virtual bool set_data(const QVariant& value) = 0;
-    virtual ProtoModel* get_sub_model(const FieldPath& path) {
+    virtual ProtoModel* get_sub_model([[maybe_unused]] const FieldPath& path) {
         return nullptr;
     }
     virtual const ProtoModel* get_sub_model(const FieldPath& path) const = 0; // A read-only version of ProtoModel
@@ -54,7 +54,7 @@ public:
     virtual int columnCount(const QModelIndex& parent = QModelIndex()) const override = 0;
     virtual bool setData(const QModelIndex& index, const QVariant& value, int role = Qt::DisplayRole) override = 0;
     virtual QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const override = 0;
-    virtual QVariant headerData(int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const override { return QVariant(); }
+    virtual QVariant headerData([[maybe_unused]] int section, [[maybe_unused]] Qt::Orientation orientation, [[maybe_unused]] int role = Qt::DisplayRole) const override { return QVariant(); }
     virtual QModelIndex index(int row, int column = 0, const QModelIndex& parent = QModelIndex()) const override = 0;
     virtual Qt::ItemFlags flags(const QModelIndex& index) const override { 
         SILENT_CHECK_CONDITION_TRUE_NON_VOID(!index.isValid(), Qt::NoItemFlags);
@@ -65,7 +65,7 @@ public:
 
 protected:
     ProtoModel* m_parent_model;
-    int m_column_in_parent;
+    int m_index_in_parent;
 
     // Serialization helper
     // QByteArray serializeToJson() const;

@@ -14,7 +14,7 @@ class PrimitiveModel : public ProtoModel {
     Q_OBJECT
 
 public:
-    PrimitiveModel(const FieldDescriptor* field_desc, ProtoModel* parent_model, const int& column_in_parent);
+    PrimitiveModel(const FieldDescriptor* field_desc, ProtoModel* parent_model, const int& index_in_parent);
 
     QVariant data() const override;
     bool set_data(const QVariant& value) override;
@@ -25,8 +25,8 @@ public:
 
     QModelIndex index(int row, int column, const QModelIndex& parent = QModelIndex()) const override;
     QModelIndex parent(const QModelIndex& child) const override;
-    int rowCount(const QModelIndex& parent = QModelIndex()) const override { return 1; }
-    int columnCount(const QModelIndex& parent = QModelIndex()) const override { return 1; }
+    int rowCount([[maybe_unused]] const QModelIndex& parent = QModelIndex()) const override { return 1; }
+    int columnCount([[maybe_unused]] const QModelIndex& parent = QModelIndex()) const override { return 1; }
     QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const override;
     bool setData(const QModelIndex& index, const QVariant& value, int role = Qt::DisplayRole) override;
 
