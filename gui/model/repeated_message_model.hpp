@@ -1,5 +1,5 @@
-#ifndef REPEATED_MESSAGE_MODEL_H
-#define REPEATED_MESSAGE_MODEL_H
+#ifndef REPEATED_MESSAGE_MODEL_HPP
+#define REPEATED_MESSAGE_MODEL_HPP
 
 #include "gui/model/message_model.hpp"
 
@@ -27,27 +27,25 @@ public:
         clear_sub_models();
     }
 
-    void build_sub_models();
+    void build_sub_models() override;
 
     QVariant data() const override;
     bool set_data(const QVariant& value) override;
     
-    ProtoModel* get_sub_model([[maybe_unused]] const FieldPath& path) override {
-        return nullptr;
-    }
-
-    MessageModel* get_sub_model(const int& index) const;
-
-    int field_to_column(const int& fn) const;
-    
+    ProtoModel* get_sub_model([[maybe_unused]] const FieldPath& path) override { return nullptr; }
     const ProtoModel* get_sub_model(const FieldPath& path) const override;
+    MessageModel* get_sub_model(const int& index) const;
 
     const FieldDescriptor* get_column_descriptor(const int& column) const override;
 
-    int rowCount(const QModelIndex& parent = QModelIndex()) const override;
-    QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const override;
-    bool setData(const QModelIndex& index, const QVariant& value, int role = Qt::DisplayRole) override;
-    bool insertRow(int row, const QModelIndex &parent = QModelIndex());
+    int rowCount(const QModelIndex &parent = QModelIndex()) const override;
+    QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override;
+    bool setData(const QModelIndex &index, const QVariant &value, int role = Qt::EditRole) override;
+
+    bool insertRows(int row, int count, const QModelIndex &parent = QModelIndex()) override;
+    bool removeRows(int row, int count, const QModelIndex &parent = QModelIndex()) override;
+
+    int field_to_column(const int& fn) const;
 
     Message* get_message_buffer() const { return m_message_buffer; }
 
@@ -59,6 +57,6 @@ private:
     void clear_sub_models();
 };
 
-#endif // REPEATED_MESSAGE_MODEL_H
+#endif // REPEATED_MESSAGE_MODEL_HPP
 
    

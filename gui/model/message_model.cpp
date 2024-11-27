@@ -5,6 +5,7 @@
 #include <google/protobuf/reflection.h>
 #include "gui/model/utils/utils.hpp"
 #include "gui/model/repeated_message_model.hpp"
+#include "gui/model/repeated_primitive_model.hpp"
 
 #include "error_macros.hpp"
 
@@ -49,8 +50,11 @@ void MessageModel::build_sub_models() {
                 case FieldDescriptor::CppType::CPPTYPE_DOUBLE:
                 case FieldDescriptor::CppType::CPPTYPE_FLOAT:
                 case FieldDescriptor::CppType::CPPTYPE_BOOL:
-                case FieldDescriptor::CppType::CPPTYPE_STRING:
-                    break;
+                case FieldDescriptor::CppType::CPPTYPE_STRING: {
+                        ProtoModel* sub_model {new RepeatedPrimitiveModel(m_message_buffer, field, this, i)};
+                        m_sub_models_by_field_number[field->number()] = sub_model;
+                        break;
+                    }
                 case FieldDescriptor::CppType::CPPTYPE_ENUM:
                     WARN_PRINT("Enum is not supported yet");
                     break;
@@ -84,7 +88,7 @@ void MessageModel::build_sub_models() {
                 case FieldDescriptor::CppType::CPPTYPE_FLOAT:
                 case FieldDescriptor::CppType::CPPTYPE_BOOL:
                 case FieldDescriptor::CppType::CPPTYPE_STRING: {
-                        ProtoModel* sub_model {new PrimitiveModel(field, this, i)};
+                        ProtoModel* sub_model {new PrimitiveModel(m_message_buffer, field, this, i)};
                         m_sub_models_by_field_number[field->number()] = sub_model;
                         break;
                     }
@@ -99,54 +103,12 @@ void MessageModel::build_sub_models() {
     }
 }
 
-void MessageModel::clear_sub_models() {
-    for (auto& [field_number, sub_model] : m_sub_models_by_field_number) {
-        delete sub_model;
-    }
-
-    m_sub_models_by_field_number.clear();
+QVariant MessageModel::data() const {
+    FAIL_AND_RETURN_NON_VOID(QVariant(), "Cannot get data from MessageModel.");
 }
 
-const FieldDescriptor* MessageModel::get_column_descriptor(const int& column) const {
-    const Descriptor* desc {m_message_buffer->GetDescriptor()};
-    VALIDATE_INDEX_NON_VOID(column, desc->field_count(), nullptr, 
-        "Requesting descriptor of invalid column (field index) " + std::to_string(column) + " of MessageModel " + desc->full_name());
-    return desc->field(column);
-}
-
-bool MessageModel::setData(const QModelIndex& index, const QVariant& value, int role) {
-    CHECK_CONDITION_TRUE_NON_VOID(index.isValid(), false, "Supplied index was invalid: " + std::to_string(index.row()) + ", " + std::to_string(index.column()));
-
-    const Descriptor* desc {m_message_buffer->GetDescriptor()};
-    const Reflection* refl {m_message_buffer->GetReflection()};
-    const FieldDescriptor* field {desc->field(index.column())};
-    SILENT_CHECK_PARAM_NULLPTR_NON_VOID(field, false);
-    const QVariant old_value {this->data(index, role)};
-
-    switch (field->cpp_type()) {
-        case FieldDescriptor::CppType::CPPTYPE_MESSAGE:
-            FAIL_AND_RETURN_NON_VOID(false, "Trying to set a message field.");
-            break;
-        case FieldDescriptor::CppType::CPPTYPE_INT32: refl->SetInt32(m_message_buffer, field, value.toInt()); break;
-        case FieldDescriptor::CppType::CPPTYPE_INT64: refl->SetInt64(m_message_buffer, field, value.toLongLong()); break;
-        case FieldDescriptor::CppType::CPPTYPE_UINT32: refl->SetUInt32(m_message_buffer, field, value.toUInt()); break;
-        case FieldDescriptor::CppType::CPPTYPE_UINT64: refl->SetUInt64(m_message_buffer, field, value.toULongLong()); break;
-        case FieldDescriptor::CppType::CPPTYPE_DOUBLE: refl->SetDouble(m_message_buffer, field, value.toDouble()); break;
-        case FieldDescriptor::CppType::CPPTYPE_FLOAT: refl->SetFloat(m_message_buffer, field, value.toFloat()); break;
-        case FieldDescriptor::CppType::CPPTYPE_BOOL: refl->SetBool(m_message_buffer, field, value.toBool()); break;
-        case FieldDescriptor::CppType::CPPTYPE_STRING: refl->SetString(m_message_buffer, field, value.toString().toStdString()); break;
-        case FieldDescriptor::CppType::CPPTYPE_ENUM:
-            WARN_PRINT("Enum is not supported yet.");
-            break;
-        default:
-            WARN_PRINT("Unsupported field type: " + std::to_string(field->cpp_type()));
-            break;
-    }
-
-    emit dataChanged(index, index, {role});
-    ProtoModel::parent_data_changed();
-
-    return true;
+bool MessageModel::set_data([[maybe_unused]] const QVariant& value) {
+    FAIL_AND_RETURN_NON_VOID(false, "Cannot set data to MessageModel.");
 }
 
 const ProtoModel* MessageModel::get_sub_model(const FieldPath& path) const {
@@ -164,13 +126,33 @@ const ProtoModel* MessageModel::get_sub_model(const FieldPath& path) const {
     return it->second->get_sub_model(path);
 }
 
-QVariant MessageModel::data() const {
-    SILENT_CHECK_PARAM_NULLPTR_NON_VOID(m_message_buffer, QVariant());
-    return QVariant();
+const FieldDescriptor* MessageModel::get_column_descriptor(const int& column) const {
+    const Descriptor* desc {m_message_buffer->GetDescriptor()};
+    VALIDATE_INDEX_NON_VOID(column, desc->field_count(), nullptr, 
+        "Requesting descriptor of invalid column (field index) " + std::to_string(column) + " of MessageModel " + desc->full_name());
+    return desc->field(column);
 }
 
-bool MessageModel::set_data([[maybe_unused]] const QVariant& value) {
-    FAIL_AND_RETURN_NON_VOID(false, "Method not implemented.");
+QModelIndex MessageModel::index(int row, int column, [[maybe_unused]] const QModelIndex& parent) const {
+    return this->createIndex(row, column);
+}
+
+QModelIndex MessageModel::parent([[maybe_unused]] const QModelIndex& child) const {
+    return QModelIndex();
+}
+
+int MessageModel::columnCount([[maybe_unused]] const QModelIndex& parent) const {
+    const Descriptor* desc {m_message_buffer->GetDescriptor()};
+
+    int total_fields {desc->field_count()};
+    int real_oneofs_count {desc->real_oneof_decl_count()};
+
+    for (int i = 0; i < real_oneofs_count; ++i) {
+        total_fields -= desc->oneof_decl(i)->field_count(); // Subtract the fields in the oneof
+        total_fields += 1; // One column for the oneof
+    }
+    
+    return total_fields;
 }
 
 QVariant MessageModel::data(const QModelIndex& index, [[maybe_unused]] int role) const {
@@ -213,22 +195,39 @@ QVariant MessageModel::data(const QModelIndex& index, [[maybe_unused]] int role)
     return QVariant();
 }
 
-QModelIndex MessageModel::parent([[maybe_unused]] const QModelIndex& child) const {
-    return QModelIndex();
-}
+bool MessageModel::setData(const QModelIndex& index, const QVariant& value, int role) {
+    CHECK_CONDITION_TRUE_NON_VOID(index.isValid(), false, "Supplied index was invalid: " + std::to_string(index.row()) + ", " + std::to_string(index.column()));
 
-int MessageModel::columnCount([[maybe_unused]] const QModelIndex& parent) const {
     const Descriptor* desc {m_message_buffer->GetDescriptor()};
+    const Reflection* refl {m_message_buffer->GetReflection()};
+    const FieldDescriptor* field {desc->field(index.column())};
+    SILENT_CHECK_PARAM_NULLPTR_NON_VOID(field, false);
+    const QVariant old_value {this->data(index, role)};
 
-    int total_fields {desc->field_count()};
-    int real_oneofs_count {desc->real_oneof_decl_count()};
-
-    for (int i = 0; i < real_oneofs_count; ++i) {
-        total_fields -= desc->oneof_decl(i)->field_count(); // Subtract the fields in the oneof
-        total_fields += 1; // One column for the oneof
+    switch (field->cpp_type()) {
+        case FieldDescriptor::CppType::CPPTYPE_MESSAGE:
+            FAIL_AND_RETURN_NON_VOID(false, "Trying to set a message field.");
+            break;
+        case FieldDescriptor::CppType::CPPTYPE_INT32: refl->SetInt32(m_message_buffer, field, value.toInt()); break;
+        case FieldDescriptor::CppType::CPPTYPE_INT64: refl->SetInt64(m_message_buffer, field, value.toLongLong()); break;
+        case FieldDescriptor::CppType::CPPTYPE_UINT32: refl->SetUInt32(m_message_buffer, field, value.toUInt()); break;
+        case FieldDescriptor::CppType::CPPTYPE_UINT64: refl->SetUInt64(m_message_buffer, field, value.toULongLong()); break;
+        case FieldDescriptor::CppType::CPPTYPE_DOUBLE: refl->SetDouble(m_message_buffer, field, value.toDouble()); break;
+        case FieldDescriptor::CppType::CPPTYPE_FLOAT: refl->SetFloat(m_message_buffer, field, value.toFloat()); break;
+        case FieldDescriptor::CppType::CPPTYPE_BOOL: refl->SetBool(m_message_buffer, field, value.toBool()); break;
+        case FieldDescriptor::CppType::CPPTYPE_STRING: refl->SetString(m_message_buffer, field, value.toString().toStdString()); break;
+        case FieldDescriptor::CppType::CPPTYPE_ENUM:
+            WARN_PRINT("Enum is not supported yet.");
+            break;
+        default:
+            WARN_PRINT("Unsupported field type: " + std::to_string(field->cpp_type()));
+            break;
     }
-    
-    return total_fields;
+
+    emit dataChanged(index, index, {role});
+    ProtoModel::parent_data_changed();
+
+    return true;
 }
 
 QVariant MessageModel::headerData(int section, [[maybe_unused]] Qt::Orientation orientation, [[maybe_unused]] int role) const {
@@ -245,8 +244,10 @@ QVariant MessageModel::headerData(int section, [[maybe_unused]] Qt::Orientation 
     return QString::fromStdString(field->name());
 }
 
-QModelIndex MessageModel::index(int row, int column, [[maybe_unused]] const QModelIndex& parent) const {
-    return this->createIndex(row, column);
+void MessageModel::clear_sub_models() {
+    for (auto& [field_number, sub_model] : m_sub_models_by_field_number) {
+        delete sub_model;
+    }
+
+    m_sub_models_by_field_number.clear();
 }
-
-

@@ -28,31 +28,28 @@ class MessageModel : public ProtoModel {
     Q_OBJECT
 
 public:
-    MessageModel(Message* message_buffer, ProtoModel* parent_model = nullptr, const int& index_in_parent = INVALID_COLUMN_INDEX);
-    ~MessageModel() override {
+    MessageModel(Message* message_buffer, ProtoModel* parent_model = nullptr, const int& index_in_parent = INDEX_INVALID);
+    virtual ~MessageModel() override {
         clear_sub_models();
     }
 
-    void build_sub_models();
+    virtual void build_sub_models() override;
 
     QVariant data() const override;
     bool set_data(const QVariant& value) override;
     
-    ProtoModel* get_sub_model([[maybe_unused]] const FieldPath& path) override {
-        return nullptr;
-    }
-    
+    ProtoModel* get_sub_model([[maybe_unused]] const FieldPath& path) override { return nullptr; }
     const ProtoModel* get_sub_model(const FieldPath& path) const override;
 
     const FieldDescriptor* get_column_descriptor(const int& column) const override;
 
-    QModelIndex index(int row, int column, const QModelIndex& parent = QModelIndex()) const override;
-    QModelIndex parent(const QModelIndex& child) const override;
-    int rowCount([[maybe_unused]] const QModelIndex& parent = QModelIndex()) const override { return 1; }
-    int columnCount(const QModelIndex& parent = QModelIndex()) const override;
-    QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const override;
-    bool setData(const QModelIndex& index, const QVariant& value, int role = Qt::DisplayRole) override;
-    QVariant headerData(int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const override;
+    virtual QModelIndex index(int row, int column, const QModelIndex &parent = QModelIndex()) const override;
+    virtual QModelIndex parent(const QModelIndex &child) const override;
+    virtual int rowCount(const QModelIndex &parent = QModelIndex()) const override { return 1; }
+    virtual int columnCount(const QModelIndex &parent = QModelIndex()) const override;
+    virtual QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override;
+    virtual bool setData(const QModelIndex &index, const QVariant &value, int role = Qt::EditRole) override;
+    virtual QVariant headerData([[maybe_unused]] int section, [[maybe_unused]] Qt::Orientation orientation, [[maybe_unused]] int role = Qt::DisplayRole) const override;
 
     Message* get_message_buffer() const { return m_message_buffer; }
 

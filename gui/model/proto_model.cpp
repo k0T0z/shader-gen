@@ -9,9 +9,6 @@
 
 using namespace google::protobuf::util;
 using Message = google::protobuf::Message;
-using Descriptor = google::protobuf::Descriptor;
-using Reflection = google::protobuf::Reflection;
-using FieldDescriptor = google::protobuf::FieldDescriptor;
 
 ProtoModel::ProtoModel(ProtoModel* parent_model, const int& index_in_parent)
     : QAbstractItemModel(parent_model), m_parent_model(parent_model), m_index_in_parent(index_in_parent) {}
@@ -93,14 +90,14 @@ void ProtoModel::parent_data_changed() const {
 //     return message;
 // }
 
-bool ProtoModel::set_data(const FieldPath& path, const QVariant& value) {
-    ProtoModel* model = get_sub_model(path);
-    SILENT_CHECK_PARAM_NULLPTR_NON_VOID(model, false);
-    return model->set_data(value);
-}
-
 QVariant ProtoModel::data(const FieldPath& path) const {
     const ProtoModel* model = get_sub_model(path);
     SILENT_CHECK_PARAM_NULLPTR_NON_VOID(model, QVariant());
     return model->data();
+}
+
+bool ProtoModel::set_data(const FieldPath& path, const QVariant& value) {
+    ProtoModel* model = get_sub_model(path);
+    SILENT_CHECK_PARAM_NULLPTR_NON_VOID(model, false);
+    return model->set_data(value);
 }
