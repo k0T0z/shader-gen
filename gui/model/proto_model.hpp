@@ -39,12 +39,6 @@ public:
     virtual ProtoModel* get_sub_model([[maybe_unused]] const FieldPath& path) { return nullptr; }
     virtual const ProtoModel* get_sub_model(const FieldPath& path) const = 0; // A read-only version of ProtoModel
 
-    QVariant data_at_col(const int& col) const { return data(index(0, col, QModelIndex())); }
-    bool set_data_at_col(const int& col, const QVariant& value) { return set_data_at_col(0, col, value); }
-    bool set_data_at_col(const int& row, const int& col, const QVariant& value) {
-        return setData(index(row, col, QModelIndex()), value);
-    }
-
     virtual const FieldDescriptor* get_column_descriptor(const int& column) const = 0;
 
     virtual QModelIndex index(int row, int column, const QModelIndex &parent = QModelIndex()) const override { return QModelIndex(); }

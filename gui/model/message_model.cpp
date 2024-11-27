@@ -25,7 +25,7 @@ void MessageModel::build_sub_models() {
     // https://protobuf.dev/reference/cpp/api-docs/google.protobuf.message/#Reflection
     const Reflection* refl {m_message_buffer->GetReflection()};
 
-    int total_fields {desc->field_count()};
+    int total_fields {columnCount()};
 
     // Iterate through all fields in the message
     for (int i {0}; i < total_fields; ++i) {
@@ -123,47 +123,47 @@ const ProtoModel* MessageModel::get_sub_model(const FieldPath& path) const {
 
     SILENT_CHECK_CONDITION_TRUE_NON_VOID(!path.skip_component(), nullptr);
 
-    return it->second->get_sub_model(path);
+    return const_cast<const ProtoModel*>(it->second->get_sub_model(path));
 }
 
 const FieldDescriptor* MessageModel::get_column_descriptor(const int& column) const {
     const Descriptor* desc {m_message_buffer->GetDescriptor()};
-    VALIDATE_INDEX_NON_VOID(column, desc->field_count(), nullptr, 
+    VALIDATE_INDEX_NON_VOID(column, columnCount(), nullptr, 
         "Requesting descriptor of invalid column (field index) " + std::to_string(column) + " of MessageModel " + desc->full_name());
     return desc->field(column);
 }
 
 QModelIndex MessageModel::index(int row, int column, [[maybe_unused]] const QModelIndex& parent) const {
-    return this->createIndex(row, column);
+    FAIL_AND_RETURN_NON_VOID(QModelIndex(), "Method not implemented.");
 }
 
 QModelIndex MessageModel::parent([[maybe_unused]] const QModelIndex& child) const {
-    return QModelIndex();
+    FAIL_AND_RETURN_NON_VOID(QModelIndex(), "Method not implemented.");
 }
 
 int MessageModel::columnCount([[maybe_unused]] const QModelIndex& parent) const {
     const Descriptor* desc {m_message_buffer->GetDescriptor()};
 
     int total_fields {desc->field_count()};
-    int real_oneofs_count {desc->real_oneof_decl_count()};
+    // int real_oneofs_count {desc->real_oneof_decl_count()};
 
-    for (int i = 0; i < real_oneofs_count; ++i) {
-        total_fields -= desc->oneof_decl(i)->field_count(); // Subtract the fields in the oneof
-        total_fields += 1; // One column for the oneof
-    }
+    // for (int i = 0; i < real_oneofs_count; ++i) {
+    //     total_fields -= desc->oneof_decl(i)->field_count(); // Subtract the fields in the oneof
+    //     total_fields += 1; // One column for the oneof
+    // }
     
     return total_fields;
 }
 
 QVariant MessageModel::data(const QModelIndex& index, [[maybe_unused]] int role) const {
-    SILENT_CHECK_PARAM_NULLPTR_NON_VOID(m_message_buffer, QVariant());
-    CHECK_CONDITION_TRUE_NON_VOID(index.isValid(), false, "Supplied index was invalid: " + std::to_string(index.row()) + ", " + std::to_string(index.column()));
+    CHECK_PARAM_NULLPTR_NON_VOID(m_message_buffer, QVariant(), "Message buffer is null.");
+    CHECK_CONDITION_TRUE_NON_VOID(index.isValid(), QVariant(), "Supplied index was invalid.");
+    CHECK_CONDITION_TRUE_NON_VOID(index.row() == 1, QVariant(), "A message model should have only one row.");
+    VALIDATE_INDEX_NON_VOID(index.column(), columnCount(), QVariant(), 
+        "Accessing out-of-range proto column " + std::to_string(index.column()) + " of " + std::to_string(columnCount()));
 
     const Descriptor* desc {m_message_buffer->GetDescriptor()};
     const Reflection* refl {m_message_buffer->GetReflection()};
-
-    VALIDATE_INDEX_NON_VOID(index.column(), desc->field_count(), QVariant(), 
-        "Accessing out-of-range proto column " + std::to_string(index.column()) + " of " + std::to_string(desc->field_count()));
 
     const FieldDescriptor* field {desc->field(index.column())};
 
@@ -174,7 +174,7 @@ QVariant MessageModel::data(const QModelIndex& index, [[maybe_unused]] int role)
 
     switch (field->cpp_type()) {
         case FieldDescriptor::CppType::CPPTYPE_MESSAGE:
-            FAIL_AND_RETURN_NON_VOID(false, "Trying to get a message field.");
+            FAIL_AND_RETURN_NON_VOID(QVariant(), "Trying to get a message field.");
             break;
         case FieldDescriptor::CppType::CPPTYPE_INT32: return refl->GetInt32(*m_message_buffer, field);
         case FieldDescriptor::CppType::CPPTYPE_INT64: return QVariant::fromValue(refl->GetInt64(*m_message_buffer, field));
@@ -196,13 +196,17 @@ QVariant MessageModel::data(const QModelIndex& index, [[maybe_unused]] int role)
 }
 
 bool MessageModel::setData(const QModelIndex& index, const QVariant& value, int role) {
-    CHECK_CONDITION_TRUE_NON_VOID(index.isValid(), false, "Supplied index was invalid: " + std::to_string(index.row()) + ", " + std::to_string(index.column()));
+    CHECK_PARAM_NULLPTR_NON_VOID(m_message_buffer, false, "Message buffer is null.");
+    CHECK_CONDITION_TRUE_NON_VOID(index.isValid(), false, "Supplied index was invalid.");
+    CHECK_CONDITION_TRUE_NON_VOID(value.isValid(), false, "Supplied value is invalid.");
+    CHECK_CONDITION_TRUE_NON_VOID(index.row() == 1, false, "A message model should have only one row.");
+    VALIDATE_INDEX_NON_VOID(index.column(), columnCount(), false, 
+        "Accessing out-of-range proto column " + std::to_string(index.column()) + " of " + std::to_string(columnCount()));
 
     const Descriptor* desc {m_message_buffer->GetDescriptor()};
     const Reflection* refl {m_message_buffer->GetReflection()};
     const FieldDescriptor* field {desc->field(index.column())};
     SILENT_CHECK_PARAM_NULLPTR_NON_VOID(field, false);
-    const QVariant old_value {this->data(index, role)};
 
     switch (field->cpp_type()) {
         case FieldDescriptor::CppType::CPPTYPE_MESSAGE:
@@ -234,8 +238,8 @@ QVariant MessageModel::headerData(int section, [[maybe_unused]] Qt::Orientation 
     SILENT_CHECK_PARAM_NULLPTR_NON_VOID(m_message_buffer, QVariant());
     const Descriptor* desc {m_message_buffer->GetDescriptor()};
 
-    VALIDATE_INDEX_NON_VOID(section, desc->field_count(), QVariant(), 
-        "Accessing out-of-range proto column " + std::to_string(section) + " of " + std::to_string(desc->field_count()));
+    VALIDATE_INDEX_NON_VOID(section, columnCount(), QVariant(), 
+        "Accessing out-of-range proto column " + std::to_string(section) + " of " + std::to_string(columnCount()));
 
     const FieldDescriptor* field {desc->field(section)};
 

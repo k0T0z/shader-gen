@@ -14,11 +14,11 @@ void PrimitiveModel::build_sub_models() {
 }
 
 QVariant PrimitiveModel::data() const {
-    return m_parent_model->data_at_col(m_index_in_parent);
+    return data(index(0, 0));
 }
 
 bool PrimitiveModel::set_data(const QVariant& value) {
-    return m_parent_model->set_data_at_col(m_index_in_parent, value);
+    return setData(index(0, 0), value);
 }
 
 const ProtoModel* PrimitiveModel::get_sub_model([[maybe_unused]] const FieldPath& path) const {
@@ -26,7 +26,7 @@ const ProtoModel* PrimitiveModel::get_sub_model([[maybe_unused]] const FieldPath
 }
 
 const FieldDescriptor* PrimitiveModel::get_column_descriptor([[maybe_unused]] const int& column) const {
-    return m_parent_model->get_column_descriptor(m_index_in_parent);
+    return m_field_desc;
 }
 
 QModelIndex PrimitiveModel::index([[maybe_unused]] int row, [[maybe_unused]] int column, [[maybe_unused]] const QModelIndex& parent) const {
@@ -34,13 +34,75 @@ QModelIndex PrimitiveModel::index([[maybe_unused]] int row, [[maybe_unused]] int
 }
 
 QModelIndex PrimitiveModel::parent([[maybe_unused]] const QModelIndex& child) const {
-    return QModelIndex();
+    FAIL_AND_RETURN_NON_VOID(QModelIndex(), "Method not implemented.");
 }
 
 QVariant PrimitiveModel::data([[maybe_unused]] const QModelIndex& index, [[maybe_unused]] int role) const {
-    return m_parent_model->data_at_col(m_index_in_parent);
+    CHECK_PARAM_NULLPTR_NON_VOID(m_message_buffer, QVariant(), "Message buffer is null.");
+    CHECK_PARAM_NULLPTR_NON_VOID(m_field_desc, false, "Field descriptor is null.");
+    CHECK_CONDITION_TRUE_NON_VOID(index.isValid(), QVariant(), "Supplied index was invalid.");
+    CHECK_CONDITION_TRUE_NON_VOID(index.row() == 1, QVariant(), "A message model should have only one row.");
+    CHECK_CONDITION_TRUE_NON_VOID(index.column() == 1, QVariant(), "A message model should have only one column.");
+
+    const Reflection* refl {m_message_buffer->GetReflection()};
+
+    SILENT_CHECK_CONDITION_TRUE_NON_VOID(!refl->HasField(*m_message_buffer, m_field_desc), QVariant());
+
+    switch (m_field_desc->cpp_type()) {
+        case FieldDescriptor::CppType::CPPTYPE_MESSAGE:
+            FAIL_AND_RETURN_NON_VOID(QVariant(), "Trying to get a message field.");
+            break;
+        case FieldDescriptor::CppType::CPPTYPE_INT32: return refl->GetInt32(*m_message_buffer, m_field_desc);
+        case FieldDescriptor::CppType::CPPTYPE_INT64: return QVariant::fromValue(refl->GetInt64(*m_message_buffer, m_field_desc));
+        case FieldDescriptor::CppType::CPPTYPE_UINT32: return refl->GetUInt32(*m_message_buffer, m_field_desc);
+        case FieldDescriptor::CppType::CPPTYPE_UINT64: return QVariant::fromValue(refl->GetUInt64(*m_message_buffer, m_field_desc));
+        case FieldDescriptor::CppType::CPPTYPE_DOUBLE: return refl->GetDouble(*m_message_buffer, m_field_desc);
+        case FieldDescriptor::CppType::CPPTYPE_FLOAT: return refl->GetFloat(*m_message_buffer, m_field_desc);
+        case FieldDescriptor::CppType::CPPTYPE_BOOL: return refl->GetBool(*m_message_buffer, m_field_desc);
+        case FieldDescriptor::CppType::CPPTYPE_STRING: return QString::fromStdString(refl->GetString(*m_message_buffer, m_field_desc));
+        case FieldDescriptor::CppType::CPPTYPE_ENUM:
+            FAIL_AND_RETURN_NON_VOID(QVariant(), "Trying to get an enum field.");
+            break;
+        default:
+            WARN_PRINT("Unsupported field type: " + std::to_string(m_field_desc->cpp_type()));
+            break;
+    }
+
+    return QVariant();
 }
 
 bool PrimitiveModel::setData([[maybe_unused]] const QModelIndex& index, [[maybe_unused]] const QVariant& value, [[maybe_unused]] int role) {
-    return m_parent_model->set_data_at_col(m_index_in_parent, value);
+    CHECK_PARAM_NULLPTR_NON_VOID(m_message_buffer, false, "Message buffer is null.");
+    CHECK_PARAM_NULLPTR_NON_VOID(m_field_desc, false, "Field descriptor is null.");
+    CHECK_CONDITION_TRUE_NON_VOID(index.isValid(), false, "Supplied index was invalid.");
+    CHECK_CONDITION_TRUE_NON_VOID(value.isValid(), false, "Supplied value is invalid.");
+    CHECK_CONDITION_TRUE_NON_VOID(index.row() == 1, false, "A message model should have only one row.");
+    CHECK_CONDITION_TRUE_NON_VOID(index.column() == 1, false, "A message model should have only one column.");
+
+    const Reflection* refl {m_message_buffer->GetReflection()};
+
+    switch (m_field_desc->cpp_type()) {
+        case FieldDescriptor::CppType::CPPTYPE_MESSAGE:
+            FAIL_AND_RETURN_NON_VOID(false, "Trying to set a message field.");
+            break;
+        case FieldDescriptor::CppType::CPPTYPE_INT32: refl->SetInt32(m_message_buffer, m_field_desc, value.toInt()); break;
+        case FieldDescriptor::CppType::CPPTYPE_INT64: refl->SetInt64(m_message_buffer, m_field_desc, value.toLongLong()); break;
+        case FieldDescriptor::CppType::CPPTYPE_UINT32: refl->SetUInt32(m_message_buffer, m_field_desc, value.toUInt()); break;
+        case FieldDescriptor::CppType::CPPTYPE_UINT64: refl->SetUInt64(m_message_buffer, m_field_desc, value.toULongLong()); break;
+        case FieldDescriptor::CppType::CPPTYPE_DOUBLE: refl->SetDouble(m_message_buffer, m_field_desc, value.toDouble()); break;
+        case FieldDescriptor::CppType::CPPTYPE_FLOAT: refl->SetFloat(m_message_buffer, m_field_desc, value.toFloat()); break;
+        case FieldDescriptor::CppType::CPPTYPE_BOOL: refl->SetBool(m_message_buffer, m_field_desc, value.toBool()); break;
+        case FieldDescriptor::CppType::CPPTYPE_STRING: refl->SetString(m_message_buffer, m_field_desc, value.toString().toStdString()); break;
+        case FieldDescriptor::CppType::CPPTYPE_ENUM:
+            FAIL_AND_RETURN_NON_VOID(false, "Trying to set an enum field.");
+            break;
+        default:
+            WARN_PRINT("Unsupported field type: " + std::to_string(m_field_desc->cpp_type()));
+            break;
+    }
+
+    emit dataChanged(index, index);
+    ProtoModel::parent_data_changed();
+
+    return true;
 }

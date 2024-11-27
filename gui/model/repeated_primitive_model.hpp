@@ -41,8 +41,8 @@ public:
     QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override;
     bool setData(const QModelIndex &index, const QVariant &value, int role = Qt::EditRole) override;
 
-    bool insertRows(int row, int count, const QModelIndex &parent = QModelIndex()) override;
-    bool removeRows(int row, int count, const QModelIndex &parent = QModelIndex()) override;
+    int append_row();
+    bool remove_row(const int& row);
 
     int field_to_column(const int& fn) const;
 
@@ -53,6 +53,8 @@ private:
     const FieldDescriptor* m_field_desc;
     std::vector<PrimitiveModel*> m_sub_models;
 
+    bool insertRows(int row, int count, const QModelIndex &parent = QModelIndex()) override;
+    bool removeRows(int row, int count, const QModelIndex &parent = QModelIndex()) override;
     void clear_sub_models();
 };
 
