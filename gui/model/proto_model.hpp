@@ -10,6 +10,7 @@ using Descriptor = google::protobuf::Descriptor;
 using Reflection = google::protobuf::Reflection;
 using FieldDescriptor = google::protobuf::FieldDescriptor;
 
+// Check https://protobuf.dev/programming-guides/best-practices/ before adding any new features
 class ProtoModel : public QAbstractItemModel {
     Q_OBJECT
 

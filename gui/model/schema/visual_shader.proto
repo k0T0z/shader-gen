@@ -3,6 +3,8 @@ package gui.model.schema;
 
 import "visual_shader_nodes.proto";
 
+// Check https://protobuf.dev/programming-guides/best-practices/ before adding new features
+
 message VisualShader {
     message VisualShaderNode {
         optional int32 id = 1;
