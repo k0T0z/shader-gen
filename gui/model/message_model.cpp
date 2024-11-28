@@ -66,6 +66,7 @@ void MessageModel::build_sub_models() {
             // Only build sub-models for field that is inside a real oneof and is set.
             if (shadergen_utils::is_inside_real_oneof(field)) {
                 const OneofDescriptor* oneof {field->containing_oneof()};
+                SILENT_CONTINUE_IF_TRUE(!refl->HasOneof(*m_message_buffer, oneof));
 
                 const FieldDescriptor* oneof_field {refl->GetOneofFieldDescriptor(*m_message_buffer, oneof)};
                 SILENT_CONTINUE_IF_TRUE(oneof_field == nullptr);

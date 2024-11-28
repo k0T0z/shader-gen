@@ -91,7 +91,11 @@ bool RepeatedMessageModel::remove_row(const int& row) {
 
     beginRemoveRows(QModelIndex(), row, row);
 
-    FAIL_AND_RETURN_NON_VOID(false, "Method not implemented.");
+    // We remove a row by swapping the last row with the row to be removed and then removing the last row.
+    // https://protobuf.dev/reference/cpp/api-docs/google.protobuf.message/#Reflection.RemoveLast.details
+    const Reflection* refl {m_message_buffer->GetReflection()};
+    refl->SwapElements(m_message_buffer, m_field_desc, row, rowCount() - 1);
+    refl->RemoveLast(m_message_buffer, m_field_desc);
 
     parent_data_changed();
 
