@@ -1,6 +1,10 @@
 #include "gui/model/repeated_message_model.hpp"
 
+#include "gui/model/utils/utils.hpp"
 #include "error_macros.hpp"
+
+using Message = google::protobuf::Message;
+using OneofDescriptor = google::protobuf::OneofDescriptor;
 
 RepeatedMessageModel::RepeatedMessageModel(Message* message_buffer, const FieldDescriptor* field_desc, ProtoModel* parent_model, const int& index_in_parent)
     : MessageModel(message_buffer, parent_model, index_in_parent), m_message_buffer(message_buffer), m_field_desc(field_desc) {
@@ -26,6 +30,15 @@ bool RepeatedMessageModel::set_data([[maybe_unused]] const QVariant& value) {
     FAIL_AND_RETURN_NON_VOID(false, "Cannot set data to RepeatedMessageModel.");
 }
 
+MessageModel* RepeatedMessageModel::get_sub_model(const int& index) const {
+    SILENT_VALIDATE_INDEX_NON_VOID(index, rowCount(), nullptr);
+
+    MessageModel* m = dynamic_cast<MessageModel*>(m_sub_models.at(index));
+    SILENT_CHECK_PARAM_NULLPTR_NON_VOID(m, nullptr);
+
+    return m;
+}
+
 const ProtoModel* RepeatedMessageModel::get_sub_model(const FieldPath& path) const {
     CHECK_CONDITION_TRUE_NON_VOID(!path.is_valid(), nullptr, "");
 
@@ -39,20 +52,25 @@ const ProtoModel* RepeatedMessageModel::get_sub_model(const FieldPath& path) con
     return const_cast<const ProtoModel*>(m_sub_models.at(index)->get_sub_model(path));
 }
 
-MessageModel* RepeatedMessageModel::get_sub_model(const int& index) const {
-    SILENT_VALIDATE_INDEX_NON_VOID(index, rowCount(), nullptr);
-
-    MessageModel* m = dynamic_cast<MessageModel*>(m_sub_models.at(index));
-    SILENT_CHECK_PARAM_NULLPTR_NON_VOID(m, nullptr);
-
-    return m;
+QModelIndex RepeatedMessageModel::index(int row, int column, [[maybe_unused]] const QModelIndex& parent) const {
+    Q_UNUSED(parent);
+    Q_UNUSED(column);
+    SILENT_VALIDATE_INDEX_NON_VOID(row, rowCount(), QModelIndex());
+    return createIndex(row, column);
 }
 
-const FieldDescriptor* RepeatedMessageModel::get_column_descriptor([[maybe_unused]] const int& column) const {
-    const Descriptor* desc {m_message_buffer->GetDescriptor()};
-    VALIDATE_INDEX_NON_VOID(column, columnCount(), nullptr, 
-        "Requesting descriptor of invalid column (field index) " + std::to_string(column) + " of MessageModel " + desc->full_name());
-    return desc->field(column);
+QModelIndex RepeatedMessageModel::parent([[maybe_unused]] const QModelIndex& child) const {
+    Q_UNUSED(child);
+    const ProtoModel* parent_model {get_parent_model()};
+
+    const ProtoModel* root_model {get_root_model()};
+
+    SILENT_CHECK_CONDITION_TRUE_NON_VOID(parent_model == root_model, QModelIndex());
+
+    MessageModel* parent_message_model {dynamic_cast<MessageModel*>(const_cast<ProtoModel*>(parent_model->get_parent_model()))};
+    SILENT_CHECK_CONDITION_TRUE_NON_VOID(parent_message_model != nullptr, createIndex(0, parent_model->get_index_in_parent()));
+
+    return QModelIndex();
 }
 
 int RepeatedMessageModel::rowCount([[maybe_unused]] const QModelIndex& parent) const {
@@ -61,7 +79,38 @@ int RepeatedMessageModel::rowCount([[maybe_unused]] const QModelIndex& parent) c
 }
 
 QVariant RepeatedMessageModel::data(const QModelIndex& index, int role) const {
-    FAIL_AND_RETURN_NON_VOID(QVariant(), "Cannot get data from a repeated message model.");
+    CHECK_PARAM_NULLPTR_NON_VOID(m_message_buffer, QVariant(), "Message buffer is null.");
+    CHECK_CONDITION_TRUE_NON_VOID(!index.isValid(), QVariant(), "Supplied index was invalid.");
+    VALIDATE_INDEX_NON_VOID(index.row(), rowCount(), QVariant(), 
+        "Accessing out-of-range proto row " + std::to_string(index.row()) + " of " + std::to_string(rowCount()));
+    VALIDATE_INDEX_NON_VOID(index.column(), columnCount(), QVariant(), 
+        "Accessing out-of-range proto column " + std::to_string(index.column()) + " of " + std::to_string(columnCount()));
+
+    const Descriptor* desc {m_message_buffer->GetDescriptor()};
+    const Reflection* refl {m_message_buffer->GetReflection()};
+
+    const Message& field_buffer {refl->GetRepeatedMessage(*m_message_buffer, m_field_desc, index.row())};
+
+    const Descriptor* field_buffer_desc {field_buffer.GetDescriptor()};
+    const Reflection* field_buffer_refl {field_buffer.GetReflection()};
+
+    const FieldDescriptor* field {field_buffer_desc->field(index.column())};
+    SILENT_CHECK_PARAM_NULLPTR_NON_VOID(field, QVariant());
+
+    CHECK_CONDITION_TRUE_NON_VOID(field->is_repeated(), QVariant(), "Field is repeated.");
+
+    if (shadergen_utils::is_inside_real_oneof(field)) {
+        const OneofDescriptor* oneof {field->containing_oneof()};
+        SILENT_CHECK_CONDITION_TRUE_NON_VOID(!refl->HasOneof(field_buffer, oneof), QVariant());
+
+        const FieldDescriptor* oneof_field {refl->GetOneofFieldDescriptor(field_buffer, oneof)};
+        SILENT_CHECK_CONDITION_TRUE_NON_VOID(oneof_field == nullptr, QVariant());
+        SILENT_CHECK_CONDITION_TRUE_NON_VOID(oneof_field->number() != field->number(), QVariant());
+    } else {
+        SILENT_CHECK_CONDITION_TRUE_NON_VOID(!refl->HasField(field_buffer, field), QVariant());
+    }
+
+    return get_sub_model(field->number())->data();
 }
 
 bool RepeatedMessageModel::setData([[maybe_unused]] const QModelIndex& index, [[maybe_unused]] const QVariant& value, [[maybe_unused]] int role) {
@@ -70,6 +119,7 @@ bool RepeatedMessageModel::setData([[maybe_unused]] const QModelIndex& index, [[
 
 int RepeatedMessageModel::append_row() {
     int row {rowCount()};
+    // Q_EMIT rowsAboutToBeInserted(QModelIndex(), row, row, {});
     beginInsertRows(QModelIndex(), row, row);
 
     const Reflection* refl {m_message_buffer->GetReflection()};
@@ -82,6 +132,7 @@ int RepeatedMessageModel::append_row() {
     parent_data_changed();
 
     endInsertRows();
+    // Q_EMIT rowsInserted(QModelIndex(), row, row, {});
 
     return row;
 }
@@ -89,6 +140,7 @@ int RepeatedMessageModel::append_row() {
 bool RepeatedMessageModel::remove_row(const int& row) {
     SILENT_VALIDATE_INDEX_NON_VOID(row, rowCount(), false);
 
+    // Q_EMIT rowsAboutToBeRemoved(QModelIndex(), row, row, {});
     beginRemoveRows(QModelIndex(), row, row);
 
     // We remove a row by swapping the last row with the row to be removed and then removing the last row.
@@ -100,6 +152,7 @@ bool RepeatedMessageModel::remove_row(const int& row) {
     parent_data_changed();
 
     endRemoveRows();
+    // Q_EMIT rowsRemoved(QModelIndex(), row, row, {});
 
     return true;
 }
@@ -125,10 +178,7 @@ bool RepeatedMessageModel::removeRows(int row, int count, const QModelIndex &par
 void RepeatedMessageModel::clear_sub_models() {
     int size {rowCount()};
 
-    for (int i = 0; i < size; ++i) {
-        MessageModel* m {m_sub_models.at(i)};
-        delete m;
-    }
+    for (int i = 0; i < size; ++i) delete m_sub_models.at(i);
 
     const Reflection* refl {m_message_buffer->GetReflection()};
     refl->ClearField(m_message_buffer, m_field_desc);

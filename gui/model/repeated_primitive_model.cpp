@@ -70,6 +70,7 @@ bool RepeatedPrimitiveModel::setData([[maybe_unused]] const QModelIndex& index, 
 
 int RepeatedPrimitiveModel::append_row() {
     int row {rowCount()};
+    // Q_EMIT rowsAboutToBeInserted(QModelIndex(), row, row, {});
     beginInsertRows(QModelIndex(), row, row);
 
     const Reflection* refl {m_message_buffer->GetReflection()};
@@ -102,6 +103,7 @@ int RepeatedPrimitiveModel::append_row() {
     parent_data_changed();
 
     endInsertRows();
+    // Q_EMIT rowsInserted(QModelIndex(), row, row, {});
 
     return row;
 }
@@ -109,6 +111,7 @@ int RepeatedPrimitiveModel::append_row() {
 bool RepeatedPrimitiveModel::remove_row(const int& row) {
     SILENT_VALIDATE_INDEX_NON_VOID(row, rowCount(), false);
 
+    // Q_EMIT rowsAboutToBeRemoved(QModelIndex(), row, row, {});
     beginRemoveRows(QModelIndex(), row, row);
 
     // We remove a row by swapping the last row with the row to be removed and then removing the last row.
@@ -120,6 +123,7 @@ bool RepeatedPrimitiveModel::remove_row(const int& row) {
     parent_data_changed();
 
     endRemoveRows();
+    // Q_EMIT rowsRemoved(QModelIndex(), row, row, {});
 
     return true;
 }
@@ -145,10 +149,7 @@ bool RepeatedPrimitiveModel::removeRows(int row, int count, const QModelIndex &p
 void RepeatedPrimitiveModel::clear_sub_models() {
     int size {rowCount()};
 
-    for (int i = 0; i < size; ++i) {
-        PrimitiveModel* m {m_sub_models.at(i)};
-        delete m;
-    }
+    for (int i = 0; i < size; ++i) delete m_sub_models.at(i);
 
     const Reflection* refl {m_message_buffer->GetReflection()};
     refl->ClearField(m_message_buffer, m_field_desc);

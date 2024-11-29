@@ -112,6 +112,12 @@ bool MessageModel::set_data([[maybe_unused]] const QVariant& value) {
     FAIL_AND_RETURN_NON_VOID(false, "Cannot set data to MessageModel.");
 }
 
+const ProtoModel* MessageModel::get_sub_model(const int& field_number) const {
+    auto it {m_sub_models_by_field_number.find(field_number)};
+    SILENT_CHECK_CONDITION_TRUE_NON_VOID(it == m_sub_models_by_field_number.end(), nullptr);
+    return it->second;
+}
+
 const ProtoModel* MessageModel::get_sub_model(const FieldPath& path) const {
     CHECK_CONDITION_TRUE_NON_VOID(!path.is_valid(), nullptr, "");
 
@@ -135,11 +141,38 @@ const FieldDescriptor* MessageModel::get_column_descriptor(const int& column) co
 }
 
 QModelIndex MessageModel::index(int row, int column, [[maybe_unused]] const QModelIndex& parent) const {
-    FAIL_AND_RETURN_NON_VOID(QModelIndex(), "Method not implemented.");
+    Q_UNUSED(parent);
+    CHECK_CONDITION_TRUE_NON_VOID(row == 0, QModelIndex(), "A message model should have only one row.");
+    VALIDATE_INDEX_NON_VOID(column, columnCount(), QModelIndex(), 
+        "Accessing out-of-range proto column " + std::to_string(column) + " of " + std::to_string(columnCount()));
+
+    return createIndex(row, column);
 }
 
 QModelIndex MessageModel::parent([[maybe_unused]] const QModelIndex& child) const {
-    FAIL_AND_RETURN_NON_VOID(QModelIndex(), "Method not implemented.");
+    Q_UNUSED(child);
+    const ProtoModel* parent_model {get_parent_model()};
+
+    const ProtoModel* root_model {get_root_model()};
+
+    SILENT_CHECK_CONDITION_TRUE_NON_VOID(parent_model == root_model, QModelIndex());
+
+    /*
+        Here we need to return an index that represents the parent of the child parameter.
+        The index should contain the row and column of the parent model in its parent. If 
+        the parent model is a RepeatedMessageModel, then the get_index_in_parent() should be
+        the row. If the parent model is a MessageModel, then the get_index_in_parent() should
+        be the column because a MessageModel is allowed to have only one row. Note that the
+        parent model can be a RepeatedMessageModel or a MessageModel only as primitive models
+        are not allowed to have children.
+    */
+    RepeatedMessageModel* parent_repeat_model {dynamic_cast<RepeatedMessageModel*>(const_cast<ProtoModel*>(parent_model->get_parent_model()))};
+    SILENT_CHECK_CONDITION_TRUE_NON_VOID(parent_repeat_model != nullptr, createIndex(parent_model->get_index_in_parent(), -1));
+
+    MessageModel* parent_message_model {dynamic_cast<MessageModel*>(const_cast<ProtoModel*>(parent_model->get_parent_model()))};
+    SILENT_CHECK_CONDITION_TRUE_NON_VOID(parent_message_model != nullptr, createIndex(0, parent_model->get_index_in_parent()));
+
+    return QModelIndex();
 }
 
 int MessageModel::columnCount([[maybe_unused]] const QModelIndex& parent) const {
@@ -158,8 +191,8 @@ int MessageModel::columnCount([[maybe_unused]] const QModelIndex& parent) const 
 
 QVariant MessageModel::data(const QModelIndex& index, [[maybe_unused]] int role) const {
     CHECK_PARAM_NULLPTR_NON_VOID(m_message_buffer, QVariant(), "Message buffer is null.");
-    CHECK_CONDITION_TRUE_NON_VOID(index.isValid(), QVariant(), "Supplied index was invalid.");
-    CHECK_CONDITION_TRUE_NON_VOID(index.row() == 1, QVariant(), "A message model should have only one row.");
+    CHECK_CONDITION_TRUE_NON_VOID(!index.isValid(), QVariant(), "Supplied index was invalid.");
+    CHECK_CONDITION_TRUE_NON_VOID(!index.row() == 0, QVariant(), "A message model should have only one row.");
     VALIDATE_INDEX_NON_VOID(index.column(), columnCount(), QVariant(), 
         "Accessing out-of-range proto column " + std::to_string(index.column()) + " of " + std::to_string(columnCount()));
 
@@ -167,40 +200,29 @@ QVariant MessageModel::data(const QModelIndex& index, [[maybe_unused]] int role)
     const Reflection* refl {m_message_buffer->GetReflection()};
 
     const FieldDescriptor* field {desc->field(index.column())};
-
     SILENT_CHECK_PARAM_NULLPTR_NON_VOID(field, QVariant());
+
     CHECK_CONDITION_TRUE_NON_VOID(field->is_repeated(), QVariant(), "Field is repeated.");
 
-    SILENT_CHECK_CONDITION_TRUE_NON_VOID(!refl->HasField(*m_message_buffer, field), QVariant());
+    if (shadergen_utils::is_inside_real_oneof(field)) {
+        const OneofDescriptor* oneof {field->containing_oneof()};
+        SILENT_CHECK_CONDITION_TRUE_NON_VOID(!refl->HasOneof(*m_message_buffer, oneof), QVariant());
 
-    switch (field->cpp_type()) {
-        case FieldDescriptor::CppType::CPPTYPE_MESSAGE:
-            FAIL_AND_RETURN_NON_VOID(QVariant(), "Trying to get a message field.");
-            break;
-        case FieldDescriptor::CppType::CPPTYPE_INT32: return refl->GetInt32(*m_message_buffer, field);
-        case FieldDescriptor::CppType::CPPTYPE_INT64: return QVariant::fromValue(refl->GetInt64(*m_message_buffer, field));
-        case FieldDescriptor::CppType::CPPTYPE_UINT32: return refl->GetUInt32(*m_message_buffer, field);
-        case FieldDescriptor::CppType::CPPTYPE_UINT64: return QVariant::fromValue(refl->GetUInt64(*m_message_buffer, field));
-        case FieldDescriptor::CppType::CPPTYPE_DOUBLE: return refl->GetDouble(*m_message_buffer, field);
-        case FieldDescriptor::CppType::CPPTYPE_FLOAT: return refl->GetFloat(*m_message_buffer, field);
-        case FieldDescriptor::CppType::CPPTYPE_BOOL: return refl->GetBool(*m_message_buffer, field);
-        case FieldDescriptor::CppType::CPPTYPE_STRING: return QString::fromStdString(refl->GetString(*m_message_buffer, field));
-        case FieldDescriptor::CppType::CPPTYPE_ENUM:
-            WARN_PRINT("Enum is not supported yet.");
-            break;
-        default:
-            WARN_PRINT("Unsupported field type: " + std::to_string(field->cpp_type()));
-            break;
+        const FieldDescriptor* oneof_field {refl->GetOneofFieldDescriptor(*m_message_buffer, oneof)};
+        SILENT_CHECK_CONDITION_TRUE_NON_VOID(oneof_field == nullptr, QVariant());
+        SILENT_CHECK_CONDITION_TRUE_NON_VOID(oneof_field->number() != field->number(), QVariant());
+    } else {
+        SILENT_CHECK_CONDITION_TRUE_NON_VOID(!refl->HasField(*m_message_buffer, field), QVariant());
     }
 
-    return QVariant();
+    return get_sub_model(field->number())->data(this->index(0,0), role);
 }
 
 bool MessageModel::setData(const QModelIndex& index, const QVariant& value, int role) {
     CHECK_PARAM_NULLPTR_NON_VOID(m_message_buffer, false, "Message buffer is null.");
-    CHECK_CONDITION_TRUE_NON_VOID(index.isValid(), false, "Supplied index was invalid.");
-    CHECK_CONDITION_TRUE_NON_VOID(value.isValid(), false, "Supplied value is invalid.");
-    CHECK_CONDITION_TRUE_NON_VOID(index.row() == 1, false, "A message model should have only one row.");
+    CHECK_CONDITION_TRUE_NON_VOID(!index.isValid(), false, "Supplied index was invalid.");
+    CHECK_CONDITION_TRUE_NON_VOID(!value.isValid(), false, "Supplied value is invalid.");
+    CHECK_CONDITION_TRUE_NON_VOID(index.row() == 0, false, "A message model should have only one row.");
     VALIDATE_INDEX_NON_VOID(index.column(), columnCount(), false, 
         "Accessing out-of-range proto column " + std::to_string(index.column()) + " of " + std::to_string(columnCount()));
 
@@ -209,34 +231,25 @@ bool MessageModel::setData(const QModelIndex& index, const QVariant& value, int 
     const FieldDescriptor* field {desc->field(index.column())};
     SILENT_CHECK_PARAM_NULLPTR_NON_VOID(field, false);
 
-    switch (field->cpp_type()) {
-        case FieldDescriptor::CppType::CPPTYPE_MESSAGE:
-            FAIL_AND_RETURN_NON_VOID(false, "Trying to set a message field.");
-            break;
-        case FieldDescriptor::CppType::CPPTYPE_INT32: refl->SetInt32(m_message_buffer, field, value.toInt()); break;
-        case FieldDescriptor::CppType::CPPTYPE_INT64: refl->SetInt64(m_message_buffer, field, value.toLongLong()); break;
-        case FieldDescriptor::CppType::CPPTYPE_UINT32: refl->SetUInt32(m_message_buffer, field, value.toUInt()); break;
-        case FieldDescriptor::CppType::CPPTYPE_UINT64: refl->SetUInt64(m_message_buffer, field, value.toULongLong()); break;
-        case FieldDescriptor::CppType::CPPTYPE_DOUBLE: refl->SetDouble(m_message_buffer, field, value.toDouble()); break;
-        case FieldDescriptor::CppType::CPPTYPE_FLOAT: refl->SetFloat(m_message_buffer, field, value.toFloat()); break;
-        case FieldDescriptor::CppType::CPPTYPE_BOOL: refl->SetBool(m_message_buffer, field, value.toBool()); break;
-        case FieldDescriptor::CppType::CPPTYPE_STRING: refl->SetString(m_message_buffer, field, value.toString().toStdString()); break;
-        case FieldDescriptor::CppType::CPPTYPE_ENUM:
-            WARN_PRINT("Enum is not supported yet.");
-            break;
-        default:
-            WARN_PRINT("Unsupported field type: " + std::to_string(field->cpp_type()));
-            break;
+    CHECK_CONDITION_TRUE_NON_VOID(field->is_repeated(), false, "Field is repeated.");
+
+    if (shadergen_utils::is_inside_real_oneof(field)) {
+        const OneofDescriptor* oneof {field->containing_oneof()};
+
+        if (refl->HasOneof(*m_message_buffer, oneof)) {
+            const FieldDescriptor* oneof_field {refl->GetOneofFieldDescriptor(*m_message_buffer, oneof)};
+            SILENT_CHECK_PARAM_NULLPTR_NON_VOID(oneof_field, false);
+            if (oneof_field->number() != field->number()) refl->ClearOneof(m_message_buffer, oneof);
+        }
     }
 
-    emit dataChanged(index, index, {role});
-    ProtoModel::parent_data_changed();
-
-    return true;
+    return const_cast<ProtoModel*>(get_sub_model(field->number()))->setData(index, value, role);
 }
 
 QVariant MessageModel::headerData(int section, [[maybe_unused]] Qt::Orientation orientation, [[maybe_unused]] int role) const {
     SILENT_CHECK_PARAM_NULLPTR_NON_VOID(m_message_buffer, QVariant());
+    SILENT_CHECK_CONDITION_TRUE_NON_VOID(orientation != Qt::Orientation::Horizontal, QVariant());
+    SILENT_CHECK_CONDITION_TRUE_NON_VOID(role != Qt::DisplayRole, QVariant());
     const Descriptor* desc {m_message_buffer->GetDescriptor()};
 
     VALIDATE_INDEX_NON_VOID(section, columnCount(), QVariant(), 
@@ -246,7 +259,7 @@ QVariant MessageModel::headerData(int section, [[maybe_unused]] Qt::Orientation 
 
     SILENT_CHECK_PARAM_NULLPTR_NON_VOID(field, QVariant());
 
-    return QString::fromStdString(field->name());
+    return QString::fromStdString(field->full_name());
 }
 
 void MessageModel::clear_sub_models() {

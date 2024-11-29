@@ -11,6 +11,7 @@ using Reflection = google::protobuf::Reflection;
 using FieldDescriptor = google::protobuf::FieldDescriptor;
 
 // Check https://protobuf.dev/programming-guides/best-practices/ before adding any new features
+// https://doc.qt.io/qt-5/model-view-programming.html#creating-new-models
 class ProtoModel : public QAbstractItemModel {
     Q_OBJECT
 
@@ -65,11 +66,15 @@ public:
         return flags;
     }
 
-    ProtoModel* get_parent_model() const { return m_parent_model; }
+    const ProtoModel* get_root_model() const;
+    const ProtoModel* get_parent_model() const {
+        SILENT_CHECK_PARAM_NULLPTR_NON_VOID(m_parent_model, this);
+        return m_parent_model;
+    }
     int get_index_in_parent() const { return m_index_in_parent; }
 
 protected:
-    ProtoModel* m_parent_model;
+    const ProtoModel* m_parent_model;
     int m_index_in_parent;
 
     // Serialization helper

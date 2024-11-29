@@ -38,11 +38,22 @@ public:
     QVariant data() const override;
     bool set_data(const QVariant& value) override;
     
+    const ProtoModel* get_sub_model(const int& field_number) const;
     ProtoModel* get_sub_model([[maybe_unused]] const FieldPath& path) override { return nullptr; }
     const ProtoModel* get_sub_model(const FieldPath& path) const override;
 
     const FieldDescriptor* get_column_descriptor(const int& column) const override;
 
+    /**
+     * @brief 
+     * 
+     * @note https://doc.qt.io/qt-5/model-view-programming.html#model-indexes
+     * 
+     * @param row 
+     * @param column 
+     * @param parent 
+     * @return QModelIndex 
+     */
     virtual QModelIndex index(int row, int column, const QModelIndex &parent = QModelIndex()) const override;
     virtual QModelIndex parent(const QModelIndex &child) const override;
     virtual int rowCount(const QModelIndex &parent = QModelIndex()) const override { return 1; }

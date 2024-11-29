@@ -1,6 +1,9 @@
 #include "gui/model/primitive_model.hpp"
+
 #include <google/protobuf/descriptor.h>
 #include <google/protobuf/reflection.h>
+#include "gui/model/message_model.hpp"
+#include "gui/model/repeated_primitive_model.hpp"
 
 #include "error_macros.hpp"
 
@@ -30,19 +33,44 @@ const FieldDescriptor* PrimitiveModel::get_column_descriptor([[maybe_unused]] co
 }
 
 QModelIndex PrimitiveModel::index([[maybe_unused]] int row, [[maybe_unused]] int column, [[maybe_unused]] const QModelIndex& parent) const {
-    return this->createIndex(0, 0);
+    Q_UNUSED(parent);
+    CHECK_CONDITION_TRUE_NON_VOID(row == 0, QModelIndex(), "A primitive model should have only one row.");
+    CHECK_CONDITION_TRUE_NON_VOID(column == 0, QModelIndex(), "A primitive model should have only one column.");
+    return this->createIndex(row, column);
 }
 
 QModelIndex PrimitiveModel::parent([[maybe_unused]] const QModelIndex& child) const {
-    FAIL_AND_RETURN_NON_VOID(QModelIndex(), "Method not implemented.");
+    Q_UNUSED(child);
+    const ProtoModel* parent_model {get_parent_model()};
+
+    const ProtoModel* root_model {get_root_model()};
+
+    SILENT_CHECK_CONDITION_TRUE_NON_VOID(parent_model == root_model, QModelIndex());
+
+    /*
+        Here we need to return an index that represents the parent of the child parameter.
+        The index should contain the row and column of the parent model in its parent. If 
+        the parent model is a RepeatedPrimitiveModel, then the get_index_in_parent() should be
+        the row and column is always 0. If the parent model is a MessageModel, then the 
+        get_index_in_parent() should be the column because a MessageModel is allowed to 
+        have only one row. Note that the parent model can be a RepeatedPrimitiveModel or a 
+        MessageModel only as primitive models are not allowed to have children.
+    */
+    RepeatedPrimitiveModel* parent_repeat_model {dynamic_cast<RepeatedPrimitiveModel*>(const_cast<ProtoModel*>(parent_model->get_parent_model()))};
+    SILENT_CHECK_CONDITION_TRUE_NON_VOID(parent_repeat_model != nullptr, createIndex(parent_model->get_index_in_parent(), 0)); // RepeatedPrimitiveModel have only one column
+
+    MessageModel* parent_message_model {dynamic_cast<MessageModel*>(const_cast<ProtoModel*>(parent_model->get_parent_model()))};
+    SILENT_CHECK_CONDITION_TRUE_NON_VOID(parent_message_model != nullptr, createIndex(0, parent_model->get_index_in_parent()));
+
+    return QModelIndex();
 }
 
 QVariant PrimitiveModel::data([[maybe_unused]] const QModelIndex& index, [[maybe_unused]] int role) const {
     CHECK_PARAM_NULLPTR_NON_VOID(m_message_buffer, QVariant(), "Message buffer is null.");
-    CHECK_PARAM_NULLPTR_NON_VOID(m_field_desc, false, "Field descriptor is null.");
-    CHECK_CONDITION_TRUE_NON_VOID(index.isValid(), QVariant(), "Supplied index was invalid.");
-    CHECK_CONDITION_TRUE_NON_VOID(index.row() == 1, QVariant(), "A message model should have only one row.");
-    CHECK_CONDITION_TRUE_NON_VOID(index.column() == 1, QVariant(), "A message model should have only one column.");
+    CHECK_PARAM_NULLPTR_NON_VOID(m_field_desc, QVariant(), "Field descriptor is null.");
+    CHECK_CONDITION_TRUE_NON_VOID(!index.isValid(), QVariant(), "Supplied index was invalid.");
+    CHECK_CONDITION_TRUE_NON_VOID(index.row() == 0, QVariant(), "A primitive model should have only one row.");
+    CHECK_CONDITION_TRUE_NON_VOID(index.column() == 0, QVariant(), "A primitive model should have only one column.");
 
     const Reflection* refl {m_message_buffer->GetReflection()};
 
@@ -74,10 +102,10 @@ QVariant PrimitiveModel::data([[maybe_unused]] const QModelIndex& index, [[maybe
 bool PrimitiveModel::setData([[maybe_unused]] const QModelIndex& index, [[maybe_unused]] const QVariant& value, [[maybe_unused]] int role) {
     CHECK_PARAM_NULLPTR_NON_VOID(m_message_buffer, false, "Message buffer is null.");
     CHECK_PARAM_NULLPTR_NON_VOID(m_field_desc, false, "Field descriptor is null.");
-    CHECK_CONDITION_TRUE_NON_VOID(index.isValid(), false, "Supplied index was invalid.");
-    CHECK_CONDITION_TRUE_NON_VOID(value.isValid(), false, "Supplied value is invalid.");
-    CHECK_CONDITION_TRUE_NON_VOID(index.row() == 1, false, "A message model should have only one row.");
-    CHECK_CONDITION_TRUE_NON_VOID(index.column() == 1, false, "A message model should have only one column.");
+    CHECK_CONDITION_TRUE_NON_VOID(!index.isValid(), false, "Supplied index was invalid.");
+    CHECK_CONDITION_TRUE_NON_VOID(!value.isValid(), false, "Supplied value is invalid.");
+    CHECK_CONDITION_TRUE_NON_VOID(index.row() == 0, false, "A primitive model should have only one row.");
+    CHECK_CONDITION_TRUE_NON_VOID(index.column() == 0, false, "A primitive model should have only one column.");
 
     const Reflection* refl {m_message_buffer->GetReflection()};
 
