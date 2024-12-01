@@ -215,7 +215,7 @@ QVariant MessageModel::data(const QModelIndex& index, [[maybe_unused]] int role)
         SILENT_CHECK_CONDITION_TRUE_NON_VOID(!refl->HasField(*m_message_buffer, field), QVariant());
     }
 
-    return get_sub_model(field->number())->data(this->index(0,0), role);
+    return get_sub_model(field->number())->data(this->index(0, 0, index), role);
 }
 
 bool MessageModel::setData(const QModelIndex& index, const QVariant& value, int role) {
@@ -243,7 +243,7 @@ bool MessageModel::setData(const QModelIndex& index, const QVariant& value, int 
         }
     }
 
-    return const_cast<ProtoModel*>(get_sub_model(field->number()))->setData(index, value, role);
+    return const_cast<ProtoModel*>(get_sub_model(field->number()))->setData(this->index(0, 0, index), value, role);
 }
 
 QVariant MessageModel::headerData(int section, [[maybe_unused]] Qt::Orientation orientation, [[maybe_unused]] int role) const {

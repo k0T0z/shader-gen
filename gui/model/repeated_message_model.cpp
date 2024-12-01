@@ -86,38 +86,24 @@ QVariant RepeatedMessageModel::data(const QModelIndex& index, int role) const {
     VALIDATE_INDEX_NON_VOID(index.column(), columnCount(), QVariant(), 
         "Accessing out-of-range proto column " + std::to_string(index.column()) + " of " + std::to_string(columnCount()));
 
-    const Descriptor* desc {m_message_buffer->GetDescriptor()};
-    const Reflection* refl {m_message_buffer->GetReflection()};
-
-    const Message& field_buffer {refl->GetRepeatedMessage(*m_message_buffer, m_field_desc, index.row())};
-
-    const Descriptor* field_buffer_desc {field_buffer.GetDescriptor()};
-    const Reflection* field_buffer_refl {field_buffer.GetReflection()};
-
-    const FieldDescriptor* field {field_buffer_desc->field(index.column())};
-    SILENT_CHECK_PARAM_NULLPTR_NON_VOID(field, QVariant());
-
-    CHECK_CONDITION_TRUE_NON_VOID(field->is_repeated(), QVariant(), "Field is repeated.");
-
-    if (shadergen_utils::is_inside_real_oneof(field)) {
-        const OneofDescriptor* oneof {field->containing_oneof()};
-        SILENT_CHECK_CONDITION_TRUE_NON_VOID(!refl->HasOneof(field_buffer, oneof), QVariant());
-
-        const FieldDescriptor* oneof_field {refl->GetOneofFieldDescriptor(field_buffer, oneof)};
-        SILENT_CHECK_CONDITION_TRUE_NON_VOID(oneof_field == nullptr, QVariant());
-        SILENT_CHECK_CONDITION_TRUE_NON_VOID(oneof_field->number() != field->number(), QVariant());
-    } else {
-        SILENT_CHECK_CONDITION_TRUE_NON_VOID(!refl->HasField(field_buffer, field), QVariant());
-    }
-
-    return get_sub_model(field->number())->data();
+    return get_sub_model(index.row())->data(this->index(0, index.column(), index), role);
 }
 
 bool RepeatedMessageModel::setData([[maybe_unused]] const QModelIndex& index, [[maybe_unused]] const QVariant& value, [[maybe_unused]] int role) {
-    FAIL_AND_RETURN_NON_VOID(false, "Cannot set data in a repeated message model.");
+    CHECK_PARAM_NULLPTR_NON_VOID(m_message_buffer, false, "Message buffer is null.");
+    CHECK_CONDITION_TRUE_NON_VOID(!index.isValid(), false, "Supplied index was invalid.");
+    CHECK_CONDITION_TRUE_NON_VOID(!value.isValid(), false, "Supplied value is invalid.");
+    VALIDATE_INDEX_NON_VOID(index.row(), rowCount(), false, 
+        "Accessing out-of-range proto row " + std::to_string(index.row()) + " of " + std::to_string(rowCount()));
+    VALIDATE_INDEX_NON_VOID(index.column(), columnCount(), false, 
+        "Accessing out-of-range proto column " + std::to_string(index.column()) + " of " + std::to_string(columnCount()));
+
+    return get_sub_model(index.row())->setData(this->index(0, index.column(), index), value, role);
 }
 
 int RepeatedMessageModel::append_row() {
+    CHECK_CONDITION_TRUE_NON_VOID(m_field_desc->cpp_type() != FieldDescriptor::CPPTYPE_MESSAGE, -1, "Field is not a message.");
+
     int row {rowCount()};
     // Q_EMIT rowsAboutToBeInserted(QModelIndex(), row, row, {});
     beginInsertRows(QModelIndex(), row, row);

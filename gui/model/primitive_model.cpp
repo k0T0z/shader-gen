@@ -89,7 +89,7 @@ QVariant PrimitiveModel::data([[maybe_unused]] const QModelIndex& index, [[maybe
         case FieldDescriptor::CppType::CPPTYPE_BOOL: return refl->GetBool(*m_message_buffer, m_field_desc);
         case FieldDescriptor::CppType::CPPTYPE_STRING: return QString::fromStdString(refl->GetString(*m_message_buffer, m_field_desc));
         case FieldDescriptor::CppType::CPPTYPE_ENUM:
-            FAIL_AND_RETURN_NON_VOID(QVariant(), "Trying to get an enum field.");
+            WARN_PRINT("Enum is not supported yet.");
             break;
         default:
             WARN_PRINT("Unsupported field type: " + std::to_string(m_field_desc->cpp_type()));
@@ -122,7 +122,7 @@ bool PrimitiveModel::setData([[maybe_unused]] const QModelIndex& index, [[maybe_
         case FieldDescriptor::CppType::CPPTYPE_BOOL: refl->SetBool(m_message_buffer, m_field_desc, value.toBool()); break;
         case FieldDescriptor::CppType::CPPTYPE_STRING: refl->SetString(m_message_buffer, m_field_desc, value.toString().toStdString()); break;
         case FieldDescriptor::CppType::CPPTYPE_ENUM:
-            FAIL_AND_RETURN_NON_VOID(false, "Trying to set an enum field.");
+            WARN_PRINT("Enum is not supported yet.");
             break;
         default:
             WARN_PRINT("Unsupported field type: " + std::to_string(m_field_desc->cpp_type()));

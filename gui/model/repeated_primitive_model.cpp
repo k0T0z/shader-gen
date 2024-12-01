@@ -61,11 +61,24 @@ int RepeatedPrimitiveModel::rowCount([[maybe_unused]] const QModelIndex& parent)
 }
 
 QVariant RepeatedPrimitiveModel::data(const QModelIndex& index, int role) const {
-    FAIL_AND_RETURN_NON_VOID(QVariant(), "Cannot get data from a primitive message model.");
+    CHECK_PARAM_NULLPTR_NON_VOID(m_message_buffer, QVariant(), "Message buffer is null.");
+    CHECK_CONDITION_TRUE_NON_VOID(!index.isValid(), QVariant(), "Supplied index was invalid.");
+    VALIDATE_INDEX_NON_VOID(index.row(), rowCount(), QVariant(), 
+        "Accessing out-of-range proto row " + std::to_string(index.row()) + " of " + std::to_string(rowCount()));
+    CHECK_CONDITION_TRUE_NON_VOID(index.column() == 0, QVariant(), "A primitive model should have only one column.");
+
+    return get_sub_model(index.row())->data(this->index(0, 0, index), role);
 }
 
 bool RepeatedPrimitiveModel::setData([[maybe_unused]] const QModelIndex& index, [[maybe_unused]] const QVariant& value, [[maybe_unused]] int role) {
-    FAIL_AND_RETURN_NON_VOID(false, "Cannot set data in a primitive message model.");
+    CHECK_PARAM_NULLPTR_NON_VOID(m_message_buffer, false, "Message buffer is null.");
+    CHECK_CONDITION_TRUE_NON_VOID(!index.isValid(), false, "Supplied index was invalid.");
+    CHECK_CONDITION_TRUE_NON_VOID(!value.isValid(), false, "Supplied value is invalid.");
+    VALIDATE_INDEX_NON_VOID(index.row(), rowCount(), false, 
+        "Accessing out-of-range proto row " + std::to_string(index.row()) + " of " + std::to_string(rowCount()));
+    CHECK_CONDITION_TRUE_NON_VOID(index.column() == 0, false, "A primitive model should have only one column.");
+
+    return get_sub_model(index.row())->setData(this->index(0, 0, index), value, role);
 }
 
 int RepeatedPrimitiveModel::append_row() {
@@ -88,7 +101,7 @@ int RepeatedPrimitiveModel::append_row() {
         case FieldDescriptor::CppType::CPPTYPE_BOOL: refl->AddBool(m_message_buffer, m_field_desc, false); break;
         case FieldDescriptor::CppType::CPPTYPE_STRING: refl->AddString(m_message_buffer, m_field_desc, ""); break;
         case FieldDescriptor::CppType::CPPTYPE_ENUM:
-            FAIL_AND_RETURN_NON_VOID(-1, "Trying to append an enum field.");
+            WARN_PRINT("Enum is not supported yet.");
             break;
         default:
             WARN_PRINT("Unsupported field type: " + std::to_string(m_field_desc->cpp_type()));
