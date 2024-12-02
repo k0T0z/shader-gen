@@ -104,20 +104,17 @@ int RepeatedMessageModel::append_row() {
     CHECK_CONDITION_TRUE_NON_VOID(m_field_desc->cpp_type() != FieldDescriptor::CPPTYPE_MESSAGE, -1, "Field is not a message.");
 
     int row {rowCount()};
-    // Q_EMIT rowsAboutToBeInserted(QModelIndex(), row, row, {});
-    beginInsertRows(QModelIndex(), row, row);
+    QModelIndex index {this->index(row, -1)};
+    // Q_EMIT rowsAboutToBeInserted(index, row, row, {});
+    beginInsertRows(index, row, row);
 
-    const Reflection* refl {m_message_buffer->GetReflection()};
-    Message* new_buffer {refl->AddMessage(m_message_buffer, m_field_desc)};
-    m_sub_models.emplace_back(new MessageModel(new_buffer, this, row));
-
-    bool result {insertRows(row, 1)};
+    bool result {insertRows(row, 1, index)};
     SILENT_CHECK_CONDITION_TRUE_NON_VOID(!result, -1);
 
     parent_data_changed();
 
     endInsertRows();
-    // Q_EMIT rowsInserted(QModelIndex(), row, row, {});
+    // Q_EMIT rowsInserted(index, row, row, {});
 
     return row;
 }
@@ -125,19 +122,17 @@ int RepeatedMessageModel::append_row() {
 bool RepeatedMessageModel::remove_row(const int& row) {
     SILENT_VALIDATE_INDEX_NON_VOID(row, rowCount(), false);
 
-    // Q_EMIT rowsAboutToBeRemoved(QModelIndex(), row, row, {});
-    beginRemoveRows(QModelIndex(), row, row);
+    QModelIndex index {this->index(row, -1)};
+    // Q_EMIT rowsAboutToBeRemoved(index, row, row, {});
+    beginRemoveRows(index, row, row);
 
-    // We remove a row by swapping the last row with the row to be removed and then removing the last row.
-    // https://protobuf.dev/reference/cpp/api-docs/google.protobuf.message/#Reflection.RemoveLast.details
-    const Reflection* refl {m_message_buffer->GetReflection()};
-    refl->SwapElements(m_message_buffer, m_field_desc, row, rowCount() - 1);
-    refl->RemoveLast(m_message_buffer, m_field_desc);
+    bool result {removeRows(row, 1, index)};
+    SILENT_CHECK_CONDITION_TRUE_NON_VOID(!result, false);
 
     parent_data_changed();
 
     endRemoveRows();
-    // Q_EMIT rowsRemoved(QModelIndex(), row, row, {});
+    // Q_EMIT rowsRemoved(index, row, row, {});
 
     return true;
 }
@@ -152,12 +147,33 @@ int RepeatedMessageModel::field_to_column(const int& fn) const {
     return field->index();
 }
 
-bool RepeatedMessageModel::insertRows(int row, [[maybe_unused]] int count, const QModelIndex &parent) {
-    return insertRow(row, parent);
+bool RepeatedMessageModel::insertRows(int row, int count, const QModelIndex &parent) {
+    CHECK_CONDITION_TRUE_NON_VOID(!parent.isValid(), false, "Parent is not valid.");
+    VALIDATE_INDEX_NON_VOID(row, rowCount(), false, "Index out of range.");
+    CHECK_CONDITION_TRUE_NON_VOID(count == 1, false, "Invalid number of rows: " + std::to_string(count) + ". Adding multiple rows at once is not supported yet.");
+
+    const Reflection* refl {m_message_buffer->GetReflection()};
+    Message* new_buffer {refl->AddMessage(m_message_buffer, m_field_desc)};
+    m_sub_models.emplace_back(new MessageModel(new_buffer, this, row));
+
+    return true;
 }
 
-bool RepeatedMessageModel::removeRows(int row, [[maybe_unused]] int count, const QModelIndex &parent) {
-    return removeRow(row, parent);
+bool RepeatedMessageModel::removeRows(int row, int count, const QModelIndex &parent) {
+    CHECK_CONDITION_TRUE_NON_VOID(!parent.isValid(), false, "Parent is not valid.");
+    VALIDATE_INDEX_NON_VOID(row, rowCount(), false, "Index out of range.");
+    CHECK_CONDITION_TRUE_NON_VOID(count == 1, false, "Invalid number of rows: " + std::to_string(count) + ". Adding multiple rows at once is not supported yet.");
+
+    delete m_sub_models.at(row);
+    m_sub_models.erase(m_sub_models.begin() + row);
+
+    // We remove a row by swapping the last row with the row to be removed and then removing the last row.
+    // https://protobuf.dev/reference/cpp/api-docs/google.protobuf.message/#Reflection.RemoveLast.details
+    const Reflection* refl {m_message_buffer->GetReflection()};
+    refl->SwapElements(m_message_buffer, m_field_desc, row, rowCount() - 1);
+    refl->RemoveLast(m_message_buffer, m_field_desc);
+
+    return true;
 }
 
 void RepeatedMessageModel::clear_sub_models() {
@@ -173,17 +189,18 @@ void RepeatedMessageModel::clear_sub_models() {
 void RepeatedMessageModel::append_row(const int& row) {
     CHECK_CONDITION_TRUE(m_field_desc->cpp_type() != FieldDescriptor::CPPTYPE_MESSAGE, "Field is not a message.");
 
-    // Q_EMIT rowsAboutToBeInserted(QModelIndex(), row, row, {});
-    beginInsertRows(QModelIndex(), row, row);
+    QModelIndex index {this->index(row, -1)};
+    // Q_EMIT rowsAboutToBeInserted(index, row, row, {});
+    beginInsertRows(index, row, row);
 
     const Reflection* refl {m_message_buffer->GetReflection()};
     m_sub_models.emplace_back(new MessageModel(refl->MutableRepeatedMessage(m_message_buffer, m_field_desc, row), this, row));
 
-    bool result {insertRows(row, 1)};
+    bool result {insertRows(row, 1, index)};
     CHECK_CONDITION_TRUE(!result, "Failed to insert row.");
 
     parent_data_changed();
 
     endInsertRows();
-    // Q_EMIT rowsInserted(QModelIndex(), row, row, {});
+    // Q_EMIT rowsInserted(index, row, row, {});
 }

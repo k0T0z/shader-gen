@@ -97,8 +97,53 @@ bool RepeatedPrimitiveModel::setData([[maybe_unused]] const QModelIndex& index, 
 
 int RepeatedPrimitiveModel::append_row() {
     int row {rowCount()};
-    // Q_EMIT rowsAboutToBeInserted(QModelIndex(), row, row, {});
-    beginInsertRows(QModelIndex(), row, row);
+    QModelIndex index {this->index(row, -1)};
+    // Q_EMIT rowsAboutToBeInserted(index, row, row, {});
+    beginInsertRows(index, row, row);
+
+    bool result {insertRows(row, 1, index)};
+    SILENT_CHECK_CONDITION_TRUE_NON_VOID(!result, -1);
+
+    parent_data_changed();
+
+    endInsertRows();
+    // Q_EMIT rowsInserted(index, row, row, {});
+
+    return row;
+}
+
+bool RepeatedPrimitiveModel::remove_row(const int& row) {
+    VALIDATE_INDEX_NON_VOID(row, rowCount(), false, "Index out of range.");
+
+    QModelIndex index {this->index(row, -1)};
+    // Q_EMIT rowsAboutToBeRemoved(index, row, row, {});
+    beginRemoveRows(index, row, row);
+
+    bool result {removeRows(row, 1, index)};
+    SILENT_CHECK_CONDITION_TRUE_NON_VOID(!result, false);
+
+    parent_data_changed();
+
+    endRemoveRows();
+    // Q_EMIT rowsRemoved(index, row, row, {});
+
+    return true;
+}
+
+int RepeatedPrimitiveModel::field_to_column(const int& fn) const {
+    const Descriptor* desc {m_message_buffer->GetDescriptor()};
+
+    const FieldDescriptor* field {desc->FindFieldByNumber(fn)};
+
+    CHECK_PARAM_NULLPTR_NON_VOID(field, -1, "Field not found.");
+
+    return field->index();
+}
+
+bool RepeatedPrimitiveModel::insertRows(int row, int count, const QModelIndex &parent) {
+    CHECK_CONDITION_TRUE_NON_VOID(!parent.isValid(), false, "Parent is not valid.");
+    VALIDATE_INDEX_NON_VOID(row, rowCount(), false, "Index out of range.");
+    CHECK_CONDITION_TRUE_NON_VOID(count == 1, false, "Invalid number of rows: " + std::to_string(count) + ". Adding multiple rows at once is not supported yet.");
 
     const Reflection* refl {m_message_buffer->GetReflection()};
     
@@ -124,22 +169,16 @@ int RepeatedPrimitiveModel::append_row() {
 
     m_sub_models.emplace_back(new PrimitiveModel(m_message_buffer, m_field_desc, this, row));
 
-    bool result {insertRows(row, 1)};
-    SILENT_CHECK_CONDITION_TRUE_NON_VOID(!result, -1);
-
-    parent_data_changed();
-
-    endInsertRows();
-    // Q_EMIT rowsInserted(QModelIndex(), row, row, {});
-
-    return row;
+    return true;
 }
 
-bool RepeatedPrimitiveModel::remove_row(const int& row) {
+bool RepeatedPrimitiveModel::removeRows(int row, int count, const QModelIndex &parent) {
+    CHECK_CONDITION_TRUE_NON_VOID(!parent.isValid(), false, "Parent is not valid.");
     VALIDATE_INDEX_NON_VOID(row, rowCount(), false, "Index out of range.");
+    CHECK_CONDITION_TRUE_NON_VOID(count == 1, false, "Invalid number of rows: " + std::to_string(count) + ". Adding multiple rows at once is not supported yet.");
 
-    // Q_EMIT rowsAboutToBeRemoved(QModelIndex(), row, row, {});
-    beginRemoveRows(QModelIndex(), row, row);
+    delete m_sub_models.at(row);
+    m_sub_models.erase(m_sub_models.begin() + row);
 
     // We remove a row by swapping the last row with the row to be removed and then removing the last row.
     // https://protobuf.dev/reference/cpp/api-docs/google.protobuf.message/#Reflection.RemoveLast.details
@@ -147,30 +186,7 @@ bool RepeatedPrimitiveModel::remove_row(const int& row) {
     refl->SwapElements(m_message_buffer, m_field_desc, row, rowCount() - 1);
     refl->RemoveLast(m_message_buffer, m_field_desc);
 
-    parent_data_changed();
-
-    endRemoveRows();
-    // Q_EMIT rowsRemoved(QModelIndex(), row, row, {});
-
     return true;
-}
-
-int RepeatedPrimitiveModel::field_to_column(const int& fn) const {
-    const Descriptor* desc {m_message_buffer->GetDescriptor()};
-
-    const FieldDescriptor* field {desc->FindFieldByNumber(fn)};
-
-    CHECK_PARAM_NULLPTR_NON_VOID(field, -1, "Field not found.");
-
-    return field->index();
-}
-
-bool RepeatedPrimitiveModel::insertRows(int row, [[maybe_unused]] int count, const QModelIndex &parent) {
-    return insertRow(row, parent);
-}
-
-bool RepeatedPrimitiveModel::removeRows(int row, [[maybe_unused]] int count, const QModelIndex &parent) {
-    return removeRow(row, parent);
 }
 
 void RepeatedPrimitiveModel::clear_sub_models() {
@@ -186,16 +202,17 @@ void RepeatedPrimitiveModel::clear_sub_models() {
 void RepeatedPrimitiveModel::append_row(const int& row) {
     CHECK_CONDITION_TRUE(m_field_desc->cpp_type() != FieldDescriptor::CPPTYPE_MESSAGE, "Field is not a message.");
 
-    // Q_EMIT rowsAboutToBeInserted(QModelIndex(), row, row, {});
-    beginInsertRows(QModelIndex(), row, row);
+    QModelIndex index {this->index(row, -1)};
+    // Q_EMIT rowsAboutToBeInserted(index, row, row, {});
+    beginInsertRows(index, row, row);
 
     m_sub_models.emplace_back(new PrimitiveModel(m_message_buffer, m_field_desc, this, row));
 
-    bool result {insertRows(row, 1)};
+    bool result {insertRows(row, 1, index)};
     CHECK_CONDITION_TRUE(!result, "Failed to insert row.");
 
     parent_data_changed();
 
     endInsertRows();
-    // Q_EMIT rowsInserted(QModelIndex(), row, row, {});
+    // Q_EMIT rowsInserted(index, row, row, {});
 }
