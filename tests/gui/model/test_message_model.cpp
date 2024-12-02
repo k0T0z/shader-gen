@@ -12,61 +12,7 @@ using FieldDescriptor = google::protobuf::FieldDescriptor;
 using Person = tests::gui::model::schema::Person;
 using PhoneNumber = tests::gui::model::schema::PhoneNumber;
 using OrganizationTestSchema = tests::gui::model::schema::OrganizationTestSchema;
-
-// Test fixture for MessageModel
-// class MessageModelTest : public ::testing::Test {
-// protected:
-//     // Helper method to create a sample Person for testing
-//     static OrganizationTestSchema create_sample_org() {
-//         OrganizationTestSchema org;
-
-//         org.set_name("test_org");
-
-//         auto person1 = org.add_employees();
-//         person1->set_id(42);
-//         person1->set_name("John Doe");
-//         auto* address = person1->mutable_home_address();
-//         address->set_street("123 Test Street");
-//         address->set_city("Testville");
-//         address->set_zip_code("12345");
-//         auto* phone1 = person1->add_phone_numbers();
-//         phone1->set_number("555-1234");
-//         phone1->set_type(PhoneNumber::HOME);
-//         auto* phone2 = person1->add_phone_numbers();
-//         phone2->set_number("555-5678");
-//         phone2->set_type(PhoneNumber::MOBILE);
-//         person1->add_emails("john.doe@test.com");
-//         person1->add_emails("john@personal.com");
-//         person1->set_preferred_email("john.doe@test.com");
-//         person1->set_company("Test Corporation");
-
-//         auto person2 = org.add_employees();
-//         person2->set_id(22);
-//         person2->set_name("Mark Smith");
-//         auto* address2 = person2->mutable_home_address();
-//         address2->set_street("456 Test Street");
-//         address2->set_city("Testville");
-//         address2->set_zip_code("54321");
-//         auto* phone3 = person2->add_phone_numbers();
-//         phone3->set_number("555-4321");
-//         phone3->set_type(PhoneNumber::HOME);
-//         auto* phone4 = person2->add_phone_numbers();
-//         phone4->set_number("555-8765");
-//         phone4->set_type(PhoneNumber::MOBILE);
-//         person2->add_emails("mark@blah.com");
-//         person2->add_emails("mark10@stuff.com");
-//         person2->set_preferred_email("mark@blah.com");
-//         person2->set_job_title("Engineer");
-
-//         org.mutable_main_office()->set_street("789 Test Street");
-//         org.mutable_main_office()->set_city("Testville");
-//         org.mutable_main_office()->set_zip_code("54321");
-
-//         org.set_virtual_headquarters("Virtual Testville");
-
-//         return org;
-//     }
-// };
+using Address = tests::gui::model::schema::Address;
 
 TEST(MessageModelTest, TestBuildSubModels) {
     OrganizationTestSchema org;
@@ -79,5 +25,65 @@ TEST(MessageModelTest, TestBuildSubModels) {
     EXPECT_EQ(model->data(FieldPath::Of<OrganizationTestSchema>(FieldPath::FieldNumber(OrganizationTestSchema::kNameFieldNumber))).toString(), "test_org11");
     EXPECT_EQ(org.name(), "test_org11");
 
-    ProtoModel* sub_model = const_cast<ProtoModel*>(model->get_sub_model(FieldPath::Of<OrganizationTestSchema>(FieldPath::FieldNumber(OrganizationTestSchema::kEmployeesFieldNumber))));
+    // Add a row to OrganizationTestSchema.employees
+    ProtoModel* employees = const_cast<ProtoModel*>(model->get_sub_model(FieldPath::Of<OrganizationTestSchema>(FieldPath::FieldNumber(OrganizationTestSchema::kEmployeesFieldNumber))));
+    int employee_idx = employees->append_row();
+
+    // Set OrganizationTestSchema.employees[0].name
+    EXPECT_TRUE(model->set_data(FieldPath::Of<OrganizationTestSchema>(FieldPath::FieldNumber(OrganizationTestSchema::kEmployeesFieldNumber), FieldPath::RepeatedAt(employee_idx), FieldPath::FieldNumber(Person::kNameFieldNumber)), "John Doe"));
+    EXPECT_EQ(model->data(FieldPath::Of<OrganizationTestSchema>(FieldPath::FieldNumber(OrganizationTestSchema::kEmployeesFieldNumber), FieldPath::RepeatedAt(employee_idx), FieldPath::FieldNumber(Person::kNameFieldNumber))).toString(), "John Doe");
+    EXPECT_EQ(org.employees(employee_idx).name(), "John Doe");
+
+    // Set OrganizationTestSchema.employees[0].home_address.street
+    EXPECT_TRUE(model->set_data(FieldPath::Of<OrganizationTestSchema>(FieldPath::FieldNumber(OrganizationTestSchema::kEmployeesFieldNumber), FieldPath::RepeatedAt(employee_idx), FieldPath::FieldNumber(Person::kHomeAddressFieldNumber), FieldPath::FieldNumber(Address::kStreetFieldNumber)), "163 Test Street"));
+    EXPECT_EQ(model->data(FieldPath::Of<OrganizationTestSchema>(FieldPath::FieldNumber(OrganizationTestSchema::kEmployeesFieldNumber), FieldPath::RepeatedAt(employee_idx), FieldPath::FieldNumber(Person::kHomeAddressFieldNumber), FieldPath::FieldNumber(Address::kStreetFieldNumber))).toString(), "163 Test Street");
+    EXPECT_EQ(org.employees(employee_idx).home_address().street(), "163 Test Street");
+
+    // Add a row to OrganizationTestSchema.employees[0].phone_numbers
+    ProtoModel* phone_numbers = const_cast<ProtoModel*>(model->get_sub_model(FieldPath::Of<OrganizationTestSchema>(FieldPath::FieldNumber(OrganizationTestSchema::kEmployeesFieldNumber), FieldPath::RepeatedAt(employee_idx), FieldPath::FieldNumber(Person::kPhoneNumbersFieldNumber))));
+    int phone_idx = phone_numbers->append_row();
+
+    // Set OrganizationTestSchema.employees[0].phone_numbers[0].number
+    EXPECT_TRUE(model->set_data(FieldPath::Of<OrganizationTestSchema>(FieldPath::FieldNumber(OrganizationTestSchema::kEmployeesFieldNumber), FieldPath::RepeatedAt(employee_idx), FieldPath::FieldNumber(Person::kPhoneNumbersFieldNumber), FieldPath::RepeatedAt(phone_idx), FieldPath::FieldNumber(PhoneNumber::kNumberFieldNumber)), "555-1234"));
+    EXPECT_EQ(model->data(FieldPath::Of<OrganizationTestSchema>(FieldPath::FieldNumber(OrganizationTestSchema::kEmployeesFieldNumber), FieldPath::RepeatedAt(employee_idx), FieldPath::FieldNumber(Person::kPhoneNumbersFieldNumber), FieldPath::RepeatedAt(phone_idx), FieldPath::FieldNumber(PhoneNumber::kNumberFieldNumber))).toString(), "555-1234");
+    EXPECT_EQ(org.employees(employee_idx).phone_numbers(phone_idx).number(), "555-1234");
+
+    // Set OrganizationTestSchema.employees[0].phone_numbers[0].type
+    EXPECT_TRUE(model->set_data(FieldPath::Of<OrganizationTestSchema>(FieldPath::FieldNumber(OrganizationTestSchema::kEmployeesFieldNumber), FieldPath::RepeatedAt(employee_idx), FieldPath::FieldNumber(Person::kPhoneNumbersFieldNumber), FieldPath::RepeatedAt(phone_idx), FieldPath::FieldNumber(PhoneNumber::kTypeFieldNumber)), PhoneNumber::HOME));
+    EXPECT_EQ(model->data(FieldPath::Of<OrganizationTestSchema>(FieldPath::FieldNumber(OrganizationTestSchema::kEmployeesFieldNumber), FieldPath::RepeatedAt(employee_idx), FieldPath::FieldNumber(Person::kPhoneNumbersFieldNumber), FieldPath::RepeatedAt(phone_idx), FieldPath::FieldNumber(PhoneNumber::kTypeFieldNumber))).toInt(), PhoneNumber::HOME);
+    EXPECT_EQ(org.employees(employee_idx).phone_numbers(phone_idx).type(), PhoneNumber::HOME);
+
+    // Add a row to OrganizationTestSchema.employees[0].emails
+    ProtoModel* emails = const_cast<ProtoModel*>(model->get_sub_model(FieldPath::Of<OrganizationTestSchema>(FieldPath::FieldNumber(OrganizationTestSchema::kEmployeesFieldNumber), FieldPath::RepeatedAt(employee_idx), FieldPath::FieldNumber(Person::kEmailsFieldNumber))));
+    int email_idx = emails->append_row();
+
+    // Set OrganizationTestSchema.employees[0].emails[0]
+    EXPECT_TRUE(model->set_data(FieldPath::Of<OrganizationTestSchema>(FieldPath::FieldNumber(OrganizationTestSchema::kEmployeesFieldNumber), FieldPath::RepeatedAt(employee_idx), FieldPath::FieldNumber(Person::kEmailsFieldNumber), FieldPath::RepeatedAt(email_idx)), "rr@st.coom"));
+    EXPECT_EQ(model->data(FieldPath::Of<OrganizationTestSchema>(FieldPath::FieldNumber(OrganizationTestSchema::kEmployeesFieldNumber), FieldPath::RepeatedAt(employee_idx), FieldPath::FieldNumber(Person::kEmailsFieldNumber), FieldPath::RepeatedAt(email_idx))).toString(), "rr@st.coom");
+    EXPECT_EQ(org.employees(employee_idx).emails(email_idx), "rr@st.coom");
+
+    // Set OrganizationTestSchema.employees[0].preferred_email
+    EXPECT_TRUE(model->set_data(FieldPath::Of<OrganizationTestSchema>(FieldPath::FieldNumber(OrganizationTestSchema::kEmployeesFieldNumber), FieldPath::RepeatedAt(employee_idx), FieldPath::OneOfFieldNumber(Person::kPreferredEmailFieldNumber, "contact_method")), "gg@xc.coom"));
+    EXPECT_EQ(model->data(FieldPath::Of<OrganizationTestSchema>(FieldPath::FieldNumber(OrganizationTestSchema::kEmployeesFieldNumber), FieldPath::RepeatedAt(employee_idx), FieldPath::OneOfFieldNumber(Person::kPreferredEmailFieldNumber, "contact_method"))).toString(), "gg@xc.coom");
+    EXPECT_EQ(org.employees(employee_idx).preferred_email(), "gg@xc.coom");
+
+    // Set OrganizationTestSchema.employees[0].preferred_phone
+    EXPECT_TRUE(model->set_data(FieldPath::Of<OrganizationTestSchema>(FieldPath::FieldNumber(OrganizationTestSchema::kEmployeesFieldNumber), FieldPath::RepeatedAt(employee_idx), FieldPath::OneOfFieldNumber(Person::kPreferredPhoneFieldNumber, "contact_method"), FieldPath::FieldNumber(PhoneNumber::kNumberFieldNumber)), "555-1234-00"));
+    EXPECT_EQ(model->data(FieldPath::Of<OrganizationTestSchema>(FieldPath::FieldNumber(OrganizationTestSchema::kEmployeesFieldNumber), FieldPath::RepeatedAt(employee_idx), FieldPath::OneOfFieldNumber(Person::kPreferredPhoneFieldNumber, "contact_method"), FieldPath::FieldNumber(PhoneNumber::kNumberFieldNumber))).toString(), "555-1234-00");
+    EXPECT_EQ(org.employees(employee_idx).preferred_phone().number(), "555-1234-00");
+
+    // Set OrganizationTestSchema.employees[0].employment_details.annual_salary
+    EXPECT_TRUE(model->set_data(FieldPath::Of<OrganizationTestSchema>(FieldPath::FieldNumber(OrganizationTestSchema::kEmployeesFieldNumber), FieldPath::RepeatedAt(employee_idx), FieldPath::OneOfFieldNumber(Person::kEmploymentDetailsFieldNumber, "employment"), FieldPath::OneOfFieldNumber(Person::EmploymentDetails::kAnnualSalaryFieldNumber, "salary_info")), "1000000"));
+    EXPECT_EQ(model->data(FieldPath::Of<OrganizationTestSchema>(FieldPath::FieldNumber(OrganizationTestSchema::kEmployeesFieldNumber), FieldPath::RepeatedAt(employee_idx), FieldPath::OneOfFieldNumber(Person::kEmploymentDetailsFieldNumber, "employment"), FieldPath::OneOfFieldNumber(Person::EmploymentDetails::kAnnualSalaryFieldNumber, "salary_info"))).toString(), "1000000");
+    EXPECT_EQ(org.employees(employee_idx).employment_details().annual_salary(), 1000000);
+
+    // Set OrganizationTestSchema.main_office.street
+    EXPECT_TRUE(model->set_data(FieldPath::Of<OrganizationTestSchema>(FieldPath::OneOfFieldNumber(OrganizationTestSchema::kMainOfficeFieldNumber, "headquarters"), FieldPath::FieldNumber(Address::kStreetFieldNumber)), "123 Test Street"));
+    EXPECT_EQ(model->data(FieldPath::Of<OrganizationTestSchema>(FieldPath::OneOfFieldNumber(OrganizationTestSchema::kMainOfficeFieldNumber, "headquarters"), FieldPath::FieldNumber(Address::kStreetFieldNumber))).toString(), "123 Test Street");
+    EXPECT_EQ(org.main_office().street(), "123 Test Street");
+
+    // Set OrganizationTestSchema.virtual_headquarters
+    EXPECT_TRUE(model->set_data(FieldPath::Of<OrganizationTestSchema>(FieldPath::OneOfFieldNumber(OrganizationTestSchema::kVirtualHeadquartersFieldNumber, "headquarters")), "Virtual Testville"));
+    EXPECT_EQ(model->data(FieldPath::Of<OrganizationTestSchema>(FieldPath::OneOfFieldNumber(OrganizationTestSchema::kVirtualHeadquartersFieldNumber, "headquarters"))).toString(), "Virtual Testville");
+    EXPECT_EQ(org.virtual_headquarters(), "Virtual Testville");
 }

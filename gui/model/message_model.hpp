@@ -68,6 +68,7 @@ public:
 private:
     Message* m_message_buffer;
     std::unordered_map<int, ProtoModel*> m_sub_models_by_field_number;
+    std::unordered_map<std::string, ProtoModel*> m_sub_models_by_oneof_name;
 
     void clear_sub_models();
 };

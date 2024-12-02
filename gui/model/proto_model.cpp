@@ -17,7 +17,7 @@ void ProtoModel::parent_data_changed() const {
     const ProtoModel* m {get_parent_model()};
     while (true) {
         SILENT_CHECK_PARAM_NULLPTR(m);
-        Q_EMIT const_cast<ProtoModel*>(m)->dataChanged(m->index(0, 0), m->index(rowCount() - 1, columnCount() - 1));
+        Q_EMIT const_cast<ProtoModel*>(m)->dataChanged(m->index(0, 0), m->index(m->rowCount() - 1, m->columnCount() - 1));
         m = m->get_parent_model();
     }
 }

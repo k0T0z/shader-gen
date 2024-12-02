@@ -123,6 +123,7 @@ file(GLOB SHADER_GEN_HPP_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/gui/model/model_mapper.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/gui/model/primitive_model.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/gui/model/repeated_primitive_model.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/gui/model/oneof_model.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/gui/controller/visual_shader_editor.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/gui/model/utils/field_path.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/gui/model/utils/utils.hpp
@@ -139,6 +140,7 @@ file(GLOB SHADER_GEN_CPP_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/gui/model/model_mapper.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/gui/model/primitive_model.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/gui/model/repeated_primitive_model.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/gui/model/oneof_model.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/gui/controller/visual_shader_editor.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/gui/model/utils/field_path.cpp
 )

@@ -35,8 +35,8 @@ PrimitiveModel* RepeatedPrimitiveModel::get_sub_model(const int& index) const {
 }
 
 const ProtoModel* RepeatedPrimitiveModel::get_sub_model(const FieldPath& path) const {
-    SILENT_CHECK_CONDITION_TRUE_NON_VOID(path.is_empty(), this);
     CHECK_CONDITION_TRUE_NON_VOID(!path.is_valid(), nullptr, "Invalid path for " + m_field_desc->full_name());
+    SILENT_CHECK_CONDITION_TRUE_NON_VOID(path.is_empty(), this);
 
     int index {-1};
 
@@ -141,9 +141,9 @@ int RepeatedPrimitiveModel::field_to_column(const int& fn) const {
 }
 
 bool RepeatedPrimitiveModel::insertRows(int row, int count, const QModelIndex &parent) {
-    CHECK_CONDITION_TRUE_NON_VOID(!parent.isValid(), false, "Parent is not valid.");
-    VALIDATE_INDEX_NON_VOID(row, rowCount(), false, "Index out of range.");
-    CHECK_CONDITION_TRUE_NON_VOID(count == 1, false, "Invalid number of rows: " + std::to_string(count) + ". Adding multiple rows at once is not supported yet.");
+    // CHECK_CONDITION_TRUE_NON_VOID(!parent.isValid(), false, "Parent is not valid.");
+    VALIDATE_INDEX_NON_VOID(row, rowCount()+1, false, "You are allowed to append only a row between 0 and " + std::to_string(rowCount()+1) + "exclusive.");
+    CHECK_CONDITION_TRUE_NON_VOID(count != 1, false, "Invalid number of rows: " + std::to_string(count) + ". Adding multiple rows at once is not supported yet.");
 
     const Reflection* refl {m_message_buffer->GetReflection()};
     
@@ -173,9 +173,9 @@ bool RepeatedPrimitiveModel::insertRows(int row, int count, const QModelIndex &p
 }
 
 bool RepeatedPrimitiveModel::removeRows(int row, int count, const QModelIndex &parent) {
-    CHECK_CONDITION_TRUE_NON_VOID(!parent.isValid(), false, "Parent is not valid.");
-    VALIDATE_INDEX_NON_VOID(row, rowCount(), false, "Index out of range.");
-    CHECK_CONDITION_TRUE_NON_VOID(count == 1, false, "Invalid number of rows: " + std::to_string(count) + ". Adding multiple rows at once is not supported yet.");
+    // CHECK_CONDITION_TRUE_NON_VOID(!parent.isValid(), false, "Parent is not valid.");
+    VALIDATE_INDEX_NON_VOID(row, rowCount()+1, false, "You are allowed to append only a row between 0 and " + std::to_string(rowCount()+1) + "exclusive.");
+    CHECK_CONDITION_TRUE_NON_VOID(count != 1, false, "Invalid number of rows: " + std::to_string(count) + ". Adding multiple rows at once is not supported yet.");
 
     delete m_sub_models.at(row);
     m_sub_models.erase(m_sub_models.begin() + row);
@@ -201,6 +201,7 @@ void RepeatedPrimitiveModel::clear_sub_models() {
 
 void RepeatedPrimitiveModel::append_row(const int& row) {
     CHECK_CONDITION_TRUE(m_field_desc->cpp_type() != FieldDescriptor::CPPTYPE_MESSAGE, "Field is not a message.");
+    VALIDATE_INDEX(row, rowCount()+1, "You are allowed to append only a row between 0 and " + std::to_string(rowCount()+1) + "exclusive.");
 
     QModelIndex index {this->index(row, -1)};
     // Q_EMIT rowsAboutToBeInserted(index, row, row, {});

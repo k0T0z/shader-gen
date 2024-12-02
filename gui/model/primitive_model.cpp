@@ -25,6 +25,8 @@ bool PrimitiveModel::set_data(const QVariant& value) {
 }
 
 const ProtoModel* PrimitiveModel::get_sub_model([[maybe_unused]] const FieldPath& path) const {
+    const Descriptor* desc {m_message_buffer->GetDescriptor()};
+    CHECK_CONDITION_TRUE_NON_VOID(!path.is_valid(), nullptr, "Invalid path for " + desc->full_name());
     CHECK_CONDITION_TRUE_NON_VOID(!path.is_empty(), nullptr, "Trying to get sub-model of a primitive model.");
     return this;
 }
@@ -75,26 +77,44 @@ QVariant PrimitiveModel::data([[maybe_unused]] const QModelIndex& index, [[maybe
 
     const Reflection* refl {m_message_buffer->GetReflection()};
 
-    CHECK_CONDITION_TRUE_NON_VOID(!refl->HasField(*m_message_buffer, m_field_desc), QVariant(), "Field is not set.");
+    if (m_field_desc->is_repeated()) {
+        switch (m_field_desc->cpp_type()) {
+            case FieldDescriptor::CppType::CPPTYPE_MESSAGE:
+                FAIL_AND_RETURN_NON_VOID(QVariant(), "Trying to get a message field.");
+                break;
+            case FieldDescriptor::CppType::CPPTYPE_INT32: return refl->GetRepeatedInt32(*m_message_buffer, m_field_desc, index.parent().row());
+            case FieldDescriptor::CppType::CPPTYPE_INT64: return QVariant::fromValue(refl->GetRepeatedInt64(*m_message_buffer, m_field_desc, index.parent().row()));
+            case FieldDescriptor::CppType::CPPTYPE_UINT32: return refl->GetRepeatedUInt32(*m_message_buffer, m_field_desc, index.parent().row());
+            case FieldDescriptor::CppType::CPPTYPE_UINT64: return QVariant::fromValue(refl->GetRepeatedUInt64(*m_message_buffer, m_field_desc, index.parent().row()));
+            case FieldDescriptor::CppType::CPPTYPE_DOUBLE: return refl->GetRepeatedDouble(*m_message_buffer, m_field_desc, index.parent().row());
+            case FieldDescriptor::CppType::CPPTYPE_FLOAT: return refl->GetRepeatedFloat(*m_message_buffer, m_field_desc, index.parent().row());
+            case FieldDescriptor::CppType::CPPTYPE_BOOL: return refl->GetRepeatedBool(*m_message_buffer, m_field_desc, index.parent().row());
+            case FieldDescriptor::CppType::CPPTYPE_STRING: return QString::fromStdString(refl->GetRepeatedString(*m_message_buffer, m_field_desc, index.parent().row()));
+            case FieldDescriptor::CppType::CPPTYPE_ENUM: return refl->GetRepeatedEnumValue(*m_message_buffer, m_field_desc, index.parent().row());
+            default:
+                WARN_PRINT("Unsupported field type: " + std::to_string(m_field_desc->cpp_type()));
+                break;
+        }
+    } else {
+        CHECK_CONDITION_TRUE_NON_VOID(!refl->HasField(*m_message_buffer, m_field_desc), QVariant(), "Field is not set.");
 
-    switch (m_field_desc->cpp_type()) {
-        case FieldDescriptor::CppType::CPPTYPE_MESSAGE:
-            FAIL_AND_RETURN_NON_VOID(QVariant(), "Trying to get a message field.");
-            break;
-        case FieldDescriptor::CppType::CPPTYPE_INT32: return refl->GetInt32(*m_message_buffer, m_field_desc);
-        case FieldDescriptor::CppType::CPPTYPE_INT64: return QVariant::fromValue(refl->GetInt64(*m_message_buffer, m_field_desc));
-        case FieldDescriptor::CppType::CPPTYPE_UINT32: return refl->GetUInt32(*m_message_buffer, m_field_desc);
-        case FieldDescriptor::CppType::CPPTYPE_UINT64: return QVariant::fromValue(refl->GetUInt64(*m_message_buffer, m_field_desc));
-        case FieldDescriptor::CppType::CPPTYPE_DOUBLE: return refl->GetDouble(*m_message_buffer, m_field_desc);
-        case FieldDescriptor::CppType::CPPTYPE_FLOAT: return refl->GetFloat(*m_message_buffer, m_field_desc);
-        case FieldDescriptor::CppType::CPPTYPE_BOOL: return refl->GetBool(*m_message_buffer, m_field_desc);
-        case FieldDescriptor::CppType::CPPTYPE_STRING: return QString::fromStdString(refl->GetString(*m_message_buffer, m_field_desc));
-        case FieldDescriptor::CppType::CPPTYPE_ENUM:
-            WARN_PRINT("Enum is not supported yet.");
-            break;
-        default:
-            WARN_PRINT("Unsupported field type: " + std::to_string(m_field_desc->cpp_type()));
-            break;
+        switch (m_field_desc->cpp_type()) {
+            case FieldDescriptor::CppType::CPPTYPE_MESSAGE:
+                FAIL_AND_RETURN_NON_VOID(QVariant(), "Trying to get a message field.");
+                break;
+            case FieldDescriptor::CppType::CPPTYPE_INT32: return refl->GetInt32(*m_message_buffer, m_field_desc);
+            case FieldDescriptor::CppType::CPPTYPE_INT64: return QVariant::fromValue(refl->GetInt64(*m_message_buffer, m_field_desc));
+            case FieldDescriptor::CppType::CPPTYPE_UINT32: return refl->GetUInt32(*m_message_buffer, m_field_desc);
+            case FieldDescriptor::CppType::CPPTYPE_UINT64: return QVariant::fromValue(refl->GetUInt64(*m_message_buffer, m_field_desc));
+            case FieldDescriptor::CppType::CPPTYPE_DOUBLE: return refl->GetDouble(*m_message_buffer, m_field_desc);
+            case FieldDescriptor::CppType::CPPTYPE_FLOAT: return refl->GetFloat(*m_message_buffer, m_field_desc);
+            case FieldDescriptor::CppType::CPPTYPE_BOOL: return refl->GetBool(*m_message_buffer, m_field_desc);
+            case FieldDescriptor::CppType::CPPTYPE_STRING: return QString::fromStdString(refl->GetString(*m_message_buffer, m_field_desc));
+            case FieldDescriptor::CppType::CPPTYPE_ENUM: return refl->GetEnumValue(*m_message_buffer, m_field_desc);
+            default:
+                WARN_PRINT("Unsupported field type: " + std::to_string(m_field_desc->cpp_type()));
+                break;
+        }
     }
 
     return QVariant();
@@ -110,24 +130,42 @@ bool PrimitiveModel::setData([[maybe_unused]] const QModelIndex& index, [[maybe_
 
     const Reflection* refl {m_message_buffer->GetReflection()};
 
-    switch (m_field_desc->cpp_type()) {
-        case FieldDescriptor::CppType::CPPTYPE_MESSAGE:
-            FAIL_AND_RETURN_NON_VOID(false, "Trying to set a message field.");
-            break;
-        case FieldDescriptor::CppType::CPPTYPE_INT32: refl->SetInt32(m_message_buffer, m_field_desc, value.toInt()); break;
-        case FieldDescriptor::CppType::CPPTYPE_INT64: refl->SetInt64(m_message_buffer, m_field_desc, value.toLongLong()); break;
-        case FieldDescriptor::CppType::CPPTYPE_UINT32: refl->SetUInt32(m_message_buffer, m_field_desc, value.toUInt()); break;
-        case FieldDescriptor::CppType::CPPTYPE_UINT64: refl->SetUInt64(m_message_buffer, m_field_desc, value.toULongLong()); break;
-        case FieldDescriptor::CppType::CPPTYPE_DOUBLE: refl->SetDouble(m_message_buffer, m_field_desc, value.toDouble()); break;
-        case FieldDescriptor::CppType::CPPTYPE_FLOAT: refl->SetFloat(m_message_buffer, m_field_desc, value.toFloat()); break;
-        case FieldDescriptor::CppType::CPPTYPE_BOOL: refl->SetBool(m_message_buffer, m_field_desc, value.toBool()); break;
-        case FieldDescriptor::CppType::CPPTYPE_STRING: refl->SetString(m_message_buffer, m_field_desc, value.toString().toStdString()); break;
-        case FieldDescriptor::CppType::CPPTYPE_ENUM:
-            WARN_PRINT("Enum is not supported yet.");
-            break;
-        default:
-            WARN_PRINT("Unsupported field type: " + std::to_string(m_field_desc->cpp_type()));
-            break;
+    if (m_field_desc->is_repeated()) {
+        switch (m_field_desc->cpp_type()) {
+            case FieldDescriptor::CppType::CPPTYPE_MESSAGE:
+                FAIL_AND_RETURN_NON_VOID(false, "Trying to set a message field.");
+                break;
+            case FieldDescriptor::CppType::CPPTYPE_INT32: refl->SetRepeatedInt32(m_message_buffer, m_field_desc, index.parent().row(), value.toInt()); break;
+            case FieldDescriptor::CppType::CPPTYPE_INT64: refl->SetRepeatedInt64(m_message_buffer, m_field_desc, index.parent().row(), value.toLongLong()); break;
+            case FieldDescriptor::CppType::CPPTYPE_UINT32: refl->SetRepeatedUInt32(m_message_buffer, m_field_desc, index.parent().row(), value.toUInt()); break;
+            case FieldDescriptor::CppType::CPPTYPE_UINT64: refl->SetRepeatedUInt64(m_message_buffer, m_field_desc, index.parent().row(), value.toULongLong()); break;
+            case FieldDescriptor::CppType::CPPTYPE_DOUBLE: refl->SetRepeatedDouble(m_message_buffer, m_field_desc, index.parent().row(), value.toDouble()); break;
+            case FieldDescriptor::CppType::CPPTYPE_FLOAT: refl->SetRepeatedFloat(m_message_buffer, m_field_desc, index.parent().row(), value.toFloat()); break;
+            case FieldDescriptor::CppType::CPPTYPE_BOOL: refl->SetRepeatedBool(m_message_buffer, m_field_desc, index.parent().row(), value.toBool()); break;
+            case FieldDescriptor::CppType::CPPTYPE_STRING: refl->SetRepeatedString(m_message_buffer, m_field_desc, index.parent().row(), value.toString().toStdString()); break;
+            case FieldDescriptor::CppType::CPPTYPE_ENUM: refl->SetRepeatedEnumValue(m_message_buffer, m_field_desc, index.parent().row(), value.toInt()); break;
+            default:
+                WARN_PRINT("Unsupported field type: " + std::to_string(m_field_desc->cpp_type()));
+                break;
+        }
+    } else {
+        switch (m_field_desc->cpp_type()) {
+            case FieldDescriptor::CppType::CPPTYPE_MESSAGE:
+                FAIL_AND_RETURN_NON_VOID(false, "Trying to set a message field.");
+                break;
+            case FieldDescriptor::CppType::CPPTYPE_INT32: refl->SetInt32(m_message_buffer, m_field_desc, value.toInt()); break;
+            case FieldDescriptor::CppType::CPPTYPE_INT64: refl->SetInt64(m_message_buffer, m_field_desc, value.toLongLong()); break;
+            case FieldDescriptor::CppType::CPPTYPE_UINT32: refl->SetUInt32(m_message_buffer, m_field_desc, value.toUInt()); break;
+            case FieldDescriptor::CppType::CPPTYPE_UINT64: refl->SetUInt64(m_message_buffer, m_field_desc, value.toULongLong()); break;
+            case FieldDescriptor::CppType::CPPTYPE_DOUBLE: refl->SetDouble(m_message_buffer, m_field_desc, value.toDouble()); break;
+            case FieldDescriptor::CppType::CPPTYPE_FLOAT: refl->SetFloat(m_message_buffer, m_field_desc, value.toFloat()); break;
+            case FieldDescriptor::CppType::CPPTYPE_BOOL: refl->SetBool(m_message_buffer, m_field_desc, value.toBool()); break;
+            case FieldDescriptor::CppType::CPPTYPE_STRING: refl->SetString(m_message_buffer, m_field_desc, value.toString().toStdString()); break;
+            case FieldDescriptor::CppType::CPPTYPE_ENUM: refl->SetEnumValue(m_message_buffer, m_field_desc, value.toInt()); break;
+            default:
+                WARN_PRINT("Unsupported field type: " + std::to_string(m_field_desc->cpp_type()));
+                break;
+        }
     }
 
     emit dataChanged(index, index);
