@@ -41,8 +41,8 @@ public:
     QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override;
     bool setData(const QModelIndex &index, const QVariant &value, int role = Qt::EditRole) override;
 
-    int append_row();
-    bool remove_row(const int& row);
+    int append_row() override;
+    bool remove_row(const int& row) override;
 
     int field_to_column(const int& fn) const;
 

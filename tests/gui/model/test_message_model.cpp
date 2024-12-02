@@ -78,4 +78,6 @@ TEST(MessageModelTest, TestBuildSubModels) {
     EXPECT_TRUE(model->set_data(FieldPath::Of<OrganizationTestSchema>(FieldPath::FieldNumber(OrganizationTestSchema::kNameFieldNumber)), "test_org11"));
     EXPECT_EQ(model->data(FieldPath::Of<OrganizationTestSchema>(FieldPath::FieldNumber(OrganizationTestSchema::kNameFieldNumber))).toString(), "test_org11");
     EXPECT_EQ(org.name(), "test_org11");
+
+    ProtoModel* sub_model = const_cast<ProtoModel*>(model->get_sub_model(FieldPath::Of<OrganizationTestSchema>(FieldPath::FieldNumber(OrganizationTestSchema::kEmployeesFieldNumber))));
 }

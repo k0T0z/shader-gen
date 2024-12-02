@@ -1,13 +1,14 @@
 #include "gui/model/repeated_primitive_model.hpp"
 
+#include "gui/model/message_model.hpp"
 #include "error_macros.hpp"
 
 RepeatedPrimitiveModel::RepeatedPrimitiveModel(Message* message_buffer, const FieldDescriptor* field_desc, ProtoModel* parent_model, const int& index_in_parent)
     : PrimitiveModel(message_buffer, field_desc, parent_model, index_in_parent), m_message_buffer(message_buffer), m_field_desc(field_desc) {}
 
 void RepeatedPrimitiveModel::build_sub_models() {
-    CHECK_CONDITION_TRUE(!m_field_desc->is_repeated(), "Field is not repeated.");
-    CHECK_CONDITION_TRUE(m_field_desc->message_type() != nullptr, "Field does have a message type.");
+    CHECK_CONDITION_TRUE(!m_field_desc->is_repeated(), "Field " + m_field_desc->full_name() + " is not repeated.");
+    CHECK_CONDITION_TRUE(m_field_desc->message_type() != nullptr, "Field " + m_field_desc->full_name() + " is not a primitive field.");
 
     int size {rowCount()};
     for (int i {0}; i < size; i++) {
@@ -20,36 +21,52 @@ QVariant RepeatedPrimitiveModel::data() const {
 }
 
 bool RepeatedPrimitiveModel::set_data([[maybe_unused]] const QVariant& value) {
-    FAIL_AND_RETURN_NON_VOID(false, "Cannot set data to RepeatedPrimitiveModel.");
+    FAIL_AND_RETURN_NON_VOID(false, "Cannot set data in a RepeatedPrimitiveModel.");
 }
 
 PrimitiveModel* RepeatedPrimitiveModel::get_sub_model(const int& index) const {
-    SILENT_VALIDATE_INDEX_NON_VOID(index, rowCount(), nullptr);
+    VALIDATE_INDEX_NON_VOID(index, rowCount(), nullptr, 
+        "Accessing out-of-range proto row " + std::to_string(index) + " of " + std::to_string(rowCount()));
 
     PrimitiveModel* m = dynamic_cast<PrimitiveModel*>(m_sub_models.at(index));
-    SILENT_CHECK_PARAM_NULLPTR_NON_VOID(m, nullptr);
+    CHECK_PARAM_NULLPTR_NON_VOID(m, nullptr, "Failed to cast sub model to PrimitiveModel.");
 
     return m;
 }
 
 const ProtoModel* RepeatedPrimitiveModel::get_sub_model(const FieldPath& path) const {
-    CHECK_CONDITION_TRUE_NON_VOID(!path.is_valid(), nullptr, "");
+    SILENT_CHECK_CONDITION_TRUE_NON_VOID(path.is_empty(), this);
+    CHECK_CONDITION_TRUE_NON_VOID(!path.is_valid(), nullptr, "Invalid path for " + m_field_desc->full_name());
 
     int index {-1};
 
-    SILENT_CHECK_CONDITION_TRUE_NON_VOID(!path.get_upcoming_repeated_index(index), nullptr);
-    SILENT_VALIDATE_INDEX_NON_VOID(index, rowCount(), nullptr);
+    CHECK_CONDITION_TRUE_NON_VOID(!path.get_upcoming_repeated_index(index), nullptr, "Next component is not a repeated index.");
+    VALIDATE_INDEX_NON_VOID(index, rowCount(), nullptr, "Index out of range.");
 
-    SILENT_CHECK_CONDITION_TRUE_NON_VOID(!path.skip_component(), nullptr); // Skip the repeated index
+    CHECK_CONDITION_TRUE_NON_VOID(!path.skip_component(), nullptr, "Failed to skip repeated index.");
 
     return m_sub_models.at(index)->get_sub_model(path);
 }
 
-const FieldDescriptor* RepeatedPrimitiveModel::get_column_descriptor([[maybe_unused]] const int& column) const {
-    const Descriptor* desc {m_message_buffer->GetDescriptor()};
-    VALIDATE_INDEX_NON_VOID(column, columnCount(), nullptr, 
-        "Requesting descriptor of invalid column (field index) " + std::to_string(column) + " of MessageModel " + desc->full_name());
-    return desc->field(column);
+QModelIndex RepeatedPrimitiveModel::index(int row, int column, [[maybe_unused]] const QModelIndex& parent) const {
+    Q_UNUSED(parent);
+    Q_UNUSED(column);
+    SILENT_VALIDATE_INDEX_NON_VOID(row, rowCount(), QModelIndex());
+    return createIndex(row, column);
+}
+
+QModelIndex RepeatedPrimitiveModel::parent([[maybe_unused]] const QModelIndex& child) const {
+    Q_UNUSED(child);
+    const ProtoModel* parent_model {get_parent_model()};
+
+    const ProtoModel* root_model {get_root_model()};
+
+    SILENT_CHECK_CONDITION_TRUE_NON_VOID(parent_model == root_model, QModelIndex());
+
+    MessageModel* parent_message_model {dynamic_cast<MessageModel*>(const_cast<ProtoModel*>(parent_model->get_parent_model()))};
+    SILENT_CHECK_CONDITION_TRUE_NON_VOID(parent_message_model != nullptr, createIndex(0, parent_model->get_index_in_parent()));
+
+    return QModelIndex();
 }
 
 int RepeatedPrimitiveModel::rowCount([[maybe_unused]] const QModelIndex& parent) const {
@@ -62,7 +79,7 @@ QVariant RepeatedPrimitiveModel::data(const QModelIndex& index, int role) const 
     CHECK_CONDITION_TRUE_NON_VOID(!index.isValid(), QVariant(), "Supplied index was invalid.");
     VALIDATE_INDEX_NON_VOID(index.row(), rowCount(), QVariant(), 
         "Accessing out-of-range proto row " + std::to_string(index.row()) + " of " + std::to_string(rowCount()));
-    CHECK_CONDITION_TRUE_NON_VOID(index.column() == 0, QVariant(), "A primitive model should have only one column.");
+    CHECK_CONDITION_TRUE_NON_VOID(index.column() > 0, QVariant(), "A primitive model should have only one column.");
 
     return get_sub_model(index.row())->data(this->index(0, 0, index), role);
 }
@@ -119,7 +136,7 @@ int RepeatedPrimitiveModel::append_row() {
 }
 
 bool RepeatedPrimitiveModel::remove_row(const int& row) {
-    SILENT_VALIDATE_INDEX_NON_VOID(row, rowCount(), false);
+    VALIDATE_INDEX_NON_VOID(row, rowCount(), false, "Index out of range.");
 
     // Q_EMIT rowsAboutToBeRemoved(QModelIndex(), row, row, {});
     beginRemoveRows(QModelIndex(), row, row);
@@ -143,7 +160,7 @@ int RepeatedPrimitiveModel::field_to_column(const int& fn) const {
 
     const FieldDescriptor* field {desc->FindFieldByNumber(fn)};
 
-    SILENT_CHECK_PARAM_NULLPTR_NON_VOID(field, -1);
+    CHECK_PARAM_NULLPTR_NON_VOID(field, -1, "Field not found.");
 
     return field->index();
 }
@@ -175,7 +192,7 @@ void RepeatedPrimitiveModel::append_row(const int& row) {
     m_sub_models.emplace_back(new PrimitiveModel(m_message_buffer, m_field_desc, this, row));
 
     bool result {insertRows(row, 1)};
-    SILENT_CHECK_CONDITION_TRUE(!result);
+    CHECK_CONDITION_TRUE(!result, "Failed to insert row.");
 
     parent_data_changed();
 

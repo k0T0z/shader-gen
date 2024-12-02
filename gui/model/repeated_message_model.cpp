@@ -10,7 +10,7 @@ RepeatedMessageModel::RepeatedMessageModel(Message* message_buffer, const FieldD
     : MessageModel(message_buffer, parent_model, index_in_parent), m_message_buffer(message_buffer), m_field_desc(field_desc) {}
 
 void RepeatedMessageModel::build_sub_models() {
-    CHECK_CONDITION_TRUE(!m_field_desc->is_repeated(), "Field is not repeated.");
+    CHECK_CONDITION_TRUE(!m_field_desc->is_repeated(), "Field " + m_field_desc->full_name() + " is not repeated.");
     CHECK_PARAM_NULLPTR(m_field_desc->message_type(), "Field does not have a message type.");
 
     int size {rowCount()};
@@ -24,27 +24,29 @@ QVariant RepeatedMessageModel::data() const {
 }
 
 bool RepeatedMessageModel::set_data([[maybe_unused]] const QVariant& value) {
-    FAIL_AND_RETURN_NON_VOID(false, "Cannot set data to RepeatedMessageModel.");
+    FAIL_AND_RETURN_NON_VOID(false, "Cannot set data in a RepeatedMessageModel.");
 }
 
 MessageModel* RepeatedMessageModel::get_sub_model(const int& index) const {
-    SILENT_VALIDATE_INDEX_NON_VOID(index, rowCount(), nullptr);
+    VALIDATE_INDEX_NON_VOID(index, rowCount(), nullptr, 
+        "Accessing out-of-range proto row " + std::to_string(index) + " of " + std::to_string(rowCount()));
 
     MessageModel* m = dynamic_cast<MessageModel*>(m_sub_models.at(index));
-    SILENT_CHECK_PARAM_NULLPTR_NON_VOID(m, nullptr);
+    CHECK_PARAM_NULLPTR_NON_VOID(m, nullptr, "Failed to cast sub model to MessageModel.");
 
     return m;
 }
 
 const ProtoModel* RepeatedMessageModel::get_sub_model(const FieldPath& path) const {
-    CHECK_CONDITION_TRUE_NON_VOID(!path.is_valid(), nullptr, "");
+    SILENT_CHECK_CONDITION_TRUE_NON_VOID(path.is_empty(), this);
+    CHECK_CONDITION_TRUE_NON_VOID(!path.is_valid(), nullptr, "Invalid path for " + m_field_desc->full_name());
 
     int index {-1};
 
-    SILENT_CHECK_CONDITION_TRUE_NON_VOID(!path.get_upcoming_repeated_index(index), nullptr);
-    SILENT_VALIDATE_INDEX_NON_VOID(index, rowCount(), nullptr);
+    CHECK_CONDITION_TRUE_NON_VOID(!path.get_upcoming_repeated_index(index), nullptr, "Next component is not a repeated index.");
+    VALIDATE_INDEX_NON_VOID(index, rowCount(), nullptr, "Index out of range.");
 
-    SILENT_CHECK_CONDITION_TRUE_NON_VOID(!path.skip_component(), nullptr); // Skip the repeated index
+    CHECK_CONDITION_TRUE_NON_VOID(!path.skip_component(), nullptr, "Failed to skip repeated index.");
 
     return m_sub_models.at(index)->get_sub_model(path);
 }
@@ -145,7 +147,7 @@ int RepeatedMessageModel::field_to_column(const int& fn) const {
 
     const FieldDescriptor* field {desc->FindFieldByNumber(fn)};
 
-    SILENT_CHECK_PARAM_NULLPTR_NON_VOID(field, -1);
+    CHECK_PARAM_NULLPTR_NON_VOID(field, -1, "Field not found.");
 
     return field->index();
 }
@@ -178,7 +180,7 @@ void RepeatedMessageModel::append_row(const int& row) {
     m_sub_models.emplace_back(new MessageModel(refl->MutableRepeatedMessage(m_message_buffer, m_field_desc, row), this, row));
 
     bool result {insertRows(row, 1)};
-    SILENT_CHECK_CONDITION_TRUE(!result);
+    CHECK_CONDITION_TRUE(!result, "Failed to insert row.");
 
     parent_data_changed();
 

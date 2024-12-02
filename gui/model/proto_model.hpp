@@ -16,11 +16,7 @@ class ProtoModel : public QAbstractItemModel {
     Q_OBJECT
 
 public:
-    enum {
-        INDEX_INVALID = -1,
-    };
-
-    explicit ProtoModel(ProtoModel* parent_model = nullptr, const int& index_in_parent = INDEX_INVALID);
+    explicit ProtoModel(ProtoModel* parent_model = nullptr, const int& index_in_parent = -1);
     virtual ~ProtoModel() override = default;
 
     virtual void build_sub_models() = 0;
@@ -55,8 +51,9 @@ public:
     virtual QMap<int, QVariant> itemData([[maybe_unused]] const QModelIndex &index) const override { return QMap<int, QVariant>(); }
     virtual bool setItemData([[maybe_unused]] const QModelIndex &index, [[maybe_unused]] const QMap<int, QVariant> &roles) override { return false; }
 
-    virtual bool insertRows(int row, [[maybe_unused]] int count, const QModelIndex &parent = QModelIndex()) override { return insertRow(row, parent); }
-    virtual bool removeRows(int row, [[maybe_unused]] int count, const QModelIndex &parent = QModelIndex()) override { return removeRow(row, parent); }
+    virtual int append_row() { return -1; }
+    virtual bool remove_row([[maybe_unused]] const int& row) { return false; }
+
 
     virtual Qt::ItemFlags flags(const QModelIndex &index) const override { 
         SILENT_CHECK_CONDITION_TRUE_NON_VOID(!index.isValid(), Qt::NoItemFlags);
@@ -80,6 +77,9 @@ protected:
     // Helper methods for traversing fields
     // google::protobuf::Message* traverseToField(google::protobuf::Message* message, const FieldPath& path, int depth = 0) const;
     // const google::protobuf::Message* traverseToField(const google::protobuf::Message* message, const FieldPath& path, int depth = 0) const;
+    
+    virtual bool insertRows(int row, [[maybe_unused]] int count, const QModelIndex &parent = QModelIndex()) override { return insertRow(row, parent); }
+    virtual bool removeRows(int row, [[maybe_unused]] int count, const QModelIndex &parent = QModelIndex()) override { return removeRow(row, parent); }
 };
 
 #endif // PROTO_MODEL_HPP

@@ -34,8 +34,8 @@ public:
     PrimitiveModel* get_sub_model(const int& index) const;
     const ProtoModel* get_sub_model(const FieldPath& path) const override;
 
-    const FieldDescriptor* get_column_descriptor(const int& column) const override;
-
+    QModelIndex index(int row, int column, const QModelIndex &parent = QModelIndex()) const override;
+    QModelIndex parent(const QModelIndex &child) const override;
     int rowCount(const QModelIndex &parent = QModelIndex()) const override;
     QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override;
     bool setData(const QModelIndex &index, const QVariant &value, int role = Qt::EditRole) override;

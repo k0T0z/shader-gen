@@ -15,7 +15,7 @@ MessageModel::MessageModel(Message* message_buffer, ProtoModel* parent_model, co
     : ProtoModel(parent_model, index_in_parent), m_message_buffer(message_buffer) {}
 
 void MessageModel::build_sub_models() {
-    SILENT_CHECK_PARAM_NULLPTR(m_message_buffer);
+    CHECK_PARAM_NULLPTR(m_message_buffer, "Message buffer is null.");
 
     // https://protobuf.dev/reference/cpp/api-docs/google.protobuf.descriptor/#Descriptor
     const Descriptor* desc {m_message_buffer->GetDescriptor()};
@@ -30,11 +30,7 @@ void MessageModel::build_sub_models() {
         // https://protobuf.dev/reference/cpp/api-docs/google.protobuf.descriptor/#FieldDescriptor
         const FieldDescriptor* field {desc->field(i)};
 
-        DEBUG_PRINT("Field: " + field->full_name());
-
         if (field->is_repeated()) {
-            // SILENT_CONTINUE_IF_TRUE(refl->FieldSize(*m_message_buffer, field) <= 0);
-
             switch (field->cpp_type()) {
                 case FieldDescriptor::CppType::CPPTYPE_MESSAGE: {
                         ProtoModel* sub_model {new RepeatedMessageModel(m_message_buffer, field, this, i)};
@@ -63,18 +59,6 @@ void MessageModel::build_sub_models() {
                     break;
             }
         } else {
-            // Only build sub-models for field that is inside a real oneof and is set.
-            // if (shadergen_utils::is_inside_real_oneof(field)) {
-            //     const OneofDescriptor* oneof {field->containing_oneof()};
-            //     SILENT_CONTINUE_IF_TRUE(!refl->HasOneof(*m_message_buffer, oneof));
-
-            //     const FieldDescriptor* oneof_field {refl->GetOneofFieldDescriptor(*m_message_buffer, oneof)};
-            //     SILENT_CONTINUE_IF_TRUE(oneof_field == nullptr);
-            //     SILENT_CONTINUE_IF_TRUE(oneof_field->number() != field->number());
-            // } else {
-            //     SILENT_CONTINUE_IF_TRUE(!refl->HasField(*m_message_buffer, field));
-            // }
-
             switch (field->cpp_type()) {
                 case FieldDescriptor::CppType::CPPTYPE_MESSAGE: {
                         ProtoModel* sub_model {new MessageModel(refl->MutableMessage(m_message_buffer, field), this, i)};
@@ -110,7 +94,7 @@ QVariant MessageModel::data() const {
 }
 
 bool MessageModel::set_data([[maybe_unused]] const QVariant& value) {
-    FAIL_AND_RETURN_NON_VOID(false, "Cannot set data to MessageModel.");
+    FAIL_AND_RETURN_NON_VOID(false, "Cannot set data in a MessageModel.");
 }
 
 const ProtoModel* MessageModel::get_sub_model(const int& field_number) const {
@@ -120,16 +104,20 @@ const ProtoModel* MessageModel::get_sub_model(const int& field_number) const {
 }
 
 const ProtoModel* MessageModel::get_sub_model(const FieldPath& path) const {
-    CHECK_CONDITION_TRUE_NON_VOID(!path.is_valid(), nullptr, "");
+    SILENT_CHECK_CONDITION_TRUE_NON_VOID(path.is_empty(), this);
+
+    const Descriptor* desc {m_message_buffer->GetDescriptor()};
+
+    CHECK_CONDITION_TRUE_NON_VOID(!path.is_valid(), nullptr, "Invalid path for " + desc->full_name());
 
     int fn {-1};
 
-    SILENT_CHECK_CONDITION_TRUE_NON_VOID(!path.get_upcoming_field_num(fn), nullptr);
-
+    CHECK_CONDITION_TRUE_NON_VOID(!path.get_upcoming_field_num(fn), nullptr, "Next component is not a field number.");
+    
     auto it {m_sub_models_by_field_number.find(fn)};
-    SILENT_CHECK_CONDITION_TRUE_NON_VOID(it == m_sub_models_by_field_number.end(), nullptr);
+    CHECK_CONDITION_TRUE_NON_VOID(it == m_sub_models_by_field_number.end(), nullptr, "Sub-model under " + desc->full_name() + " not found for field number " + std::to_string(fn));
 
-    SILENT_CHECK_CONDITION_TRUE_NON_VOID(!path.skip_component(), nullptr);
+    CHECK_CONDITION_TRUE_NON_VOID(!path.skip_component(), nullptr, "Failed to skip field number.");
 
     return it->second->get_sub_model(path);
 }
@@ -251,14 +239,13 @@ QVariant MessageModel::headerData(int section, [[maybe_unused]] Qt::Orientation 
     SILENT_CHECK_PARAM_NULLPTR_NON_VOID(m_message_buffer, QVariant());
     SILENT_CHECK_CONDITION_TRUE_NON_VOID(orientation != Qt::Orientation::Horizontal, QVariant());
     SILENT_CHECK_CONDITION_TRUE_NON_VOID(role != Qt::DisplayRole, QVariant());
-    const Descriptor* desc {m_message_buffer->GetDescriptor()};
-
     VALIDATE_INDEX_NON_VOID(section, columnCount(), QVariant(), 
         "Accessing out-of-range proto column " + std::to_string(section) + " of " + std::to_string(columnCount()));
+        
+    const Descriptor* desc {m_message_buffer->GetDescriptor()};
 
     const FieldDescriptor* field {desc->field(section)};
-
-    SILENT_CHECK_PARAM_NULLPTR_NON_VOID(field, QVariant());
+    CHECK_PARAM_NULLPTR_NON_VOID(field, QVariant(), "Field is null.");
 
     return QString::fromStdString(field->full_name());
 }

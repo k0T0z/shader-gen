@@ -4,20 +4,20 @@
 #include "error_macros.hpp"
 
 bool FieldPath::is_valid() const {
-    SILENT_CHECK_CONDITION_TRUE_NON_VOID(m_components.empty(), false);
+    SILENT_CHECK_CONDITION_TRUE_NON_VOID(is_empty(), false);
     SILENT_CHECK_PARAM_NULLPTR_NON_VOID(m_root_buffer_descriptor, false);
 
     const google::protobuf::Descriptor* current_buffer_descriptor {m_root_buffer_descriptor};
 
     const google::protobuf::FieldDescriptor* prev_fd {nullptr};
 
-    int size {(int)m_components.size()};
+    std::queue<PathComponent> temp = m_components;
 
-    for (int i {0}; i < size ; ++i) {
+    while (!temp.empty()) {
         SILENT_CHECK_PARAM_NULLPTR_NON_VOID(current_buffer_descriptor, false);
 
-        PathComponent component {m_components.front()};
-        m_components.pop();
+        PathComponent component {temp.front()};
+        temp.pop();
 
         if (std::holds_alternative<FieldPath::FieldNumber>(component)) {
             // Access field by number
@@ -81,15 +81,13 @@ bool FieldPath::is_valid() const {
         } else {
             FAIL_AND_RETURN_NON_VOID(false, "Invalid path component type");
         }
-
-        m_components.push(component); // Put the component back :)
     }
 
     return true;
 }
 
 bool FieldPath::is_upcoming_field() const {
-    SILENT_CHECK_CONDITION_TRUE_NON_VOID(m_components.empty(), false);
+    SILENT_CHECK_CONDITION_TRUE_NON_VOID(is_empty(), false);
     if (std::holds_alternative<FieldPath::FieldNumber>(m_components.front())) {
         return true;
     }
@@ -97,7 +95,7 @@ bool FieldPath::is_upcoming_field() const {
 }
 
 bool FieldPath::is_upcoming_repeated() const {
-    SILENT_CHECK_CONDITION_TRUE_NON_VOID(m_components.empty(), false);
+    SILENT_CHECK_CONDITION_TRUE_NON_VOID(is_empty(), false);
     if (std::holds_alternative<FieldPath::RepeatedAt>(m_components.front())) {
         return true;
     }
@@ -105,7 +103,7 @@ bool FieldPath::is_upcoming_repeated() const {
 }
 
 bool FieldPath::is_upcoming_oneof() const {
-    SILENT_CHECK_CONDITION_TRUE_NON_VOID(m_components.empty(), false);
+    SILENT_CHECK_CONDITION_TRUE_NON_VOID(is_empty(), false);
     if (std::holds_alternative<FieldPath::OneOfFieldNumber>(m_components.front())) {
         return true;
     }
@@ -113,9 +111,31 @@ bool FieldPath::is_upcoming_oneof() const {
 }
 
 bool FieldPath::skip_component() const {
-    SILENT_CHECK_CONDITION_TRUE_NON_VOID(m_components.empty(), false);
+    SILENT_CHECK_CONDITION_TRUE_NON_VOID(is_empty(), false);
     m_components.pop();
     return true;
+}
+
+std::string FieldPath::to_string() const {
+    std::string path_string;
+    std::queue<PathComponent> temp = m_components;
+
+    while (!temp.empty()) {
+        PathComponent component {temp.front()};
+        temp.pop();
+
+        if (std::holds_alternative<FieldPath::FieldNumber>(component)) {
+            path_string += std::to_string(std::get<FieldPath::FieldNumber>(component).field) + ".";
+        } else if (std::holds_alternative<FieldPath::RepeatedAt>(component)) {
+            path_string += "[" + std::to_string(std::get<FieldPath::RepeatedAt>(component).index) + "].";
+        } else if (std::holds_alternative<FieldPath::OneOfFieldNumber>(component)) {
+            path_string += std::to_string(std::get<FieldPath::OneOfFieldNumber>(component).field) + ".";
+        } else {
+            FAIL_AND_RETURN_NON_VOID(path_string, "Invalid path component type");
+        }
+    }
+
+    return path_string;
 }
 
 bool FieldPath::get_upcoming_field_num(int& num_buffer) const {

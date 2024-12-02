@@ -92,13 +92,13 @@ void ProtoModel::parent_data_changed() const {
 
 QVariant ProtoModel::data(const FieldPath& path) const {
     const ProtoModel* model = get_sub_model(path);
-    SILENT_CHECK_PARAM_NULLPTR_NON_VOID(model, QVariant());
+    CHECK_PARAM_NULLPTR_NON_VOID(model, QVariant(), "Failed to get sub model " + path.to_string());
     return model->data();
 }
 
 bool ProtoModel::set_data(const FieldPath& path, const QVariant& value) {
     ProtoModel* model = const_cast<ProtoModel*>(get_sub_model(path));
-    SILENT_CHECK_PARAM_NULLPTR_NON_VOID(model, false);
+    CHECK_PARAM_NULLPTR_NON_VOID(model, false, "Failed to get sub model " + path.to_string());
     return model->set_data(value);
 }
 

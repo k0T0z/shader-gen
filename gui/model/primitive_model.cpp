@@ -25,7 +25,7 @@ bool PrimitiveModel::set_data(const QVariant& value) {
 }
 
 const ProtoModel* PrimitiveModel::get_sub_model([[maybe_unused]] const FieldPath& path) const {
-    CHECK_CONDITION_TRUE_NON_VOID(path.is_valid(), nullptr, "Trying to get a sub-model within a primitive model.");
+    CHECK_CONDITION_TRUE_NON_VOID(!path.is_empty(), nullptr, "Trying to get sub-model of a primitive model.");
     return this;
 }
 
@@ -75,7 +75,7 @@ QVariant PrimitiveModel::data([[maybe_unused]] const QModelIndex& index, [[maybe
 
     const Reflection* refl {m_message_buffer->GetReflection()};
 
-    SILENT_CHECK_CONDITION_TRUE_NON_VOID(!refl->HasField(*m_message_buffer, m_field_desc), QVariant());
+    CHECK_CONDITION_TRUE_NON_VOID(!refl->HasField(*m_message_buffer, m_field_desc), QVariant(), "Field is not set.");
 
     switch (m_field_desc->cpp_type()) {
         case FieldDescriptor::CppType::CPPTYPE_MESSAGE:
@@ -134,4 +134,18 @@ bool PrimitiveModel::setData([[maybe_unused]] const QModelIndex& index, [[maybe_
     ProtoModel::parent_data_changed();
 
     return true;
+}
+
+QVariant PrimitiveModel::headerData(int section, [[maybe_unused]] Qt::Orientation orientation, [[maybe_unused]] int role) const {
+    SILENT_CHECK_PARAM_NULLPTR_NON_VOID(m_message_buffer, QVariant());
+    SILENT_CHECK_CONDITION_TRUE_NON_VOID(orientation != Qt::Orientation::Horizontal, QVariant());
+    SILENT_CHECK_CONDITION_TRUE_NON_VOID(role != Qt::DisplayRole, QVariant());
+    CHECK_CONDITION_TRUE_NON_VOID(section > 0, QVariant(), "A primitive model should have only one column.");
+    
+    const Descriptor* desc {m_message_buffer->GetDescriptor()};
+
+    const FieldDescriptor* field {desc->field(section)};
+    CHECK_PARAM_NULLPTR_NON_VOID(field, QVariant(), "Field is null.");
+
+    return QString::fromStdString(field->full_name());
 }

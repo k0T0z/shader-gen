@@ -30,7 +30,7 @@ class MessageModel : public ProtoModel {
     Q_OBJECT
 
 public:
-    MessageModel(Message* message_buffer, ProtoModel* parent_model = nullptr, const int& index_in_parent = INDEX_INVALID);
+    MessageModel(Message* message_buffer, ProtoModel* parent_model = nullptr, const int& index_in_parent = -1);
     virtual ~MessageModel() override {
         clear_sub_models();
     }

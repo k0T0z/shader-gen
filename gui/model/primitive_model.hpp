@@ -33,7 +33,7 @@ public:
     virtual int columnCount([[maybe_unused]] const QModelIndex &parent = QModelIndex()) const override { return 1; }
     virtual QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override;
     virtual bool setData(const QModelIndex &index, const QVariant &value, int role = Qt::EditRole) override;
-    virtual QVariant headerData([[maybe_unused]] int section, [[maybe_unused]] Qt::Orientation orientation, [[maybe_unused]] int role = Qt::DisplayRole) const override { return QVariant(); }
+    virtual QVariant headerData([[maybe_unused]] int section, [[maybe_unused]] Qt::Orientation orientation, [[maybe_unused]] int role = Qt::DisplayRole) const override;
 
     const FieldDescriptor* get_field_descriptor() const { return m_field_desc; }
 

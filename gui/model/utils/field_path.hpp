@@ -52,6 +52,7 @@ public:
         return path;
     }
 
+    bool is_empty() const { return m_components.empty(); }
     bool is_valid() const;
 
     bool get_upcoming_field_num(int& num_buffer) const;
@@ -60,6 +61,8 @@ public:
     bool get_upcoming_oneof_name(std::string& name_buffer) const;
 
     bool skip_component() const;
+
+    std::string to_string() const;
 
     // Access the components
     const std::queue<PathComponent>& get_components() const { return m_components; }
