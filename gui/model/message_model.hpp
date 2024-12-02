@@ -23,6 +23,8 @@ using FieldDescriptor = google::protobuf::FieldDescriptor;
            Each field represents a column in the model.
 
     @note Oneof fields are represented as a single column.
+
+    @todo Make lazy allocation of sub-models' messages
 */
 class MessageModel : public ProtoModel {
     Q_OBJECT
