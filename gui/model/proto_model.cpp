@@ -14,8 +14,8 @@ ProtoModel::ProtoModel(ProtoModel* parent_model, const int& index_in_parent)
     : QAbstractItemModel(parent_model), m_parent_model(parent_model), m_index_in_parent(index_in_parent) {}
 
 void ProtoModel::parent_data_changed() const {
+    const ProtoModel* m {get_parent_model()};
     while (true) {
-        const ProtoModel* m {get_parent_model()};
         SILENT_CHECK_PARAM_NULLPTR(m);
         Q_EMIT const_cast<ProtoModel*>(m)->dataChanged(m->index(0, 0), m->index(rowCount() - 1, columnCount() - 1));
         m = m->get_parent_model();
@@ -103,8 +103,8 @@ bool ProtoModel::set_data(const FieldPath& path, const QVariant& value) {
 }
 
 const ProtoModel* ProtoModel::get_root_model() const {
+    const ProtoModel* m {this};
     while (true) {
-        const ProtoModel* m {this};
         SILENT_CHECK_PARAM_NULLPTR_NON_VOID(m->get_parent_model(), m);
         m = m->get_parent_model();
     }
