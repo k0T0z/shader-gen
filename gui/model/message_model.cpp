@@ -12,9 +12,7 @@
 using OneofDescriptor = google::protobuf::OneofDescriptor;
 
 MessageModel::MessageModel(Message* message_buffer, ProtoModel* parent_model, const int& index_in_parent)
-    : ProtoModel(parent_model, index_in_parent), m_message_buffer(message_buffer) {
-    build_sub_models();
-}
+    : ProtoModel(parent_model, index_in_parent), m_message_buffer(message_buffer) {}
 
 void MessageModel::build_sub_models() {
     SILENT_CHECK_PARAM_NULLPTR(m_message_buffer);
@@ -28,18 +26,19 @@ void MessageModel::build_sub_models() {
     int total_fields {columnCount()};
 
     // Iterate through all fields in the message
-    for (int i {0}; i < total_fields; ++i) {
+    for (int i {0}; i < total_fields; i++) {
         // https://protobuf.dev/reference/cpp/api-docs/google.protobuf.descriptor/#FieldDescriptor
         const FieldDescriptor* field {desc->field(i)};
 
         DEBUG_PRINT("Field: " + field->full_name());
 
         if (field->is_repeated()) {
-            SILENT_CONTINUE_IF_TRUE(refl->FieldSize(*m_message_buffer, field) <= 0);
+            // SILENT_CONTINUE_IF_TRUE(refl->FieldSize(*m_message_buffer, field) <= 0);
 
             switch (field->cpp_type()) {
                 case FieldDescriptor::CppType::CPPTYPE_MESSAGE: {
                         ProtoModel* sub_model {new RepeatedMessageModel(m_message_buffer, field, this, i)};
+                        sub_model->build_sub_models();
                         m_sub_models_by_field_number[field->number()] = sub_model;
                         break;
                     }
@@ -52,6 +51,7 @@ void MessageModel::build_sub_models() {
                 case FieldDescriptor::CppType::CPPTYPE_BOOL:
                 case FieldDescriptor::CppType::CPPTYPE_STRING: {
                         ProtoModel* sub_model {new RepeatedPrimitiveModel(m_message_buffer, field, this, i)};
+                        sub_model->build_sub_models();
                         m_sub_models_by_field_number[field->number()] = sub_model;
                         break;
                     }
@@ -64,20 +64,21 @@ void MessageModel::build_sub_models() {
             }
         } else {
             // Only build sub-models for field that is inside a real oneof and is set.
-            if (shadergen_utils::is_inside_real_oneof(field)) {
-                const OneofDescriptor* oneof {field->containing_oneof()};
-                SILENT_CONTINUE_IF_TRUE(!refl->HasOneof(*m_message_buffer, oneof));
+            // if (shadergen_utils::is_inside_real_oneof(field)) {
+            //     const OneofDescriptor* oneof {field->containing_oneof()};
+            //     SILENT_CONTINUE_IF_TRUE(!refl->HasOneof(*m_message_buffer, oneof));
 
-                const FieldDescriptor* oneof_field {refl->GetOneofFieldDescriptor(*m_message_buffer, oneof)};
-                SILENT_CONTINUE_IF_TRUE(oneof_field == nullptr);
-                SILENT_CONTINUE_IF_TRUE(oneof_field->number() != field->number());
-            } else {
-                SILENT_CONTINUE_IF_TRUE(!refl->HasField(*m_message_buffer, field));
-            }
+            //     const FieldDescriptor* oneof_field {refl->GetOneofFieldDescriptor(*m_message_buffer, oneof)};
+            //     SILENT_CONTINUE_IF_TRUE(oneof_field == nullptr);
+            //     SILENT_CONTINUE_IF_TRUE(oneof_field->number() != field->number());
+            // } else {
+            //     SILENT_CONTINUE_IF_TRUE(!refl->HasField(*m_message_buffer, field));
+            // }
 
             switch (field->cpp_type()) {
                 case FieldDescriptor::CppType::CPPTYPE_MESSAGE: {
                         ProtoModel* sub_model {new MessageModel(refl->MutableMessage(m_message_buffer, field), this, i)};
+                        sub_model->build_sub_models();
                         m_sub_models_by_field_number[field->number()] = sub_model;
                         break;
                     }
@@ -130,7 +131,7 @@ const ProtoModel* MessageModel::get_sub_model(const FieldPath& path) const {
 
     SILENT_CHECK_CONDITION_TRUE_NON_VOID(!path.skip_component(), nullptr);
 
-    return const_cast<const ProtoModel*>(it->second->get_sub_model(path));
+    return it->second->get_sub_model(path);
 }
 
 const FieldDescriptor* MessageModel::get_column_descriptor(const int& column) const {
@@ -142,7 +143,7 @@ const FieldDescriptor* MessageModel::get_column_descriptor(const int& column) co
 
 QModelIndex MessageModel::index(int row, int column, [[maybe_unused]] const QModelIndex& parent) const {
     Q_UNUSED(parent);
-    CHECK_CONDITION_TRUE_NON_VOID(row == 0, QModelIndex(), "A message model should have only one row.");
+    CHECK_CONDITION_TRUE_NON_VOID(row > 0, QModelIndex(), "A message model should have only one row.");
     VALIDATE_INDEX_NON_VOID(column, columnCount(), QModelIndex(), 
         "Accessing out-of-range proto column " + std::to_string(column) + " of " + std::to_string(columnCount()));
 
@@ -192,7 +193,7 @@ int MessageModel::columnCount([[maybe_unused]] const QModelIndex& parent) const 
 QVariant MessageModel::data(const QModelIndex& index, [[maybe_unused]] int role) const {
     CHECK_PARAM_NULLPTR_NON_VOID(m_message_buffer, QVariant(), "Message buffer is null.");
     CHECK_CONDITION_TRUE_NON_VOID(!index.isValid(), QVariant(), "Supplied index was invalid.");
-    CHECK_CONDITION_TRUE_NON_VOID(!index.row() == 0, QVariant(), "A message model should have only one row.");
+    CHECK_CONDITION_TRUE_NON_VOID(index.row() > 0, QVariant(), "A message model should have only one row.");
     VALIDATE_INDEX_NON_VOID(index.column(), columnCount(), QVariant(), 
         "Accessing out-of-range proto column " + std::to_string(index.column()) + " of " + std::to_string(columnCount()));
 
@@ -222,7 +223,7 @@ bool MessageModel::setData(const QModelIndex& index, const QVariant& value, int 
     CHECK_PARAM_NULLPTR_NON_VOID(m_message_buffer, false, "Message buffer is null.");
     CHECK_CONDITION_TRUE_NON_VOID(!index.isValid(), false, "Supplied index was invalid.");
     CHECK_CONDITION_TRUE_NON_VOID(!value.isValid(), false, "Supplied value is invalid.");
-    CHECK_CONDITION_TRUE_NON_VOID(index.row() == 0, false, "A message model should have only one row.");
+    CHECK_CONDITION_TRUE_NON_VOID(index.row() > 0, false, "A message model should have only one row.");
     VALIDATE_INDEX_NON_VOID(index.column(), columnCount(), false, 
         "Accessing out-of-range proto column " + std::to_string(index.column()) + " of " + std::to_string(columnCount()));
 

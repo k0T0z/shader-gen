@@ -38,26 +38,25 @@ public:
     virtual QVariant data() const = 0;
     virtual bool set_data(const QVariant& value) = 0;
 
-    virtual ProtoModel* get_sub_model([[maybe_unused]] const FieldPath& path) { return nullptr; }
     virtual const ProtoModel* get_sub_model(const FieldPath& path) const = 0; // A read-only version of ProtoModel
 
     virtual const FieldDescriptor* get_column_descriptor(const int& column) const = 0;
 
-    virtual QModelIndex index(int row, int column, const QModelIndex &parent = QModelIndex()) const override { return QModelIndex(); }
-    virtual QModelIndex parent(const QModelIndex &child) const override { return QModelIndex(); }
+    virtual QModelIndex index([[maybe_unused]] int row, [[maybe_unused]] int column, [[maybe_unused]] const QModelIndex &parent = QModelIndex()) const override { return QModelIndex(); }
+    virtual QModelIndex parent([[maybe_unused]] const QModelIndex &child) const override { return QModelIndex(); }
     virtual int rowCount(const QModelIndex &parent = QModelIndex()) const override = 0;
     virtual int columnCount(const QModelIndex &parent = QModelIndex()) const override = 0;
-    virtual bool hasChildren(const QModelIndex &parent = QModelIndex()) const override { return false; }
+    virtual bool hasChildren([[maybe_unused]] const QModelIndex &parent = QModelIndex()) const override { return false; }
     virtual QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override = 0;
     virtual bool setData(const QModelIndex &index, const QVariant &value, int role = Qt::EditRole) override = 0;
     virtual QVariant headerData([[maybe_unused]] int section, [[maybe_unused]] Qt::Orientation orientation, [[maybe_unused]] int role = Qt::DisplayRole) const override { return QVariant(); }
     virtual bool setHeaderData([[maybe_unused]] int section, [[maybe_unused]] Qt::Orientation orientation, [[maybe_unused]] const QVariant &value, [[maybe_unused]] int role = Qt::EditRole) override { return false; }
 
-    virtual QMap<int, QVariant> itemData(const QModelIndex &index) const override { return QMap<int, QVariant>(); }
-    virtual bool setItemData(const QModelIndex &index, const QMap<int, QVariant> &roles) override { return false; }
+    virtual QMap<int, QVariant> itemData([[maybe_unused]] const QModelIndex &index) const override { return QMap<int, QVariant>(); }
+    virtual bool setItemData([[maybe_unused]] const QModelIndex &index, [[maybe_unused]] const QMap<int, QVariant> &roles) override { return false; }
 
-    virtual bool insertRows(int row, int count, const QModelIndex &parent = QModelIndex()) override { return insertRow(row, parent); }
-    virtual bool removeRows(int row, int count, const QModelIndex &parent = QModelIndex()) override { return removeRow(row, parent); }
+    virtual bool insertRows(int row, [[maybe_unused]] int count, const QModelIndex &parent = QModelIndex()) override { return insertRow(row, parent); }
+    virtual bool removeRows(int row, [[maybe_unused]] int count, const QModelIndex &parent = QModelIndex()) override { return removeRow(row, parent); }
 
     virtual Qt::ItemFlags flags(const QModelIndex &index) const override { 
         SILENT_CHECK_CONDITION_TRUE_NON_VOID(!index.isValid(), Qt::NoItemFlags);
@@ -67,10 +66,7 @@ public:
     }
 
     const ProtoModel* get_root_model() const;
-    const ProtoModel* get_parent_model() const {
-        SILENT_CHECK_PARAM_NULLPTR_NON_VOID(m_parent_model, this);
-        return m_parent_model;
-    }
+    const ProtoModel* get_parent_model() const { return m_parent_model; }
     int get_index_in_parent() const { return m_index_in_parent; }
 
 protected:

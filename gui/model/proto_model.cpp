@@ -17,7 +17,7 @@ void ProtoModel::parent_data_changed() const {
     while (true) {
         const ProtoModel* m {get_parent_model()};
         SILENT_CHECK_PARAM_NULLPTR(m);
-        emit const_cast<ProtoModel*>(m)->dataChanged(m->index(0, 0), m->index(rowCount() - 1, columnCount() - 1));
+        Q_EMIT const_cast<ProtoModel*>(m)->dataChanged(m->index(0, 0), m->index(rowCount() - 1, columnCount() - 1));
         m = m->get_parent_model();
     }
 }
@@ -97,7 +97,7 @@ QVariant ProtoModel::data(const FieldPath& path) const {
 }
 
 bool ProtoModel::set_data(const FieldPath& path, const QVariant& value) {
-    ProtoModel* model = get_sub_model(path);
+    ProtoModel* model = const_cast<ProtoModel*>(get_sub_model(path));
     SILENT_CHECK_PARAM_NULLPTR_NON_VOID(model, false);
     return model->set_data(value);
 }

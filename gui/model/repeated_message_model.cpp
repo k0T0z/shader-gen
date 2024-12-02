@@ -7,18 +7,15 @@ using Message = google::protobuf::Message;
 using OneofDescriptor = google::protobuf::OneofDescriptor;
 
 RepeatedMessageModel::RepeatedMessageModel(Message* message_buffer, const FieldDescriptor* field_desc, ProtoModel* parent_model, const int& index_in_parent)
-    : MessageModel(message_buffer, parent_model, index_in_parent), m_message_buffer(message_buffer), m_field_desc(field_desc) {
-    build_sub_models();
-}
+    : MessageModel(message_buffer, parent_model, index_in_parent), m_message_buffer(message_buffer), m_field_desc(field_desc) {}
 
 void RepeatedMessageModel::build_sub_models() {
     CHECK_CONDITION_TRUE(!m_field_desc->is_repeated(), "Field is not repeated.");
     CHECK_PARAM_NULLPTR(m_field_desc->message_type(), "Field does not have a message type.");
 
-    const Reflection* refl {m_message_buffer->GetReflection()};
     int size {rowCount()};
-    for (int i = 0; i < size; i++) {
-        m_sub_models.emplace_back(new MessageModel(refl->MutableRepeatedMessage(m_message_buffer, m_field_desc, i), this, i));
+    for (int i {0}; i < size; i++) {
+        append_row(i);
     }
 }
 
@@ -49,7 +46,7 @@ const ProtoModel* RepeatedMessageModel::get_sub_model(const FieldPath& path) con
 
     SILENT_CHECK_CONDITION_TRUE_NON_VOID(!path.skip_component(), nullptr); // Skip the repeated index
 
-    return const_cast<const ProtoModel*>(m_sub_models.at(index)->get_sub_model(path));
+    return m_sub_models.at(index)->get_sub_model(path);
 }
 
 QModelIndex RepeatedMessageModel::index(int row, int column, [[maybe_unused]] const QModelIndex& parent) const {
@@ -153,11 +150,11 @@ int RepeatedMessageModel::field_to_column(const int& fn) const {
     return field->index();
 }
 
-bool RepeatedMessageModel::insertRows(int row, int count, const QModelIndex &parent) {
+bool RepeatedMessageModel::insertRows(int row, [[maybe_unused]] int count, const QModelIndex &parent) {
     return insertRow(row, parent);
 }
 
-bool RepeatedMessageModel::removeRows(int row, int count, const QModelIndex &parent) {
+bool RepeatedMessageModel::removeRows(int row, [[maybe_unused]] int count, const QModelIndex &parent) {
     return removeRow(row, parent);
 }
 
@@ -169,4 +166,22 @@ void RepeatedMessageModel::clear_sub_models() {
     const Reflection* refl {m_message_buffer->GetReflection()};
     refl->ClearField(m_message_buffer, m_field_desc);
     m_sub_models.clear();
+}
+
+void RepeatedMessageModel::append_row(const int& row) {
+    CHECK_CONDITION_TRUE(m_field_desc->cpp_type() != FieldDescriptor::CPPTYPE_MESSAGE, "Field is not a message.");
+
+    // Q_EMIT rowsAboutToBeInserted(QModelIndex(), row, row, {});
+    beginInsertRows(QModelIndex(), row, row);
+
+    const Reflection* refl {m_message_buffer->GetReflection()};
+    m_sub_models.emplace_back(new MessageModel(refl->MutableRepeatedMessage(m_message_buffer, m_field_desc, row), this, row));
+
+    bool result {insertRows(row, 1)};
+    SILENT_CHECK_CONDITION_TRUE(!result);
+
+    parent_data_changed();
+
+    endInsertRows();
+    // Q_EMIT rowsInserted(QModelIndex(), row, row, {});
 }

@@ -29,8 +29,8 @@ public:
 
     virtual QModelIndex index(int row, int column, const QModelIndex &parent = QModelIndex()) const override;
     virtual QModelIndex parent(const QModelIndex &child) const override;
-    virtual int rowCount(const QModelIndex &parent = QModelIndex()) const override { return 1; }
-    virtual int columnCount(const QModelIndex &parent = QModelIndex()) const override { return 1; }
+    virtual int rowCount([[maybe_unused]] const QModelIndex &parent = QModelIndex()) const override { return 1; }
+    virtual int columnCount([[maybe_unused]] const QModelIndex &parent = QModelIndex()) const override { return 1; }
     virtual QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override;
     virtual bool setData(const QModelIndex &index, const QVariant &value, int role = Qt::EditRole) override;
     virtual QVariant headerData([[maybe_unused]] int section, [[maybe_unused]] Qt::Orientation orientation, [[maybe_unused]] int role = Qt::DisplayRole) const override { return QVariant(); }

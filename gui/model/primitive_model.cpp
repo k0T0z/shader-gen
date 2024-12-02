@@ -17,15 +17,16 @@ void PrimitiveModel::build_sub_models() {
 }
 
 QVariant PrimitiveModel::data() const {
-    return data(index(0, 0));
+    return data(this->index(0, 0));
 }
 
 bool PrimitiveModel::set_data(const QVariant& value) {
-    return setData(index(0, 0), value);
+    return setData(this->index(0, 0), value);
 }
 
 const ProtoModel* PrimitiveModel::get_sub_model([[maybe_unused]] const FieldPath& path) const {
-    FAIL_AND_RETURN_NON_VOID(nullptr, "Primitive model does not have sub-models.");
+    CHECK_CONDITION_TRUE_NON_VOID(path.is_valid(), nullptr, "Trying to get a sub-model within a primitive model.");
+    return this;
 }
 
 const FieldDescriptor* PrimitiveModel::get_column_descriptor([[maybe_unused]] const int& column) const {
@@ -34,8 +35,8 @@ const FieldDescriptor* PrimitiveModel::get_column_descriptor([[maybe_unused]] co
 
 QModelIndex PrimitiveModel::index([[maybe_unused]] int row, [[maybe_unused]] int column, [[maybe_unused]] const QModelIndex& parent) const {
     Q_UNUSED(parent);
-    CHECK_CONDITION_TRUE_NON_VOID(row == 0, QModelIndex(), "A primitive model should have only one row.");
-    CHECK_CONDITION_TRUE_NON_VOID(column == 0, QModelIndex(), "A primitive model should have only one column.");
+    CHECK_CONDITION_TRUE_NON_VOID(row > 0, QModelIndex(), "A primitive model should have only one row.");
+    CHECK_CONDITION_TRUE_NON_VOID(column > 0, QModelIndex(), "A primitive model should have only one column.");
     return this->createIndex(row, column);
 }
 
@@ -69,8 +70,8 @@ QVariant PrimitiveModel::data([[maybe_unused]] const QModelIndex& index, [[maybe
     CHECK_PARAM_NULLPTR_NON_VOID(m_message_buffer, QVariant(), "Message buffer is null.");
     CHECK_PARAM_NULLPTR_NON_VOID(m_field_desc, QVariant(), "Field descriptor is null.");
     CHECK_CONDITION_TRUE_NON_VOID(!index.isValid(), QVariant(), "Supplied index was invalid.");
-    CHECK_CONDITION_TRUE_NON_VOID(index.row() == 0, QVariant(), "A primitive model should have only one row.");
-    CHECK_CONDITION_TRUE_NON_VOID(index.column() == 0, QVariant(), "A primitive model should have only one column.");
+    CHECK_CONDITION_TRUE_NON_VOID(index.row() > 0, QVariant(), "A primitive model should have only one row.");
+    CHECK_CONDITION_TRUE_NON_VOID(index.column() > 0, QVariant(), "A primitive model should have only one column.");
 
     const Reflection* refl {m_message_buffer->GetReflection()};
 
@@ -104,8 +105,8 @@ bool PrimitiveModel::setData([[maybe_unused]] const QModelIndex& index, [[maybe_
     CHECK_PARAM_NULLPTR_NON_VOID(m_field_desc, false, "Field descriptor is null.");
     CHECK_CONDITION_TRUE_NON_VOID(!index.isValid(), false, "Supplied index was invalid.");
     CHECK_CONDITION_TRUE_NON_VOID(!value.isValid(), false, "Supplied value is invalid.");
-    CHECK_CONDITION_TRUE_NON_VOID(index.row() == 0, false, "A primitive model should have only one row.");
-    CHECK_CONDITION_TRUE_NON_VOID(index.column() == 0, false, "A primitive model should have only one column.");
+    CHECK_CONDITION_TRUE_NON_VOID(index.row() > 0, false, "A primitive model should have only one row.");
+    CHECK_CONDITION_TRUE_NON_VOID(index.column() > 0, false, "A primitive model should have only one column.");
 
     const Reflection* refl {m_message_buffer->GetReflection()};
 

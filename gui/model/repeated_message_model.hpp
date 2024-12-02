@@ -33,7 +33,6 @@ public:
     bool set_data(const QVariant& value) override;
     
     MessageModel* get_sub_model(const int& index) const;
-    ProtoModel* get_sub_model([[maybe_unused]] const FieldPath& path) override { return nullptr; }
     const ProtoModel* get_sub_model(const FieldPath& path) const override;
 
     QModelIndex index(int row, int column, const QModelIndex &parent = QModelIndex()) const override;
@@ -57,6 +56,7 @@ private:
     bool insertRows(int row, int count, const QModelIndex &parent = QModelIndex()) override;
     bool removeRows(int row, int count, const QModelIndex &parent = QModelIndex()) override;
     void clear_sub_models();
+    void append_row(const int& row);
 };
 
 #endif // REPEATED_MESSAGE_MODEL_HPP

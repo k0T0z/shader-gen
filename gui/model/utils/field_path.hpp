@@ -42,6 +42,10 @@ public:
     // Construct a FieldPath using variadic templates
     template <typename T, typename... Components>
     static FieldPath Of(Components... components) {
+        static_assert(((std::is_same_v<Components, FieldNumber> || 
+                       std::is_same_v<Components, RepeatedAt> || 
+                       std::is_same_v<Components, OneOfFieldNumber>) && ...),
+                       "All Components must be FieldNumber, RepeatedAt, or OneOfFieldNumber.");
         FieldPath path;
         path.m_root_buffer_descriptor = T::GetDescriptor();
         (path.m_components.push(components), ...); // Add all components

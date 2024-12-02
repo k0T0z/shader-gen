@@ -3,18 +3,15 @@
 #include "error_macros.hpp"
 
 RepeatedPrimitiveModel::RepeatedPrimitiveModel(Message* message_buffer, const FieldDescriptor* field_desc, ProtoModel* parent_model, const int& index_in_parent)
-    : PrimitiveModel(message_buffer, m_field_desc, parent_model, index_in_parent), m_message_buffer(message_buffer), m_field_desc(field_desc) {
-    build_sub_models();
-}
+    : PrimitiveModel(message_buffer, field_desc, parent_model, index_in_parent), m_message_buffer(message_buffer), m_field_desc(field_desc) {}
 
 void RepeatedPrimitiveModel::build_sub_models() {
     CHECK_CONDITION_TRUE(!m_field_desc->is_repeated(), "Field is not repeated.");
     CHECK_CONDITION_TRUE(m_field_desc->message_type() != nullptr, "Field does have a message type.");
 
-    const Reflection* refl {m_message_buffer->GetReflection()};
     int size {rowCount()};
-    for (int i = 0; i < size; i++) {
-        m_sub_models.emplace_back(new PrimitiveModel(refl->MutableRepeatedMessage(m_message_buffer, m_field_desc, i), m_field_desc, this, i));
+    for (int i {0}; i < size; i++) {
+        append_row(i);
     }
 }
 
@@ -24,6 +21,15 @@ QVariant RepeatedPrimitiveModel::data() const {
 
 bool RepeatedPrimitiveModel::set_data([[maybe_unused]] const QVariant& value) {
     FAIL_AND_RETURN_NON_VOID(false, "Cannot set data to RepeatedPrimitiveModel.");
+}
+
+PrimitiveModel* RepeatedPrimitiveModel::get_sub_model(const int& index) const {
+    SILENT_VALIDATE_INDEX_NON_VOID(index, rowCount(), nullptr);
+
+    PrimitiveModel* m = dynamic_cast<PrimitiveModel*>(m_sub_models.at(index));
+    SILENT_CHECK_PARAM_NULLPTR_NON_VOID(m, nullptr);
+
+    return m;
 }
 
 const ProtoModel* RepeatedPrimitiveModel::get_sub_model(const FieldPath& path) const {
@@ -36,16 +42,7 @@ const ProtoModel* RepeatedPrimitiveModel::get_sub_model(const FieldPath& path) c
 
     SILENT_CHECK_CONDITION_TRUE_NON_VOID(!path.skip_component(), nullptr); // Skip the repeated index
 
-    return const_cast<const ProtoModel*>(m_sub_models.at(index)->get_sub_model(path));
-}
-
-PrimitiveModel* RepeatedPrimitiveModel::get_sub_model(const int& index) const {
-    SILENT_VALIDATE_INDEX_NON_VOID(index, rowCount(), nullptr);
-
-    PrimitiveModel* m = dynamic_cast<PrimitiveModel*>(m_sub_models.at(index));
-    SILENT_CHECK_PARAM_NULLPTR_NON_VOID(m, nullptr);
-
-    return m;
+    return m_sub_models.at(index)->get_sub_model(path);
 }
 
 const FieldDescriptor* RepeatedPrimitiveModel::get_column_descriptor([[maybe_unused]] const int& column) const {
@@ -76,7 +73,7 @@ bool RepeatedPrimitiveModel::setData([[maybe_unused]] const QModelIndex& index, 
     CHECK_CONDITION_TRUE_NON_VOID(!value.isValid(), false, "Supplied value is invalid.");
     VALIDATE_INDEX_NON_VOID(index.row(), rowCount(), false, 
         "Accessing out-of-range proto row " + std::to_string(index.row()) + " of " + std::to_string(rowCount()));
-    CHECK_CONDITION_TRUE_NON_VOID(index.column() == 0, false, "A primitive model should have only one column.");
+    CHECK_CONDITION_TRUE_NON_VOID(index.column() > 0, false, "A primitive model should have only one column.");
 
     return get_sub_model(index.row())->setData(this->index(0, 0, index), value, role);
 }
@@ -151,11 +148,11 @@ int RepeatedPrimitiveModel::field_to_column(const int& fn) const {
     return field->index();
 }
 
-bool RepeatedPrimitiveModel::insertRows(int row, int count, const QModelIndex &parent) {
+bool RepeatedPrimitiveModel::insertRows(int row, [[maybe_unused]] int count, const QModelIndex &parent) {
     return insertRow(row, parent);
 }
 
-bool RepeatedPrimitiveModel::removeRows(int row, int count, const QModelIndex &parent) {
+bool RepeatedPrimitiveModel::removeRows(int row, [[maybe_unused]] int count, const QModelIndex &parent) {
     return removeRow(row, parent);
 }
 
@@ -167,4 +164,21 @@ void RepeatedPrimitiveModel::clear_sub_models() {
     const Reflection* refl {m_message_buffer->GetReflection()};
     refl->ClearField(m_message_buffer, m_field_desc);
     m_sub_models.clear();
+}
+
+void RepeatedPrimitiveModel::append_row(const int& row) {
+    CHECK_CONDITION_TRUE(m_field_desc->cpp_type() != FieldDescriptor::CPPTYPE_MESSAGE, "Field is not a message.");
+
+    // Q_EMIT rowsAboutToBeInserted(QModelIndex(), row, row, {});
+    beginInsertRows(QModelIndex(), row, row);
+
+    m_sub_models.emplace_back(new PrimitiveModel(m_message_buffer, m_field_desc, this, row));
+
+    bool result {insertRows(row, 1)};
+    SILENT_CHECK_CONDITION_TRUE(!result);
+
+    parent_data_changed();
+
+    endInsertRows();
+    // Q_EMIT rowsInserted(QModelIndex(), row, row, {});
 }
