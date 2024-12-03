@@ -16,13 +16,12 @@ bool FieldPath::is_valid_path() const {
     std::queue<PathComponent> temp = m_components;
 
     while (!temp.empty()) {
-        SILENT_CHECK_PARAM_NULLPTR_NON_VOID(current_buffer_descriptor, false);
-
         PathComponent component {temp.front()};
         temp.pop();
 
         switch (component.index()) {
             case PATH_COMPONENT_VARIANT_FIELD_NUMBER_INDEX: {
+                SILENT_CHECK_PARAM_NULLPTR_NON_VOID(current_buffer_descriptor, false);
                 int fn {std::get<FieldPath::FieldNumber>(component).field_number};
                 const google::protobuf::FieldDescriptor* field {current_buffer_descriptor->FindFieldByNumber(fn)};
                 CHECK_PARAM_NULLPTR_NON_VOID(field, false, "Field " + std::to_string(fn) + " not found in descriptor " + current_buffer_descriptor->full_name());

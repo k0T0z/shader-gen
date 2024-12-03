@@ -30,6 +30,14 @@ TEST(FieldPathTest, ValidPathTraversals) {
         FieldPath::RepeatedAt(0)       // phone_numbers[0]
     );
     EXPECT_TRUE(path3.is_valid());
+
+    auto path4 = FieldPath::Of<OrganizationTestSchema>(
+        FieldPath::FieldNumber(2),     // employees
+        FieldPath::RepeatedAt(0),       // employees[0]
+        FieldPath::FieldNumber(5),      // emails
+        FieldPath::RepeatedAt(0)        // emails[0]
+    );
+    EXPECT_TRUE(path4.is_valid());
 }
 
 // Invalid path scenarios

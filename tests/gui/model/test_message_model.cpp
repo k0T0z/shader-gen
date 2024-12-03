@@ -57,10 +57,10 @@ TEST(MessageModelTest, TestBuildSubModels) {
     ProtoModel* emails = const_cast<ProtoModel*>(model->get_sub_model(FieldPath::Of<OrganizationTestSchema>(FieldPath::FieldNumber(OrganizationTestSchema::kEmployeesFieldNumber), FieldPath::RepeatedAt(employee_idx), FieldPath::FieldNumber(Person::kEmailsFieldNumber))));
     int email_idx = emails->append_row();
 
-    // // Set OrganizationTestSchema.employees[0].emails[0]
-    // EXPECT_TRUE(model->set_data(FieldPath::Of<OrganizationTestSchema>(FieldPath::FieldNumber(OrganizationTestSchema::kEmployeesFieldNumber), FieldPath::RepeatedAt(employee_idx), FieldPath::FieldNumber(Person::kEmailsFieldNumber), FieldPath::RepeatedAt(email_idx)), "rr@st.coom"));
-    // EXPECT_EQ(model->data(FieldPath::Of<OrganizationTestSchema>(FieldPath::FieldNumber(OrganizationTestSchema::kEmployeesFieldNumber), FieldPath::RepeatedAt(employee_idx), FieldPath::FieldNumber(Person::kEmailsFieldNumber), FieldPath::RepeatedAt(email_idx))).toString(), "rr@st.coom");
-    // EXPECT_EQ(org.employees(employee_idx).emails(email_idx), "rr@st.coom");
+    // Set OrganizationTestSchema.employees[0].emails[0]
+    EXPECT_TRUE(model->set_data(FieldPath::Of<OrganizationTestSchema>(FieldPath::FieldNumber(OrganizationTestSchema::kEmployeesFieldNumber), FieldPath::RepeatedAt(employee_idx), FieldPath::FieldNumber(Person::kEmailsFieldNumber), FieldPath::RepeatedAt(email_idx)), "rr@st.coom"));
+    EXPECT_EQ(model->data(FieldPath::Of<OrganizationTestSchema>(FieldPath::FieldNumber(OrganizationTestSchema::kEmployeesFieldNumber), FieldPath::RepeatedAt(employee_idx), FieldPath::FieldNumber(Person::kEmailsFieldNumber), FieldPath::RepeatedAt(email_idx))).toString(), "rr@st.coom");
+    EXPECT_EQ(org.employees(employee_idx).emails(email_idx), "rr@st.coom");
 
     // // Set OrganizationTestSchema.employees[0].preferred_email
     // EXPECT_TRUE(model->set_data(FieldPath::Of<OrganizationTestSchema>(FieldPath::FieldNumber(OrganizationTestSchema::kEmployeesFieldNumber), FieldPath::RepeatedAt(employee_idx), FieldPath::FieldNumber(Person::kPreferredEmailFieldNumber)), "gg@xc.coom"));
