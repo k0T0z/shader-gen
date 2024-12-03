@@ -2,6 +2,7 @@
 #define UTILS_HPP
 
 #include <google/protobuf/descriptor.h>
+#include "error_macros.hpp"
 
 namespace shadergen_utils {
     inline static bool is_inside_real_oneof(const google::protobuf::FieldDescriptor* field) noexcept {
@@ -21,6 +22,7 @@ namespace shadergen_utils {
 
         // return false;
 
+        SILENT_CHECK_PARAM_NULLPTR_NON_VOID(field, false);
         return field->real_containing_oneof() != nullptr;
     }
 } // namespace shadergen_utils

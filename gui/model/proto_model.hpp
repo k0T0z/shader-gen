@@ -80,6 +80,7 @@ protected:
     
     virtual bool insertRows(int row, [[maybe_unused]] int count, const QModelIndex &parent = QModelIndex()) override { return false; }
     virtual bool removeRows(int row, [[maybe_unused]] int count, const QModelIndex &parent = QModelIndex()) override { return false; }
+    virtual void clear_sub_models() = 0;
 };
 
 #endif // PROTO_MODEL_HPP

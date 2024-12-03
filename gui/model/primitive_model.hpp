@@ -40,6 +40,8 @@ public:
 private:
     Message* m_message_buffer;
     const FieldDescriptor* m_field_desc;
+
+    virtual void clear_sub_models() override {}
 };
 
 #endif // PRIMITIVE_MODEL_HPP

@@ -7,6 +7,41 @@
 #include <google/protobuf/message.h>
 #include "error_macros.hpp"
 
+/**
+ * @brief A class to represent a path to a field in a protobuf message.
+ * 
+ * @example 
+ * 
+ *   - Access a field in a message: 
+ *        FieldPath::Of<MyMessage>(FieldPath::FieldNumber(1));
+ *   - Access a field in a message in a oneof: 
+ *        FieldPath::Of<MyMessage>(FieldPath::OneofFieldNumber("my_oneof", 1));
+ *   - Access a repeated field in a message: 
+ *        FieldPath::Of<MyMessage>(FieldPath::RepeatedFieldNumber(1, 0)); // Get 
+ *        the first element from a repeated field with field number 1
+ * 
+ *           ----------------------------------------------------
+ * 
+ *   - Get a message model:
+ *        FieldPath::Of<MyMessage>(FieldPath::FieldNumber(1)); // This will return
+ *        a message model with the field number 1
+ *   - Get a oneof model:
+ *        FieldPath::Of<MyMessage>(FieldPath::OneofFieldNumber("my_oneof", -1)); 
+ *        // This will return a oneof model with the oneof name "my_oneof"
+ *   - Get a repeated model:
+ *        FieldPath::Of<MyMessage>(FieldPath::RepeatedFieldNumber(2, -1)); // This
+ *        will return a repeated model with the field number 2
+ * 
+ *           ----------------------------------------------------
+ * 
+ *   All the above examples are for the top-level message. You can nest the path
+ *   - Access a field in a message in a message:
+ *        FieldPath::Of<MyMessage>(FieldPath::FieldNumber(1), FieldPath::FieldNumber(2));
+ *        // This will return a message model with the field number 2 in a message with 
+ *        // the field number 1
+ * 
+ * 
+ */
 class FieldPath {
 public:
     /**
@@ -14,9 +49,6 @@ public:
      *        - Message
      *        - Enum
      *        - Primitive
-     *        - Repeated Message
-     *        - Repeated Enum
-     *        - Repeated Primitive
      * 
      */
     struct FieldNumber {
@@ -24,9 +56,17 @@ public:
         explicit FieldNumber(const int& f) : field_number(f) {}
     };
 
-    struct RepeatedAt {
+    /**
+     * @brief Can be:
+     *        - Repeated Message
+     *        - Repeated Enum
+     *        - Repeated Primitive
+     * 
+     */
+    struct RepeatedFieldNumber {
+        int field_number;
         int index;
-        explicit RepeatedAt(const int& i) : index(i) {}
+        explicit RepeatedFieldNumber(const int& f, const int& i) : field_number(f), index(i) {}
     };
 
     /**
@@ -35,14 +75,14 @@ public:
      *        - Enum
      * 
      */
-    struct OneOfFieldNumber {
-        int field_number;
+    struct OneofFieldNumber {
         std::string oneof_name;
-        explicit OneOfFieldNumber(const int& f, const std::string& o) : field_number(f), oneof_name(o) {}
+        int field_number;
+        explicit OneofFieldNumber(const std::string& o, const int& f) : oneof_name(o), field_number(f) {}
     };
 
     // Variant to hold any path component
-    using PathComponent = std::variant<FieldNumber, RepeatedAt, OneOfFieldNumber>;
+    using PathComponent = std::variant<FieldNumber, RepeatedFieldNumber, OneofFieldNumber>;
 
 private:
     bool m_is_valid;
@@ -51,7 +91,7 @@ private:
 
     FieldPath() : m_is_valid(false) {}
     bool is_upcoming_field() const;
-    bool is_upcoming_repeated_index() const;
+    bool is_upcoming_repeated() const;
     bool is_upcoming_oneof() const;
 
     /**
@@ -71,9 +111,9 @@ public:
     template <typename T, typename... Components>
     static FieldPath Of(Components... components) {
         static_assert(((std::is_same_v<Components, FieldNumber> || 
-                       std::is_same_v<Components, RepeatedAt> || 
-                       std::is_same_v<Components, OneOfFieldNumber>) && ...),
-                       "All Components must be FieldNumber, RepeatedAt, or OneOfFieldNumber.");
+                       std::is_same_v<Components, RepeatedFieldNumber> || 
+                       std::is_same_v<Components, OneofFieldNumber>) && ...),
+                       "All Components must be FieldNumber, RepeatedFieldNumber, or OneofFieldNumber.");
         FieldPath path;
         path.m_root_buffer_descriptor = T::GetDescriptor();
         (path.m_components.push(components), ...); // Add all components

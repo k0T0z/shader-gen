@@ -54,7 +54,7 @@ private:
 
     bool insertRows(int row, int count, const QModelIndex &parent = QModelIndex()) override;
     bool removeRows(int row, int count, const QModelIndex &parent = QModelIndex()) override;
-    void clear_sub_models();
+    void clear_sub_models() override;
     void append_row(const int& row);
 };
 

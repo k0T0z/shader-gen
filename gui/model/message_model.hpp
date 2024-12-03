@@ -70,7 +70,8 @@ private:
     std::unordered_map<int, ProtoModel*> m_sub_models_by_field_number;
     std::unordered_map<std::string, ProtoModel*> m_sub_models_by_oneof_name;
 
-    void clear_sub_models();
+    virtual void clear_sub_models() override;
+    int map_to_oneof_index(const int& field_index) const;
 };
 
 #endif // MESSAGE_MODEL_HPP
