@@ -41,7 +41,7 @@ public:
     bool set_data(const QVariant& value) override;
     
     const ProtoModel* get_sub_model(const int& field_number) const;
-    const ProtoModel* get_sub_model(const FieldPath& path) const override;
+    const ProtoModel* get_sub_model(const FieldPath& path, const bool& for_set_data = false) const override;
 
     const FieldDescriptor* get_column_descriptor(const int& column) const override;
 
@@ -62,8 +62,6 @@ public:
     virtual QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override;
     virtual bool setData(const QModelIndex &index, const QVariant &value, int role = Qt::EditRole) override;
     virtual QVariant headerData([[maybe_unused]] int section, [[maybe_unused]] Qt::Orientation orientation, [[maybe_unused]] int role = Qt::DisplayRole) const override;
-
-    Message* get_message_buffer() const { return m_message_buffer; }
 
 private:
     Message* m_message_buffer;

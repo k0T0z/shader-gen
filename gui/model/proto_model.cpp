@@ -77,7 +77,7 @@ void ProtoModel::parent_data_changed() const {
 //         const auto& component = path.components()[i];
 //         if (std::holds_alternative<FieldPath::FieldNumber>(component)) {
 //             int fieldNumber = std::get<FieldPath::FieldNumber>(component).field;
-//             const FieldDescriptor* field = descriptor->FindFieldByNumber(fieldNumber);
+//             const FieldDescriptor* field_desc = descriptor->FindFieldByNumber(fieldNumber);
 //             if (field->is_repeated() || field->cpp_type() != FieldDescriptor::CPPTYPE_MESSAGE)
 //                 return nullptr; // Traversal ends here
 //             message = reflection->MutableMessage(message, field);
@@ -97,7 +97,7 @@ QVariant ProtoModel::data(const FieldPath& path) const {
 }
 
 bool ProtoModel::set_data(const FieldPath& path, const QVariant& value) {
-    ProtoModel* model = const_cast<ProtoModel*>(get_sub_model(path));
+    ProtoModel* model = const_cast<ProtoModel*>(get_sub_model(path, true));
     CHECK_PARAM_NULLPTR_NON_VOID(model, false, "Failed to get sub model " + path.to_string());
     return model->set_data(value);
 }

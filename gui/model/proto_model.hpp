@@ -34,7 +34,7 @@ public:
     virtual QVariant data() const = 0;
     virtual bool set_data(const QVariant& value) = 0;
 
-    virtual const ProtoModel* get_sub_model(const FieldPath& path) const = 0; // A read-only version of ProtoModel
+    virtual const ProtoModel* get_sub_model(const FieldPath& path, const bool& for_set_data = false) const = 0; // A read-only version of ProtoModel
 
     virtual const FieldDescriptor* get_column_descriptor(const int& column) const = 0;
 

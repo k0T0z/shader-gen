@@ -26,14 +26,16 @@ void MessageModel::build_sub_models() {
     // Iterate through all fields in the message
     for (int i {0}; i < total_fields; i++) {
         // https://protobuf.dev/reference/cpp/api-docs/google.protobuf.descriptor/#FieldDescriptor
-        const FieldDescriptor* field {get_column_descriptor(i)};
+        const FieldDescriptor* field_desc {get_column_descriptor(i)};
 
-        if (field->is_repeated()) {
-            switch (field->cpp_type()) {
+        SILENT_CONTINUE_IF_TRUE(m_sub_models_by_field_number.find(field_desc->number()) != m_sub_models_by_field_number.end());
+
+        if (field_desc->is_repeated()) {
+            switch (field_desc->cpp_type()) {
                 case FieldDescriptor::CppType::CPPTYPE_MESSAGE: {
-                        ProtoModel* sub_model {new RepeatedMessageModel(m_message_buffer, field, this, i)};
+                        ProtoModel* sub_model {new RepeatedMessageModel(m_message_buffer, field_desc, this, i)};
                         sub_model->build_sub_models();
-                        m_sub_models_by_field_number[field->number()] = sub_model;
+                        m_sub_models_by_field_number[field_desc->number()] = sub_model;
                         break;
                     }
                 case FieldDescriptor::CppType::CPPTYPE_INT32:
@@ -45,50 +47,48 @@ void MessageModel::build_sub_models() {
                 case FieldDescriptor::CppType::CPPTYPE_BOOL:
                 case FieldDescriptor::CppType::CPPTYPE_STRING: 
                 case FieldDescriptor::CppType::CPPTYPE_ENUM: {
-                        ProtoModel* sub_model {new RepeatedPrimitiveModel(m_message_buffer, field, this, i)};
+                        ProtoModel* sub_model {new RepeatedPrimitiveModel(m_message_buffer, field_desc, this, i)};
                         sub_model->build_sub_models();
-                        m_sub_models_by_field_number[field->number()] = sub_model;
+                        m_sub_models_by_field_number[field_desc->number()] = sub_model;
                         break;
                     }
                 default:
-                    WARN_PRINT("Unsupported field type: " + std::to_string(field->cpp_type()));
+                    WARN_PRINT("Unsupported field type: " + std::to_string(field_desc->cpp_type()));
                     break;
             }
         } else {
-            if (shadergen_utils::is_inside_real_oneof(field)) {
-                const OneofDescriptor* oneof {field->real_containing_oneof()};
-                auto it = m_sub_models_by_oneof_name.find(oneof->name());
-                if (it == m_sub_models_by_oneof_name.end()) {
-                    ProtoModel* sub_model {new OneofModel(m_message_buffer, oneof, this, i)};
-                    sub_model->build_sub_models();
-                    m_sub_models_by_oneof_name[oneof->name()] = sub_model;
+            if (shadergen_utils::is_inside_real_oneof(field_desc)) {
+                const OneofDescriptor* oneof_desc {field_desc->real_containing_oneof()};
+                auto it = m_sub_models_by_oneof_name.find(oneof_desc->name());
+                SILENT_CONTINUE_IF_TRUE(it != m_sub_models_by_oneof_name.end());
+                ProtoModel* sub_model {new OneofModel(m_message_buffer, oneof_desc, this, i)};
+                sub_model->build_sub_models();
+                m_sub_models_by_oneof_name[oneof_desc->name()] = sub_model;
+            } else {
+                switch (field_desc->cpp_type()) {
+                    case FieldDescriptor::CppType::CPPTYPE_MESSAGE: {
+                            ProtoModel* sub_model {new MessageModel(refl->MutableMessage(m_message_buffer, field_desc), this, i)};
+                            sub_model->build_sub_models();
+                            m_sub_models_by_field_number[field_desc->number()] = sub_model;
+                            break;
+                        }
+                    case FieldDescriptor::CppType::CPPTYPE_INT32:
+                    case FieldDescriptor::CppType::CPPTYPE_INT64:
+                    case FieldDescriptor::CppType::CPPTYPE_UINT32:
+                    case FieldDescriptor::CppType::CPPTYPE_UINT64:
+                    case FieldDescriptor::CppType::CPPTYPE_DOUBLE:
+                    case FieldDescriptor::CppType::CPPTYPE_FLOAT:
+                    case FieldDescriptor::CppType::CPPTYPE_BOOL:
+                    case FieldDescriptor::CppType::CPPTYPE_STRING:
+                    case FieldDescriptor::CppType::CPPTYPE_ENUM: {
+                            ProtoModel* sub_model {new PrimitiveModel(m_message_buffer, field_desc, this, i)};
+                            m_sub_models_by_field_number[field_desc->number()] = sub_model;
+                            break;
+                        }
+                    default:
+                        WARN_PRINT("Unsupported field type: " + std::to_string(field_desc->cpp_type()));
+                        break;
                 }
-                continue;
-            }
-
-            switch (field->cpp_type()) {
-                case FieldDescriptor::CppType::CPPTYPE_MESSAGE: {
-                        ProtoModel* sub_model {new MessageModel(refl->MutableMessage(m_message_buffer, field), this, i)};
-                        sub_model->build_sub_models();
-                        m_sub_models_by_field_number[field->number()] = sub_model;
-                        break;
-                    }
-                case FieldDescriptor::CppType::CPPTYPE_INT32:
-                case FieldDescriptor::CppType::CPPTYPE_INT64:
-                case FieldDescriptor::CppType::CPPTYPE_UINT32:
-                case FieldDescriptor::CppType::CPPTYPE_UINT64:
-                case FieldDescriptor::CppType::CPPTYPE_DOUBLE:
-                case FieldDescriptor::CppType::CPPTYPE_FLOAT:
-                case FieldDescriptor::CppType::CPPTYPE_BOOL:
-                case FieldDescriptor::CppType::CPPTYPE_STRING:
-                case FieldDescriptor::CppType::CPPTYPE_ENUM: {
-                        ProtoModel* sub_model {new PrimitiveModel(m_message_buffer, field, this, i)};
-                        m_sub_models_by_field_number[field->number()] = sub_model;
-                        break;
-                    }
-                default:
-                    WARN_PRINT("Unsupported field type: " + std::to_string(field->cpp_type()));
-                    break;
             }
         }
     }
@@ -104,10 +104,10 @@ bool MessageModel::set_data([[maybe_unused]] const QVariant& value) {
 
 const ProtoModel* MessageModel::get_sub_model(const int& field_number) const {
     const Descriptor* desc {m_message_buffer->GetDescriptor()};
-    const FieldDescriptor* field {desc->FindFieldByNumber(field_number)};
-    if (shadergen_utils::is_inside_real_oneof(field)) {
-        const OneofDescriptor* oneof {field->real_containing_oneof()};
-        auto it {m_sub_models_by_oneof_name.find(oneof->name())};
+    const FieldDescriptor* field_desc {desc->FindFieldByNumber(field_number)};
+    if (shadergen_utils::is_inside_real_oneof(field_desc)) {
+        const OneofDescriptor* oneof_desc {field_desc->real_containing_oneof()};
+        auto it {m_sub_models_by_oneof_name.find(oneof_desc->name())};
         SILENT_CHECK_CONDITION_TRUE_NON_VOID(it == m_sub_models_by_oneof_name.end(), nullptr);
         return it->second;
     }
@@ -117,7 +117,7 @@ const ProtoModel* MessageModel::get_sub_model(const int& field_number) const {
     return it->second;
 }
 
-const ProtoModel* MessageModel::get_sub_model(const FieldPath& path) const {
+const ProtoModel* MessageModel::get_sub_model(const FieldPath& path, const bool& for_set_data) const {
     SILENT_CHECK_PARAM_NULLPTR_NON_VOID(m_message_buffer, nullptr);
     const Descriptor* desc {m_message_buffer->GetDescriptor()};
     CHECK_CONDITION_TRUE_NON_VOID(!path.is_valid(), nullptr, "Invalid path for " + desc->full_name());
@@ -125,21 +125,22 @@ const ProtoModel* MessageModel::get_sub_model(const FieldPath& path) const {
 
     int fn {-1};
 
-    CHECK_CONDITION_TRUE_NON_VOID(!path.get_upcoming_field_num(fn) && !path.get_upcoming_oneof_field_num(fn), nullptr, "Next component is not a field number.");
+    CHECK_CONDITION_TRUE_NON_VOID(!path.get_upcoming_field_num(fn), nullptr, "Next component is not a field number.");
 
-    const FieldDescriptor* field {desc->FindFieldByNumber(fn)};
-    if (shadergen_utils::is_inside_real_oneof(field)) {
-        const OneofDescriptor* oneof {field->real_containing_oneof()};
-        auto it {m_sub_models_by_oneof_name.find(oneof->name())};
+    const FieldDescriptor* field_desc {desc->FindFieldByNumber(fn)};
+
+    if (shadergen_utils::is_inside_real_oneof(field_desc)) {
+        const OneofDescriptor* oneof_desc {field_desc->real_containing_oneof()};
+        auto it {m_sub_models_by_oneof_name.find(oneof_desc->name())};
         SILENT_CHECK_CONDITION_TRUE_NON_VOID(it == m_sub_models_by_oneof_name.end(), nullptr);
-        return it->second->get_sub_model(path);
+        return it->second->get_sub_model(path, for_set_data);
     }
     
     auto it {m_sub_models_by_field_number.find(fn)};
     CHECK_CONDITION_TRUE_NON_VOID(it == m_sub_models_by_field_number.end(), nullptr, "Sub-model under " + desc->full_name() + " not found for field number " + std::to_string(fn));
 
     CHECK_CONDITION_TRUE_NON_VOID(!path.skip_component(), nullptr, "Failed to skip field number.");
-
+    
     return it->second->get_sub_model(path);
 }
 
@@ -188,16 +189,7 @@ QModelIndex MessageModel::parent([[maybe_unused]] const QModelIndex& child) cons
 
 int MessageModel::columnCount([[maybe_unused]] const QModelIndex& parent) const {
     const Descriptor* desc {m_message_buffer->GetDescriptor()};
-
-    int total_fields {desc->field_count()};
-    // int real_oneofs_count {desc->real_oneof_decl_count()};
-
-    // for (int i = 0; i < real_oneofs_count; ++i) {
-    //     total_fields -= desc->oneof_decl(i)->field_count(); // Subtract the fields in the oneof
-    //     total_fields += 1; // One column for the oneof
-    // }
-    
-    return total_fields;
+    return desc->field_count();
 }
 
 QVariant MessageModel::data(const QModelIndex& index, [[maybe_unused]] int role) const {
@@ -207,19 +199,19 @@ QVariant MessageModel::data(const QModelIndex& index, [[maybe_unused]] int role)
     VALIDATE_INDEX_NON_VOID(index.column(), columnCount(), QVariant(), 
         "Accessing out-of-range proto column " + std::to_string(index.column()) + " of " + std::to_string(columnCount()));
 
-    const FieldDescriptor* field {get_column_descriptor(index.column())};
-    SILENT_CHECK_PARAM_NULLPTR_NON_VOID(field, QVariant());
+    const FieldDescriptor* field_desc {get_column_descriptor(index.column())};
+    SILENT_CHECK_PARAM_NULLPTR_NON_VOID(field_desc, QVariant());
 
-    CHECK_CONDITION_TRUE_NON_VOID(field->is_repeated(), QVariant(), "Field is repeated.");
+    CHECK_CONDITION_TRUE_NON_VOID(field_desc->is_repeated(), QVariant(), "Field is repeated.");
 
-    if (shadergen_utils::is_inside_real_oneof(field)) {
-        const OneofDescriptor* oneof {field->real_containing_oneof()};
-        auto it {m_sub_models_by_oneof_name.find(oneof->name())};
+    if (shadergen_utils::is_inside_real_oneof(field_desc)) {
+        const OneofDescriptor* oneof_desc {field_desc->real_containing_oneof()};
+        auto it {m_sub_models_by_oneof_name.find(oneof_desc->name())};
         SILENT_CHECK_CONDITION_TRUE_NON_VOID(it == m_sub_models_by_oneof_name.end(), QVariant());
-        return get_sub_model(field->number())->data(this->index(0, map_to_oneof_index(index.column()), index), role);
+        return get_sub_model(field_desc->number())->data(this->index(0, map_to_oneof_index(index.column()), index), role);
     }
 
-    return get_sub_model(field->number())->data(this->index(0, 0, index), role);
+    return get_sub_model(field_desc->number())->data(this->index(0, 0, index), role);
 }
 
 bool MessageModel::setData(const QModelIndex& index, const QVariant& value, int role) {
@@ -230,19 +222,19 @@ bool MessageModel::setData(const QModelIndex& index, const QVariant& value, int 
     VALIDATE_INDEX_NON_VOID(index.column(), columnCount(), false, 
         "Accessing out-of-range proto column " + std::to_string(index.column()) + " of " + std::to_string(columnCount()));
 
-    const FieldDescriptor* field {get_column_descriptor(index.column())};
-    SILENT_CHECK_PARAM_NULLPTR_NON_VOID(field, false);
+    const FieldDescriptor* field_desc {get_column_descriptor(index.column())};
+    SILENT_CHECK_PARAM_NULLPTR_NON_VOID(field_desc, false);
 
-    CHECK_CONDITION_TRUE_NON_VOID(field->is_repeated(), false, "Field is repeated.");
+    CHECK_CONDITION_TRUE_NON_VOID(field_desc->is_repeated(), false, "Field is repeated.");
 
-    if (shadergen_utils::is_inside_real_oneof(field)) {
-        const OneofDescriptor* oneof {field->real_containing_oneof()};
-        auto it {m_sub_models_by_oneof_name.find(oneof->name())};
+    if (shadergen_utils::is_inside_real_oneof(field_desc)) {
+        const OneofDescriptor* oneof_desc {field_desc->real_containing_oneof()};
+        auto it {m_sub_models_by_oneof_name.find(oneof_desc->name())};
         SILENT_CHECK_CONDITION_TRUE_NON_VOID(it == m_sub_models_by_oneof_name.end(), false);
-        return const_cast<ProtoModel*>(get_sub_model(field->number()))->setData(this->index(0, map_to_oneof_index(index.column()), index), value, role);
+        return const_cast<ProtoModel*>(get_sub_model(field_desc->number()))->setData(this->index(0, map_to_oneof_index(index.column()), index), value, role);
     }
 
-    return const_cast<ProtoModel*>(get_sub_model(field->number()))->setData(this->index(0, 0, index), value, role);
+    return const_cast<ProtoModel*>(get_sub_model(field_desc->number()))->setData(this->index(0, 0, index), value, role);
 }
 
 QVariant MessageModel::headerData(int section, [[maybe_unused]] Qt::Orientation orientation, [[maybe_unused]] int role) const {
@@ -252,32 +244,32 @@ QVariant MessageModel::headerData(int section, [[maybe_unused]] Qt::Orientation 
     VALIDATE_INDEX_NON_VOID(section, columnCount(), QVariant(), 
         "Accessing out-of-range proto column " + std::to_string(section) + " of " + std::to_string(columnCount()));
 
-    const FieldDescriptor* field {get_column_descriptor(section)};
-    CHECK_PARAM_NULLPTR_NON_VOID(field, QVariant(), "Field is null.");
+    const FieldDescriptor* field_desc {get_column_descriptor(section)};
+    CHECK_PARAM_NULLPTR_NON_VOID(field_desc, QVariant(), "Field is null.");
 
-    return QString::fromStdString(field->full_name());
+    return QString::fromStdString(field_desc->full_name());
 }
 
 void MessageModel::clear_sub_models() {
-    for (auto& [field_number, sub_model] : m_sub_models_by_field_number) {
-        delete sub_model;
-    }
+    for (auto& [field_number, sub_model] : m_sub_models_by_field_number) delete sub_model;
 
     m_sub_models_by_field_number.clear();
+
+    for (auto& [oneof_name, sub_model] : m_sub_models_by_oneof_name) delete sub_model;
+
+    m_sub_models_by_oneof_name.clear();
 }
 
 int MessageModel::map_to_oneof_index(const int& field_index) const {
-    const FieldDescriptor* field {get_column_descriptor(field_index)};
+    const FieldDescriptor* field_desc {get_column_descriptor(field_index)};
     
-    SILENT_CHECK_CONDITION_TRUE_NON_VOID(!shadergen_utils::is_inside_real_oneof(field), -1);
+    SILENT_CHECK_CONDITION_TRUE_NON_VOID(!shadergen_utils::is_inside_real_oneof(field_desc), -1);
 
-    const OneofDescriptor* oneof {field->real_containing_oneof()};
+    const OneofDescriptor* oneof_desc {field_desc->real_containing_oneof()};
 
     // Find the index of this field within its oneof
-    for (int i {0}; i < oneof->field_count(); ++i) {
-        if (oneof->field(i)->number() == field->number()) {
-            return i;
-        }
+    for (int i {0}; i < oneof_desc->field_count(); ++i) {
+        if (oneof_desc->field(i)->number() == field_desc->number()) return i;
     }
 
     return -1;

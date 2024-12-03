@@ -37,7 +37,7 @@ MessageModel* RepeatedMessageModel::get_sub_model(const int& index) const {
     return m;
 }
 
-const ProtoModel* RepeatedMessageModel::get_sub_model(const FieldPath& path) const {
+const ProtoModel* RepeatedMessageModel::get_sub_model(const FieldPath& path, const bool& for_set_data) const {
     CHECK_CONDITION_TRUE_NON_VOID(!path.is_valid(), nullptr, "Invalid path for " + m_field_desc->full_name());
     SILENT_CHECK_CONDITION_TRUE_NON_VOID(path.is_empty(), this);
 
@@ -140,11 +140,11 @@ bool RepeatedMessageModel::remove_row(const int& row) {
 int RepeatedMessageModel::field_to_column(const int& fn) const {
     const Descriptor* desc {m_message_buffer->GetDescriptor()};
 
-    const FieldDescriptor* field {desc->FindFieldByNumber(fn)};
+    const FieldDescriptor* field_desc {desc->FindFieldByNumber(fn)};
 
-    CHECK_PARAM_NULLPTR_NON_VOID(field, -1, "Field not found.");
+    CHECK_PARAM_NULLPTR_NON_VOID(field_desc, -1, "Field not found.");
 
-    return field->index();
+    return field_desc->index();
 }
 
 bool RepeatedMessageModel::insertRows(int row, int count, const QModelIndex &parent) {

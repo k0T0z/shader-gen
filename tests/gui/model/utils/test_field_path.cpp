@@ -26,22 +26,10 @@ TEST(FieldPathTest, ValidPathTraversals) {
 
     // Repeated field path (just checking descriptor validity)
     auto path3 = FieldPath::Of<Person>(
-        FieldPath::RepeatedFieldNumber(4, 0)     // phone_numbers[0]
+        FieldPath::FieldNumber(4),     // phone_numbers
+        FieldPath::RepeatedAt(0)       // phone_numbers[0]
     );
     EXPECT_TRUE(path3.is_valid());
-
-    // Oneof field path
-    auto path4 = FieldPath::Of<Person>(
-        FieldPath::OneofFieldNumber("contact_method", 6)  // preferred_email
-    );
-    EXPECT_TRUE(path4.is_valid());
-
-    // Nested oneof path
-    auto path5 = FieldPath::Of<Person>(
-        FieldPath::OneofFieldNumber("employment", 10),    // employment_details
-        FieldPath::OneofFieldNumber("salary_info", 2)  // annual_salary
-    );
-    EXPECT_TRUE(path5.is_valid());
 }
 
 // Invalid path scenarios
@@ -52,31 +40,20 @@ TEST(FieldPathTest, InvalidPathTraversals) {
     );
     EXPECT_FALSE(path1.is_valid());
 
-    // Invalid oneof name
-    auto path2 = FieldPath::Of<Person>(
-        FieldPath::OneofFieldNumber("non_existent_oneof", 6)
-    );
-    EXPECT_FALSE(path2.is_valid());
-
-    // Field number in wrong oneof
-    auto path3 = FieldPath::Of<Person>(
-        FieldPath::OneofFieldNumber("contact_method", 8)  // company in wrong oneof
-    );
-    EXPECT_FALSE(path3.is_valid());
-
     // Attempting to access non-message field with nested path
-    auto path4 = FieldPath::Of<Person>(
+    auto path2 = FieldPath::Of<Person>(
         FieldPath::FieldNumber(1),  // id (primitive field)
         FieldPath::FieldNumber(2)   // Trying to nest into primitive
     );
-    EXPECT_FALSE(path4.is_valid());
+    EXPECT_FALSE(path2.is_valid());
 }
 
 // Complex path validation
 TEST(FieldPathTest, ComplexPathValidation) {
     // Complex nested path through multiple levels
     auto path1 = FieldPath::Of<OrganizationTestSchema>(
-        FieldPath::RepeatedFieldNumber(2, 0),     // employees[0]
+        FieldPath::FieldNumber(2),     // employees
+        FieldPath::RepeatedAt(0),       // employees[0]
         FieldPath::FieldNumber(3),     // home_address
         FieldPath::FieldNumber(2)      // city
     );
@@ -84,26 +61,12 @@ TEST(FieldPathTest, ComplexPathValidation) {
 
     // Path through multiple nested structures
     auto path2 = FieldPath::Of<OrganizationTestSchema>(
-        FieldPath::RepeatedFieldNumber(2, 0),     // employees[0]
-        FieldPath::OneofFieldNumber("employment", 10),    // employment_details
-        FieldPath::OneofFieldNumber("salary_info", 3)  // salary range
+        FieldPath::FieldNumber(2),     // employees
+        FieldPath::RepeatedAt(0),       // employees[0]
+        FieldPath::FieldNumber(10),    // employment_details
+        FieldPath::FieldNumber(3)  // salary range
     );
     EXPECT_TRUE(path2.is_valid());
-}
-
-// Oneof specific validation
-TEST(FieldPathTest, OneofValidation) {
-    // Valid oneof field selection
-    auto path1 = FieldPath::Of<Person>(
-        FieldPath::OneofFieldNumber("contact_method", 7)  // preferred_phone
-    );
-    EXPECT_TRUE(path1.is_valid());
-
-    // Invalid oneof field selection
-    auto path2 = FieldPath::Of<Person>(
-        FieldPath::OneofFieldNumber("contact_method", 8)  // company (wrong oneof)
-    );
-    EXPECT_FALSE(path2.is_valid());
 }
 
 // Edge case path validation
@@ -111,32 +74,4 @@ TEST(FieldPathTest, EdgeCaseValidation) {
     // Empty path
     auto path1 = FieldPath::Of<Person>();
     EXPECT_FALSE(path1.is_valid());
-}
-
-TEST(FieldPathTest, InvalidOneofName) {
-    auto path1 = FieldPath::Of<OrganizationTestSchema>(
-        FieldPath::OneofFieldNumber("headquarters", 2)
-    );
-    EXPECT_FALSE(path1.is_valid());
-
-    auto path2 = FieldPath::Of<OrganizationTestSchema>(
-        FieldPath::RepeatedFieldNumber(2, 0),
-        FieldPath::OneofFieldNumber("blah blah", 5)
-
-    );
-    EXPECT_FALSE(path2.is_valid());
-}
-
-TEST(FieldPathTest, WrongOneofName) {
-    auto path1 = FieldPath::Of<OrganizationTestSchema>(
-        FieldPath::OneofFieldNumber("blah blah", 3)
-    );
-    EXPECT_FALSE(path1.is_valid());
-
-    auto path2 = FieldPath::Of<OrganizationTestSchema>(
-        FieldPath::RepeatedFieldNumber(2, 0),
-        FieldPath::OneofFieldNumber("blah blah", 10)
-
-    );
-    EXPECT_FALSE(path2.is_valid());
 }

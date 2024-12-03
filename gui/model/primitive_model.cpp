@@ -24,7 +24,7 @@ bool PrimitiveModel::set_data(const QVariant& value) {
     return setData(this->index(0, 0), value);
 }
 
-const ProtoModel* PrimitiveModel::get_sub_model([[maybe_unused]] const FieldPath& path) const {
+const ProtoModel* PrimitiveModel::get_sub_model([[maybe_unused]] const FieldPath& path, const bool& for_set_data) const {
     const Descriptor* desc {m_message_buffer->GetDescriptor()};
     CHECK_CONDITION_TRUE_NON_VOID(!path.is_valid(), nullptr, "Invalid path for " + desc->full_name());
     CHECK_CONDITION_TRUE_NON_VOID(!path.is_empty(), nullptr, "Trying to get sub-model of a primitive model.");
@@ -32,6 +32,7 @@ const ProtoModel* PrimitiveModel::get_sub_model([[maybe_unused]] const FieldPath
 }
 
 const FieldDescriptor* PrimitiveModel::get_column_descriptor([[maybe_unused]] const int& column) const {
+    CHECK_CONDITION_TRUE_NON_VOID(column > 0, nullptr, "A primitive model should have only one column.");
     return m_field_desc;
 }
 
@@ -180,10 +181,8 @@ QVariant PrimitiveModel::headerData(int section, [[maybe_unused]] Qt::Orientatio
     SILENT_CHECK_CONDITION_TRUE_NON_VOID(role != Qt::DisplayRole, QVariant());
     CHECK_CONDITION_TRUE_NON_VOID(section > 0, QVariant(), "A primitive model should have only one column.");
     
-    const Descriptor* desc {m_message_buffer->GetDescriptor()};
+    const FieldDescriptor* field_desc {get_column_descriptor(section)};
+    CHECK_PARAM_NULLPTR_NON_VOID(field_desc, QVariant(), "Field is null.");
 
-    const FieldDescriptor* field {desc->field(section)};
-    CHECK_PARAM_NULLPTR_NON_VOID(field, QVariant(), "Field is null.");
-
-    return QString::fromStdString(field->full_name());
+    return QString::fromStdString(field_desc->full_name());
 }

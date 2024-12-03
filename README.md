@@ -11,3 +11,4 @@ Or mRGM, which stands for mini-RadialGM, is a simple and lightweight version of 
 - Added a separate model for a oneof.
 - Simplified primitives and repeated primitives.
 - Created a great version of the FieldPath class.
+- The `get_sub_model` method is now recieve an optional parameter `for_set_data` to get the sub-model for setting data.
