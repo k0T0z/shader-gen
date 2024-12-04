@@ -48,7 +48,7 @@ const ProtoModel* RepeatedMessageModel::get_sub_model(const FieldPath& path, con
 
     CHECK_CONDITION_TRUE_NON_VOID(!path.skip_component(), nullptr, "Failed to skip repeated index.");
 
-    return m_sub_models.at(index)->get_sub_model(path);
+    return m_sub_models.at(index)->get_sub_model(path, for_set_data);
 }
 
 QModelIndex RepeatedMessageModel::index(int row, int column, [[maybe_unused]] const QModelIndex& parent) const {

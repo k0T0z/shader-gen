@@ -33,11 +33,11 @@ void MessageModel::build_sub_models() {
         if (field_desc->is_repeated()) {
             switch (field_desc->cpp_type()) {
                 case FieldDescriptor::CppType::CPPTYPE_MESSAGE: {
-                        ProtoModel* sub_model {new RepeatedMessageModel(m_message_buffer, field_desc, this, i)};
-                        sub_model->build_sub_models();
-                        m_sub_models_by_field_number[field_desc->number()] = sub_model;
-                        break;
-                    }
+                    ProtoModel* sub_model {new RepeatedMessageModel(m_message_buffer, field_desc, this, i)};
+                    sub_model->build_sub_models();
+                    m_sub_models_by_field_number[field_desc->number()] = sub_model;
+                    break;
+                }
                 case FieldDescriptor::CppType::CPPTYPE_INT32:
                 case FieldDescriptor::CppType::CPPTYPE_INT64:
                 case FieldDescriptor::CppType::CPPTYPE_UINT32:
@@ -47,11 +47,11 @@ void MessageModel::build_sub_models() {
                 case FieldDescriptor::CppType::CPPTYPE_BOOL:
                 case FieldDescriptor::CppType::CPPTYPE_STRING: 
                 case FieldDescriptor::CppType::CPPTYPE_ENUM: {
-                        ProtoModel* sub_model {new RepeatedPrimitiveModel(m_message_buffer, field_desc, this, i)};
-                        sub_model->build_sub_models();
-                        m_sub_models_by_field_number[field_desc->number()] = sub_model;
-                        break;
-                    }
+                    ProtoModel* sub_model {new RepeatedPrimitiveModel(m_message_buffer, field_desc, this, i)};
+                    sub_model->build_sub_models();
+                    m_sub_models_by_field_number[field_desc->number()] = sub_model;
+                    break;
+                }
                 default:
                     WARN_PRINT("Unsupported field type: " + std::to_string(field_desc->cpp_type()));
                     break;
@@ -67,11 +67,11 @@ void MessageModel::build_sub_models() {
             } else {
                 switch (field_desc->cpp_type()) {
                     case FieldDescriptor::CppType::CPPTYPE_MESSAGE: {
-                            ProtoModel* sub_model {new MessageModel(refl->MutableMessage(m_message_buffer, field_desc), this, i)};
-                            sub_model->build_sub_models();
-                            m_sub_models_by_field_number[field_desc->number()] = sub_model;
-                            break;
-                        }
+                        ProtoModel* sub_model {new MessageModel(refl->MutableMessage(m_message_buffer, field_desc), this, i)};
+                        sub_model->build_sub_models();
+                        m_sub_models_by_field_number[field_desc->number()] = sub_model;
+                        break;
+                    }
                     case FieldDescriptor::CppType::CPPTYPE_INT32:
                     case FieldDescriptor::CppType::CPPTYPE_INT64:
                     case FieldDescriptor::CppType::CPPTYPE_UINT32:
@@ -81,10 +81,10 @@ void MessageModel::build_sub_models() {
                     case FieldDescriptor::CppType::CPPTYPE_BOOL:
                     case FieldDescriptor::CppType::CPPTYPE_STRING:
                     case FieldDescriptor::CppType::CPPTYPE_ENUM: {
-                            ProtoModel* sub_model {new PrimitiveModel(m_message_buffer, field_desc, this, i)};
-                            m_sub_models_by_field_number[field_desc->number()] = sub_model;
-                            break;
-                        }
+                        ProtoModel* sub_model {new PrimitiveModel(m_message_buffer, field_desc, this, i)};
+                        m_sub_models_by_field_number[field_desc->number()] = sub_model;
+                        break;
+                    }
                     default:
                         WARN_PRINT("Unsupported field type: " + std::to_string(field_desc->cpp_type()));
                         break;
@@ -141,7 +141,7 @@ const ProtoModel* MessageModel::get_sub_model(const FieldPath& path, const bool&
 
     CHECK_CONDITION_TRUE_NON_VOID(!path.skip_component(), nullptr, "Failed to skip field number.");
     
-    return it->second->get_sub_model(path);
+    return it->second->get_sub_model(path, for_set_data);
 }
 
 const FieldDescriptor* MessageModel::get_column_descriptor(const int& column) const {

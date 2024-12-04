@@ -13,6 +13,7 @@ using Person = tests::gui::model::schema::Person;
 using PhoneNumber = tests::gui::model::schema::PhoneNumber;
 using OrganizationTestSchema = tests::gui::model::schema::OrganizationTestSchema;
 using Address = tests::gui::model::schema::Address;
+using EmploymentDetails = tests::gui::model::schema::Person::EmploymentDetails;
 
 TEST(MessageModelTest, TestBuildSubModels) {
     OrganizationTestSchema org;
@@ -62,28 +63,28 @@ TEST(MessageModelTest, TestBuildSubModels) {
     EXPECT_EQ(model->data(FieldPath::Of<OrganizationTestSchema>(FieldPath::FieldNumber(OrganizationTestSchema::kEmployeesFieldNumber), FieldPath::RepeatedAt(employee_idx), FieldPath::FieldNumber(Person::kEmailsFieldNumber), FieldPath::RepeatedAt(email_idx))).toString(), "rr@st.coom");
     EXPECT_EQ(org.employees(employee_idx).emails(email_idx), "rr@st.coom");
 
-    // // Set OrganizationTestSchema.employees[0].preferred_email
-    // EXPECT_TRUE(model->set_data(FieldPath::Of<OrganizationTestSchema>(FieldPath::FieldNumber(OrganizationTestSchema::kEmployeesFieldNumber), FieldPath::RepeatedAt(employee_idx), FieldPath::FieldNumber(Person::kPreferredEmailFieldNumber)), "gg@xc.coom"));
-    // EXPECT_EQ(model->data(FieldPath::Of<OrganizationTestSchema>(FieldPath::FieldNumber(OrganizationTestSchema::kEmployeesFieldNumber), FieldPath::RepeatedAt(employee_idx), FieldPath::FieldNumber(Person::kPreferredEmailFieldNumber))).toString(), "gg@xc.coom");
-    // EXPECT_EQ(org.employees(employee_idx).preferred_email(), "gg@xc.coom");
+    // Set OrganizationTestSchema.employees[0].preferred_email
+    EXPECT_TRUE(model->set_data(FieldPath::Of<OrganizationTestSchema>(FieldPath::FieldNumber(OrganizationTestSchema::kEmployeesFieldNumber), FieldPath::RepeatedAt(employee_idx), FieldPath::FieldNumber(Person::kPreferredEmailFieldNumber)), "gg@xc.coom"));
+    EXPECT_EQ(model->data(FieldPath::Of<OrganizationTestSchema>(FieldPath::FieldNumber(OrganizationTestSchema::kEmployeesFieldNumber), FieldPath::RepeatedAt(employee_idx), FieldPath::FieldNumber(Person::kPreferredEmailFieldNumber))).toString(), "gg@xc.coom");
+    EXPECT_EQ(org.employees(employee_idx).preferred_email(), "gg@xc.coom");
 
-    // // Set OrganizationTestSchema.employees[0].preferred_phone
-    // EXPECT_TRUE(model->set_data(FieldPath::Of<OrganizationTestSchema>(FieldPath::FieldNumber(OrganizationTestSchema::kEmployeesFieldNumber), FieldPath::RepeatedAt(employee_idx), FieldPath::FieldNumber(Person::kPreferredPhoneFieldNumber), FieldPath::FieldNumber(PhoneNumber::kNumberFieldNumber)), "555-1234-00"));
-    // EXPECT_EQ(model->data(FieldPath::Of<OrganizationTestSchema>(FieldPath::FieldNumber(OrganizationTestSchema::kEmployeesFieldNumber), FieldPath::RepeatedAt(employee_idx), FieldPath::FieldNumber(Person::kPreferredPhoneFieldNumber), FieldPath::FieldNumber(PhoneNumber::kNumberFieldNumber))).toString(), "555-1234-00");
-    // EXPECT_EQ(org.employees(employee_idx).preferred_phone().number(), "555-1234-00");
+    // Set OrganizationTestSchema.employees[0].preferred_phone
+    EXPECT_TRUE(model->set_data(FieldPath::Of<OrganizationTestSchema>(FieldPath::FieldNumber(OrganizationTestSchema::kEmployeesFieldNumber), FieldPath::RepeatedAt(employee_idx), FieldPath::FieldNumber(Person::kPreferredPhoneFieldNumber), FieldPath::FieldNumber(PhoneNumber::kNumberFieldNumber)), "555-1234-00"));
+    EXPECT_EQ(model->data(FieldPath::Of<OrganizationTestSchema>(FieldPath::FieldNumber(OrganizationTestSchema::kEmployeesFieldNumber), FieldPath::RepeatedAt(employee_idx), FieldPath::FieldNumber(Person::kPreferredPhoneFieldNumber), FieldPath::FieldNumber(PhoneNumber::kNumberFieldNumber))).toString(), "555-1234-00");
+    EXPECT_EQ(org.employees(employee_idx).preferred_phone().number(), "555-1234-00");
 
-    // // Set OrganizationTestSchema.employees[0].employment_details.annual_salary
-    // EXPECT_TRUE(model->set_data(FieldPath::Of<OrganizationTestSchema>(FieldPath::FieldNumber(OrganizationTestSchema::kEmployeesFieldNumber), FieldPath::RepeatedAt(employee_idx), FieldPath::FieldNumber(Person::kEmploymentDetailsFieldNumber), FieldPath::FieldNumber(Person::EmploymentDetails::kAnnualSalaryFieldNumber)), "1000000"));
-    // EXPECT_EQ(model->data(FieldPath::Of<OrganizationTestSchema>(FieldPath::FieldNumber(OrganizationTestSchema::kEmployeesFieldNumber), FieldPath::RepeatedAt(employee_idx), FieldPath::FieldNumber(Person::kEmploymentDetailsFieldNumber), FieldPath::FieldNumber(Person::EmploymentDetails::kAnnualSalaryFieldNumber))).toString(), "1000000");
-    // EXPECT_EQ(org.employees(employee_idx).employment_details().annual_salary(), 1000000);
+    // Set OrganizationTestSchema.employees[0].employment_details.annual_salary
+    EXPECT_TRUE(model->set_data(FieldPath::Of<OrganizationTestSchema>(FieldPath::FieldNumber(OrganizationTestSchema::kEmployeesFieldNumber), FieldPath::RepeatedAt(employee_idx), FieldPath::FieldNumber(Person::kEmploymentDetailsFieldNumber), FieldPath::FieldNumber(EmploymentDetails::kAnnualSalaryFieldNumber)), 1000000.0));
+    EXPECT_EQ(model->data(FieldPath::Of<OrganizationTestSchema>(FieldPath::FieldNumber(OrganizationTestSchema::kEmployeesFieldNumber), FieldPath::RepeatedAt(employee_idx), FieldPath::FieldNumber(Person::kEmploymentDetailsFieldNumber), FieldPath::FieldNumber(EmploymentDetails::kAnnualSalaryFieldNumber))).toDouble(), 1000000.0);
+    EXPECT_EQ(org.employees(employee_idx).employment_details().annual_salary(), 1000000.0);
 
-    // // Set OrganizationTestSchema.main_office.street
-    // EXPECT_TRUE(model->set_data(FieldPath::Of<OrganizationTestSchema>(FieldPath::FieldNumber(OrganizationTestSchema::kMainOfficeFieldNumber), FieldPath::FieldNumber(Address::kStreetFieldNumber)), "123 Test Street"));
-    // EXPECT_EQ(model->data(FieldPath::Of<OrganizationTestSchema>(FieldPath::FieldNumber(OrganizationTestSchema::kMainOfficeFieldNumber), FieldPath::FieldNumber(Address::kStreetFieldNumber))).toString(), "123 Test Street");
-    // EXPECT_EQ(org.main_office().street(), "123 Test Street");
+    // Set OrganizationTestSchema.main_office.street
+    EXPECT_TRUE(model->set_data(FieldPath::Of<OrganizationTestSchema>(FieldPath::FieldNumber(OrganizationTestSchema::kMainOfficeFieldNumber), FieldPath::FieldNumber(Address::kStreetFieldNumber)), "123 Test Street"));
+    EXPECT_EQ(model->data(FieldPath::Of<OrganizationTestSchema>(FieldPath::FieldNumber(OrganizationTestSchema::kMainOfficeFieldNumber), FieldPath::FieldNumber(Address::kStreetFieldNumber))).toString(), "123 Test Street");
+    EXPECT_EQ(org.main_office().street(), "123 Test Street");
 
-    // // Set OrganizationTestSchema.virtual_headquarters
-    // EXPECT_TRUE(model->set_data(FieldPath::Of<OrganizationTestSchema>(FieldPath::FieldNumber(OrganizationTestSchema::kVirtualHeadquartersFieldNumber)), "Virtual Testville"));
-    // EXPECT_EQ(model->data(FieldPath::Of<OrganizationTestSchema>(FieldPath::FieldNumber(OrganizationTestSchema::kVirtualHeadquartersFieldNumber))).toString(), "Virtual Testville");
-    // EXPECT_EQ(org.virtual_headquarters(), "Virtual Testville");
+    // Set OrganizationTestSchema.virtual_headquarters
+    EXPECT_TRUE(model->set_data(FieldPath::Of<OrganizationTestSchema>(FieldPath::FieldNumber(OrganizationTestSchema::kVirtualHeadquartersFieldNumber)), "Virtual Testville"));
+    EXPECT_EQ(model->data(FieldPath::Of<OrganizationTestSchema>(FieldPath::FieldNumber(OrganizationTestSchema::kVirtualHeadquartersFieldNumber))).toString(), "Virtual Testville");
+    EXPECT_EQ(org.virtual_headquarters(), "Virtual Testville");
 }

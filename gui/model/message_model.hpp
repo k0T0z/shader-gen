@@ -63,6 +63,8 @@ public:
     virtual bool setData(const QModelIndex &index, const QVariant &value, int role = Qt::EditRole) override;
     virtual QVariant headerData([[maybe_unused]] int section, [[maybe_unused]] Qt::Orientation orientation, [[maybe_unused]] int role = Qt::DisplayRole) const override;
 
+    virtual Message* get_message_buffer() const override { return m_message_buffer; }
+
 private:
     Message* m_message_buffer;
     std::unordered_map<int, ProtoModel*> m_sub_models_by_field_number;

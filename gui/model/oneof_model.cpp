@@ -89,7 +89,7 @@ const ProtoModel* OneofModel::get_sub_model(const FieldPath& path, const bool& f
 
     CHECK_CONDITION_TRUE_NON_VOID(!path.skip_component(), nullptr, "Failed to skip field number.");
 
-    return m_sub_model->get_sub_model(path);
+    return m_sub_model->get_sub_model(path, for_set_data);
 }
 
 const FieldDescriptor* OneofModel::get_column_descriptor(const int& column) const {
@@ -209,6 +209,23 @@ bool OneofModel::set_oneof(const FieldDescriptor* field_desc) const {
         case FieldDescriptor::CppType::CPPTYPE_ENUM: {
             ProtoModel* sub_model {new PrimitiveModel(m_message_buffer, field_desc, const_cast<OneofModel*>(this), 0)};
             m_sub_model = sub_model;
+
+            // Set the oneof field
+            // We don't need to do this for messages because refl->MutableMessage() already sets the oneof field
+            switch (field_desc->cpp_type()) {
+                case FieldDescriptor::CppType::CPPTYPE_INT32: sub_model->set_data(refl->GetInt32(*m_message_buffer, field_desc)); break;
+                case FieldDescriptor::CppType::CPPTYPE_INT64: sub_model->set_data(QVariant::fromValue(refl->GetInt64(*m_message_buffer, field_desc))); break;
+                case FieldDescriptor::CppType::CPPTYPE_UINT32: sub_model->set_data(refl->GetUInt32(*m_message_buffer, field_desc)); break;
+                case FieldDescriptor::CppType::CPPTYPE_UINT64: sub_model->set_data(QVariant::fromValue(refl->GetUInt64(*m_message_buffer, field_desc))); break;
+                case FieldDescriptor::CppType::CPPTYPE_DOUBLE: sub_model->set_data(refl->GetDouble(*m_message_buffer, field_desc)); break;
+                case FieldDescriptor::CppType::CPPTYPE_FLOAT: sub_model->set_data(refl->GetFloat(*m_message_buffer, field_desc)); break;
+                case FieldDescriptor::CppType::CPPTYPE_BOOL: sub_model->set_data(refl->GetBool(*m_message_buffer, field_desc)); break;
+                case FieldDescriptor::CppType::CPPTYPE_STRING: sub_model->set_data(QString::fromStdString(refl->GetString(*m_message_buffer, field_desc))); break;
+                case FieldDescriptor::CppType::CPPTYPE_ENUM: sub_model->set_data(refl->GetEnumValue(*m_message_buffer, field_desc)); break;
+                default:
+                    WARN_PRINT("Unsupported field type: " + std::to_string(field_desc->cpp_type()));
+                    break;
+            }
             break;
         }
         default:

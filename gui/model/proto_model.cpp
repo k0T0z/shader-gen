@@ -22,73 +22,53 @@ void ProtoModel::parent_data_changed() const {
     }
 }
 
-// QByteArray ProtoModel::serializeToJson() const {
-//     std::string jsonString;
-//     JsonOptions options;
-//     options.add_whitespace = true; // Makes JSON human-readable
-//     MessageToJsonString(*m_message, &jsonString, options);
-//     return QByteArray::fromStdString(jsonString);
-//     return QByteArray();
-// }
+QByteArray ProtoModel::serializeToJson() const {
+    const ProtoModel* root_model = get_root_model();
+    CHECK_PARAM_NULLPTR_NON_VOID(root_model, QByteArray(), "Failed to get root model");
+    Message* message_buffer = root_model->get_message_buffer();
+    CHECK_PARAM_NULLPTR_NON_VOID(message_buffer, QByteArray(), "Failed to get message buffer");
 
-// bool ProtoModel::deserializeFromJson(const QByteArray& jsonData) {
-//     JsonParseOptions options;
-//     absl::Status status =
-//         JsonStringToMessage(jsonData.toStdString(), m_message, options);
+    std::string jsonString;
+    JsonOptions options;
+    options.add_whitespace = true; // Makes JSON human-readable
+    MessageToJsonString(*message_buffer, &jsonString, options);
+    return QByteArray::fromStdString(jsonString);
+}
 
-//     if (!status.ok()) {
-//         qWarning() << "Failed to deserialize JSON:" << status.ToString().c_str();
-//         return false;
-//     }
-//     return true;
-// }
+bool ProtoModel::deserializeFromJson(const QByteArray& jsonData) {
+    const ProtoModel* root_model = get_root_model();
+    CHECK_PARAM_NULLPTR_NON_VOID(root_model, false, "Failed to get root model");
+    Message* message_buffer = root_model->get_message_buffer();
+    CHECK_PARAM_NULLPTR_NON_VOID(message_buffer, false, "Failed to get message buffer");
 
-// bool ProtoModel::loadFromJson(const QString& filePath) {
-//     QFile file(filePath);
-//     if (!file.open(QIODevice::ReadOnly)) {
-//         qWarning() << "Failed to open file for reading:" << filePath;
-//         return false;
-//     }
+    JsonParseOptions options;
+    absl::Status status =
+        JsonStringToMessage(jsonData.toStdString(), message_buffer, options);
 
-//     QByteArray jsonData = file.readAll();
-//     file.close();
-//     return deserializeFromJson(jsonData);
-//     return true;
-// }
+    CHECK_CONDITION_TRUE_NON_VOID(!status.ok(), false, "Failed to deserialize JSON:" + status.ToString());
 
-// bool ProtoModel::saveToJson(const QString& filePath) const {
-//     QFile file(filePath);
-//     if (!file.open(QIODevice::WriteOnly)) {
-//         qWarning() << "Failed to open file for writing:" << filePath;
-//         return false;
-//     }
+    return true;
+}
 
-//     QByteArray jsonData = serializeToJson();
-//     file.write(jsonData);
-//     file.close();
-//     return true;
-// }
+bool ProtoModel::loadFromJson(const QString& filePath) {
+    QFile file(filePath);
+    CHECK_CONDITION_TRUE_NON_VOID(!file.open(QIODevice::ReadOnly), false, "Failed to open file for reading: " + filePath.toStdString());
 
-// Message* ProtoModel::traverseToField(Message* message, const FieldPath& path, int depth) const {
-//     const Descriptor* descriptor = message->GetDescriptor();
-//     const Reflection* reflection = message->GetReflection();
+    QByteArray jsonData = file.readAll();
+    file.close();
+    return deserializeFromJson(jsonData);
+    return true;
+}
 
-//     for (int i = depth; i < path.components().size(); ++i) {
-//         const auto& component = path.components()[i];
-//         if (std::holds_alternative<FieldPath::FieldNumber>(component)) {
-//             int fieldNumber = std::get<FieldPath::FieldNumber>(component).field;
-//             const FieldDescriptor* field_desc = descriptor->FindFieldByNumber(fieldNumber);
-//             if (field->is_repeated() || field->cpp_type() != FieldDescriptor::CPPTYPE_MESSAGE)
-//                 return nullptr; // Traversal ends here
-//             message = reflection->MutableMessage(message, field);
-//         } else if (std::holds_alternative<FieldPath::RepeatedAt>(component)) {
-//             return nullptr; // Not implemented for repeated fields yet
-//         } else if (std::holds_alternative<FieldPath::OneOfFieldNumber>(component)) {
-//             return nullptr; // Not implemented for oneof fields yet
-//         }
-//     }
-//     return message;
-// }
+bool ProtoModel::saveToJson(const QString& filePath) const {
+    QFile file(filePath);
+    CHECK_CONDITION_TRUE_NON_VOID(!file.open(QIODevice::WriteOnly), false, "Failed to open file for writing: " + filePath.toStdString());
+
+    QByteArray jsonData = serializeToJson();
+    file.write(jsonData);
+    file.close();
+    return true;
+}
 
 QVariant ProtoModel::data(const FieldPath& path) const {
     const ProtoModel* model = get_sub_model(path);

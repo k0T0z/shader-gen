@@ -45,7 +45,7 @@ const ProtoModel* RepeatedPrimitiveModel::get_sub_model(const FieldPath& path, c
 
     CHECK_CONDITION_TRUE_NON_VOID(!path.skip_component(), nullptr, "Failed to skip repeated index.");
 
-    return m_sub_models.at(index)->get_sub_model(path);
+    return m_sub_models.at(index)->get_sub_model(path, for_set_data);
 }
 
 QModelIndex RepeatedPrimitiveModel::index(int row, int column, [[maybe_unused]] const QModelIndex& parent) const {
@@ -159,9 +159,7 @@ bool RepeatedPrimitiveModel::insertRows(int row, int count, const QModelIndex &p
         case FieldDescriptor::CppType::CPPTYPE_FLOAT: refl->AddFloat(m_message_buffer, m_field_desc, 0.0f); break;
         case FieldDescriptor::CppType::CPPTYPE_BOOL: refl->AddBool(m_message_buffer, m_field_desc, false); break;
         case FieldDescriptor::CppType::CPPTYPE_STRING: refl->AddString(m_message_buffer, m_field_desc, ""); break;
-        case FieldDescriptor::CppType::CPPTYPE_ENUM:
-            WARN_PRINT("Enum is not supported yet.");
-            break;
+        case FieldDescriptor::CppType::CPPTYPE_ENUM: refl->AddEnumValue(m_message_buffer, m_field_desc, 0); break;
         default:
             WARN_PRINT("Unsupported field type: " + std::to_string(m_field_desc->cpp_type()));
             break;

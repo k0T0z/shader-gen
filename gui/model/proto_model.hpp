@@ -6,6 +6,7 @@
 #include "gui/model/utils/field_path.hpp"
 #include "error_macros.hpp"
 
+using Message = google::protobuf::Message;
 using Descriptor = google::protobuf::Descriptor;
 using Reflection = google::protobuf::Reflection;
 using FieldDescriptor = google::protobuf::FieldDescriptor;
@@ -22,8 +23,8 @@ public:
     virtual void build_sub_models() = 0;
 
     // JSON Serialization
-    // bool loadFromJson(const QString& filePath);
-    // bool saveToJson(const QString& filePath) const;
+    bool loadFromJson(const QString& filePath);
+    bool saveToJson(const QString& filePath) const;
 
     void parent_data_changed() const;
 
@@ -54,15 +55,10 @@ public:
     virtual int append_row() { return -1; }
     virtual bool remove_row([[maybe_unused]] const int& row) { return false; }
 
-
-    virtual Qt::ItemFlags flags(const QModelIndex &index) const override { 
-        SILENT_CHECK_CONDITION_TRUE_NON_VOID(!index.isValid(), Qt::NoItemFlags);
-        auto flags = QAbstractItemModel::flags(index);
-        flags |= Qt::ItemIsEditable;
-        return flags;
-    }
+    virtual Qt::ItemFlags flags(const QModelIndex &index) const override { return Qt::NoItemFlags; }
 
     const ProtoModel* get_root_model() const;
+    virtual Message* get_message_buffer() const { return nullptr; }
     const ProtoModel* get_parent_model() const { return m_parent_model; }
     int get_index_in_parent() const { return m_index_in_parent; }
 
@@ -71,13 +67,9 @@ protected:
     int m_index_in_parent;
 
     // Serialization helper
-    // QByteArray serializeToJson() const;
-    // bool deserializeFromJson(const QByteArray& jsonData);
+    QByteArray serializeToJson() const;
+    bool deserializeFromJson(const QByteArray& jsonData);
 
-    // Helper methods for traversing fields
-    // google::protobuf::Message* traverseToField(google::protobuf::Message* message, const FieldPath& path, int depth = 0) const;
-    // const google::protobuf::Message* traverseToField(const google::protobuf::Message* message, const FieldPath& path, int depth = 0) const;
-    
     virtual bool insertRows(int row, [[maybe_unused]] int count, const QModelIndex &parent = QModelIndex()) override { return false; }
     virtual bool removeRows(int row, [[maybe_unused]] int count, const QModelIndex &parent = QModelIndex()) override { return false; }
     virtual void clear_sub_models() = 0;
