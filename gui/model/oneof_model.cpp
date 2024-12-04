@@ -99,26 +99,32 @@ const FieldDescriptor* OneofModel::get_column_descriptor(const int& column) cons
 }
 
 QModelIndex OneofModel::index(int row, int column, [[maybe_unused]] const QModelIndex& parent) const {
-    Q_UNUSED(parent);
-    CHECK_CONDITION_TRUE_NON_VOID(row > 0, QModelIndex(), "A oneof model should have only one row.");
-    VALIDATE_INDEX_NON_VOID(column, columnCount(), QModelIndex(), 
-        "Accessing out-of-range proto column " + std::to_string(column) + " of " + std::to_string(columnCount()));
-
     return createIndex(row, column);
 }
 
 QModelIndex OneofModel::parent([[maybe_unused]] const QModelIndex& child) const {
-    Q_UNUSED(child);
-    const ProtoModel* parent_model {get_parent_model()};
+    CHECK_CONDITION_TRUE_NON_VOID(child.isValid(), QModelIndex(), "This design requires that the child index is invalid.");
+    const ProtoModel* parent {get_parent_model()};
+    CHECK_PARAM_NULLPTR_NON_VOID(parent, QModelIndex(), "Parent of oneof model is null.");
 
-    const ProtoModel* root_model {get_root_model()};
+    ProtoModel* t {const_cast<ProtoModel*>(parent)};
 
-    SILENT_CHECK_CONDITION_TRUE_NON_VOID(parent_model == root_model, QModelIndex());
+    /*
+        Here we need to return an index that represents the parent of the this message model.
+        The index should contain the row and column of the parent model in its parent. 
+        
+        If the parent model is a MessageModel, then the row should be 0 and the column should 
+        be the index in it.
+        
+        Note that the parent model can be a MessageModel only as primitive models cannot have 
+        children except for repeated primitive models which are only allowed to have children 
+        of type PrimitiveModel.
+    */
+    if (MessageModel* message_m {dynamic_cast<MessageModel*>(t)}) {
+        return index(0, m_index_in_parent, message_m->parent(QModelIndex()));
+    }
 
-    MessageModel* parent_message_model {dynamic_cast<MessageModel*>(const_cast<ProtoModel*>(parent_model->get_parent_model()))};
-    SILENT_CHECK_CONDITION_TRUE_NON_VOID(parent_message_model != nullptr, createIndex(0, parent_model->get_index_in_parent()));
-
-    return QModelIndex();
+    FAIL_AND_RETURN_NON_VOID(QModelIndex(), "Parent model is not a message model.");
 }
 
 int OneofModel::columnCount([[maybe_unused]] const QModelIndex& parent) const {
@@ -146,6 +152,7 @@ bool OneofModel::setData(const QModelIndex& index, const QVariant& value, int ro
     CHECK_PARAM_NULLPTR_NON_VOID(m_message_buffer, false, "Message buffer is null.");
     CHECK_CONDITION_TRUE_NON_VOID(!index.isValid(), false, "Supplied index was invalid.");
     CHECK_CONDITION_TRUE_NON_VOID(!value.isValid(), false, "Supplied value is invalid.");
+    CHECK_CONDITION_TRUE_NON_VOID(value.isNull(), false, "Value is null.");
     CHECK_CONDITION_TRUE_NON_VOID(index.row() > 0, false, "A message model should have only one row.");
     VALIDATE_INDEX_NON_VOID(index.column(), columnCount(), false, 
         "Accessing out-of-range proto column " + std::to_string(index.column()) + " of " + std::to_string(columnCount()));

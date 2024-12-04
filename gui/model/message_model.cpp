@@ -153,38 +153,41 @@ const FieldDescriptor* MessageModel::get_column_descriptor(const int& column) co
 }
 
 QModelIndex MessageModel::index(int row, int column, [[maybe_unused]] const QModelIndex& parent) const {
-    Q_UNUSED(parent);
-    CHECK_CONDITION_TRUE_NON_VOID(row > 0, QModelIndex(), "A message model should have only one row.");
-    VALIDATE_INDEX_NON_VOID(column, columnCount(), QModelIndex(), 
-        "Accessing out-of-range proto column " + std::to_string(column) + " of " + std::to_string(columnCount()));
-
     return createIndex(row, column);
 }
 
 QModelIndex MessageModel::parent([[maybe_unused]] const QModelIndex& child) const {
-    Q_UNUSED(child);
-    const ProtoModel* parent_model {get_parent_model()};
+    CHECK_CONDITION_TRUE_NON_VOID(child.isValid(), QModelIndex(), "This design requires that the child index is invalid.");
+    const ProtoModel* parent {get_parent_model()};
+    SILENT_CHECK_PARAM_NULLPTR_NON_VOID(parent, QModelIndex());
 
-    const ProtoModel* root_model {get_root_model()};
-
-    SILENT_CHECK_CONDITION_TRUE_NON_VOID(parent_model == root_model, QModelIndex());
+    ProtoModel* t {const_cast<ProtoModel*>(parent)};
 
     /*
-        Here we need to return an index that represents the parent of the child parameter.
-        The index should contain the row and column of the parent model in its parent. If 
-        the parent model is a RepeatedMessageModel, then the get_index_in_parent() should be
-        the row. If the parent model is a MessageModel, then the get_index_in_parent() should
-        be the column because a MessageModel is allowed to have only one row. Note that the
-        parent model can be a RepeatedMessageModel or a MessageModel only as primitive models
-        are not allowed to have children.
+        Here we need to return an index that represents the parent of the this message model.
+        The index should contain the row and column of the parent model in its parent. 
+        
+        If the parent model is a RepeatedMessageModel, then the row should be the index in it.
+        While the column will be the index in its parent. A message model is represented as a 
+        single row in a repeated message model. This means it is more obvious to set the column
+        to -1, however, this will make the QModelIndex invalid. See https://doc.qt.io/qt-5/qmodelindex.html#isValid
+        
+        If the parent model is a MessageModel, then the row should be 0 and the column should 
+        be the index in it. Same goes for OneofModel.
+        
+        Note that the parent model can be a RepeatedMessageModel, MessageModel, or OneofModel 
+        as primitive models cannot have children except for repeated primitive models which are
+        only allowed to have children of type PrimitiveModel.
     */
-    RepeatedMessageModel* parent_repeat_model {dynamic_cast<RepeatedMessageModel*>(const_cast<ProtoModel*>(parent_model->get_parent_model()))};
-    SILENT_CHECK_CONDITION_TRUE_NON_VOID(parent_repeat_model != nullptr, createIndex(parent_model->get_index_in_parent(), -1));
+    if (RepeatedMessageModel* repeated_m {dynamic_cast<RepeatedMessageModel*>(t)}) {
+        return index(m_index_in_parent, repeated_m->get_index_in_parent(), repeated_m->parent(QModelIndex()));
+    } else if (MessageModel* message_m {dynamic_cast<MessageModel*>(t)}) {
+        return index(0, m_index_in_parent, message_m->parent(QModelIndex()));
+    } else if (OneofModel* oneof_m {dynamic_cast<OneofModel*>(t)}) {
+        return index(0, m_index_in_parent, oneof_m->parent(QModelIndex()));
+    }
 
-    MessageModel* parent_message_model {dynamic_cast<MessageModel*>(const_cast<ProtoModel*>(parent_model->get_parent_model()))};
-    SILENT_CHECK_CONDITION_TRUE_NON_VOID(parent_message_model != nullptr, createIndex(0, parent_model->get_index_in_parent()));
-
-    return QModelIndex();
+    FAIL_AND_RETURN_NON_VOID(QModelIndex(), "Parent model is not a repeated message model, message model, or oneof model.");
 }
 
 int MessageModel::columnCount([[maybe_unused]] const QModelIndex& parent) const {
@@ -218,6 +221,7 @@ bool MessageModel::setData(const QModelIndex& index, const QVariant& value, int 
     CHECK_PARAM_NULLPTR_NON_VOID(m_message_buffer, false, "Message buffer is null.");
     CHECK_CONDITION_TRUE_NON_VOID(!index.isValid(), false, "Supplied index was invalid.");
     CHECK_CONDITION_TRUE_NON_VOID(!value.isValid(), false, "Supplied value is invalid.");
+    CHECK_CONDITION_TRUE_NON_VOID(value.isNull(), false, "Value is null.");
     CHECK_CONDITION_TRUE_NON_VOID(index.row() > 0, false, "A message model should have only one row.");
     VALIDATE_INDEX_NON_VOID(index.column(), columnCount(), false, 
         "Accessing out-of-range proto column " + std::to_string(index.column()) + " of " + std::to_string(columnCount()));

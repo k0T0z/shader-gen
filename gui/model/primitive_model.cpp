@@ -4,6 +4,7 @@
 #include <google/protobuf/reflection.h>
 #include "gui/model/message_model.hpp"
 #include "gui/model/repeated_primitive_model.hpp"
+#include "gui/model/oneof_model.hpp"
 
 #include "error_macros.hpp"
 
@@ -17,11 +18,11 @@ void PrimitiveModel::build_sub_models() {
 }
 
 QVariant PrimitiveModel::data() const {
-    return data(this->index(0, 0));
+    return data(this->index(0, 0, this->parent(QModelIndex())));
 }
 
 bool PrimitiveModel::set_data(const QVariant& value) {
-    return setData(this->index(0, 0), value);
+    return setData(this->index(0, 0, this->parent(QModelIndex())), value);
 }
 
 const ProtoModel* PrimitiveModel::get_sub_model([[maybe_unused]] const FieldPath& path, const bool& for_set_data) const {
@@ -37,36 +38,39 @@ const FieldDescriptor* PrimitiveModel::get_column_descriptor([[maybe_unused]] co
 }
 
 QModelIndex PrimitiveModel::index([[maybe_unused]] int row, [[maybe_unused]] int column, [[maybe_unused]] const QModelIndex& parent) const {
-    Q_UNUSED(parent);
-    CHECK_CONDITION_TRUE_NON_VOID(row > 0, QModelIndex(), "A primitive model should have only one row.");
-    CHECK_CONDITION_TRUE_NON_VOID(column > 0, QModelIndex(), "A primitive model should have only one column.");
     return this->createIndex(row, column);
 }
 
 QModelIndex PrimitiveModel::parent([[maybe_unused]] const QModelIndex& child) const {
-    Q_UNUSED(child);
-    const ProtoModel* parent_model {get_parent_model()};
+    CHECK_CONDITION_TRUE_NON_VOID(child.isValid(), QModelIndex(), "This design requires that the child index is invalid.");
+    const ProtoModel* parent {get_parent_model()};
+    CHECK_PARAM_NULLPTR_NON_VOID(parent, QModelIndex(), "Parent of primitive model is null.");
 
-    const ProtoModel* root_model {get_root_model()};
-
-    SILENT_CHECK_CONDITION_TRUE_NON_VOID(parent_model == root_model, QModelIndex());
+    ProtoModel* t {const_cast<ProtoModel*>(parent)};
 
     /*
-        Here we need to return an index that represents the parent of the child parameter.
-        The index should contain the row and column of the parent model in its parent. If 
-        the parent model is a RepeatedPrimitiveModel, then the get_index_in_parent() should be
-        the row and column is always 0. If the parent model is a MessageModel, then the 
-        get_index_in_parent() should be the column because a MessageModel is allowed to 
-        have only one row. Note that the parent model can be a RepeatedPrimitiveModel or a 
-        MessageModel only as primitive models are not allowed to have children.
+        Here we need to return an index that represents the parent of the this message model.
+        The index should contain the row and column of the parent model in its parent. 
+        
+        If the parent model is a RepeatedPrimitiveModel, then the row should be the index in it.
+        While the column will always be 0 as repeated primitive models has only one column.
+        
+        If the parent model is a MessageModel, then the row should be 0 and the column should 
+        be the index in it. Same goes for OneofModel.
+        
+        Note that the parent model can be a RepeatedPrimitiveModel, MessageModel, or OneofModel 
+        as primitive models cannot have children except for repeated primitive models which are
+        only allowed to have children of type PrimitiveModel.
     */
-    RepeatedPrimitiveModel* parent_repeat_model {dynamic_cast<RepeatedPrimitiveModel*>(const_cast<ProtoModel*>(parent_model->get_parent_model()))};
-    SILENT_CHECK_CONDITION_TRUE_NON_VOID(parent_repeat_model != nullptr, createIndex(parent_model->get_index_in_parent(), 0)); // RepeatedPrimitiveModel have only one column
+    if (RepeatedPrimitiveModel* repeated_m {dynamic_cast<RepeatedPrimitiveModel*>(t)}) {
+        return index(m_index_in_parent, 0, repeated_m->parent(QModelIndex()));
+    } else if (MessageModel* message_m {dynamic_cast<MessageModel*>(t)}) {
+        return index(0, m_index_in_parent, message_m->parent(QModelIndex()));
+    } else if (OneofModel* oneof_m {dynamic_cast<OneofModel*>(t)}) {
+        return index(0, m_index_in_parent, oneof_m->parent(QModelIndex()));
+    }
 
-    MessageModel* parent_message_model {dynamic_cast<MessageModel*>(const_cast<ProtoModel*>(parent_model->get_parent_model()))};
-    SILENT_CHECK_CONDITION_TRUE_NON_VOID(parent_message_model != nullptr, createIndex(0, parent_model->get_index_in_parent()));
-
-    return QModelIndex();
+    FAIL_AND_RETURN_NON_VOID(QModelIndex(), "Parent model is not a repeated primitive model, message model, or oneof model.");
 }
 
 QVariant PrimitiveModel::data([[maybe_unused]] const QModelIndex& index, [[maybe_unused]] int role) const {
@@ -79,6 +83,9 @@ QVariant PrimitiveModel::data([[maybe_unused]] const QModelIndex& index, [[maybe
     const Reflection* refl {m_message_buffer->GetReflection()};
 
     if (m_field_desc->is_repeated()) {
+        CHECK_CONDITION_TRUE_NON_VOID(index.parent().isValid(), false, "Parent index is invalid.");
+        VALIDATE_INDEX_NON_VOID(index.parent().row(), get_parent_model()->rowCount(), false, "Parent index is out of range.");
+
         switch (m_field_desc->cpp_type()) {
             case FieldDescriptor::CppType::CPPTYPE_MESSAGE:
                 FAIL_AND_RETURN_NON_VOID(QVariant(), "Trying to get a message field.");
@@ -126,12 +133,16 @@ bool PrimitiveModel::setData([[maybe_unused]] const QModelIndex& index, [[maybe_
     CHECK_PARAM_NULLPTR_NON_VOID(m_field_desc, false, "Field descriptor is null.");
     CHECK_CONDITION_TRUE_NON_VOID(!index.isValid(), false, "Supplied index was invalid.");
     CHECK_CONDITION_TRUE_NON_VOID(!value.isValid(), false, "Supplied value is invalid.");
+    CHECK_CONDITION_TRUE_NON_VOID(value.isNull(), false, "Value is null.");
     CHECK_CONDITION_TRUE_NON_VOID(index.row() > 0, false, "A primitive model should have only one row.");
     CHECK_CONDITION_TRUE_NON_VOID(index.column() > 0, false, "A primitive model should have only one column.");
 
     const Reflection* refl {m_message_buffer->GetReflection()};
 
     if (m_field_desc->is_repeated()) {
+        CHECK_CONDITION_TRUE_NON_VOID(index.parent().isValid(), false, "Parent index is invalid.");
+        VALIDATE_INDEX_NON_VOID(index.parent().row(), get_parent_model()->rowCount(), false, "Parent index is out of range.");
+
         switch (m_field_desc->cpp_type()) {
             case FieldDescriptor::CppType::CPPTYPE_MESSAGE:
                 FAIL_AND_RETURN_NON_VOID(false, "Trying to set a message field.");

@@ -52,24 +52,32 @@ const ProtoModel* RepeatedMessageModel::get_sub_model(const FieldPath& path, con
 }
 
 QModelIndex RepeatedMessageModel::index(int row, int column, [[maybe_unused]] const QModelIndex& parent) const {
-    Q_UNUSED(parent);
-    Q_UNUSED(column);
-    SILENT_VALIDATE_INDEX_NON_VOID(row, rowCount(), QModelIndex());
     return createIndex(row, column);
 }
 
 QModelIndex RepeatedMessageModel::parent([[maybe_unused]] const QModelIndex& child) const {
-    Q_UNUSED(child);
-    const ProtoModel* parent_model {get_parent_model()};
+    CHECK_CONDITION_TRUE_NON_VOID(child.isValid(), QModelIndex(), "This design requires that the child index is invalid.");
+    const ProtoModel* parent {get_parent_model()};
+    CHECK_PARAM_NULLPTR_NON_VOID(parent, QModelIndex(), "Parent of repeated message model is null.");
 
-    const ProtoModel* root_model {get_root_model()};
+    ProtoModel* t {const_cast<ProtoModel*>(parent)};
 
-    SILENT_CHECK_CONDITION_TRUE_NON_VOID(parent_model == root_model, QModelIndex());
+    /*
+        Here we need to return an index that represents the parent of the this message model.
+        The index should contain the row and column of the parent model in its parent. 
+        
+        If the parent model is a MessageModel, then the row should be 0 and the column should 
+        be the index in it.
+        
+        Note that the parent model can be a MessageModel only as primitive models cannot have 
+        children except for repeated primitive models which are only allowed to have children 
+        of type PrimitiveModel.
+    */
+    if (MessageModel* message_m {dynamic_cast<MessageModel*>(t)}) {
+        return index(0, m_index_in_parent, message_m->parent(QModelIndex()));
+    }
 
-    MessageModel* parent_message_model {dynamic_cast<MessageModel*>(const_cast<ProtoModel*>(parent_model->get_parent_model()))};
-    SILENT_CHECK_CONDITION_TRUE_NON_VOID(parent_message_model != nullptr, createIndex(0, parent_model->get_index_in_parent()));
-
-    return QModelIndex();
+    FAIL_AND_RETURN_NON_VOID(QModelIndex(), "Parent model is not a message model.");
 }
 
 int RepeatedMessageModel::rowCount([[maybe_unused]] const QModelIndex& parent) const {
@@ -92,6 +100,7 @@ bool RepeatedMessageModel::setData([[maybe_unused]] const QModelIndex& index, [[
     CHECK_PARAM_NULLPTR_NON_VOID(m_message_buffer, false, "Message buffer is null.");
     CHECK_CONDITION_TRUE_NON_VOID(!index.isValid(), false, "Supplied index was invalid.");
     CHECK_CONDITION_TRUE_NON_VOID(!value.isValid(), false, "Supplied value is invalid.");
+    CHECK_CONDITION_TRUE_NON_VOID(value.isNull(), false, "Value is null.");
     VALIDATE_INDEX_NON_VOID(index.row(), rowCount(), false, 
         "Accessing out-of-range proto row " + std::to_string(index.row()) + " of " + std::to_string(rowCount()));
     VALIDATE_INDEX_NON_VOID(index.column(), columnCount(), false, 
@@ -104,7 +113,7 @@ int RepeatedMessageModel::append_row() {
     CHECK_CONDITION_TRUE_NON_VOID(m_field_desc->cpp_type() != FieldDescriptor::CPPTYPE_MESSAGE, -1, "Field is not a message.");
 
     int row {rowCount()};
-    QModelIndex index {this->index(row, -1)};
+    QModelIndex index {this->index(row, m_index_in_parent, this->parent(QModelIndex()))};
     // Q_EMIT rowsAboutToBeInserted(index, row, row, {});
     beginInsertRows(index, row, row);
 
@@ -120,9 +129,9 @@ int RepeatedMessageModel::append_row() {
 }
 
 bool RepeatedMessageModel::remove_row(const int& row) {
-    SILENT_VALIDATE_INDEX_NON_VOID(row, rowCount(), false);
+    VALIDATE_INDEX_NON_VOID(row, rowCount(), false, "Index out of range.");
 
-    QModelIndex index {this->index(row, -1)};
+    QModelIndex index {this->index(row, m_index_in_parent, this->parent(QModelIndex()))};
     // Q_EMIT rowsAboutToBeRemoved(index, row, row, {});
     beginRemoveRows(index, row, row);
 
@@ -148,7 +157,7 @@ int RepeatedMessageModel::field_to_column(const int& fn) const {
 }
 
 bool RepeatedMessageModel::insertRows(int row, int count, const QModelIndex &parent) {
-    // CHECK_CONDITION_TRUE_NON_VOID(!parent.isValid(), false, "Parent is not valid.");
+    CHECK_CONDITION_TRUE_NON_VOID(!parent.isValid(), false, "Parent is not valid.");
     VALIDATE_INDEX_NON_VOID(row, rowCount()+1, false, "You are allowed to append only a row between 0 and " + std::to_string(rowCount()+1) + "exclusive.");
     CHECK_CONDITION_TRUE_NON_VOID(count != 1, false, "Invalid number of rows: " + std::to_string(count) + ". Adding multiple rows at once is not supported yet.");
 
@@ -162,8 +171,8 @@ bool RepeatedMessageModel::insertRows(int row, int count, const QModelIndex &par
 }
 
 bool RepeatedMessageModel::removeRows(int row, int count, const QModelIndex &parent) {
-    // CHECK_CONDITION_TRUE_NON_VOID(!parent.isValid(), false, "Parent is not valid.");
-    VALIDATE_INDEX_NON_VOID(row, rowCount()+1, false, "You are allowed to append only a row between 0 and " + std::to_string(rowCount()+1) + "exclusive.");
+    CHECK_CONDITION_TRUE_NON_VOID(!parent.isValid(), false, "Parent is not valid.");
+    VALIDATE_INDEX_NON_VOID(row, rowCount(), false, "Index out of range.");
     CHECK_CONDITION_TRUE_NON_VOID(count != 1, false, "Invalid number of rows: " + std::to_string(count) + ". Adding multiple rows at once is not supported yet.");
 
     delete m_sub_models.at(row);
@@ -192,7 +201,7 @@ void RepeatedMessageModel::append_row(const int& row) {
     CHECK_CONDITION_TRUE(m_field_desc->cpp_type() != FieldDescriptor::CPPTYPE_MESSAGE, "Field is not a message.");
     VALIDATE_INDEX(row, rowCount()+1, "You are allowed to append only a row between 0 and " + std::to_string(rowCount()+1) + "exclusive.");
 
-    QModelIndex index {this->index(row, -1)};
+    QModelIndex index {this->index(row, m_index_in_parent, this->parent(QModelIndex()))};
     // Q_EMIT rowsAboutToBeInserted(index, row, row, {});
     beginInsertRows(index, row, row);
 
