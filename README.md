@@ -5,6 +5,9 @@ Or mRGM, which stands for mini-RadialGM, is a simple and lightweight version of 
 - Check my final report: https://docs.google.com/document/d/1ahKWo3m9fgqAfR9a3cqaIA08Sns05O68nhalpMNjDd8/edit?usp=sharing
 - Check my post-final post my blog for more details: https://k0t0z.github.io/gsoc24-blog/blog/2024/10/13/after-google-summer-of-code-2024-google-protocol-buffers-technology.html
 
+> [!NOTE]  
+> You might be wondering when this will integrated into RGM, right? What? I can't hear you!
+
 ## Diffs from RadialGM
 
 - Improved the integration of the Google Protocol Buffers. There are some features inside Google Protocol Buffers' API that are not used in RadialGM.
