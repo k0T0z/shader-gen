@@ -64,7 +64,6 @@ bool ProtoModel::loadFromJson(const QString& filePath) {
     QByteArray jsonData = file.readAll();
     file.close();
     return deserializeFromJson(jsonData);
-    return true;
 }
 
 bool ProtoModel::saveToJson(const QString& filePath) const {

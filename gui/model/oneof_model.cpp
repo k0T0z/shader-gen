@@ -15,6 +15,7 @@ void OneofModel::build_sub_models() {
     SILENT_CHECK_PARAM_NULLPTR(m_message_buffer);
     const Reflection* refl {m_message_buffer->GetReflection()};
     SILENT_CHECK_PARAM_NULLPTR(m_oneof_desc);
+    SILENT_CHECK_CONDITION_TRUE(!refl->HasOneof(*m_message_buffer, m_oneof_desc));
 
     const FieldDescriptor* oneof_field {refl->GetOneofFieldDescriptor(*m_message_buffer, m_oneof_desc)};
     SILENT_CHECK_PARAM_NULLPTR(oneof_field);
@@ -186,8 +187,7 @@ void OneofModel::clear_sub_model() const {
 }
 
 bool OneofModel::is_set() const {
-    const Reflection* refl {m_message_buffer->GetReflection()};
-    return m_current_field_desc != nullptr && m_sub_model != nullptr && refl->HasOneof(*m_message_buffer, m_oneof_desc);
+    return m_current_field_desc != nullptr && m_sub_model != nullptr;
 }
 
 bool OneofModel::set_oneof(const FieldDescriptor* field_desc) const {
