@@ -209,7 +209,7 @@ target_compile_definitions(${SHADER_GEN_EXECUTABLE_NAME} PRIVATE
 set(SHADER_GEN_TESTS_EXECUTABLE_NAME "shader-gen-tests" CACHE STRING "The name of the tests executable.")
 
 file(GLOB SHADER_GEN_TESTS_CPP_FILES
-    ${CMAKE_CURRENT_SOURCE_DIR}/tests/gui/model/test_message_model.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/tests/gui/model/test_model.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/tests/gui/model/utils/test_field_path.cpp
 )
 

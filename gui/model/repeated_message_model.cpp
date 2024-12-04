@@ -15,6 +15,7 @@ void RepeatedMessageModel::build_sub_models() {
 
     int size {rowCount()};
     for (int i {0}; i < size; i++) {
+        SILENT_CONTINUE_IF_TRUE(i < (int)m_sub_models.size());
         append_row(i);
     }
 }
@@ -51,12 +52,7 @@ const ProtoModel* RepeatedMessageModel::get_sub_model(const FieldPath& path, con
     return m_sub_models.at(index)->get_sub_model(path, for_set_data);
 }
 
-QModelIndex RepeatedMessageModel::index(int row, int column, [[maybe_unused]] const QModelIndex& parent) const {
-    return createIndex(row, column);
-}
-
 QModelIndex RepeatedMessageModel::parent([[maybe_unused]] const QModelIndex& child) const {
-    CHECK_CONDITION_TRUE_NON_VOID(child.isValid(), QModelIndex(), "This design requires that the child index is invalid.");
     const ProtoModel* parent {get_parent_model()};
     CHECK_PARAM_NULLPTR_NON_VOID(parent, QModelIndex(), "Parent of repeated message model is null.");
 
@@ -74,7 +70,7 @@ QModelIndex RepeatedMessageModel::parent([[maybe_unused]] const QModelIndex& chi
         of type PrimitiveModel.
     */
     if (MessageModel* message_m {dynamic_cast<MessageModel*>(t)}) {
-        return index(0, m_index_in_parent, message_m->parent(QModelIndex()));
+        return message_m->index(0, m_index_in_parent, message_m->parent(QModelIndex()));
     }
 
     FAIL_AND_RETURN_NON_VOID(QModelIndex(), "Parent model is not a message model.");
@@ -112,8 +108,14 @@ bool RepeatedMessageModel::setData([[maybe_unused]] const QModelIndex& index, [[
 int RepeatedMessageModel::append_row() {
     CHECK_CONDITION_TRUE_NON_VOID(m_field_desc->cpp_type() != FieldDescriptor::CPPTYPE_MESSAGE, -1, "Field is not a message.");
 
+    /*
+        Here we can't call this->index() because the new row is not added in the proto
+        model yet. In the append_row(const int& row) function, the new row is added to the
+        proto model however, we need to add it to QAbstractItemModel as well.
+    */
     int row {rowCount()};
-    QModelIndex index {this->index(row, m_index_in_parent, this->parent(QModelIndex()))};
+    QModelIndex parent_index {this->parent(QModelIndex())};
+    QModelIndex index {createIndex(row, 0, parent_index.internalPointer())};
     // Q_EMIT rowsAboutToBeInserted(index, row, row, {});
     beginInsertRows(index, row, row);
 
@@ -131,7 +133,7 @@ int RepeatedMessageModel::append_row() {
 bool RepeatedMessageModel::remove_row(const int& row) {
     VALIDATE_INDEX_NON_VOID(row, rowCount(), false, "Index out of range.");
 
-    QModelIndex index {this->index(row, m_index_in_parent, this->parent(QModelIndex()))};
+    QModelIndex index {this->index(row, 0, this->parent(QModelIndex()))};
     // Q_EMIT rowsAboutToBeRemoved(index, row, row, {});
     beginRemoveRows(index, row, row);
 
@@ -158,7 +160,7 @@ int RepeatedMessageModel::field_to_column(const int& fn) const {
 
 bool RepeatedMessageModel::insertRows(int row, int count, const QModelIndex &parent) {
     CHECK_CONDITION_TRUE_NON_VOID(!parent.isValid(), false, "Parent is not valid.");
-    VALIDATE_INDEX_NON_VOID(row, rowCount()+1, false, "You are allowed to append only a row between 0 and " + std::to_string(rowCount()+1) + "exclusive.");
+    CHECK_CONDITION_TRUE_NON_VOID(row != rowCount(), false, "You can only insert a row at the end of the model.");
     CHECK_CONDITION_TRUE_NON_VOID(count != 1, false, "Invalid number of rows: " + std::to_string(count) + ". Adding multiple rows at once is not supported yet.");
 
     const Reflection* refl {m_message_buffer->GetReflection()};
@@ -181,27 +183,25 @@ bool RepeatedMessageModel::removeRows(int row, int count, const QModelIndex &par
     // We remove a row by swapping the last row with the row to be removed and then removing the last row.
     // https://protobuf.dev/reference/cpp/api-docs/google.protobuf.message/#Reflection.RemoveLast.details
     const Reflection* refl {m_message_buffer->GetReflection()};
-    refl->SwapElements(m_message_buffer, m_field_desc, row, rowCount() - 1);
+    if (row < (rowCount() - 1)) refl->SwapElements(m_message_buffer, m_field_desc, row, rowCount() - 1);
     refl->RemoveLast(m_message_buffer, m_field_desc);
 
     return true;
 }
 
 void RepeatedMessageModel::clear_sub_models() {
-    int size {rowCount()};
-
-    for (int i = 0; i < size; ++i) delete m_sub_models.at(i);
+    for (auto& sub_model : m_sub_models) delete sub_model;
+    m_sub_models.clear();
 
     const Reflection* refl {m_message_buffer->GetReflection()};
     refl->ClearField(m_message_buffer, m_field_desc);
-    m_sub_models.clear();
 }
 
 void RepeatedMessageModel::append_row(const int& row) {
     CHECK_CONDITION_TRUE(m_field_desc->cpp_type() != FieldDescriptor::CPPTYPE_MESSAGE, "Field is not a message.");
-    VALIDATE_INDEX(row, rowCount()+1, "You are allowed to append only a row between 0 and " + std::to_string(rowCount()+1) + "exclusive.");
+    VALIDATE_INDEX(row, rowCount(), "You are allowed to append only a row between 0 and " + std::to_string(rowCount()) + "exclusive.");
 
-    QModelIndex index {this->index(row, m_index_in_parent, this->parent(QModelIndex()))};
+    QModelIndex index {this->index(row, 0, this->parent(QModelIndex()))};
     // Q_EMIT rowsAboutToBeInserted(index, row, row, {});
     beginInsertRows(index, row, row);
 

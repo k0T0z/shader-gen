@@ -31,7 +31,6 @@ public:
 
     const FieldDescriptor* get_column_descriptor(const int& column) const override;
 
-    QModelIndex index(int row, int column, const QModelIndex &parent = QModelIndex()) const override;
     QModelIndex parent(const QModelIndex &child) const override;
     int rowCount([[maybe_unused]] const QModelIndex &parent = QModelIndex()) const override { return 1; }
     int columnCount(const QModelIndex &parent = QModelIndex()) const override;

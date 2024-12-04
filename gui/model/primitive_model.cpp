@@ -37,12 +37,7 @@ const FieldDescriptor* PrimitiveModel::get_column_descriptor([[maybe_unused]] co
     return m_field_desc;
 }
 
-QModelIndex PrimitiveModel::index([[maybe_unused]] int row, [[maybe_unused]] int column, [[maybe_unused]] const QModelIndex& parent) const {
-    return this->createIndex(row, column);
-}
-
 QModelIndex PrimitiveModel::parent([[maybe_unused]] const QModelIndex& child) const {
-    CHECK_CONDITION_TRUE_NON_VOID(child.isValid(), QModelIndex(), "This design requires that the child index is invalid.");
     const ProtoModel* parent {get_parent_model()};
     CHECK_PARAM_NULLPTR_NON_VOID(parent, QModelIndex(), "Parent of primitive model is null.");
 
@@ -63,11 +58,11 @@ QModelIndex PrimitiveModel::parent([[maybe_unused]] const QModelIndex& child) co
         only allowed to have children of type PrimitiveModel.
     */
     if (RepeatedPrimitiveModel* repeated_m {dynamic_cast<RepeatedPrimitiveModel*>(t)}) {
-        return index(m_index_in_parent, 0, repeated_m->parent(QModelIndex()));
+        return repeated_m->index(m_index_in_parent, 0, repeated_m->parent(QModelIndex()));
     } else if (MessageModel* message_m {dynamic_cast<MessageModel*>(t)}) {
-        return index(0, m_index_in_parent, message_m->parent(QModelIndex()));
+        return message_m->index(0, m_index_in_parent, message_m->parent(QModelIndex()));
     } else if (OneofModel* oneof_m {dynamic_cast<OneofModel*>(t)}) {
-        return index(0, m_index_in_parent, oneof_m->parent(QModelIndex()));
+        return oneof_m->index(0, m_index_in_parent, oneof_m->parent(QModelIndex()));
     }
 
     FAIL_AND_RETURN_NON_VOID(QModelIndex(), "Parent model is not a repeated primitive model, message model, or oneof model.");
@@ -83,7 +78,7 @@ QVariant PrimitiveModel::data([[maybe_unused]] const QModelIndex& index, [[maybe
     const Reflection* refl {m_message_buffer->GetReflection()};
 
     if (m_field_desc->is_repeated()) {
-        CHECK_CONDITION_TRUE_NON_VOID(index.parent().isValid(), false, "Parent index is invalid.");
+        CHECK_CONDITION_TRUE_NON_VOID(!index.parent().isValid(), false, "Parent index is invalid.");
         VALIDATE_INDEX_NON_VOID(index.parent().row(), get_parent_model()->rowCount(), false, "Parent index is out of range.");
 
         switch (m_field_desc->cpp_type()) {
@@ -140,7 +135,7 @@ bool PrimitiveModel::setData([[maybe_unused]] const QModelIndex& index, [[maybe_
     const Reflection* refl {m_message_buffer->GetReflection()};
 
     if (m_field_desc->is_repeated()) {
-        CHECK_CONDITION_TRUE_NON_VOID(index.parent().isValid(), false, "Parent index is invalid.");
+        CHECK_CONDITION_TRUE_NON_VOID(!index.parent().isValid(), false, "Parent index is invalid.");
         VALIDATE_INDEX_NON_VOID(index.parent().row(), get_parent_model()->rowCount(), false, "Parent index is out of range.");
 
         switch (m_field_desc->cpp_type()) {

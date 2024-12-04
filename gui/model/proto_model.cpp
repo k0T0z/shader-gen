@@ -82,6 +82,12 @@ bool ProtoModel::set_data(const FieldPath& path, const QVariant& value) {
     return model->set_data(value);
 }
 
+QModelIndex ProtoModel::index(int row, int column, [[maybe_unused]] const QModelIndex& parent) const {
+    CHECK_CONDITION_TRUE_NON_VOID(!hasIndex(row, column, parent), QModelIndex(), "Invalid index.");
+    SILENT_CHECK_CONDITION_TRUE_NON_VOID(!parent.isValid(), createIndex(row, column));
+    return createIndex(row, column, parent.internalPointer());
+}
+
 const ProtoModel* ProtoModel::get_root_model() const {
     const ProtoModel* m {this};
     while (true) {

@@ -98,12 +98,7 @@ const FieldDescriptor* OneofModel::get_column_descriptor(const int& column) cons
     return m_oneof_desc->field(column);
 }
 
-QModelIndex OneofModel::index(int row, int column, [[maybe_unused]] const QModelIndex& parent) const {
-    return createIndex(row, column);
-}
-
 QModelIndex OneofModel::parent([[maybe_unused]] const QModelIndex& child) const {
-    CHECK_CONDITION_TRUE_NON_VOID(child.isValid(), QModelIndex(), "This design requires that the child index is invalid.");
     const ProtoModel* parent {get_parent_model()};
     CHECK_PARAM_NULLPTR_NON_VOID(parent, QModelIndex(), "Parent of oneof model is null.");
 
@@ -121,7 +116,7 @@ QModelIndex OneofModel::parent([[maybe_unused]] const QModelIndex& child) const 
         of type PrimitiveModel.
     */
     if (MessageModel* message_m {dynamic_cast<MessageModel*>(t)}) {
-        return index(0, m_index_in_parent, message_m->parent(QModelIndex()));
+        return message_m->index(0, m_index_in_parent, message_m->parent(QModelIndex()));
     }
 
     FAIL_AND_RETURN_NON_VOID(QModelIndex(), "Parent model is not a message model.");
@@ -178,10 +173,16 @@ QVariant OneofModel::headerData(int section, [[maybe_unused]] Qt::Orientation or
     return QString::fromStdString(field_desc->full_name());
 }
 
-void OneofModel::clear_sub_model() const { 
+void OneofModel::clear_sub_model() const {
+    /*
+        The order is crucial. For instance, if a oneof contains a message that itself 
+        includes another oneof, the sub-model must be deleted first. This ensures the 
+        message buffer remains accessible to properly delete the inner oneof.
+    */
+    delete m_sub_model; m_sub_model = nullptr; m_current_field_desc = nullptr;
+    
     const Reflection* refl {m_message_buffer->GetReflection()};
     refl->ClearOneof(m_message_buffer, m_oneof_desc);
-    delete m_sub_model; m_sub_model = nullptr; m_current_field_desc = nullptr;
 }
 
 bool OneofModel::is_set() const {

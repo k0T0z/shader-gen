@@ -39,7 +39,17 @@ public:
 
     virtual const FieldDescriptor* get_column_descriptor(const int& column) const = 0;
 
-    virtual QModelIndex index([[maybe_unused]] int row, [[maybe_unused]] int column, [[maybe_unused]] const QModelIndex &parent = QModelIndex()) const override { return QModelIndex(); }
+    /**
+     * @brief 
+     * 
+     * @note https://doc.qt.io/qt-5/model-view-programming.html#model-indexes
+     * 
+     * @param row 
+     * @param column 
+     * @param parent 
+     * @return QModelIndex 
+     */
+    virtual QModelIndex index([[maybe_unused]] int row, [[maybe_unused]] int column, [[maybe_unused]] const QModelIndex &parent = QModelIndex()) const override;
     virtual QModelIndex parent([[maybe_unused]] const QModelIndex &child) const override { return QModelIndex(); }
     virtual int rowCount(const QModelIndex &parent = QModelIndex()) const override = 0;
     virtual int columnCount(const QModelIndex &parent = QModelIndex()) const override = 0;

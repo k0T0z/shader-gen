@@ -152,12 +152,7 @@ const FieldDescriptor* MessageModel::get_column_descriptor(const int& column) co
     return desc->field(column);
 }
 
-QModelIndex MessageModel::index(int row, int column, [[maybe_unused]] const QModelIndex& parent) const {
-    return createIndex(row, column);
-}
-
 QModelIndex MessageModel::parent([[maybe_unused]] const QModelIndex& child) const {
-    CHECK_CONDITION_TRUE_NON_VOID(child.isValid(), QModelIndex(), "This design requires that the child index is invalid.");
     const ProtoModel* parent {get_parent_model()};
     SILENT_CHECK_PARAM_NULLPTR_NON_VOID(parent, QModelIndex());
 
@@ -168,9 +163,9 @@ QModelIndex MessageModel::parent([[maybe_unused]] const QModelIndex& child) cons
         The index should contain the row and column of the parent model in its parent. 
         
         If the parent model is a RepeatedMessageModel, then the row should be the index in it.
-        While the column will be the index in its parent. A message model is represented as a 
-        single row in a repeated message model. This means it is more obvious to set the column
-        to -1, however, this will make the QModelIndex invalid. See https://doc.qt.io/qt-5/qmodelindex.html#isValid
+        While the column will be 0. A message model is represented as a single row in a repeated 
+        message model. This means it is makes more sense to set the column to -1, however, this 
+        will make the QModelIndex invalid. See https://doc.qt.io/qt-5/qmodelindex.html#isValid
         
         If the parent model is a MessageModel, then the row should be 0 and the column should 
         be the index in it. Same goes for OneofModel.
@@ -180,11 +175,11 @@ QModelIndex MessageModel::parent([[maybe_unused]] const QModelIndex& child) cons
         only allowed to have children of type PrimitiveModel.
     */
     if (RepeatedMessageModel* repeated_m {dynamic_cast<RepeatedMessageModel*>(t)}) {
-        return index(m_index_in_parent, repeated_m->get_index_in_parent(), repeated_m->parent(QModelIndex()));
+        return repeated_m->index(m_index_in_parent, 0, repeated_m->parent(QModelIndex()));
     } else if (MessageModel* message_m {dynamic_cast<MessageModel*>(t)}) {
-        return index(0, m_index_in_parent, message_m->parent(QModelIndex()));
+        return message_m->index(0, m_index_in_parent, message_m->parent(QModelIndex()));
     } else if (OneofModel* oneof_m {dynamic_cast<OneofModel*>(t)}) {
-        return index(0, m_index_in_parent, oneof_m->parent(QModelIndex()));
+        return oneof_m->index(0, m_index_in_parent, oneof_m->parent(QModelIndex()));
     }
 
     FAIL_AND_RETURN_NON_VOID(QModelIndex(), "Parent model is not a repeated message model, message model, or oneof model.");
@@ -256,11 +251,9 @@ QVariant MessageModel::headerData(int section, [[maybe_unused]] Qt::Orientation 
 
 void MessageModel::clear_sub_models() {
     for (auto& [field_number, sub_model] : m_sub_models_by_field_number) delete sub_model;
-
     m_sub_models_by_field_number.clear();
 
     for (auto& [oneof_name, sub_model] : m_sub_models_by_oneof_name) delete sub_model;
-
     m_sub_models_by_oneof_name.clear();
 }
 
