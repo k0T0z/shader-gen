@@ -108,17 +108,16 @@ int RepeatedPrimitiveModel::append_row() {
     */
     int row {rowCount()};
     QModelIndex parent_index {this->parent(QModelIndex())};
-    QModelIndex index {createIndex(row, 0, parent_index.internalPointer())};
-    // Q_EMIT rowsAboutToBeInserted(index, row, row, {});
-    beginInsertRows(index, row, row);
 
-    bool result {insertRows(row, 1, index)};
+    beginInsertRows(parent_index, row, row);
+
+    bool result {insertRows(row, 1, parent_index)};
     SILENT_CHECK_CONDITION_TRUE_NON_VOID(!result, -1);
 
+    Q_EMIT dataChanged(this->index(row, 0, parent_index), this->index(row, columnCount() - 1, parent_index));
     parent_data_changed();
 
     endInsertRows();
-    // Q_EMIT rowsInserted(index, row, row, {});
 
     return row;
 }
@@ -126,17 +125,17 @@ int RepeatedPrimitiveModel::append_row() {
 bool RepeatedPrimitiveModel::remove_row(const int& row) {
     VALIDATE_INDEX_NON_VOID(row, rowCount(), false, "Index out of range.");
 
-    QModelIndex index {this->index(row, 0, this->parent(QModelIndex()))};
-    // Q_EMIT rowsAboutToBeRemoved(index, row, row, {});
-    beginRemoveRows(index, row, row);
+    QModelIndex parent_index {this->parent(QModelIndex())};
+    
+    beginRemoveRows(parent_index, row, row);
 
-    bool result {removeRows(row, 1, index)};
+    bool result {removeRows(row, 1, parent_index)};
     SILENT_CHECK_CONDITION_TRUE_NON_VOID(!result, false);
 
+    Q_EMIT dataChanged(this->index(row, 0, parent_index), this->index(row, columnCount() - 1, parent_index));
     parent_data_changed();
 
     endRemoveRows();
-    // Q_EMIT rowsRemoved(index, row, row, {});
 
     return true;
 }
@@ -209,17 +208,17 @@ void RepeatedPrimitiveModel::clear_sub_models() {
 void RepeatedPrimitiveModel::append_row(const int& row) {
     VALIDATE_INDEX(row, rowCount(), "You are allowed to append only a row between 0 and " + std::to_string(rowCount()) + "exclusive.");
 
-    QModelIndex index {this->index(row, 0, this->parent(QModelIndex()))};
-    // Q_EMIT rowsAboutToBeInserted(index, row, row, {});
-    beginInsertRows(index, row, row);
+    QModelIndex parent_index {this->parent(QModelIndex())};
+    
+    beginInsertRows(parent_index, row, row);
 
     m_sub_models.emplace_back(new PrimitiveModel(m_message_buffer, m_field_desc, this, row));
 
-    bool result {insertRows(row, 1, index)};
+    bool result {insertRows(row, 1, parent_index)};
     CHECK_CONDITION_TRUE(!result, "Failed to insert row.");
 
+    Q_EMIT dataChanged(this->index(row, 0, parent_index), this->index(row, columnCount() - 1, parent_index));
     parent_data_changed();
 
     endInsertRows();
-    // Q_EMIT rowsInserted(index, row, row, {});
 }

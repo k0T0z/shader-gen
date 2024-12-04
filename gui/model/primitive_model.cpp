@@ -175,8 +175,8 @@ bool PrimitiveModel::setData([[maybe_unused]] const QModelIndex& index, [[maybe_
         }
     }
 
-    emit dataChanged(index, index);
-    ProtoModel::parent_data_changed();
+    Q_EMIT dataChanged(index, index);
+    parent_data_changed();
 
     return true;
 }
