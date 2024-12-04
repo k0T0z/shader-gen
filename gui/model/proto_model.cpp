@@ -11,7 +11,14 @@ using namespace google::protobuf::util;
 using Message = google::protobuf::Message;
 
 ProtoModel::ProtoModel(ProtoModel* parent_model, const int& index_in_parent)
-    : QAbstractItemModel(parent_model), m_parent_model(parent_model), m_index_in_parent(index_in_parent) {}
+    : QAbstractItemModel(parent_model), m_parent_model(parent_model), m_index_in_parent(index_in_parent) {
+    if (m_parent_model == nullptr) {
+        QObject::connect(this, &QAbstractItemModel::dataChanged,
+            [this](const QModelIndex& topLeft, const QModelIndex& bottomRight, const QVector<int>& roles) {
+                this->saveToJson("model.json");
+            });
+    }
+}
 
 void ProtoModel::parent_data_changed() const {
     const ProtoModel* m {get_parent_model()};
