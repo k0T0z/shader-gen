@@ -63,7 +63,8 @@ bool OneofModel::set_data([[maybe_unused]] const QVariant& value) {
 }
 
 const ProtoModel* OneofModel::get_sub_model(const int& field_number) const {
-    SILENT_CHECK_CONDITION_TRUE_NON_VOID(!is_set(), nullptr);
+    const Reflection* refl {m_message_buffer->GetReflection()};
+    SILENT_CHECK_CONDITION_TRUE_NON_VOID(!is_set() && !refl->HasOneof(*m_message_buffer, m_oneof_desc), nullptr);
     SILENT_CHECK_CONDITION_TRUE_NON_VOID(m_current_field_desc->number() != field_number, nullptr);
     return m_sub_model;
 }
@@ -85,7 +86,8 @@ const ProtoModel* OneofModel::get_sub_model(const FieldPath& path, const bool& f
         SILENT_CHECK_CONDITION_TRUE_NON_VOID(!set_oneof(field_desc), nullptr);
     }
 
-    SILENT_CHECK_CONDITION_TRUE_NON_VOID(!is_set(), nullptr);
+    const Reflection* refl {m_message_buffer->GetReflection()};
+    SILENT_CHECK_CONDITION_TRUE_NON_VOID(!is_set() && !refl->HasOneof(*m_message_buffer, m_oneof_desc), nullptr);
     CHECK_CONDITION_TRUE_NON_VOID(m_current_field_desc->number() != field_desc->number(), nullptr, "Field number mismatch.");
 
     CHECK_CONDITION_TRUE_NON_VOID(!path.skip_component(), nullptr, "Failed to skip field number.");
@@ -134,7 +136,8 @@ QVariant OneofModel::data(const QModelIndex& index, [[maybe_unused]] int role) c
     VALIDATE_INDEX_NON_VOID(index.column(), columnCount(), QVariant(), 
         "Accessing out-of-range proto column " + std::to_string(index.column()) + " of " + std::to_string(columnCount()));
 
-    SILENT_CHECK_CONDITION_TRUE_NON_VOID(!is_set(), QVariant());
+    const Reflection* refl {m_message_buffer->GetReflection()};
+    SILENT_CHECK_CONDITION_TRUE_NON_VOID(!is_set() && !refl->HasOneof(*m_message_buffer, m_oneof_desc), QVariant());
 
     const FieldDescriptor* field_desc {m_oneof_desc->field(index.column())};
     SILENT_CHECK_PARAM_NULLPTR_NON_VOID(field_desc, QVariant());
@@ -193,9 +196,11 @@ bool OneofModel::is_set() const {
 bool OneofModel::set_oneof(const FieldDescriptor* field_desc) const {
     const Reflection* refl {m_message_buffer->GetReflection()};
 
-    SILENT_CHECK_CONDITION_TRUE_NON_VOID(is_set() && m_current_field_desc->number() == field_desc->number(), true);
+    SILENT_CHECK_CONDITION_TRUE_NON_VOID(is_set() && refl->HasOneof(*m_message_buffer, m_oneof_desc) && 
+                                         m_current_field_desc->number() == field_desc->number(), true);
 
-    if (is_set() && m_current_field_desc->number() != field_desc->number()) clear_sub_model();
+    if (is_set() && refl->HasOneof(*m_message_buffer, m_oneof_desc) &&
+        m_current_field_desc->number() != field_desc->number()) clear_sub_model();
 
     m_current_field_desc = field_desc; // Set the current field descriptor
 
