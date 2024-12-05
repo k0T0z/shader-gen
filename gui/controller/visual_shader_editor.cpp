@@ -29,8 +29,12 @@
 
 #include <unordered_map>
 #include <sstream>
-
 #include "error_macros.hpp"
+
+using VisualShader = gui::model::schema::VisualShader;
+
+// Nodes
+using VisualShaderNodeFloatConstant = gui::model::schema::VisualShaderNodeFloatConstant;
 
 /**********************************************************************/
 /**********************************************************************/
@@ -42,40 +46,8 @@
 /**********************************************************************/
 /**********************************************************************/
 
-VisualShaderEditor::VisualShaderEditor(QWidget* parent)
-    : QWidget(parent), 
-      // visual_shader(nullptr),
-      layout(nullptr),
-      side_widget(nullptr),
-      side_outer_layout(nullptr),
-      side_layout(nullptr),
-      name_edit(nullptr),
-      save_button(nullptr),
-      scene_layer_layout(nullptr),
-      scene_layer(nullptr),
-      scene(nullptr),
-      view(nullptr),
-      top_layer(nullptr),
-      menu_bar(nullptr),
-      menu_button(nullptr),
-      create_node_button(nullptr),
-      preview_shader_button(nullptr),
-      zoom_in_button(nullptr),
-      reset_zoom_button(nullptr),
-      zoom_out_button(nullptr),
-      load_image_button(nullptr),
-      match_image_button(nullptr),
-      create_node_action(nullptr),
-      code_previewer_dialog(nullptr),
-      code_previewer_layout(nullptr),
-      code_previewer(nullptr),
-      create_node_dialog(nullptr) {
-  VisualShaderEditor::init();
-}
-
 VisualShaderEditor::VisualShaderEditor(MessageModel* model, QWidget* parent)
     : QWidget(parent), 
-      // visual_shader(nullptr),
       layout(nullptr),
       side_widget(nullptr),
       side_outer_layout(nullptr),
@@ -100,17 +72,22 @@ VisualShaderEditor::VisualShaderEditor(MessageModel* model, QWidget* parent)
       code_previewer_dialog(nullptr),
       code_previewer_layout(nullptr),
       code_previewer(nullptr),
-      create_node_dialog(nullptr) {
+      create_node_dialog(nullptr),
+      visual_shader_model(model),
+      nodes_model(nullptr),
+      connections_model(nullptr) {
   VisualShaderEditor::init();
+
+  nodes_model = dynamic_cast<RepeatedMessageModel*>(const_cast<ProtoModel*>(visual_shader_model->get_sub_model(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber)))));
+  scene->set_nodes_model(nodes_model);
+
+  connections_model = dynamic_cast<RepeatedMessageModel*>(const_cast<ProtoModel*>(visual_shader_model->get_sub_model(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kConnectionsFieldNumber)))));
+  scene->set_connections_model(connections_model);
 }
 
-VisualShaderEditor::~VisualShaderEditor() {
-  // if (visual_shader) delete visual_shader;
-}
+VisualShaderEditor::~VisualShaderEditor() {}
 
 void VisualShaderEditor::init() {
-  // visual_shader = new VisualShader();
-
   // Create the main layout.
   layout = new QHBoxLayout(this);
   layout->setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
@@ -178,7 +155,6 @@ void VisualShaderEditor::init() {
   scene_layer_layout->setSizeConstraint(QLayout::SetNoConstraint);
   scene_layer_layout->setAlignment(Qt::AlignVCenter | Qt::AlignHCenter);
 
-  // scene = new VisualShaderGraphicsScene(visual_shader);
   scene = new VisualShaderGraphicsScene();
   scene->set_editor(this);
 
@@ -466,15 +442,13 @@ void VisualShaderEditor::create_node(const QPointF& coordinate) {
 }
 
 void VisualShaderEditor::add_node(QTreeWidgetItem* selected_item, const QPointF& coordinate) {
-  // Start here
+  std::string type{selected_item->data(0, Qt::UserRole).toString().toStdString()};
 
-  // std::string type{selected_item->data(0, Qt::UserRole).toString().toStdString()};
+  if (type.empty()) {
+    return;
+  }
 
-  // if (type.empty()) {
-  //   return;
-  // }
-
-  // scene->add_node(type, coordinate);
+  scene->add_node(type, coordinate);
 }
 
 void VisualShaderEditor::show_create_node_dialog(const QPointF& coordinate) {
@@ -892,11 +866,6 @@ void CreateNodeDialog::update_selected_item() {
 // Public functions
 //////////////////////////////
 
-// VisualShaderGraphicsScene::VisualShaderGraphicsScene(VisualShader* vs, QObject* parent)
-//     : QGraphicsScene(parent), vs(vs), temporary_connection_graphics_object(nullptr) {
-//   setItemIndexMethod(QGraphicsScene::NoIndex);  // https://doc.qt.io/qt-6/qgraphicsscene.html#ItemIndexMethod-enum
-// }
-
 VisualShaderGraphicsScene::VisualShaderGraphicsScene(QObject* parent)
     : QGraphicsScene(parent), temporary_connection_graphics_object(nullptr) {
   setItemIndexMethod(QGraphicsScene::NoIndex);  // https://doc.qt.io/qt-6/qgraphicsscene.html#ItemIndexMethod-enum
@@ -904,244 +873,244 @@ VisualShaderGraphicsScene::VisualShaderGraphicsScene(QObject* parent)
 
 VisualShaderGraphicsScene::~VisualShaderGraphicsScene() {}
 
-// bool VisualShaderGraphicsScene::add_node(const std::string& type, const QPointF& coordinate) {
-//   // Instantiate the node based on the type
-//   std::shared_ptr<VisualShaderNode> n;
+bool VisualShaderGraphicsScene::add_node(const std::string& type, const QPointF& coordinate) {
+  // Instantiate the node based on the type
+  // std::shared_ptr<VisualShaderNode> n;
 
-//   if (type == "VisualShaderNodeInput") {
-//     n = std::make_shared<VisualShaderNodeInput>();
-//   } else if (type == "VisualShaderNodeColorConstant") {
-//     n = std::make_shared<VisualShaderNodeColorConstant>();
-//   } else if (type == "VisualShaderNodeBooleanConstant") {
-//     n = std::make_shared<VisualShaderNodeBooleanConstant>();
-//   } else if (type == "VisualShaderNodeFloatConstant") {
-//     n = std::make_shared<VisualShaderNodeFloatConstant>();
-//   } else if (type == "VisualShaderNodeIntConstant") {
-//     n = std::make_shared<VisualShaderNodeIntConstant>();
-//   } else if (type == "VisualShaderNodeUIntConstant") {
-//     n = std::make_shared<VisualShaderNodeUIntConstant>();
-//   } else if (type == "VisualShaderNodeVec2Constant") {
-//     n = std::make_shared<VisualShaderNodeVec2Constant>();
-//   } else if (type == "VisualShaderNodeVec3Constant") {
-//     n = std::make_shared<VisualShaderNodeVec3Constant>();
-//   } else if (type == "VisualShaderNodeVec4Constant") {
-//     n = std::make_shared<VisualShaderNodeVec4Constant>();
-//   } else if (type == "VisualShaderNodeFloatFunc") {
-//     n = std::make_shared<VisualShaderNodeFloatFunc>();
-//   } else if (type == "VisualShaderNodeIntFunc") {
-//     n = std::make_shared<VisualShaderNodeIntFunc>();
-//   } else if (type == "VisualShaderNodeUIntFunc") {
-//     n = std::make_shared<VisualShaderNodeUIntFunc>();
-//   } else if (type == "VisualShaderNodeDerivativeFunc") {
-//     n = std::make_shared<VisualShaderNodeDerivativeFunc>();
-//   } else if (type == "VisualShaderNodeFloatOp") {
-//     n = std::make_shared<VisualShaderNodeFloatOp>();
-//   } else if (type == "VisualShaderNodeIntOp") {
-//     n = std::make_shared<VisualShaderNodeIntOp>();
-//   } else if (type == "VisualShaderNodeUIntOp") {
-//     n = std::make_shared<VisualShaderNodeUIntOp>();
-//   } else if (type == "VisualShaderNodeValueNoise") {
-//     n = std::make_shared<VisualShaderNodeValueNoise>();
-//   } else if (type == "VisualShaderNodePerlinNoise") {
-//     n = std::make_shared<VisualShaderNodePerlinNoise>();
-//   } else if (type == "VisualShaderNodeVoronoiNoise") {
-//     n = std::make_shared<VisualShaderNodeVoronoiNoise>();
-//   } else if (type == "VisualShaderNodeVectorFunc") {
-//     n = std::make_shared<VisualShaderNodeVectorFunc>();
-//   } else if (type == "VisualShaderNodeVectorOp") {
-//     n = std::make_shared<VisualShaderNodeVectorOp>();
-//   } else if (type == "VisualShaderNodeVectorCompose") {
-//     n = std::make_shared<VisualShaderNodeVectorCompose>();
-//   } else if (type == "VisualShaderNodeVectorDecompose") {
-//     n = std::make_shared<VisualShaderNodeVectorDecompose>();
-//   } else if (type == "VisualShaderNodeCompare") {
-//     n = std::make_shared<VisualShaderNodeCompare>();
-//   } else if (type == "VisualShaderNodeIf") {
-//     n = std::make_shared<VisualShaderNodeIf>();
-//   } else if (type == "VisualShaderNodeIs") {
-//     n = std::make_shared<VisualShaderNodeIs>();
-//   } else if (type == "VisualShaderNodeSwitch") {
-//     n = std::make_shared<VisualShaderNodeSwitch>();
-//   } else if (type == "VisualShaderNodeStep") {
-//     n = std::make_shared<VisualShaderNodeStep>();
-//   } else if (type == "VisualShaderNodeSmoothStep") {
-//     n = std::make_shared<VisualShaderNodeSmoothStep>();
-//   } else if (type == "VisualShaderNodeDotProduct") {
-//     n = std::make_shared<VisualShaderNodeDotProduct>();
-//   } else {
-//     DEBUG_PRINT("Unknown node type: " + type);
-//   }
+  // if (type == "VisualShaderNodeInput") {
+  //   n = std::make_shared<VisualShaderNodeInput>();
+  // } else if (type == "VisualShaderNodeColorConstant") {
+  //   n = std::make_shared<VisualShaderNodeColorConstant>();
+  // } else if (type == "VisualShaderNodeBooleanConstant") {
+  //   n = std::make_shared<VisualShaderNodeBooleanConstant>();
+  // } else if (type == "VisualShaderNodeFloatConstant") {
+  //   n = std::make_shared<VisualShaderNodeFloatConstant>();
+  // } else if (type == "VisualShaderNodeIntConstant") {
+  //   n = std::make_shared<VisualShaderNodeIntConstant>();
+  // } else if (type == "VisualShaderNodeUIntConstant") {
+  //   n = std::make_shared<VisualShaderNodeUIntConstant>();
+  // } else if (type == "VisualShaderNodeVec2Constant") {
+  //   n = std::make_shared<VisualShaderNodeVec2Constant>();
+  // } else if (type == "VisualShaderNodeVec3Constant") {
+  //   n = std::make_shared<VisualShaderNodeVec3Constant>();
+  // } else if (type == "VisualShaderNodeVec4Constant") {
+  //   n = std::make_shared<VisualShaderNodeVec4Constant>();
+  // } else if (type == "VisualShaderNodeFloatFunc") {
+  //   n = std::make_shared<VisualShaderNodeFloatFunc>();
+  // } else if (type == "VisualShaderNodeIntFunc") {
+  //   n = std::make_shared<VisualShaderNodeIntFunc>();
+  // } else if (type == "VisualShaderNodeUIntFunc") {
+  //   n = std::make_shared<VisualShaderNodeUIntFunc>();
+  // } else if (type == "VisualShaderNodeDerivativeFunc") {
+  //   n = std::make_shared<VisualShaderNodeDerivativeFunc>();
+  // } else if (type == "VisualShaderNodeFloatOp") {
+  //   n = std::make_shared<VisualShaderNodeFloatOp>();
+  // } else if (type == "VisualShaderNodeIntOp") {
+  //   n = std::make_shared<VisualShaderNodeIntOp>();
+  // } else if (type == "VisualShaderNodeUIntOp") {
+  //   n = std::make_shared<VisualShaderNodeUIntOp>();
+  // } else if (type == "VisualShaderNodeValueNoise") {
+  //   n = std::make_shared<VisualShaderNodeValueNoise>();
+  // } else if (type == "VisualShaderNodePerlinNoise") {
+  //   n = std::make_shared<VisualShaderNodePerlinNoise>();
+  // } else if (type == "VisualShaderNodeVoronoiNoise") {
+  //   n = std::make_shared<VisualShaderNodeVoronoiNoise>();
+  // } else if (type == "VisualShaderNodeVectorFunc") {
+  //   n = std::make_shared<VisualShaderNodeVectorFunc>();
+  // } else if (type == "VisualShaderNodeVectorOp") {
+  //   n = std::make_shared<VisualShaderNodeVectorOp>();
+  // } else if (type == "VisualShaderNodeVectorCompose") {
+  //   n = std::make_shared<VisualShaderNodeVectorCompose>();
+  // } else if (type == "VisualShaderNodeVectorDecompose") {
+  //   n = std::make_shared<VisualShaderNodeVectorDecompose>();
+  // } else if (type == "VisualShaderNodeCompare") {
+  //   n = std::make_shared<VisualShaderNodeCompare>();
+  // } else if (type == "VisualShaderNodeIf") {
+  //   n = std::make_shared<VisualShaderNodeIf>();
+  // } else if (type == "VisualShaderNodeIs") {
+  //   n = std::make_shared<VisualShaderNodeIs>();
+  // } else if (type == "VisualShaderNodeSwitch") {
+  //   n = std::make_shared<VisualShaderNodeSwitch>();
+  // } else if (type == "VisualShaderNodeStep") {
+  //   n = std::make_shared<VisualShaderNodeStep>();
+  // } else if (type == "VisualShaderNodeSmoothStep") {
+  //   n = std::make_shared<VisualShaderNodeSmoothStep>();
+  // } else if (type == "VisualShaderNodeDotProduct") {
+  //   n = std::make_shared<VisualShaderNodeDotProduct>();
+  // } else {
+  //   DEBUG_PRINT("Unknown node type: " + type);
+  // }
 
-//   if (!n) {
-//     DEBUG_PRINT("Failed to create node of type: " + type);
-//     return false;
-//   }
+  // if (!n) {
+  //   DEBUG_PRINT("Failed to create node of type: " + type);
+  //   return false;
+  // }
 
-//   int n_id{vs->get_valid_node_id()};
+  // int n_id{vs->get_valid_node_id()};
 
-//   if (n_id == (int)VisualShader::NODE_ID_INVALID) {
-//     return false;
-//   }
+  // if (n_id == (int)VisualShader::NODE_ID_INVALID) {
+  //   return false;
+  // }
 
-//   return VisualShaderGraphicsScene::add_node(n_id, n, coordinate);
-// }
+  // return VisualShaderGraphicsScene::add_node(n_id, coordinate);
+  return true;
+}
 
-// bool VisualShaderGraphicsScene::add_node(const int& n_id, const std::shared_ptr<VisualShaderNode>& n,
-//                                          const QPointF& coordinate) {
-//   // Make sure the node doesn't already exist, we don't want to overwrite a node.
-//   if (node_graphics_objects.find(n_id) != node_graphics_objects.end()) {
-//     return false;
-//   }
+bool VisualShaderGraphicsScene::add_node(const int& n_id, const QPointF& coordinate) {
+  // Make sure the node doesn't already exist, we don't want to overwrite a node.
+  // if (node_graphics_objects.find(n_id) != node_graphics_objects.end()) {
+  //   return false;
+  // }
 
-//   QList<QGraphicsView*> views{this->views()};
-//   if (views.isEmpty()) {
-//     DEBUG_PRINT("No views available");
-//     return false;
-//   }
+  // QList<QGraphicsView*> views{this->views()};
+  // if (views.isEmpty()) {
+  //   DEBUG_PRINT("No views available");
+  //   return false;
+  // }
 
-//   // The output node cannot be removed or added by the user
-//   if (n_id >= (int)VisualShader::NODE_ID_OUTPUT + 1) {
-//     bool result{vs->add_node(n, {(float)coordinate.x(), (float)coordinate.y()}, n_id)};
+  // // The output node cannot be removed or added by the user
+  // if (n_id >= (int)VisualShader::NODE_ID_OUTPUT + 1) {
+  //   bool result{vs->add_node(n, {(float)coordinate.x(), (float)coordinate.y()}, n_id)};
 
-//     if (!result) {
-//       return false;
-//     }
-//   }
+  //   if (!result) {
+  //     return false;
+  //   }
+  // }
 
-//   VisualShaderGraphicsView* view{dynamic_cast<VisualShaderGraphicsView*>(views.first())};
+  // VisualShaderGraphicsView* view{dynamic_cast<VisualShaderGraphicsView*>(views.first())};
 
-//   if (vs->get_node_coordinate(n_id).x < view->get_x() ||
-//       vs->get_node_coordinate(n_id).x > view->get_x() + view->get_width() ||
-//       vs->get_node_coordinate(n_id).y < view->get_y() ||
-//       vs->get_node_coordinate(n_id).y > view->get_y() + view->get_height()) {
-//     DEBUG_PRINT("Node is out of view bounds");
-//   }
+  // if (vs->get_node_coordinate(n_id).x < view->get_x() ||
+  //     vs->get_node_coordinate(n_id).x > view->get_x() + view->get_width() ||
+  //     vs->get_node_coordinate(n_id).y < view->get_y() ||
+  //     vs->get_node_coordinate(n_id).y > view->get_y() + view->get_height()) {
+  //   DEBUG_PRINT("Node is out of view bounds");
+  // }
 
-//   VisualShaderNodeGraphicsObject* n_o{new VisualShaderNodeGraphicsObject(n_id, coordinate, n)};
+  // VisualShaderNodeGraphicsObject* n_o{new VisualShaderNodeGraphicsObject(n_id, coordinate, n)};
 
-//   QObject::connect(n_o, &VisualShaderNodeGraphicsObject::node_moved, this, &VisualShaderGraphicsScene::on_node_moved);
-//   QObject::connect(n_o, &VisualShaderNodeGraphicsObject::in_port_pressed, this,
-//                    &VisualShaderGraphicsScene::on_port_pressed);
-//   QObject::connect(n_o, &VisualShaderNodeGraphicsObject::in_port_dragged, this,
-//                    &VisualShaderGraphicsScene::on_port_dragged);
-//   QObject::connect(n_o, &VisualShaderNodeGraphicsObject::in_port_dropped, this,
-//                    &VisualShaderGraphicsScene::on_port_dropped);
-//   QObject::connect(n_o, &VisualShaderNodeGraphicsObject::out_port_pressed, this,
-//                    &VisualShaderGraphicsScene::on_port_pressed);
-//   QObject::connect(n_o, &VisualShaderNodeGraphicsObject::out_port_dragged, this,
-//                    &VisualShaderGraphicsScene::on_port_dragged);
-//   QObject::connect(n_o, &VisualShaderNodeGraphicsObject::out_port_dropped, this,
-//                    &VisualShaderGraphicsScene::on_port_dropped);
+  // QObject::connect(n_o, &VisualShaderNodeGraphicsObject::node_moved, this, &VisualShaderGraphicsScene::on_node_moved);
+  // QObject::connect(n_o, &VisualShaderNodeGraphicsObject::in_port_pressed, this,
+  //                  &VisualShaderGraphicsScene::on_port_pressed);
+  // QObject::connect(n_o, &VisualShaderNodeGraphicsObject::in_port_dragged, this,
+  //                  &VisualShaderGraphicsScene::on_port_dragged);
+  // QObject::connect(n_o, &VisualShaderNodeGraphicsObject::in_port_dropped, this,
+  //                  &VisualShaderGraphicsScene::on_port_dropped);
+  // QObject::connect(n_o, &VisualShaderNodeGraphicsObject::out_port_pressed, this,
+  //                  &VisualShaderGraphicsScene::on_port_pressed);
+  // QObject::connect(n_o, &VisualShaderNodeGraphicsObject::out_port_dragged, this,
+  //                  &VisualShaderGraphicsScene::on_port_dragged);
+  // QObject::connect(n_o, &VisualShaderNodeGraphicsObject::out_port_dropped, this,
+  //                  &VisualShaderGraphicsScene::on_port_dropped);
 
-//   QObject::connect(n_o, &VisualShaderNodeGraphicsObject::scene_update_requested, this,
-//                    &VisualShaderGraphicsScene::on_scene_update_requested);
-//   QObject::connect(n_o, &VisualShaderNodeGraphicsObject::in_port_remove_requested, this,
-//                    &VisualShaderGraphicsScene::on_in_port_remove_requested);
-//   QObject::connect(n_o, &VisualShaderNodeGraphicsObject::out_port_remove_requested, this,
-//                    &VisualShaderGraphicsScene::on_out_port_remove_requested);
+  // QObject::connect(n_o, &VisualShaderNodeGraphicsObject::scene_update_requested, this,
+  //                  &VisualShaderGraphicsScene::on_scene_update_requested);
+  // QObject::connect(n_o, &VisualShaderNodeGraphicsObject::in_port_remove_requested, this,
+  //                  &VisualShaderGraphicsScene::on_in_port_remove_requested);
+  // QObject::connect(n_o, &VisualShaderNodeGraphicsObject::out_port_remove_requested, this,
+  //                  &VisualShaderGraphicsScene::on_out_port_remove_requested);
 
-//   if (n_id != (int)VisualShader::NODE_ID_OUTPUT) {
-//     VisualShaderNodeEmbedWidget* embed_widget{new VisualShaderNodeEmbedWidget(n)};
-//     QGraphicsProxyWidget* embed_widget_proxy{new QGraphicsProxyWidget(n_o)};
-//     embed_widget_proxy->setWidget(embed_widget);
-//     n_o->set_embed_widget(embed_widget);
-//     QObject::connect(embed_widget, &VisualShaderNodeEmbedWidget::shader_preview_update_requested, this,
-//                      &VisualShaderGraphicsScene::on_update_shader_previewer_widgets_requested);
+  // if (n_id != (int)VisualShader::NODE_ID_OUTPUT) {
+  //   VisualShaderNodeEmbedWidget* embed_widget{new VisualShaderNodeEmbedWidget(n)};
+  //   QGraphicsProxyWidget* embed_widget_proxy{new QGraphicsProxyWidget(n_o)};
+  //   embed_widget_proxy->setWidget(embed_widget);
+  //   n_o->set_embed_widget(embed_widget);
+  //   QObject::connect(embed_widget, &VisualShaderNodeEmbedWidget::shader_preview_update_requested, this,
+  //                    &VisualShaderGraphicsScene::on_update_shader_previewer_widgets_requested);
 
-//     QObject::connect(embed_widget, &VisualShaderNodeEmbedWidget::node_update_requested, n_o,
-//                      &VisualShaderNodeGraphicsObject::on_node_update_requested);
+  //   QObject::connect(embed_widget, &VisualShaderNodeEmbedWidget::node_update_requested, n_o,
+  //                    &VisualShaderNodeGraphicsObject::on_node_update_requested);
 
-//     // Send the shader previewer widget
-//     embed_widget->set_shader_previewer_widget(n_o->get_shader_previewer_widget());
-//   }
+  //   // Send the shader previewer widget
+  //   embed_widget->set_shader_previewer_widget(n_o->get_shader_previewer_widget());
+  // }
 
-//   if (ShaderPreviewerWidget * spw{n_o->get_shader_previewer_widget()}) {
-//     QObject::connect(spw, &ShaderPreviewerWidget::scene_update_requested, this,
-//                      &VisualShaderGraphicsScene::on_scene_update_requested);
-//   }
+  // if (ShaderPreviewerWidget * spw{n_o->get_shader_previewer_widget()}) {
+  //   QObject::connect(spw, &ShaderPreviewerWidget::scene_update_requested, this,
+  //                    &VisualShaderGraphicsScene::on_scene_update_requested);
+  // }
 
-//   QObject::connect(n_o, &VisualShaderNodeGraphicsObject::node_deleted, this,
-//                    &VisualShaderGraphicsScene::on_node_deleted);
+  // QObject::connect(n_o, &VisualShaderNodeGraphicsObject::node_deleted, this,
+  //                  &VisualShaderGraphicsScene::on_node_deleted);
 
-//   node_graphics_objects[n_id] = n_o;
+  // node_graphics_objects[n_id] = n_o;
 
-//   addItem(n_o);
+  // addItem(n_o);
 
-//   return true;
-// }
+  // return true;
+}
 
-// bool VisualShaderGraphicsScene::delete_node(const int& n_id) {
-//   const std::shared_ptr<VisualShaderNode> n{vs->get_node(n_id)};
+bool VisualShaderGraphicsScene::delete_node(const int& n_id) {
+  // const std::shared_ptr<VisualShaderNode> n{vs->get_node(n_id)};
 
-//   if (!n) {
-//     return false;
-//   }
+  // if (!n) {
+  //   return false;
+  // }
 
-//   VisualShaderNodeGraphicsObject* n_o{this->get_node_graphics_object(n_id)};
+  // VisualShaderNodeGraphicsObject* n_o{this->get_node_graphics_object(n_id)};
 
-//   if (!n_o) {
-//     return false;
-//   }
+  // if (!n_o) {
+  //   return false;
+  // }
 
-//   // Remove all connections to the node
-//   for (int i{0}; i < n->get_input_port_count(); i++) {
-//     VisualShaderInputPortGraphicsObject* i_port{n_o->get_input_port_graphics_object(i)};
+  // // Remove all connections to the node
+  // for (int i{0}; i < n->get_input_port_count(); i++) {
+  //   VisualShaderInputPortGraphicsObject* i_port{n_o->get_input_port_graphics_object(i)};
 
-//     if (!i_port || !i_port->is_connected()) {
-//       continue;
-//     }
+  //   if (!i_port || !i_port->is_connected()) {
+  //     continue;
+  //   }
 
-//     // Get the output port of the connection
-//     VisualShaderConnectionGraphicsObject* c_o{i_port->get_connection_graphics_object()};
+  //   // Get the output port of the connection
+  //   VisualShaderConnectionGraphicsObject* c_o{i_port->get_connection_graphics_object()};
 
-//     if (!c_o) {
-//       continue;
-//     }
+  //   if (!c_o) {
+  //     continue;
+  //   }
 
-//     bool result{this->delete_connection(c_o->get_from_node_id(), c_o->get_from_port_index(), n_id, i)};
+  //   bool result{this->delete_connection(c_o->get_from_node_id(), c_o->get_from_port_index(), n_id, i)};
 
-//     if (!result) {
-//       DEBUG_PRINT("Failed to delete connection");
-//       continue;
-//     }
-//   }
+  //   if (!result) {
+  //     DEBUG_PRINT("Failed to delete connection");
+  //     continue;
+  //   }
+  // }
 
-//   for (int i{0}; i < n->get_output_port_count(); i++) {
-//     VisualShaderOutputPortGraphicsObject* o_port{n_o->get_output_port_graphics_object(i)};
+  // for (int i{0}; i < n->get_output_port_count(); i++) {
+  //   VisualShaderOutputPortGraphicsObject* o_port{n_o->get_output_port_graphics_object(i)};
 
-//     if (!o_port || !o_port->is_connected()) {
-//       continue;
-//     }
+  //   if (!o_port || !o_port->is_connected()) {
+  //     continue;
+  //   }
 
-//     std::vector<VisualShaderConnectionGraphicsObject*> c_os{o_port->get_connection_graphics_objects()};
+  //   std::vector<VisualShaderConnectionGraphicsObject*> c_os{o_port->get_connection_graphics_objects()};
 
-//     for (VisualShaderConnectionGraphicsObject* c_o : c_os) {
-//       if (!c_o) {
-//         continue;
-//       }
+  //   for (VisualShaderConnectionGraphicsObject* c_o : c_os) {
+  //     if (!c_o) {
+  //       continue;
+  //     }
 
-//       bool result{this->delete_connection(n_id, i, c_o->get_to_node_id(), c_o->get_to_port_index())};
+  //     bool result{this->delete_connection(n_id, i, c_o->get_to_node_id(), c_o->get_to_port_index())};
 
-//       if (!result) {
-//         DEBUG_PRINT("Failed to delete connection");
-//         continue;
-//       }
-//     }
-//   }
+  //     if (!result) {
+  //       DEBUG_PRINT("Failed to delete connection");
+  //       continue;
+  //     }
+  //   }
+  // }
 
-//   bool result{vs->remove_node(n_id)};
+  // bool result{vs->remove_node(n_id)};
 
-//   if (!result) {
-//     return false;
-//   }
+  // if (!result) {
+  //   return false;
+  // }
 
-//   // Remove the node from the scene
-//   // TODO: Why if we exchange the order of these two lines, the program crashes?
-//   this->node_graphics_objects.erase(n_id);
-//   remove_item(n_o);
+  // // Remove the node from the scene
+  // // TODO: Why if we exchange the order of these two lines, the program crashes?
+  // this->node_graphics_objects.erase(n_id);
+  // remove_item(n_o);
 
-//   return true;
-// }
+  return true;
+}
 
 void VisualShaderGraphicsScene::on_update_shader_previewer_widgets_requested() {
   // for (auto& [n_id, n_o] : node_graphics_objects) {

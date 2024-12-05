@@ -63,6 +63,10 @@
 // #include "generator/vs_noise_nodes.hpp"
 
 #include "gui/model/message_model.hpp"
+#include "gui/model/repeated_message_model.hpp"
+
+#include "gui/model/schema/visual_shader.pb.h" // Generated Protobuf classes
+#include "gui/model/schema/visual_shader_nodes.pb.h"
 
 class VisualShaderGraphicsScene;
 class VisualShaderGraphicsView;
@@ -88,13 +92,6 @@ class VisualShaderEditor : public QWidget {
   Q_OBJECT
 
  public:
-  /**
-   * @brief This constructor is meant to be used for testing purposes. As
-   *        it doesn't require a MessageModel object.
-   * 
-   * @param parent 
-   */
-  VisualShaderEditor(QWidget* parent = nullptr);
   VisualShaderEditor(MessageModel* model, QWidget* parent = nullptr);
   ~VisualShaderEditor() override;
 
@@ -192,6 +189,13 @@ class VisualShaderEditor : public QWidget {
   static const VisualShaderEditor::CreateNodeDialogNodesTreeItem create_node_dialog_nodes_tree_items[];
 
   CreateNodeDialog* create_node_dialog;
+
+  // Main Model
+  MessageModel* visual_shader_model;
+
+  // Sub-Models
+  RepeatedMessageModel* nodes_model;
+  RepeatedMessageModel* connections_model;
 
   /**
    * @brief Initializes the UI
@@ -370,14 +374,19 @@ class VisualShaderGraphicsScene : public QGraphicsScene {
   Q_OBJECT
 
  public:
-  // VisualShaderGraphicsScene(VisualShader* vs, QObject* parent = nullptr);
   VisualShaderGraphicsScene(QObject* parent = nullptr);
 
   ~VisualShaderGraphicsScene();
 
-  // bool add_node(const std::string& type, const QPointF& coordinate);
+  bool add_node(const std::string& type, const QPointF& coordinate);
+  
   // bool add_node(const int& n_id, const std::shared_ptr<VisualShaderNode>& n, const QPointF& coordinate);
-  // bool delete_node(const int& n_id);
+  bool add_node(const int& n_id, const QPointF& coordinate);
+
+  bool delete_node(const int& n_id);
+
+  void set_nodes_model(RepeatedMessageModel* nodes_model) { this->nodes_model = nodes_model; }
+  void set_connections_model(RepeatedMessageModel* connections_model) { this->connections_model = connections_model; }
 
   VisualShaderEditor* get_editor() const { return editor; }
   void set_editor(VisualShaderEditor* editor) const { this->editor = editor; }
@@ -461,6 +470,10 @@ class VisualShaderGraphicsScene : public QGraphicsScene {
   std::unordered_map<int, VisualShaderNodeGraphicsObject*> node_graphics_objects;
 
   VisualShaderConnectionGraphicsObject* temporary_connection_graphics_object;
+
+  // Sub-Models
+  RepeatedMessageModel* nodes_model;
+  RepeatedMessageModel* connections_model;
 
   void remove_item(QGraphicsItem* item);
 };
@@ -921,6 +934,59 @@ class VisualShaderGraphicsView : public QGraphicsView {
 //   std::pair<QPointF, QPointF> calculate_control_points(const QPointF& start_coordinate,
 //                                                        const QPointF& end_coordinate) const;
 // };
+
+/**********************************************************************/
+/**********************************************************************/
+/**********************************************************************/
+/*****                                                            *****/
+/*****                 GraphNode                                  *****/
+/*****                                                            *****/
+/**********************************************************************/
+/**********************************************************************/
+/**********************************************************************/
+
+template<typename Proto> 
+class GraphNode {
+ public:
+  using VisualShaderNodePortType = gui::model::schema::VisualShaderNodePortType;
+  using VisualShaderNodeCategory = gui::model::schema::VisualShaderNodeCategory;
+
+  std::string get_caption() const {
+    return Proto::descriptor()->options().GetExtension(gui::model::schema::node_caption);
+  }
+
+  int get_input_port_count() const {
+    return Proto::descriptor()->options().GetExtension(gui::model::schema::node_input_port_count);
+  }
+
+  VisualShaderNodePortType get_input_port_type(const int& index) const {
+    SILENT_VALIDATE_INDEX_NON_VOID(index, get_input_port_count(), VisualShaderNodePortType::PORT_TYPE_UNSPECIFIED);
+    return Proto::descriptor()->options().GetExtension(gui::model::schema::node_input_port_type, index);
+  }
+
+  std::string get_input_port_caption(const int& index) const {
+    SILENT_VALIDATE_INDEX_NON_VOID(index, get_input_port_count(), std::string());
+    return Proto::descriptor()->options().GetExtension(gui::model::schema::node_input_port_caption, index);
+  }
+
+  int get_output_port_count() const {
+    return Proto::descriptor()->options().GetExtension(gui::model::schema::node_output_port_count);
+  }
+
+  VisualShaderNodePortType get_output_port_type(const int& index) const {
+    SILENT_VALIDATE_INDEX_NON_VOID(index, get_output_port_count(), VisualShaderNodePortType::PORT_TYPE_UNSPECIFIED);
+    return Proto::descriptor()->options().GetExtension(gui::model::schema::node_output_port_type, index);
+  }
+
+  std::string get_output_port_caption(const int& index) const {
+    SILENT_VALIDATE_INDEX_NON_VOID(index, get_output_port_count(), std::string());
+    return Proto::descriptor()->options().GetExtension(gui::model::schema::node_output_port_caption, index);
+  }
+
+  VisualShaderNodeCategory get_category() const {
+    return Proto::descriptor()->options().GetExtension(gui::model::schema::node_category);
+  }
+};
 
 /**********************************************************************/
 /**********************************************************************/

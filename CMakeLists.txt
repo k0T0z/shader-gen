@@ -158,11 +158,13 @@ if (WIN32)
     add_executable(${SHADER_GEN_EXECUTABLE_NAME} WIN32
         ${SHADER_GEN_MAIN_ENTRY} 
         ${SHADER_GEN_CPP_FILES} 
+        ${SHADER_GEN_PROTO_GENERATED_SRCS} # Include the generated protobuf files
     )
 else()
     add_executable(${SHADER_GEN_EXECUTABLE_NAME}  
         ${SHADER_GEN_MAIN_ENTRY} 
         ${SHADER_GEN_CPP_FILES} 
+        ${SHADER_GEN_PROTO_GENERATED_SRCS} # Include the generated protobuf files
     )
 endif()
 
@@ -193,6 +195,7 @@ target_link_libraries(${SHADER_GEN_EXECUTABLE_NAME} PRIVATE
 
 target_include_directories(${SHADER_GEN_EXECUTABLE_NAME} PRIVATE 
     "${CMAKE_CURRENT_SOURCE_DIR}/" 
+    "${CMAKE_CURRENT_BINARY_DIR}/" # For the generated protobuf files
 )
 
 target_compile_definitions(${SHADER_GEN_EXECUTABLE_NAME} PRIVATE 
@@ -246,11 +249,21 @@ if(NOT GTest_FOUND)
     add_subdirectory(${SHADER_GEN_TESTS_GTEST_ROOTDIR} ${SHADER_GEN_TESTS_GTEST_BUILD_ROOTDIR})
 endif()
 
-add_executable(${SHADER_GEN_TESTS_EXECUTABLE_NAME} 
-    ${SHADER_GEN_TESTS_CPP_FILES} 
-    ${SHADER_GEN_CPP_FILES} 
-    ${SHADER_GEN_PROTO_GENERATED_TEST_SRCS} # Include the generated protobuf test files
-)
+if (WIN32)
+    add_executable(${SHADER_GEN_TESTS_EXECUTABLE_NAME} WIN32
+        ${SHADER_GEN_TESTS_CPP_FILES} 
+        ${SHADER_GEN_CPP_FILES} 
+        ${SHADER_GEN_PROTO_GENERATED_SRCS} # Include the generated protobuf files
+        ${SHADER_GEN_PROTO_GENERATED_TEST_SRCS} # Include the generated protobuf test files
+    )
+else()
+    add_executable(${SHADER_GEN_TESTS_EXECUTABLE_NAME} 
+        ${SHADER_GEN_TESTS_CPP_FILES} 
+        ${SHADER_GEN_CPP_FILES} 
+        ${SHADER_GEN_PROTO_GENERATED_SRCS} # Include the generated protobuf files
+        ${SHADER_GEN_PROTO_GENERATED_TEST_SRCS} # Include the generated protobuf test files
+    )
+endif()
 
 # Create the output directory for the generated protobuf test files
 set(PROTOC_TEST_OUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/tests/gui/model/schema")

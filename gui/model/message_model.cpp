@@ -13,9 +13,7 @@
 using OneofDescriptor = google::protobuf::OneofDescriptor;
 
 MessageModel::MessageModel(Message* message_buffer, ProtoModel* parent_model, const int& index_in_parent)
-    : ProtoModel(parent_model, index_in_parent), m_message_buffer(message_buffer) {
-    // if (m_parent_model == nullptr) this->loadFromJson("model.json");
-}
+    : ProtoModel(parent_model, index_in_parent), m_message_buffer(message_buffer) {}
 
 void MessageModel::build_sub_models() {
     SILENT_CHECK_PARAM_NULLPTR(m_message_buffer);

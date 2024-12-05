@@ -13,45 +13,156 @@ enum VisualShaderNodePortType {
     PORT_TYPE_VECTOR_3D = 5;
     PORT_TYPE_VECTOR_4D = 6;
     PORT_TYPE_BOOLEAN = 7;
-    PORT_TYPE_ENUM_SIZE = 8;
 };
 
-// TODO: Check Ids with mentors.
+enum VisualShaderNodeCategory {
+    CATEGORY_UNSPECIFIED = 0;
+    CATEGORY_OUTPUT = 1;
+    CATEGORY_COLOR = 2;
+    CATEGORY_CONDITIONAL = 3;
+    CATEGORY_INPUT = 4;
+    CATEGORY_SCALAR = 5;
+    CATEGORY_UTILITY = 6;
+    CATEGORY_VECTOR = 7;
+};
+
+// See:
+// https://protobuf.dev/programming-guides/extension_declarations/
+// https://protobuf.dev/programming-guides/proto2/#extensions
+// https://protobuf.dev/programming-guides/proto3/#options
+// https://protobuf.dev/programming-guides/proto3/#customoptions
+// https://protobuf.dev/reference/protobuf/proto3-spec/#option
 extend google.protobuf.MessageOptions {
     optional int32 id_start = 60000;
     string node_caption = 60001;
     int32 node_input_port_count = 60002;
-    VisualShaderNodePortType node_input_port_type = 60003;
-    string node_input_port_caption = 60004;
+    repeated VisualShaderNodePortType node_input_port_type = 60003;
+    repeated string node_input_port_caption = 60004;
     int32 node_output_port_count = 60005;
-    VisualShaderNodePortType node_output_port_type = 60006;
-    string node_output_port_caption = 60007;
+    repeated VisualShaderNodePortType node_output_port_type = 60006;
+    repeated string node_output_port_caption = 60007;
+    VisualShaderNodeCategory node_category = 60008;
 }
 
-// TODO: Can we create an interface for these messages?
+/*************************************/
+/* CONSTANTS                         */
+/*************************************/
 
 message VisualShaderNodeFloatConstant {
     option (node_caption) = "Float Constant";
     option (node_input_port_count) = 0;
-    option (node_input_port_type) = PORT_TYPE_SCALAR;
-    option (node_input_port_caption) = "";
     
     option (node_output_port_count) = 1;
     option (node_output_port_type) = PORT_TYPE_SCALAR;
     option (node_output_port_caption) = "";
 
-    optional double value = 1;
+    option (node_category) = CATEGORY_INPUT;
+
+    optional float value = 1;
 }
 
 message VisualShaderNodeIntConstant {
     option (node_caption) = "Int Constant";
     option (node_input_port_count) = 0;
-    option (node_input_port_type) = PORT_TYPE_SCALAR_INT;
-    option (node_input_port_caption) = "";
     
     option (node_output_port_count) = 1;
     option (node_output_port_type) = PORT_TYPE_SCALAR_INT;
     option (node_output_port_caption) = "";
 
+    option (node_category) = CATEGORY_INPUT;
+
     optional int32 value = 1;
 }
+
+message VisualShaderNodeUIntConstant {
+    option (node_caption) = "UInt Constant";
+    option (node_input_port_count) = 0;
+    
+    option (node_output_port_count) = 1;
+    option (node_output_port_type) = PORT_TYPE_SCALAR_UINT;
+    option (node_output_port_caption) = "";
+
+    option (node_category) = CATEGORY_INPUT;
+
+    optional uint32 value = 1;
+}
+
+message VisualShaderNodeBooleanConstant {
+    option (node_caption) = "Boolean Constant";
+    option (node_input_port_count) = 0;
+    
+    option (node_output_port_count) = 1;
+    option (node_output_port_type) = PORT_TYPE_BOOLEAN;
+    option (node_output_port_caption) = "";
+
+    option (node_category) = CATEGORY_INPUT;
+
+    optional bool value = 1;
+}
+
+message VisualShaderNodeColorConstant {
+    option (node_caption) = "Color Constant";
+    option (node_input_port_count) = 0;
+    
+    option (node_output_port_count) = 1;
+    option (node_output_port_type) = PORT_TYPE_VECTOR_4D;
+    option (node_output_port_caption) = "";
+
+    option (node_category) = CATEGORY_INPUT;
+
+    optional float r = 1;
+    optional float g = 2;
+    optional float b = 3;
+    optional float a = 4;
+}
+
+message VisualShaderNodeVec2Constant {
+    option (node_caption) = "Vec2 Constant";
+    option (node_input_port_count) = 0;
+    
+    option (node_output_port_count) = 1;
+    option (node_output_port_type) = PORT_TYPE_VECTOR_2D;
+    option (node_output_port_caption) = "";
+
+    option (node_category) = CATEGORY_INPUT;
+
+    optional float x = 1;
+    optional float y = 2;
+}
+
+message VisualShaderNodeVec3Constant {
+    option (node_caption) = "Vec3 Constant";
+    option (node_input_port_count) = 0;
+    
+    option (node_output_port_count) = 1;
+    option (node_output_port_type) = PORT_TYPE_VECTOR_3D;
+    option (node_output_port_caption) = "";
+
+    option (node_category) = CATEGORY_INPUT;
+
+    optional float x = 1;
+    optional float y = 2;
+    optional float z = 3;
+}
+
+message VisualShaderNodeVec4Constant {
+    option (node_caption) = "Vec4 Constant";
+    option (node_input_port_count) = 0;
+    
+    option (node_output_port_count) = 1;
+    option (node_output_port_type) = PORT_TYPE_VECTOR_4D;
+    option (node_output_port_caption) = "";
+
+    option (node_category) = CATEGORY_INPUT;
+
+    optional float x = 1;
+    optional float y = 2;
+    optional float z = 3;
+    optional float w = 4;
+}
+
+/*************************************/
+/* OPERATORS                         */
+/*************************************/
+
+
