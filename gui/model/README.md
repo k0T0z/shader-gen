@@ -9,6 +9,7 @@ When I personally work with the protobuf, I keep 4 tabs open:
 2. https://protobuf.dev/reference/cpp/api-docs/google.protobuf.descriptor/#FieldDescriptor
 3. https://protobuf.dev/reference/cpp/api-docs/google.protobuf.message/#Reflection
 4. https://doc.qt.io/qt-5/qabstractitemmodel.html
+5. https://doc.qt.io/qt-5/qdatawidgetmapper.html
 
 ### Make sure you give this a read: https://protobuf.dev/programming-guides/best-practices/
 
