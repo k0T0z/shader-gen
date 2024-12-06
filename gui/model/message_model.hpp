@@ -83,7 +83,8 @@ private:
         Now, let's say that some_messages has 5 rows and we want to set the field at row 0 and 
         column 2 or other words "the email field of the first row". This means the some_messages
         should emit a dataChanged signal with top-left and bottom-right indices of (0, 2) and 
-        (0, 2).
+        (0, 2). This means we need to save the 2 somewhere. This is my approach and if you found
+        a better way, bing me!!
 
         Check MessageModel::parent_data_changed(), the RepeatedMessageModel if branch for more 
         information. This is the only branch we use the last_accessed_field_index for.

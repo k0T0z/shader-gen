@@ -191,9 +191,8 @@ QModelIndex MessageModel::parent([[maybe_unused]] const QModelIndex& child) cons
         The index should contain the row and column of the parent model in its parent. 
         
         If the parent model is a RepeatedMessageModel, then the row should be the index in it.
-        While the column will be 0. A message model is represented as a single row in a repeated 
-        message model. This means it is makes more sense to set the column to -1, however, this 
-        will make the QModelIndex invalid. See https://doc.qt.io/qt-5/qmodelindex.html#isValid
+        While the column will be last_accessed_field_index value. Check last_accessed_field_index
+        for more information.
         
         If the parent model is a MessageModel, then the row should be 0 and the column should 
         be the index in it. Same goes for OneofModel.
