@@ -15,3 +15,10 @@ Or mRGM, which stands for mini-RadialGM, is a simple and lightweight version of 
 - Simplified primitives and repeated primitives.
 - Created a great version of the FieldPath class.
 - The `get_sub_model` method is now recieve an optional parameter `for_set_data` to get the sub-model for setting data.
+
+## Steps To Add a New Node
+
+1. Add the node in `gui/model/schema/visual_shader_nodes.proto`.
+2. Add it inside `gui/controller/graph_node.hpp`.
+3. Add it inside the `VisualShaderEditor(MessageModel* model, QWidget* parent = nullptr)` in `gui/controller/visual_shader_editor.cpp`.
+4. Create a generator for it.

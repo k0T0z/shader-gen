@@ -20,15 +20,6 @@ ProtoModel::ProtoModel(ProtoModel* parent_model, const int& index_in_parent)
     }
 }
 
-void ProtoModel::parent_data_changed() const {
-    const ProtoModel* m {get_parent_model()};
-    while (true) {
-        SILENT_CHECK_PARAM_NULLPTR(m);
-        Q_EMIT const_cast<ProtoModel*>(m)->dataChanged(m->index(0, 0), m->index(m->rowCount() - 1, m->columnCount() - 1));
-        m = m->get_parent_model();
-    }
-}
-
 QByteArray ProtoModel::serializeToJson() const {
     const ProtoModel* root_model = get_root_model();
     CHECK_PARAM_NULLPTR_NON_VOID(root_model, QByteArray(), "Failed to get root model");
@@ -96,9 +87,6 @@ QModelIndex ProtoModel::index(int row, int column, [[maybe_unused]] const QModel
 
 const ProtoModel* ProtoModel::get_root_model() const {
     const ProtoModel* m {this};
-    while (true) {
-        SILENT_CHECK_PARAM_NULLPTR_NON_VOID(m->get_parent_model(), m);
-        m = m->get_parent_model();
-    }
-    return nullptr;
+    while (m->get_parent_model()) m = m->get_parent_model();
+    return m;
 }

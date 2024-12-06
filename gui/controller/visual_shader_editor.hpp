@@ -57,6 +57,7 @@
 
 #include <string>
 #include <vector>
+#include <variant>
 
 // #include "generator/visual_shader.hpp"
 // #include "generator/visual_shader_nodes.hpp"
@@ -65,8 +66,7 @@
 #include "gui/model/message_model.hpp"
 #include "gui/model/repeated_message_model.hpp"
 
-#include "gui/model/schema/visual_shader.pb.h" // Generated Protobuf classes
-#include "gui/model/schema/visual_shader_nodes.pb.h"
+#include "gui/controller/graph_node.hpp"
 
 class VisualShaderGraphicsScene;
 class VisualShaderGraphicsView;
@@ -92,6 +92,10 @@ class VisualShaderEditor : public QWidget {
   Q_OBJECT
 
  public:
+  enum {
+    VARIANT_NODE_TYPE_USER_ROLE = Qt::UserRole + 1,
+  };
+
   VisualShaderEditor(MessageModel* model, QWidget* parent = nullptr);
   ~VisualShaderEditor() override;
 
@@ -176,17 +180,17 @@ class VisualShaderEditor : public QWidget {
   struct CreateNodeDialogNodesTreeItem {
     std::string name;
     std::string category_path;
-    std::string type;
     std::string description;
+    variant_node_type v_node_type;
 
     CreateNodeDialogNodesTreeItem(const std::string& name = std::string(),
                                   const std::string& category_path = std::string(),
-                                  const std::string& type = std::string(),
-                                  const std::string& description = std::string())
-        : name(name), category_path(category_path), type(type), description(description) {}
+                                  const std::string& description = std::string(),
+                                  const variant_node_type& v_node_type = variant_node_type()) :
+        name(name), category_path(category_path), description(description), v_node_type(v_node_type) {}
   };
 
-  static const VisualShaderEditor::CreateNodeDialogNodesTreeItem create_node_dialog_nodes_tree_items[];
+  std::vector<CreateNodeDialogNodesTreeItem> create_node_dialog_nodes_tree_items;
 
   CreateNodeDialog* create_node_dialog;
 
@@ -200,18 +204,8 @@ class VisualShaderEditor : public QWidget {
   /**
    * @brief Initializes the UI
    * 
-   * @note To be called from different constructors. This function shouldn't contain
-   *       any code related to MessageModel class as this will break the tests.
-   * 
    */
   void init();
-
-  /**
-   * @brief The VisualShader class may have some nodes at the beginning. This function
-   *        is meant to add those nodes to the scene.
-   * 
-   */
-  void init_graph();
 
   void create_node(const QPointF& coordinate);
 
@@ -378,10 +372,10 @@ class VisualShaderGraphicsScene : public QGraphicsScene {
 
   ~VisualShaderGraphicsScene();
 
-  bool add_node(const std::string& type, const QPointF& coordinate);
+  bool add_node(const variant_node_type& v_node_type, const QPointF& coordinate);
   
   // bool add_node(const int& n_id, const std::shared_ptr<VisualShaderNode>& n, const QPointF& coordinate);
-  bool add_node(const int& n_id, const QPointF& coordinate);
+  bool add_node(const QPointF& coordinate);
 
   bool delete_node(const int& n_id);
 
@@ -934,59 +928,6 @@ class VisualShaderGraphicsView : public QGraphicsView {
 //   std::pair<QPointF, QPointF> calculate_control_points(const QPointF& start_coordinate,
 //                                                        const QPointF& end_coordinate) const;
 // };
-
-/**********************************************************************/
-/**********************************************************************/
-/**********************************************************************/
-/*****                                                            *****/
-/*****                 GraphNode                                  *****/
-/*****                                                            *****/
-/**********************************************************************/
-/**********************************************************************/
-/**********************************************************************/
-
-template<typename Proto> 
-class GraphNode {
- public:
-  using VisualShaderNodePortType = gui::model::schema::VisualShaderNodePortType;
-  using VisualShaderNodeCategory = gui::model::schema::VisualShaderNodeCategory;
-
-  std::string get_caption() const {
-    return Proto::descriptor()->options().GetExtension(gui::model::schema::node_caption);
-  }
-
-  int get_input_port_count() const {
-    return Proto::descriptor()->options().GetExtension(gui::model::schema::node_input_port_count);
-  }
-
-  VisualShaderNodePortType get_input_port_type(const int& index) const {
-    SILENT_VALIDATE_INDEX_NON_VOID(index, get_input_port_count(), VisualShaderNodePortType::PORT_TYPE_UNSPECIFIED);
-    return Proto::descriptor()->options().GetExtension(gui::model::schema::node_input_port_type, index);
-  }
-
-  std::string get_input_port_caption(const int& index) const {
-    SILENT_VALIDATE_INDEX_NON_VOID(index, get_input_port_count(), std::string());
-    return Proto::descriptor()->options().GetExtension(gui::model::schema::node_input_port_caption, index);
-  }
-
-  int get_output_port_count() const {
-    return Proto::descriptor()->options().GetExtension(gui::model::schema::node_output_port_count);
-  }
-
-  VisualShaderNodePortType get_output_port_type(const int& index) const {
-    SILENT_VALIDATE_INDEX_NON_VOID(index, get_output_port_count(), VisualShaderNodePortType::PORT_TYPE_UNSPECIFIED);
-    return Proto::descriptor()->options().GetExtension(gui::model::schema::node_output_port_type, index);
-  }
-
-  std::string get_output_port_caption(const int& index) const {
-    SILENT_VALIDATE_INDEX_NON_VOID(index, get_output_port_count(), std::string());
-    return Proto::descriptor()->options().GetExtension(gui::model::schema::node_output_port_caption, index);
-  }
-
-  VisualShaderNodeCategory get_category() const {
-    return Proto::descriptor()->options().GetExtension(gui::model::schema::node_category);
-  }
-};
 
 /**********************************************************************/
 /**********************************************************************/

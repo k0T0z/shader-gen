@@ -54,6 +54,24 @@ void OneofModel::build_sub_models() {
     }
 }
 
+void OneofModel::parent_data_changed() const {
+    const ProtoModel* parent {get_parent_model()};
+    CHECK_PARAM_NULLPTR(parent, "Parent of oneof model is null.");
+
+    QModelIndex index {this->parent(QModelIndex())};
+    CHECK_CONDITION_TRUE(!index.isValid(), "Parent index is invalid.");
+
+    ProtoModel* t {const_cast<ProtoModel*>(parent)};
+
+    if (MessageModel* message_m {dynamic_cast<MessageModel*>(t)}) {
+        Q_EMIT message_m->dataChanged(index, index);
+        message_m->parent_data_changed();
+        return;
+    }
+
+    ERROR_PRINT("Parent model is not a message model.");
+}
+
 QVariant OneofModel::data() const {
     FAIL_AND_RETURN_NON_VOID(QVariant(), "Cannot get data from MessageModel.");
 }

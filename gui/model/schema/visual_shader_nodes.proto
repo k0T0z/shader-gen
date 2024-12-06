@@ -42,6 +42,8 @@ extend google.protobuf.MessageOptions {
     repeated VisualShaderNodePortType node_output_port_type = 60006;
     repeated string node_output_port_caption = 60007;
     VisualShaderNodeCategory node_category = 60008;
+    string node_category_path = 60009;
+    string node_description = 60010;
 }
 
 /*************************************/
@@ -57,6 +59,8 @@ message VisualShaderNodeFloatConstant {
     option (node_output_port_caption) = "";
 
     option (node_category) = CATEGORY_INPUT;
+    option (node_category_path) = "Input/Basic";
+    option (node_description) = "Scalar floating-point constant.";
 
     optional float value = 1;
 }
@@ -70,6 +74,8 @@ message VisualShaderNodeIntConstant {
     option (node_output_port_caption) = "";
 
     option (node_category) = CATEGORY_INPUT;
+    option (node_category_path) = "Input/Basic";
+    option (node_description) = "Scalar integer constant.";
 
     optional int32 value = 1;
 }
@@ -83,6 +89,8 @@ message VisualShaderNodeUIntConstant {
     option (node_output_port_caption) = "";
 
     option (node_category) = CATEGORY_INPUT;
+    option (node_category_path) = "Input/Basic";
+    option (node_description) = "Scalar unsigned integer constant.";
 
     optional uint32 value = 1;
 }
@@ -96,6 +104,8 @@ message VisualShaderNodeBooleanConstant {
     option (node_output_port_caption) = "";
 
     option (node_category) = CATEGORY_INPUT;
+    option (node_category_path) = "Input/Basic";
+    option (node_description) = "Scalar boolean constant.";
 
     optional bool value = 1;
 }
@@ -109,6 +119,8 @@ message VisualShaderNodeColorConstant {
     option (node_output_port_caption) = "";
 
     option (node_category) = CATEGORY_INPUT;
+    option (node_category_path) = "Input/Basic";
+    option (node_description) = "Vector color constant.";
 
     optional float r = 1;
     optional float g = 2;
@@ -125,6 +137,8 @@ message VisualShaderNodeVec2Constant {
     option (node_output_port_caption) = "";
 
     option (node_category) = CATEGORY_INPUT;
+    option (node_category_path) = "Input/Basic";
+    option (node_description) = "Vector 2D constant.";
 
     optional float x = 1;
     optional float y = 2;
@@ -139,6 +153,8 @@ message VisualShaderNodeVec3Constant {
     option (node_output_port_caption) = "";
 
     option (node_category) = CATEGORY_INPUT;
+    option (node_category_path) = "Input/Basic";
+    option (node_description) = "Vector 3D constant.";
 
     optional float x = 1;
     optional float y = 2;
@@ -154,6 +170,8 @@ message VisualShaderNodeVec4Constant {
     option (node_output_port_caption) = "";
 
     option (node_category) = CATEGORY_INPUT;
+    option (node_category_path) = "Input/Basic";
+    option (node_description) = "Vector 4D constant.";
 
     optional float x = 1;
     optional float y = 2;
@@ -164,5 +182,67 @@ message VisualShaderNodeVec4Constant {
 /*************************************/
 /* OPERATORS                         */
 /*************************************/
+
+
+/*************************************/
+/* NOISE                             */
+/*************************************/
+
+message VisualShaderNodeValueNoise {
+    option (node_caption) = "Value Noise";
+    option (node_input_port_count) = 1;
+    option (node_input_port_type) = PORT_TYPE_VECTOR_2D;
+    option (node_input_port_caption) = "uv";
+    
+    option (node_output_port_count) = 1;
+    option (node_output_port_type) = PORT_TYPE_VECTOR_4D;
+    option (node_output_port_caption) = "noise";
+
+    option (node_category) = CATEGORY_UNSPECIFIED;
+    option (node_category_path) = "Procedural/Noise";
+    option (node_description) = "Generates a simple, or Value, noise based on input 'UV'. The scale of the generated noise is controlled by input "
+     "'Scale'.";
+
+    optional float scale = 1;
+}
+
+message VisualShaderNodePerlinNoise {
+    option (node_caption) = "Perlin Noise";
+    option (node_input_port_count) = 1;
+    option (node_input_port_type) = PORT_TYPE_VECTOR_2D;
+    option (node_input_port_caption) = "uv";
+    
+    option (node_output_port_count) = 1;
+    option (node_output_port_type) = PORT_TYPE_VECTOR_4D;
+    option (node_output_port_caption) = "noise";
+
+    option (node_category) = CATEGORY_UNSPECIFIED;
+    option (node_category_path) = "Procedural/Noise";
+    option (node_description) = "Generates a gradient, or Perlin, noise based on input 'UV'. The scale of the generated noise is controlled by "
+     "input 'Scale'.";
+
+    optional float scale = 1;
+}
+
+message VisualShaderNodeVoronoiNoise {
+    option (node_caption) = "Voronoi Noise";
+    option (node_input_port_count) = 1;
+    option (node_input_port_type) = PORT_TYPE_VECTOR_2D;
+    option (node_input_port_caption) = "uv";
+    
+    option (node_output_port_count) = 1;
+    option (node_output_port_type) = PORT_TYPE_VECTOR_4D;
+    option (node_output_port_caption) = "noise";
+
+    option (node_category) = CATEGORY_UNSPECIFIED;
+    option (node_category_path) = "Procedural/Noise";
+    option (node_description) = "Generates a Voronoi, or Worley, noise based on input 'UV'. Voronoi noise is generated by calculating distances "
+     "between a pixel and a lattice of points. By offsetting these points by a pseudo-random number, controlled by "
+     "input 'Angle Offset', a cluster of cells can be generated. The scale of these cells, and the resulting noise, is "
+     "controlled by input 'Cell Density'. The output 'Cells' contains the raw cell data.";
+
+    optional float cell_density = 1;
+    optional float angle_offset = 2;
+}
 
 

@@ -13,8 +13,28 @@ message VisualShader {
         optional double y_coordinate = 3;
         
         oneof node_type {
+            /*************************************/
+            /* CONSTANTS                         */
+            /*************************************/
             VisualShaderNodeFloatConstant float_constant = 4;
             VisualShaderNodeIntConstant int_constant = 5;
+            VisualShaderNodeUIntConstant uint_constant = 6;
+            VisualShaderNodeBooleanConstant boolean_constant = 7;
+            VisualShaderNodeColorConstant color_constant = 8;
+            VisualShaderNodeVec2Constant vec2_constant = 9;
+            VisualShaderNodeVec3Constant vec3_constant = 10;
+            VisualShaderNodeVec4Constant vec4_constant = 11;
+            
+            /*************************************/
+            /* OPERATORS                         */
+            /*************************************/
+
+            /*************************************/
+            /* NOISE                             */
+            /*************************************/
+            VisualShaderNodeValueNoise value_noise = 12;
+            VisualShaderNodePerlinNoise perlin_noise = 13;
+            VisualShaderNodeVoronoiNoise voronoi_noise = 14;
         }
     }
     

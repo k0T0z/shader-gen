@@ -37,6 +37,8 @@ public:
 
     virtual void build_sub_models() override;
 
+    virtual void parent_data_changed() const override;
+
     QVariant data() const override;
     bool set_data(const QVariant& value) override;
     
@@ -58,6 +60,35 @@ private:
     Message* m_message_buffer;
     std::unordered_map<int, ProtoModel*> m_sub_models_by_field_number;
     std::unordered_map<std::string, ProtoModel*> m_sub_models_by_oneof_name;
+
+    /*
+        This last_accessed_field_index is only needed in one case: When I need to propagate a
+        column index from a message to its parent which is a repeated message model.
+
+        For example: Let's say we have the following message:
+
+        message SomeMessage {
+            int32 id = 1;
+            string name = 2;
+            string email = 3;
+        }
+
+        message MyMessage {
+            repeated SomeMessage some_messages = 1;
+        }
+
+        Now, SomeMessage has 0 rows and 3 columns. How many columns should some_messages model
+        have? It should have 3 columns and undefined number of rows.
+
+        Now, let's say that some_messages has 5 rows and we want to set the field at row 0 and 
+        column 2 or other words "the email field of the first row". This means the some_messages
+        should emit a dataChanged signal with top-left and bottom-right indices of (0, 2) and 
+        (0, 2).
+
+        Check MessageModel::parent_data_changed(), the RepeatedMessageModel if branch for more 
+        information. This is the only branch we use the last_accessed_field_index for.
+    */
+    mutable int last_accessed_field_index;
 
     virtual void clear_sub_models() override;
     int map_to_oneof_index(const int& field_index) const;

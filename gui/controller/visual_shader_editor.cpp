@@ -30,11 +30,11 @@
 #include <unordered_map>
 #include <sstream>
 #include "error_macros.hpp"
+#include <QMetaType>
+
+Q_DECLARE_METATYPE(variant_node_type) // Register variant_node_type as a meta type so we can use it in signals and slots
 
 using VisualShader = gui::model::schema::VisualShader;
-
-// Nodes
-using VisualShaderNodeFloatConstant = gui::model::schema::VisualShaderNodeFloatConstant;
 
 /**********************************************************************/
 /**********************************************************************/
@@ -161,8 +161,6 @@ void VisualShaderEditor::init() {
   view = new VisualShaderGraphicsView(scene, scene_layer);
   view->setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
   view->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-
-  VisualShaderEditor::init_graph();  // Must be called after a scene and a view are created.
 
   scene_layer_layout->addWidget(view);
 
@@ -295,17 +293,47 @@ void VisualShaderEditor::init() {
   // CreateNodeDialog Nodes Tree Children
   //////////////////////////////////////////
 
-  const VisualShaderEditor::CreateNodeDialogNodesTreeItem* items{
-      VisualShaderEditor::create_node_dialog_nodes_tree_items};
+  qRegisterMetaType<variant_node_type>("variant_node_type"); // Register the variant_node_type for the QVariant
+
+  GraphNode<VisualShaderNodeFloatConstant> float_constant_node;
+  create_node_dialog_nodes_tree_items.emplace_back(float_constant_node.get_caption(), float_constant_node.get_category_path(),
+                                                   float_constant_node.get_description(), float_constant_node);
+  GraphNode<VisualShaderNodeIntConstant> int_constant_node;
+  create_node_dialog_nodes_tree_items.emplace_back(int_constant_node.get_caption(), int_constant_node.get_category_path(),
+                                                   int_constant_node.get_description(), int_constant_node);
+  GraphNode<VisualShaderNodeUIntConstant> uint_constant_node;
+  create_node_dialog_nodes_tree_items.emplace_back(uint_constant_node.get_caption(), uint_constant_node.get_category_path(),
+                                                   uint_constant_node.get_description(), uint_constant_node);
+  GraphNode<VisualShaderNodeBooleanConstant> boolean_constant_node;
+  create_node_dialog_nodes_tree_items.emplace_back(boolean_constant_node.get_caption(), boolean_constant_node.get_category_path(),
+                                                   boolean_constant_node.get_description(), boolean_constant_node);
+  GraphNode<VisualShaderNodeColorConstant> color_constant_node;
+  create_node_dialog_nodes_tree_items.emplace_back(color_constant_node.get_caption(), color_constant_node.get_category_path(),
+                                                   color_constant_node.get_description(), color_constant_node);
+  GraphNode<VisualShaderNodeVec2Constant> vec2_constant_node;
+  create_node_dialog_nodes_tree_items.emplace_back(vec2_constant_node.get_caption(), vec2_constant_node.get_category_path(),
+                                                   vec2_constant_node.get_description(), vec2_constant_node);
+  GraphNode<VisualShaderNodeVec3Constant> vec3_constant_node;
+  create_node_dialog_nodes_tree_items.emplace_back(vec3_constant_node.get_caption(), vec3_constant_node.get_category_path(),
+                                                   vec3_constant_node.get_description(), vec3_constant_node);
+  GraphNode<VisualShaderNodeVec4Constant> vec4_constant_node;
+  create_node_dialog_nodes_tree_items.emplace_back(vec4_constant_node.get_caption(), vec4_constant_node.get_category_path(),
+                                                   vec4_constant_node.get_description(), vec4_constant_node);
+
+  GraphNode<VisualShaderNodeValueNoise> value_noise_node;
+  create_node_dialog_nodes_tree_items.emplace_back(value_noise_node.get_caption(), value_noise_node.get_category_path(),
+                                                   value_noise_node.get_description(), value_noise_node);
+  GraphNode<VisualShaderNodePerlinNoise> perlin_noise_node;
+  create_node_dialog_nodes_tree_items.emplace_back(perlin_noise_node.get_caption(), perlin_noise_node.get_category_path(),
+                                                   perlin_noise_node.get_description(), perlin_noise_node);
+  GraphNode<VisualShaderNodeVoronoiNoise> voronoi_noise_node;
+  create_node_dialog_nodes_tree_items.emplace_back(voronoi_noise_node.get_caption(), voronoi_noise_node.get_category_path(),
+                                                   voronoi_noise_node.get_description(), voronoi_noise_node);
 
   // Map to store category items
   std::unordered_map<std::string, QTreeWidgetItem*> category_path_map;
 
-  int i{0};
-
-  while (!items[i].type.empty()) {
-    const CreateNodeDialogNodesTreeItem& item{items[i]};
-
+  for (const VisualShaderEditor::CreateNodeDialogNodesTreeItem& item : create_node_dialog_nodes_tree_items) {
     // Parse the category string into a vector of strings
     std::vector<std::string> categories{parse_node_category_path(item.category_path)};
     QTreeWidgetItem* parent{nullptr};  // Start from the root
@@ -326,10 +354,8 @@ void VisualShaderEditor::init() {
     // Now add the item to its corresponding parent category
     QTreeWidgetItem* node_item = new QTreeWidgetItem(parent);
     node_item->setText(0, QString::fromStdString(item.name));
-    node_item->setData(0, Qt::UserRole, QString::fromStdString(item.type));
-    node_item->setData(0, Qt::UserRole + 1, QString::fromStdString(item.description));
-
-    i++;
+    node_item->setData(1, Qt::DisplayRole, QString::fromStdString(item.description));
+    node_item->setData(1, VARIANT_NODE_TYPE_USER_ROLE, QVariant::fromValue(item.v_node_type));
   }
 
   //////////////// Start of Footer ////////////////
@@ -343,94 +369,6 @@ void VisualShaderEditor::init() {
   this->setLayout(layout);
 }
 
-void VisualShaderEditor::init_graph() {
-  // Load the nodes and connections from the VisualShader
-  // std::vector<int> ns{visual_shader->get_nodes()};
-  // for (const int& n_id : ns) {
-  //   const std::shared_ptr<VisualShaderNode> n{visual_shader->get_node(n_id)};
-
-  //   if (!n) {
-  //     continue;
-  //   }
-
-  //   Vector2 c{visual_shader->get_node_coordinate(n_id)};
-
-  //   scene->add_node(n_id, n, {c.x, c.y});
-  // }
-
-  // std::vector<VisualShader::Connection> cs{visual_shader->get_connections()};
-  // for (const VisualShader::Connection& c : cs) {
-  //   scene->add_connection(c.from_node, c.from_port, c.to_node, c.to_port);
-  // }
-}
-
-const VisualShaderEditor::CreateNodeDialogNodesTreeItem VisualShaderEditor::create_node_dialog_nodes_tree_items[] = {
-
-    // Input
-
-    {"Input", "Input/Basic", "VisualShaderNodeInput", "Input parameter."},
-
-    {"ColorConstant", "Input/Basic", "VisualShaderNodeColorConstant", "Color constant."},
-    {"BooleanConstant", "Input/Basic", "VisualShaderNodeBooleanConstant", "Boolean constant."},
-    {"FloatConstant", "Input/Basic", "VisualShaderNodeFloatConstant", "Scalar floating-point constant."},
-    {"IntConstant", "Input/Basic", "VisualShaderNodeIntConstant", "Scalar integer constant."},
-    {"UIntConstant", "Input/Basic", "VisualShaderNodeUIntConstant", "Scalar unsigned integer constant."},
-    {"Vector2Constant", "Input/Basic", "VisualShaderNodeVec2Constant", "2D vector constant."},
-    {"Vector3Constant", "Input/Basic", "VisualShaderNodeVec3Constant", "3D vector constant."},
-    {"Vector4Constant", "Input/Basic", "VisualShaderNodeVec4Constant", "4D vector constant."},
-
-    // Functions
-
-    {"FloatFunc", "Functions/Scalar", "VisualShaderNodeFloatFunc", "Float function."},
-    {"IntFunc", "Functions/Scalar", "VisualShaderNodeIntFunc", "Integer function."},
-    {"UIntFunc", "Functions/Scalar", "VisualShaderNodeUIntFunc", "Unsigned integer function."},
-    {"VectorFunc", "Functions/Vector", "VisualShaderNodeVectorFunc", "Vector function."},
-    {"DerivativeFunc", "Functions/Others", "VisualShaderNodeDerivativeFunc", "Derivative function."},
-    {"Step", "Functions/Others", "VisualShaderNodeStep",
-     "Step function( scalar(edge), scalar(x) ).\n\nReturns 0.0 if 'x' is smaller than 'edge' and otherwise 1.0."},
-    {"SmoothStep", "Functions/Others", "VisualShaderNodeSmoothStep",
-     "SmoothStep function( scalar(edge0), scalar(edge1), scalar(x) ).\n\nReturns 0.0 if 'x' is smaller than 'edge0' "
-     "and 1.0 if x is larger than 'edge1'. Otherwise the return value is interpolated between 0.0 and 1.0 using "
-     "Hermite polynomials."},
-    {"Dot", "Functions/Others", "VisualShaderNodeDotProduct", "Calculates the dot product of two vectors."},
-
-    // Operators
-
-    {"FloatOp", "Operators/Scalar", "VisualShaderNodeFloatOp", "Float operator."},
-    {"IntOp", "Operators/Scalar", "VisualShaderNodeIntOp", "Integer operator."},
-    {"UIntOp", "Operators/Scalar", "VisualShaderNodeUIntOp", "Unsigned integer operator."},
-    {"VectorOp", "Operators/Vector", "VisualShaderNodeVectorOp", "Vector operator."},
-    {"VectorCompose", "Operators/Vector", "VisualShaderNodeVectorCompose", "Composes vector from scalars."},
-    {"VectorDecompose", "Operators/Vector", "VisualShaderNodeVectorDecompose", "Decomposes vector to scalars."},
-
-    // Procedural
-
-    {"ValueNoise", "Procedural/Noise", "VisualShaderNodeValueNoise",
-     "Generates a simple, or Value, noise based on input 'UV'. The scale of the generated noise is controlled by input "
-     "'Scale'."},
-    {"PerlinNoise", "Procedural/Noise", "VisualShaderNodePerlinNoise",
-     "Generates a gradient, or Perlin, noise based on input 'UV'. The scale of the generated noise is controlled by "
-     "input 'Scale'."},
-    {"VoronoiNoise", "Procedural/Noise", "VisualShaderNodeVoronoiNoise",
-     "Generates a Voronoi, or Worley, noise based on input 'UV'. Voronoi noise is generated by calculating distances "
-     "between a pixel and a lattice of points. By offsetting these points by a pseudo-random number, controlled by "
-     "input 'Angle Offset', a cluster of cells can be generated. The scale of these cells, and the resulting noise, is "
-     "controlled by input 'Cell Density'. The output 'Cells' contains the raw cell data."},
-
-    // Utility
-
-    {"Compare", "Utility/Logic", "VisualShaderNodeCompare",
-     "Returns the boolean result of the comparison between two parameters."},
-    {"If", "Utility/Logic", "VisualShaderNodeIf",
-     "Returns the value of the 'True' or 'False' input based on the value of the 'Condition' input."},
-    {"Switch", "Utility/Logic", "VisualShaderNodeSwitch",
-     "Returns an associated scalar if the provided boolean value is true or false."},
-    {"Is", "Utility/Logic", "VisualShaderNodeIs",
-     "Returns the boolean result of the comparison between INF (or NaN) and a scalar parameter."},
-
-    {"", "", "", ""},
-};
-
 void VisualShaderEditor::create_node(const QPointF& coordinate) {
   QTreeWidgetItem* selected_item{create_node_dialog->get_selected_item()};
 
@@ -442,13 +380,11 @@ void VisualShaderEditor::create_node(const QPointF& coordinate) {
 }
 
 void VisualShaderEditor::add_node(QTreeWidgetItem* selected_item, const QPointF& coordinate) {
-  std::string type{selected_item->data(0, Qt::UserRole).toString().toStdString()};
+  QVariant v_node_type = selected_item->data(1, VARIANT_NODE_TYPE_USER_ROLE);
 
-  if (type.empty()) {
-    return;
-  }
+  CHECK_CONDITION_TRUE(!v_node_type.canConvert<variant_node_type>(), "Node type is empty");
 
-  scene->add_node(type, coordinate);
+  scene->add_node(v_node_type.value<variant_node_type>(), coordinate);
 }
 
 void VisualShaderEditor::show_create_node_dialog(const QPointF& coordinate) {
@@ -643,7 +579,7 @@ void CreateNodeDialog::update_selected_item() {
   QTreeWidgetItem* item{create_node_dialog_nodes_tree->currentItem()};
   if (item) {
     selected_item = item;
-    create_node_dialog_nodes_description->setText(item->data(0, Qt::UserRole + 1).toString());
+    create_node_dialog_nodes_description->setText(item->data(1, Qt::DisplayRole).toString());
   } else {
     selected_item = nullptr;
     create_node_dialog_nodes_description->setText("");
@@ -873,90 +809,7 @@ VisualShaderGraphicsScene::VisualShaderGraphicsScene(QObject* parent)
 
 VisualShaderGraphicsScene::~VisualShaderGraphicsScene() {}
 
-bool VisualShaderGraphicsScene::add_node(const std::string& type, const QPointF& coordinate) {
-  // Instantiate the node based on the type
-  // std::shared_ptr<VisualShaderNode> n;
-
-  // if (type == "VisualShaderNodeInput") {
-  //   n = std::make_shared<VisualShaderNodeInput>();
-  // } else if (type == "VisualShaderNodeColorConstant") {
-  //   n = std::make_shared<VisualShaderNodeColorConstant>();
-  // } else if (type == "VisualShaderNodeBooleanConstant") {
-  //   n = std::make_shared<VisualShaderNodeBooleanConstant>();
-  // } else if (type == "VisualShaderNodeFloatConstant") {
-  //   n = std::make_shared<VisualShaderNodeFloatConstant>();
-  // } else if (type == "VisualShaderNodeIntConstant") {
-  //   n = std::make_shared<VisualShaderNodeIntConstant>();
-  // } else if (type == "VisualShaderNodeUIntConstant") {
-  //   n = std::make_shared<VisualShaderNodeUIntConstant>();
-  // } else if (type == "VisualShaderNodeVec2Constant") {
-  //   n = std::make_shared<VisualShaderNodeVec2Constant>();
-  // } else if (type == "VisualShaderNodeVec3Constant") {
-  //   n = std::make_shared<VisualShaderNodeVec3Constant>();
-  // } else if (type == "VisualShaderNodeVec4Constant") {
-  //   n = std::make_shared<VisualShaderNodeVec4Constant>();
-  // } else if (type == "VisualShaderNodeFloatFunc") {
-  //   n = std::make_shared<VisualShaderNodeFloatFunc>();
-  // } else if (type == "VisualShaderNodeIntFunc") {
-  //   n = std::make_shared<VisualShaderNodeIntFunc>();
-  // } else if (type == "VisualShaderNodeUIntFunc") {
-  //   n = std::make_shared<VisualShaderNodeUIntFunc>();
-  // } else if (type == "VisualShaderNodeDerivativeFunc") {
-  //   n = std::make_shared<VisualShaderNodeDerivativeFunc>();
-  // } else if (type == "VisualShaderNodeFloatOp") {
-  //   n = std::make_shared<VisualShaderNodeFloatOp>();
-  // } else if (type == "VisualShaderNodeIntOp") {
-  //   n = std::make_shared<VisualShaderNodeIntOp>();
-  // } else if (type == "VisualShaderNodeUIntOp") {
-  //   n = std::make_shared<VisualShaderNodeUIntOp>();
-  // } else if (type == "VisualShaderNodeValueNoise") {
-  //   n = std::make_shared<VisualShaderNodeValueNoise>();
-  // } else if (type == "VisualShaderNodePerlinNoise") {
-  //   n = std::make_shared<VisualShaderNodePerlinNoise>();
-  // } else if (type == "VisualShaderNodeVoronoiNoise") {
-  //   n = std::make_shared<VisualShaderNodeVoronoiNoise>();
-  // } else if (type == "VisualShaderNodeVectorFunc") {
-  //   n = std::make_shared<VisualShaderNodeVectorFunc>();
-  // } else if (type == "VisualShaderNodeVectorOp") {
-  //   n = std::make_shared<VisualShaderNodeVectorOp>();
-  // } else if (type == "VisualShaderNodeVectorCompose") {
-  //   n = std::make_shared<VisualShaderNodeVectorCompose>();
-  // } else if (type == "VisualShaderNodeVectorDecompose") {
-  //   n = std::make_shared<VisualShaderNodeVectorDecompose>();
-  // } else if (type == "VisualShaderNodeCompare") {
-  //   n = std::make_shared<VisualShaderNodeCompare>();
-  // } else if (type == "VisualShaderNodeIf") {
-  //   n = std::make_shared<VisualShaderNodeIf>();
-  // } else if (type == "VisualShaderNodeIs") {
-  //   n = std::make_shared<VisualShaderNodeIs>();
-  // } else if (type == "VisualShaderNodeSwitch") {
-  //   n = std::make_shared<VisualShaderNodeSwitch>();
-  // } else if (type == "VisualShaderNodeStep") {
-  //   n = std::make_shared<VisualShaderNodeStep>();
-  // } else if (type == "VisualShaderNodeSmoothStep") {
-  //   n = std::make_shared<VisualShaderNodeSmoothStep>();
-  // } else if (type == "VisualShaderNodeDotProduct") {
-  //   n = std::make_shared<VisualShaderNodeDotProduct>();
-  // } else {
-  //   DEBUG_PRINT("Unknown node type: " + type);
-  // }
-
-  // if (!n) {
-  //   DEBUG_PRINT("Failed to create node of type: " + type);
-  //   return false;
-  // }
-
-  // int n_id{vs->get_valid_node_id()};
-
-  // if (n_id == (int)VisualShader::NODE_ID_INVALID) {
-  //   return false;
-  // }
-
-  // return VisualShaderGraphicsScene::add_node(n_id, coordinate);
-  return true;
-}
-
-bool VisualShaderGraphicsScene::add_node(const int& n_id, const QPointF& coordinate) {
+bool VisualShaderGraphicsScene::add_node(const variant_node_type& v_node_type, const QPointF& coordinate) {
   // Make sure the node doesn't already exist, we don't want to overwrite a node.
   // if (node_graphics_objects.find(n_id) != node_graphics_objects.end()) {
   //   return false;
@@ -1036,7 +889,13 @@ bool VisualShaderGraphicsScene::add_node(const int& n_id, const QPointF& coordin
 
   // addItem(n_o);
 
-  // return true;
+  return VisualShaderGraphicsScene::add_node(coordinate);
+}
+
+bool VisualShaderGraphicsScene::add_node(const QPointF& coordinate) {
+  
+
+  return true;
 }
 
 bool VisualShaderGraphicsScene::delete_node(const int& n_id) {

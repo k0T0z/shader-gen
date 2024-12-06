@@ -20,6 +20,8 @@ public:
 
     virtual void build_sub_models() override;
 
+    virtual void parent_data_changed() const override;
+
     QVariant data() const override;
     bool set_data(const QVariant& value) override;
     

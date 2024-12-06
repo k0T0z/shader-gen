@@ -26,7 +26,7 @@ public:
     bool loadFromJson(const QString& filePath);
     bool saveToJson(const QString& filePath) const;
 
-    void parent_data_changed() const;
+    virtual void parent_data_changed() const = 0;
 
     // Set and Get data using FieldPath
     QVariant data(const FieldPath& path) const;

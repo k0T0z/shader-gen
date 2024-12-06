@@ -13,7 +13,7 @@
 using OneofDescriptor = google::protobuf::OneofDescriptor;
 
 MessageModel::MessageModel(Message* message_buffer, ProtoModel* parent_model, const int& index_in_parent)
-    : ProtoModel(parent_model, index_in_parent), m_message_buffer(message_buffer) {}
+    : ProtoModel(parent_model, index_in_parent), m_message_buffer(message_buffer), last_accessed_field_index(-1) {}
 
 void MessageModel::build_sub_models() {
     SILENT_CHECK_PARAM_NULLPTR(m_message_buffer);
@@ -94,6 +94,32 @@ void MessageModel::build_sub_models() {
     }
 }
 
+void MessageModel::parent_data_changed() const {
+    const ProtoModel* parent {get_parent_model()};
+    SILENT_CHECK_PARAM_NULLPTR(parent);
+
+    QModelIndex index {this->parent(QModelIndex())};
+    CHECK_CONDITION_TRUE(!index.isValid(), "Parent index is invalid.");
+
+    ProtoModel* t {const_cast<ProtoModel*>(parent)};
+
+    if (RepeatedMessageModel* repeated_m {dynamic_cast<RepeatedMessageModel*>(t)}) {
+        Q_EMIT repeated_m->dataChanged(index, index);
+        repeated_m->parent_data_changed();
+        return;
+    } else if (MessageModel* message_m {dynamic_cast<MessageModel*>(t)}) {
+        Q_EMIT message_m->dataChanged(index, index);
+        message_m->parent_data_changed();
+        return;
+    } else if (OneofModel* oneof_m {dynamic_cast<OneofModel*>(t)}) {
+        Q_EMIT oneof_m->dataChanged(index, index);
+        oneof_m->parent_data_changed();
+        return;
+    }
+
+    ERROR_PRINT("Parent model is not a repeated message model, message model, or oneof model.");
+}
+
 QVariant MessageModel::data() const {
     FAIL_AND_RETURN_NON_VOID(QVariant(), "Cannot get data from MessageModel.");
 }
@@ -140,6 +166,8 @@ const ProtoModel* MessageModel::get_sub_model(const FieldPath& path, const bool&
     CHECK_CONDITION_TRUE_NON_VOID(it == m_sub_models_by_field_number.end(), nullptr, "Sub-model under " + desc->full_name() + " not found for field number " + std::to_string(fn));
 
     CHECK_CONDITION_TRUE_NON_VOID(!path.skip_component(), nullptr, "Failed to skip field number.");
+
+    last_accessed_field_index = field_desc->index(); // This is important for back propagation of dataChanged signal
     
     return it->second->get_sub_model(path, for_set_data);
 }
@@ -175,7 +203,7 @@ QModelIndex MessageModel::parent([[maybe_unused]] const QModelIndex& child) cons
         only allowed to have children of type PrimitiveModel.
     */
     if (RepeatedMessageModel* repeated_m {dynamic_cast<RepeatedMessageModel*>(t)}) {
-        return repeated_m->index(m_index_in_parent, 0, repeated_m->parent(QModelIndex()));
+        return repeated_m->index(m_index_in_parent, last_accessed_field_index, repeated_m->parent(QModelIndex()));
     } else if (MessageModel* message_m {dynamic_cast<MessageModel*>(t)}) {
         return message_m->index(0, m_index_in_parent, message_m->parent(QModelIndex()));
     } else if (OneofModel* oneof_m {dynamic_cast<OneofModel*>(t)}) {

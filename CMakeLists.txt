@@ -169,7 +169,7 @@ else()
 endif()
 
 # OpenGLWidgets not required for Qt5 LTS
-find_package(Qt${SHADER_GEN_QT_VERSION} CONFIG REQUIRED COMPONENTS Widgets)
+find_package(Qt${SHADER_GEN_QT_VERSION} CONFIG REQUIRED COMPONENTS Widgets Test)
 
 # Find Protobuf
 find_package(Protobuf CONFIG REQUIRED)
@@ -282,6 +282,7 @@ target_link_libraries(${SHADER_GEN_TESTS_EXECUTABLE_NAME} PRIVATE
     GTest::gtest 
     GTest::gtest_main 
     Qt${SHADER_GEN_QT_VERSION}::Widgets 
+    Qt${SHADER_GEN_QT_VERSION}::Test
     protobuf::libprotobuf 
 )
 

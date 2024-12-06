@@ -20,6 +20,24 @@ void RepeatedMessageModel::build_sub_models() {
     }
 }
 
+void RepeatedMessageModel::parent_data_changed() const {
+    const ProtoModel* parent {get_parent_model()};
+    CHECK_PARAM_NULLPTR(parent, "Parent of repeated message model is null.");
+
+    QModelIndex index {this->parent(QModelIndex())};
+    CHECK_CONDITION_TRUE(!index.isValid(), "Parent index is invalid.");
+
+    ProtoModel* t {const_cast<ProtoModel*>(parent)};
+
+    if (MessageModel* message_m {dynamic_cast<MessageModel*>(t)}) {
+        Q_EMIT message_m->dataChanged(index, index);
+        message_m->parent_data_changed();
+        return;
+    }
+
+    ERROR_PRINT("Parent model is not a message model.");
+}
+
 QVariant RepeatedMessageModel::data() const {
     FAIL_AND_RETURN_NON_VOID(QVariant(), "Cannot get data from RepeatedMessageModel.");
 }
@@ -116,14 +134,10 @@ int RepeatedMessageModel::append_row() {
     int row {rowCount()};
     QModelIndex parent_index {this->parent(QModelIndex())};
     
-    beginInsertRows(parent_index, row, row);
-
     bool result {insertRows(row, 1, parent_index)};
     SILENT_CHECK_CONDITION_TRUE_NON_VOID(!result, -1);
 
-    Q_EMIT dataChanged(this->index(row, 0, parent_index), this->index(row, columnCount() - 1, parent_index));
-    parent_data_changed();
-
+    beginInsertRows(parent_index, row, row);
     endInsertRows();
 
     return row;
@@ -134,14 +148,10 @@ bool RepeatedMessageModel::remove_row(const int& row) {
 
     QModelIndex parent_index {this->parent(QModelIndex())};
     
-    beginRemoveRows(parent_index, row, row);
-
     bool result {removeRows(row, 1, parent_index)};
     SILENT_CHECK_CONDITION_TRUE_NON_VOID(!result, false);
 
-    Q_EMIT dataChanged(this->index(row, 0, parent_index), this->index(row, columnCount() - 1, parent_index));
-    parent_data_changed();
-
+    beginRemoveRows(parent_index, row, row);
     endRemoveRows();
 
     return true;
@@ -202,16 +212,12 @@ void RepeatedMessageModel::append_row(const int& row) {
 
     QModelIndex parent_index {this->parent(QModelIndex())};
     
-    beginInsertRows(parent_index, row, row);
-
     const Reflection* refl {m_message_buffer->GetReflection()};
     m_sub_models.emplace_back(new MessageModel(refl->MutableRepeatedMessage(m_message_buffer, m_field_desc, row), this, row));
 
     bool result {insertRows(row, 1, parent_index)};
     CHECK_CONDITION_TRUE(!result, "Failed to insert row.");
 
-    Q_EMIT dataChanged(this->index(row, 0, parent_index), this->index(row, columnCount() - 1, parent_index));
-    parent_data_changed();
-
+    beginInsertRows(parent_index, row, row);
     endInsertRows();
 }
