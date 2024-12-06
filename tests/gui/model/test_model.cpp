@@ -264,7 +264,7 @@ TEST(MessageModelTest, TestDataChangedSignalPrimitiveModel) {
     QSignalSpy number_spy(number, &ProtoModel::dataChanged);
     ASSERT_TRUE(number_spy.isValid());
 
-    model->set_data(FieldPath::Of<OrganizationTestSchema>(FieldPath::FieldNumber(OrganizationTestSchema::kEmployeesFieldNumber), FieldPath::RepeatedAt(employee_idx), FieldPath::FieldNumber(Person::kPhoneNumbersFieldNumber), FieldPath::RepeatedAt(phone_idx), FieldPath::FieldNumber(PhoneNumber::kNumberFieldNumber)), "555-1234-00");
+    number->setData(top_left, "555-1234-00");
 
     ASSERT_EQ(model_spy.count(), 1);
     ASSERT_EQ(employees_spy.count(), 1);
