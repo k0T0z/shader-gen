@@ -13,28 +13,43 @@ message VisualShader {
         optional double y_coordinate = 3;
         
         oneof node_type {
+            VisualShaderNodeInput input = 4;
+            VisualShaderNodeOutput output = 5;
+
             /*************************************/
             /* CONSTANTS                         */
             /*************************************/
-            VisualShaderNodeFloatConstant float_constant = 4;
-            VisualShaderNodeIntConstant int_constant = 5;
-            VisualShaderNodeUIntConstant uint_constant = 6;
-            VisualShaderNodeBooleanConstant boolean_constant = 7;
-            VisualShaderNodeColorConstant color_constant = 8;
-            VisualShaderNodeVec2Constant vec2_constant = 9;
-            VisualShaderNodeVec3Constant vec3_constant = 10;
-            VisualShaderNodeVec4Constant vec4_constant = 11;
+            VisualShaderNodeFloatConstant float_constant = 6;
+            VisualShaderNodeIntConstant int_constant = 7;
+            VisualShaderNodeUIntConstant uint_constant = 8;
+            VisualShaderNodeBooleanConstant boolean_constant = 9;
+            VisualShaderNodeColorConstant color_constant = 10;
+            VisualShaderNodeVec2Constant vec2_constant = 11;
+            VisualShaderNodeVec3Constant vec3_constant = 12;
+            VisualShaderNodeVec4Constant vec4_constant = 13;
             
             /*************************************/
             /* OPERATORS                         */
             /*************************************/
+            VisualShaderNodeFloatOp float_op = 14;
+            VisualShaderNodeIntOp int_op = 15;
+            VisualShaderNodeUIntOp uint_op = 16;
+            VisualShaderNodeVectorOp vector_op = 17;
+
+            /*************************************/
+            /* Funcs Node                        */
+            /*************************************/
+            VisualShaderNodeFloatFunc float_func = 18;
+            VisualShaderNodeIntFunc int_func = 19;
+            VisualShaderNodeUIntFunc uint_func = 20;
+            VisualShaderNodeVectorFunc vector_func = 21;
 
             /*************************************/
             /* NOISE                             */
             /*************************************/
-            VisualShaderNodeValueNoise value_noise = 12;
-            VisualShaderNodePerlinNoise perlin_noise = 13;
-            VisualShaderNodeVoronoiNoise voronoi_noise = 14;
+            VisualShaderNodeValueNoise value_noise = 22;
+            VisualShaderNodePerlinNoise perlin_noise = 23;
+            VisualShaderNodeVoronoiNoise voronoi_noise = 24;
         }
     }
     

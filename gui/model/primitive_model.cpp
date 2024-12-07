@@ -178,15 +178,42 @@ bool PrimitiveModel::setData([[maybe_unused]] const QModelIndex& index, [[maybe_
             case FieldDescriptor::CppType::CPPTYPE_MESSAGE:
                 FAIL_AND_RETURN_NON_VOID(false, "Trying to set a message field.");
                 break;
-            case FieldDescriptor::CppType::CPPTYPE_INT32: refl->SetRepeatedInt32(m_message_buffer, m_field_desc, index.parent().row(), value.toInt()); break;
-            case FieldDescriptor::CppType::CPPTYPE_INT64: refl->SetRepeatedInt64(m_message_buffer, m_field_desc, index.parent().row(), value.toLongLong()); break;
-            case FieldDescriptor::CppType::CPPTYPE_UINT32: refl->SetRepeatedUInt32(m_message_buffer, m_field_desc, index.parent().row(), value.toUInt()); break;
-            case FieldDescriptor::CppType::CPPTYPE_UINT64: refl->SetRepeatedUInt64(m_message_buffer, m_field_desc, index.parent().row(), value.toULongLong()); break;
-            case FieldDescriptor::CppType::CPPTYPE_DOUBLE: refl->SetRepeatedDouble(m_message_buffer, m_field_desc, index.parent().row(), value.toDouble()); break;
-            case FieldDescriptor::CppType::CPPTYPE_FLOAT: refl->SetRepeatedFloat(m_message_buffer, m_field_desc, index.parent().row(), value.toFloat()); break;
-            case FieldDescriptor::CppType::CPPTYPE_BOOL: refl->SetRepeatedBool(m_message_buffer, m_field_desc, index.parent().row(), value.toBool()); break;
-            case FieldDescriptor::CppType::CPPTYPE_STRING: refl->SetRepeatedString(m_message_buffer, m_field_desc, index.parent().row(), value.toString().toStdString()); break;
-            case FieldDescriptor::CppType::CPPTYPE_ENUM: refl->SetRepeatedEnumValue(m_message_buffer, m_field_desc, index.parent().row(), value.toInt()); break;
+            case FieldDescriptor::CppType::CPPTYPE_INT32: 
+                CHECK_CONDITION_TRUE_NON_VOID(!value.canConvert<int>(), false, "Value is not an int.");
+                refl->SetRepeatedInt32(m_message_buffer, m_field_desc, index.parent().row(), value.toInt()); 
+                break;
+            case FieldDescriptor::CppType::CPPTYPE_INT64: 
+                CHECK_CONDITION_TRUE_NON_VOID(!value.canConvert<qlonglong>(), false, "Value is not a long long.");
+                refl->SetRepeatedInt64(m_message_buffer, m_field_desc, index.parent().row(), value.toLongLong()); 
+                break;
+            case FieldDescriptor::CppType::CPPTYPE_UINT32: 
+                CHECK_CONDITION_TRUE_NON_VOID(!value.canConvert<uint>(), false, "Value is not an unsigned int.");
+                refl->SetRepeatedUInt32(m_message_buffer, m_field_desc, index.parent().row(), value.toUInt()); 
+                break;
+            case FieldDescriptor::CppType::CPPTYPE_UINT64: 
+                CHECK_CONDITION_TRUE_NON_VOID(!value.canConvert<qulonglong>(), false, "Value is not an unsigned long long.");
+                refl->SetRepeatedUInt64(m_message_buffer, m_field_desc, index.parent().row(), value.toULongLong()); 
+                break;
+            case FieldDescriptor::CppType::CPPTYPE_DOUBLE: 
+                CHECK_CONDITION_TRUE_NON_VOID(!value.canConvert<double>(), false, "Value is not a double.");
+                refl->SetRepeatedDouble(m_message_buffer, m_field_desc, index.parent().row(), value.toDouble()); 
+                break;
+            case FieldDescriptor::CppType::CPPTYPE_FLOAT: 
+                CHECK_CONDITION_TRUE_NON_VOID(!value.canConvert<float>(), false, "Value is not a float.");
+                refl->SetRepeatedFloat(m_message_buffer, m_field_desc, index.parent().row(), value.toFloat()); 
+                break;
+            case FieldDescriptor::CppType::CPPTYPE_BOOL: 
+                CHECK_CONDITION_TRUE_NON_VOID(!value.canConvert<bool>(), false, "Value is not a bool.");
+                refl->SetRepeatedBool(m_message_buffer, m_field_desc, index.parent().row(), value.toBool()); 
+                break;
+            case FieldDescriptor::CppType::CPPTYPE_STRING: 
+                CHECK_CONDITION_TRUE_NON_VOID(!value.canConvert<QString>(), false, "Value is not a string.");
+                refl->SetRepeatedString(m_message_buffer, m_field_desc, index.parent().row(), value.toString().toStdString()); 
+                break;
+            case FieldDescriptor::CppType::CPPTYPE_ENUM: 
+                CHECK_CONDITION_TRUE_NON_VOID(!value.canConvert<int>(), false, "Value is not an Enum int.");
+                refl->SetRepeatedEnumValue(m_message_buffer, m_field_desc, index.parent().row(), value.toInt()); 
+                break;
             default:
                 WARN_PRINT("Unsupported field type: " + std::to_string(m_field_desc->cpp_type()));
                 break;
@@ -196,15 +223,42 @@ bool PrimitiveModel::setData([[maybe_unused]] const QModelIndex& index, [[maybe_
             case FieldDescriptor::CppType::CPPTYPE_MESSAGE:
                 FAIL_AND_RETURN_NON_VOID(false, "Trying to set a message field.");
                 break;
-            case FieldDescriptor::CppType::CPPTYPE_INT32: refl->SetInt32(m_message_buffer, m_field_desc, value.toInt()); break;
-            case FieldDescriptor::CppType::CPPTYPE_INT64: refl->SetInt64(m_message_buffer, m_field_desc, value.toLongLong()); break;
-            case FieldDescriptor::CppType::CPPTYPE_UINT32: refl->SetUInt32(m_message_buffer, m_field_desc, value.toUInt()); break;
-            case FieldDescriptor::CppType::CPPTYPE_UINT64: refl->SetUInt64(m_message_buffer, m_field_desc, value.toULongLong()); break;
-            case FieldDescriptor::CppType::CPPTYPE_DOUBLE: refl->SetDouble(m_message_buffer, m_field_desc, value.toDouble()); break;
-            case FieldDescriptor::CppType::CPPTYPE_FLOAT: refl->SetFloat(m_message_buffer, m_field_desc, value.toFloat()); break;
-            case FieldDescriptor::CppType::CPPTYPE_BOOL: refl->SetBool(m_message_buffer, m_field_desc, value.toBool()); break;
-            case FieldDescriptor::CppType::CPPTYPE_STRING: refl->SetString(m_message_buffer, m_field_desc, value.toString().toStdString()); break;
-            case FieldDescriptor::CppType::CPPTYPE_ENUM: refl->SetEnumValue(m_message_buffer, m_field_desc, value.toInt()); break;
+            case FieldDescriptor::CppType::CPPTYPE_INT32: 
+                CHECK_CONDITION_TRUE_NON_VOID(!value.canConvert<int>(), false, "Value is not an int.");
+                refl->SetInt32(m_message_buffer, m_field_desc, value.toInt()); 
+                break;
+            case FieldDescriptor::CppType::CPPTYPE_INT64: 
+                CHECK_CONDITION_TRUE_NON_VOID(!value.canConvert<qlonglong>(), false, "Value is not a long long.");
+                refl->SetInt64(m_message_buffer, m_field_desc, value.toLongLong()); 
+                break;
+            case FieldDescriptor::CppType::CPPTYPE_UINT32: 
+                CHECK_CONDITION_TRUE_NON_VOID(!value.canConvert<uint>(), false, "Value is not an unsigned int.");
+                refl->SetUInt32(m_message_buffer, m_field_desc, value.toUInt()); 
+                break;
+            case FieldDescriptor::CppType::CPPTYPE_UINT64: 
+                CHECK_CONDITION_TRUE_NON_VOID(!value.canConvert<qulonglong>(), false, "Value is not an unsigned long long.");
+                refl->SetUInt64(m_message_buffer, m_field_desc, value.toULongLong()); 
+                break;
+            case FieldDescriptor::CppType::CPPTYPE_DOUBLE: 
+                CHECK_CONDITION_TRUE_NON_VOID(!value.canConvert<double>(), false, "Value is not a double.");
+                refl->SetDouble(m_message_buffer, m_field_desc, value.toDouble()); 
+                break;
+            case FieldDescriptor::CppType::CPPTYPE_FLOAT: 
+                CHECK_CONDITION_TRUE_NON_VOID(!value.canConvert<float>(), false, "Value is not a float.");
+                refl->SetFloat(m_message_buffer, m_field_desc, value.toFloat()); 
+                break;
+            case FieldDescriptor::CppType::CPPTYPE_BOOL: 
+                CHECK_CONDITION_TRUE_NON_VOID(!value.canConvert<bool>(), false, "Value is not a bool.");
+                refl->SetBool(m_message_buffer, m_field_desc, value.toBool()); 
+                break;
+            case FieldDescriptor::CppType::CPPTYPE_STRING: 
+                CHECK_CONDITION_TRUE_NON_VOID(!value.canConvert<QString>(), false, "Value is not a string.");
+                refl->SetString(m_message_buffer, m_field_desc, value.toString().toStdString()); 
+                break;
+            case FieldDescriptor::CppType::CPPTYPE_ENUM: 
+                CHECK_CONDITION_TRUE_NON_VOID(!value.canConvert<int>(), false, "Value is not an Enum int.");
+                refl->SetEnumValue(m_message_buffer, m_field_desc, value.toInt()); 
+                break;
             default:
                 WARN_PRINT("Unsupported field type: " + std::to_string(m_field_desc->cpp_type()));
                 break;
