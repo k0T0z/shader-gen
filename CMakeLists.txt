@@ -85,8 +85,17 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 set(SHADER_GEN_ROOTDIR ${PROJECT_SOURCE_DIR})
 
-# Define a macro for Debug builds
-set(SHADER_GEN_DEBUG_MACRO_NAME "SHADER_GEN_DEBUG")
+if(CMAKE_BUILD_TYPE MATCHES Debug)
+    # Define a macro for Debug builds
+    set(SHADER_GEN_DEBUG_MACRO_NAME "SHADER_GEN_DEBUG")
+
+    if(CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
+        add_compile_options(-fsanitize=address -g -O1)
+        add_link_options(-fsanitize=address)
+    else()
+        message(WARNING "ASan is not supported by this compiler.")
+    endif()
+endif()
 
 if(MSVC)
     string(APPEND CMAKE_CXX_FLAGS " /EHsc /wd26812")
@@ -114,9 +123,8 @@ file(GLOB SHADER_GEN_MAIN_ENTRY
 )
 
 file(GLOB SHADER_GEN_HPP_FILES 
-    # ${CMAKE_CURRENT_SOURCE_DIR}/generator/visual_shader.hpp
-    # ${CMAKE_CURRENT_SOURCE_DIR}/generator/visual_shader_nodes.hpp
-    # ${CMAKE_CURRENT_SOURCE_DIR}/generator/vs_noise_nodes.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/generator/visual_shader_generator.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/generator/visual_shader_node_generators.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/gui/model/proto_model.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/gui/model/message_model.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/gui/model/repeated_message_model.hpp
@@ -131,9 +139,8 @@ file(GLOB SHADER_GEN_HPP_FILES
 )
 
 file(GLOB SHADER_GEN_CPP_FILES 
-    # ${CMAKE_CURRENT_SOURCE_DIR}/generator/visual_shader.cpp
-    # ${CMAKE_CURRENT_SOURCE_DIR}/generator/visual_shader_nodes.cpp
-    # ${CMAKE_CURRENT_SOURCE_DIR}/generator/vs_noise_nodes.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/generator/visual_shader_generator.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/generator/visual_shader_node_generators.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/gui/model/proto_model.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/gui/model/message_model.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/gui/model/repeated_message_model.cpp

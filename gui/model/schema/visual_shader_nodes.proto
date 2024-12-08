@@ -95,7 +95,10 @@ message VisualShaderNodeInput {
 
     option (node_description) = "Input node that can be used to pass a value into the shader.";
 
-    option (input_type_count) = 2;
+    option (input_type_count) = 3;
+
+    option (input_type) = INPUT_TYPE_UNSPECIFIED;
+    option (input_node_output_port_type) = PORT_TYPE_UNSPECIFIED;
 
     option (input_type) = INPUT_TYPE_UV;
     option (input_node_output_port_type) = PORT_TYPE_VECTOR_2D;
@@ -123,7 +126,10 @@ message VisualShaderNodeOutput {
 
     option (node_description) = "Output node can not be added/removed, it is always present in the shader graph.";
 
-    option (output_type_count) = 1;
+    option (output_type_count) = 2;
+
+    option (output_type) = OUTPUT_TYPE_UNSPECIFIED;
+    option (output_node_input_port_type) = PORT_TYPE_UNSPECIFIED;
 
     option (output_type) = OUTPUT_TYPE_COLOR;
     option (output_node_input_port_type) = PORT_TYPE_VECTOR_4D;

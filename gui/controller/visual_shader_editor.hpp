@@ -305,52 +305,52 @@ class OriginalMatchingImageWidget : public QWidget {
  * @todo Replace this class with ENIGMA's Graphics System.
  * 
  */
-// class ShaderPreviewerWidget : public QOpenGLWidget {
-//   Q_OBJECT
+class ShaderPreviewerWidget : public QOpenGLWidget {
+  Q_OBJECT
 
-//  public:
-//   ShaderPreviewerWidget(QWidget* parent = nullptr);
-//   ~ShaderPreviewerWidget() override;
+ public:
+  ShaderPreviewerWidget(QWidget* parent = nullptr);
+  ~ShaderPreviewerWidget() override;
 
-//   void set_code(const std::string& code);
+  void set_code(const std::string& code);
 
-//  Q_SIGNALS:
-//   void scene_update_requested();
+ Q_SIGNALS:
+  void scene_update_requested();
 
-//  protected:
-//   void initializeGL() override;
-//   void resizeGL(int w, int h) override;
-//   void paintGL() override;
+ protected:
+  void initializeGL() override;
+  void resizeGL(int w, int h) override;
+  void paintGL() override;
 
-//   void showEvent(QShowEvent* event) override;
-//   void hideEvent(QHideEvent* event) override;
+  void showEvent(QShowEvent* event) override;
+  void hideEvent(QHideEvent* event) override;
 
-//  private:
-//   std::unique_ptr<QOpenGLShaderProgram> shader_program;
-//   GLuint VAO, VBO;
-//   QElapsedTimer timer;
+ private:
+  std::unique_ptr<QOpenGLShaderProgram> shader_program;
+  GLuint VAO, VBO;
+  QElapsedTimer timer;
 
-//   std::string code;
-//   bool shader_needs_update{false};
+  std::string code;
+  bool shader_needs_update{false};
 
-//   void init_shaders();
-//   void init_buffers();
-//   void update_shader_program();
+  void init_shaders();
+  void init_buffers();
+  void update_shader_program();
 
-//   /**
-//      * @brief Cleans up the OpenGL resources.
-//      * 
-//      * @note This function is called automatically when the widget is destroyed.
-//      *       It is connected @c QOpenGLContext::aboutToBeDestroyed signal.
-//      * 
-//      * @note DON'T call this function in the destructor as it is 
-//      *       called automatically. If you call it from the destructor,
-//      *       it will crash as @c makeCurrent() won't be able to make the
-//      *       context current.
-//      * 
-//      */
-//   void cleanup();
-// };
+  /**
+     * @brief Cleans up the OpenGL resources.
+     * 
+     * @note This function is called automatically when the widget is destroyed.
+     *       It is connected @c QOpenGLContext::aboutToBeDestroyed signal.
+     * 
+     * @note DON'T call this function in the destructor as it is 
+     *       called automatically. If you call it from the destructor,
+     *       it will crash as @c makeCurrent() won't be able to make the
+     *       context current.
+     * 
+     */
+  void cleanup();
+};
 
 /**********************************************************************/
 /**********************************************************************/
@@ -593,7 +593,7 @@ class VisualShaderNodeGraphicsObject : public QGraphicsObject {
   QWidget* get_embed_widget() const { return embed_widget; }
   void set_embed_widget(QWidget* embed_widget) { this->embed_widget = embed_widget; }
 
-  // ShaderPreviewerWidget* get_shader_previewer_widget() const { return shader_previewer_widget; }
+  ShaderPreviewerWidget* get_shader_previewer_widget() const { return shader_previewer_widget; }
 
  public Q_SLOTS:
   void on_node_update_requested();
@@ -728,7 +728,7 @@ class VisualShaderNodeGraphicsObject : public QGraphicsObject {
   OriginalMatchingImageWidget* matching_image_widget;
   float spacing_between_output_node_and_matching_image = 10.0f;
 
-  // ShaderPreviewerWidget* shader_previewer_widget;
+  ShaderPreviewerWidget* shader_previewer_widget;
   float spacing_between_current_node_and_shader_previewer = 10.0f;
 
   QRectF boundingRect() const override;

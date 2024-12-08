@@ -31,6 +31,8 @@
 #include <sstream>
 #include "error_macros.hpp"
 
+#include "generator/visual_shader_generator.hpp"
+
 using VisualShader = gui::model::schema::VisualShader;
 
 /**********************************************************************/
@@ -412,13 +414,14 @@ void VisualShaderEditor::on_create_node_button_pressed() {
 }
 
 void VisualShaderEditor::on_preview_shader_button_pressed() {
-  // bool result{visual_shader->generate_shader()};
-  // if (!result) {
-  //   DEBUG_PRINT("Failed to generate shader");
-  //   return;
-  // }
-  // code_previewer->setPlainText(QString::fromStdString(visual_shader->get_code()));
-  // code_previewer_dialog->exec();
+  std::string code;
+  std::vector<VisualShader::VisualShaderNode> nodes;
+  std::vector<VisualShader::VisualShaderConnection> connections;
+
+  bool result{shadergen_visual_shader_generator::generate_shader(code, nodes, connections)};
+  CHECK_CONDITION_TRUE(!result, "Failed to generate shader code");
+  code_previewer->setPlainText(QString::fromStdString(code));
+  code_previewer_dialog->exec();
 }
 
 void VisualShaderEditor::on_menu_button_pressed() {
@@ -597,197 +600,197 @@ void CreateNodeDialog::update_selected_item() {
 /**********************************************************************/
 /**********************************************************************/
 
-// ShaderPreviewerWidget::ShaderPreviewerWidget(QWidget* parent)
-//     : QOpenGLWidget(parent), shader_program(nullptr), VAO(0), VBO(0) {}
+ShaderPreviewerWidget::ShaderPreviewerWidget(QWidget* parent)
+    : QOpenGLWidget(parent), shader_program(nullptr), VAO(0), VBO(0) {}
 
-// ShaderPreviewerWidget::~ShaderPreviewerWidget() {}
+ShaderPreviewerWidget::~ShaderPreviewerWidget() {}
 
-// void ShaderPreviewerWidget::set_code(const std::string& new_code) {
-//   if (new_code == code) return;
+void ShaderPreviewerWidget::set_code(const std::string& new_code) {
+  if (new_code == code) return;
 
-//   code = new_code;
-//   shader_needs_update = true;
-//   if (isVisible()) {
-//     update_shader_program();
-//     timer.restart();
-//   }
-// }
+  code = new_code;
+  shader_needs_update = true;
+  if (isVisible()) {
+    update_shader_program();
+    timer.restart();
+  }
+}
 
-// void ShaderPreviewerWidget::initializeGL() {
-//   QOpenGLFunctions_4_3_Core* f{QOpenGLContext::currentContext()->versionFunctions<QOpenGLFunctions_4_3_Core>()};
+void ShaderPreviewerWidget::initializeGL() {
+  QOpenGLFunctions_4_3_Core* f{QOpenGLContext::currentContext()->versionFunctions<QOpenGLFunctions_4_3_Core>()};
 
-//   if (!f) {
-//     qWarning() << "Failed to get OpenGL 4.3 functions";
-//     return;
-//   }
+  if (!f) {
+    qWarning() << "Failed to get OpenGL 4.3 functions";
+    return;
+  }
 
-//   if (!f->initializeOpenGLFunctions()) {
-//     qWarning() << "Failed to initialize OpenGL functions";
-//     return;
-//   }
+  if (!f->initializeOpenGLFunctions()) {
+    qWarning() << "Failed to initialize OpenGL functions";
+    return;
+  }
 
-//   f->glClearColor(0.0f, 0.0f, 0.0f, 1.0f);  // Black background
-//   init_buffers();
-//   init_shaders();
+  f->glClearColor(0.0f, 0.0f, 0.0f, 1.0f);  // Black background
+  init_buffers();
+  init_shaders();
 
-//   timer.start();
+  timer.start();
 
-//   connect(context(), &QOpenGLContext::aboutToBeDestroyed, this, &ShaderPreviewerWidget::cleanup);
-// }
+  connect(context(), &QOpenGLContext::aboutToBeDestroyed, this, &ShaderPreviewerWidget::cleanup);
+}
 
-// void ShaderPreviewerWidget::resizeGL(int w, int h) {
-//   QOpenGLFunctions_4_3_Core* f{QOpenGLContext::currentContext()->versionFunctions<QOpenGLFunctions_4_3_Core>()};
+void ShaderPreviewerWidget::resizeGL(int w, int h) {
+  QOpenGLFunctions_4_3_Core* f{QOpenGLContext::currentContext()->versionFunctions<QOpenGLFunctions_4_3_Core>()};
 
-//   if (!f) {
-//     qWarning() << "Failed to get OpenGL 4.3 functions";
-//     return;
-//   }
+  if (!f) {
+    qWarning() << "Failed to get OpenGL 4.3 functions";
+    return;
+  }
 
-//   f->glViewport(0, 0, w, h);
-// }
+  f->glViewport(0, 0, w, h);
+}
 
-// void ShaderPreviewerWidget::paintGL() {
-//   // Check https://doc.qt.io/qt-5/qopenglwidget.html#isValid
-//   // At start, the widget is hidden so this call returns false which results
-//   // in returning (no painting happens).
-//   if (!isValid()) return;
+void ShaderPreviewerWidget::paintGL() {
+  // Check https://doc.qt.io/qt-5/qopenglwidget.html#isValid
+  // At start, the widget is hidden so this call returns false which results
+  // in returning (no painting happens).
+  if (!isValid()) return;
 
-//   QOpenGLFunctions_4_3_Core* f{QOpenGLContext::currentContext()->versionFunctions<QOpenGLFunctions_4_3_Core>()};
+  QOpenGLFunctions_4_3_Core* f{QOpenGLContext::currentContext()->versionFunctions<QOpenGLFunctions_4_3_Core>()};
 
-//   if (!f) {
-//     qWarning() << "Failed to get OpenGL 4.3 functions";
-//     return;
-//   }
+  if (!f) {
+    qWarning() << "Failed to get OpenGL 4.3 functions";
+    return;
+  }
 
-//   if (shader_needs_update) {
-//     update_shader_program();
-//   }
+  if (shader_needs_update) {
+    update_shader_program();
+  }
 
-//   if (!shader_program || !shader_program->isLinked()) {
-//     qWarning() << "Shader program is not linked.";
-//     return;
-//   }
+  if (!shader_program || !shader_program->isLinked()) {
+    qWarning() << "Shader program is not linked.";
+    return;
+  }
 
-//   float time_value{timer.elapsed() * 0.001f};
+  float time_value{timer.elapsed() * 0.001f};
 
-//   f->glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-//   f->glClear(GL_COLOR_BUFFER_BIT);
+  f->glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+  f->glClear(GL_COLOR_BUFFER_BIT);
 
-//   shader_program->bind();
-//   shader_program->setUniformValue("uTime", time_value);
+  shader_program->bind();
+  shader_program->setUniformValue("uTime", time_value);
 
-//   f->glBindVertexArray(VAO);
-//   f->glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-//   f->glBindVertexArray(0);
+  f->glBindVertexArray(VAO);
+  f->glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+  f->glBindVertexArray(0);
 
-//   shader_program->release();
+  shader_program->release();
 
-//   update();  // Request a repaint
-//   Q_EMIT scene_update_requested();
-// }
+  update();  // Request a repaint
+  Q_EMIT scene_update_requested();
+}
 
-// void ShaderPreviewerWidget::cleanup() {
-//   makeCurrent();
+void ShaderPreviewerWidget::cleanup() {
+  makeCurrent();
 
-//   QOpenGLFunctions_4_3_Core* f{QOpenGLContext::currentContext()->versionFunctions<QOpenGLFunctions_4_3_Core>()};
+  QOpenGLFunctions_4_3_Core* f{QOpenGLContext::currentContext()->versionFunctions<QOpenGLFunctions_4_3_Core>()};
 
-//   if (!f) {
-//     qWarning() << "Failed to get OpenGL 4.3 functions";
-//     return;
-//   }
+  if (!f) {
+    qWarning() << "Failed to get OpenGL 4.3 functions";
+    return;
+  }
 
-//   f->glDeleteVertexArrays(1, &VAO);
-//   f->glDeleteBuffers(1, &VBO);
-// }
+  f->glDeleteVertexArrays(1, &VAO);
+  f->glDeleteBuffers(1, &VBO);
+}
 
-// void ShaderPreviewerWidget::init_buffers() {
-//   QOpenGLFunctions_4_3_Core* f{QOpenGLContext::currentContext()->versionFunctions<QOpenGLFunctions_4_3_Core>()};
+void ShaderPreviewerWidget::init_buffers() {
+  QOpenGLFunctions_4_3_Core* f{QOpenGLContext::currentContext()->versionFunctions<QOpenGLFunctions_4_3_Core>()};
 
-//   if (!f) {
-//     qWarning() << "Failed to get OpenGL 4.3 functions";
-//     return;
-//   }
+  if (!f) {
+    qWarning() << "Failed to get OpenGL 4.3 functions";
+    return;
+  }
 
-//   float vertices[] = {
-//       // coordinates    // frag coords
-//       -1.0f, 1.0f, 0.0f, 1.0f, -1.0f, -1.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, -1.0f, 1.0f, 0.0f};
+  float vertices[] = {
+      // coordinates    // frag coords
+      -1.0f, 1.0f, 0.0f, 1.0f, -1.0f, -1.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, -1.0f, 1.0f, 0.0f};
 
-//   f->glGenVertexArrays(1, &VAO);
-//   f->glGenBuffers(1, &VBO);
+  f->glGenVertexArrays(1, &VAO);
+  f->glGenBuffers(1, &VBO);
 
-//   f->glBindVertexArray(VAO);
+  f->glBindVertexArray(VAO);
 
-//   f->glBindBuffer(GL_ARRAY_BUFFER, VBO);
-//   f->glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+  f->glBindBuffer(GL_ARRAY_BUFFER, VBO);
+  f->glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
-//   f->glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
-//   f->glEnableVertexAttribArray(0);
+  f->glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
+  f->glEnableVertexAttribArray(0);
 
-//   f->glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
-//   f->glEnableVertexAttribArray(1);
+  f->glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
+  f->glEnableVertexAttribArray(1);
 
-//   f->glBindVertexArray(0);
-// }
+  f->glBindVertexArray(0);
+}
 
-// void ShaderPreviewerWidget::update_shader_program() {
-//   shader_program.reset(new QOpenGLShaderProgram());
+void ShaderPreviewerWidget::update_shader_program() {
+  shader_program.reset(new QOpenGLShaderProgram());
 
-//   const char* vertex_shader_source = R"(
-//       #version 330 core
-//       layout(location = 0) in vec2 aPos;
-//       layout(location = 1) in vec2 aFragCoord;
+  const char* vertex_shader_source = R"(
+      #version 330 core
+      layout(location = 0) in vec2 aPos;
+      layout(location = 1) in vec2 aFragCoord;
 
-//       out vec2 FragCoord;
+      out vec2 FragCoord;
 
-//       void main() {
-//         gl_Position = vec4(aPos, 0.0, 1.0);
-//         FragCoord = aFragCoord;
-//       }
-//   )";
+      void main() {
+        gl_Position = vec4(aPos, 0.0, 1.0);
+        FragCoord = aFragCoord;
+      }
+  )";
 
-//   std::string fragment_shader_source{code.empty() ? R"(
-//       #version 330 core
-//       out vec4 FragColor;
-//       in vec2 FragCoord;
+  std::string fragment_shader_source{code.empty() ? R"(
+      #version 330 core
+      out vec4 FragColor;
+      in vec2 FragCoord;
 
-//       uniform float uTime;
+      uniform float uTime;
 
-//       void main() {
-//         FragColor = vec4(0.0, 0.0, 0.0, 1.0);
-//       }
-//   )"
-//                                                   : "#version 330 core\n\n" + code};
+      void main() {
+        FragColor = vec4(0.0, 0.0, 0.0, 1.0);
+      }
+  )"
+                                                  : "#version 330 core\n\n" + code};
 
-//   if (!shader_program->addShaderFromSourceCode(QOpenGLShader::Vertex, vertex_shader_source)) {
-//     qWarning() << "Vertex shader compilation failed:" << shader_program->log();
-//   }
+  if (!shader_program->addShaderFromSourceCode(QOpenGLShader::Vertex, vertex_shader_source)) {
+    qWarning() << "Vertex shader compilation failed:" << shader_program->log();
+  }
 
-//   if (!shader_program->addShaderFromSourceCode(QOpenGLShader::Fragment, fragment_shader_source.c_str())) {
-//     qWarning() << "Fragment shader compilation failed:" << shader_program->log();
-//   }
+  if (!shader_program->addShaderFromSourceCode(QOpenGLShader::Fragment, fragment_shader_source.c_str())) {
+    qWarning() << "Fragment shader compilation failed:" << shader_program->log();
+  }
 
-//   if (!shader_program->link()) {
-//     qWarning() << "Shader program linking failed:" << shader_program->log();
-//   }
+  if (!shader_program->link()) {
+    qWarning() << "Shader program linking failed:" << shader_program->log();
+  }
 
-//   shader_needs_update = false;
-// }
+  shader_needs_update = false;
+}
 
-// void ShaderPreviewerWidget::init_shaders() { update_shader_program(); }
+void ShaderPreviewerWidget::init_shaders() { update_shader_program(); }
 
-// void ShaderPreviewerWidget::showEvent(QShowEvent* event) {
-//   QOpenGLWidget::showEvent(event);
-//   if (!timer.isValid()) {
-//     // See https://doc.qt.io/qt-5/qelapsedtimer.html#start.
-//     timer.start();  // Start the timer on first show
-//   }
-// }
+void ShaderPreviewerWidget::showEvent(QShowEvent* event) {
+  QOpenGLWidget::showEvent(event);
+  if (!timer.isValid()) {
+    // See https://doc.qt.io/qt-5/qelapsedtimer.html#start.
+    timer.start();  // Start the timer on first show
+  }
+}
 
-// void ShaderPreviewerWidget::hideEvent(QHideEvent* event) {
-//   QOpenGLWidget::hideEvent(event);
-//   // See https://doc.qt.io/qt-5/qelapsedtimer.html#invalidate.
-//   timer.invalidate();
-// }
+void ShaderPreviewerWidget::hideEvent(QHideEvent* event) {
+  QOpenGLWidget::hideEvent(event);
+  // See https://doc.qt.io/qt-5/qelapsedtimer.html#invalidate.
+  timer.invalidate();
+}
 
 /**********************************************************************/
 /**********************************************************************/
@@ -961,12 +964,12 @@ bool VisualShaderGraphicsScene::add_node(const std::shared_ptr<IGraphNode>& grap
                     &VisualShaderNodeGraphicsObject::on_node_update_requested);
 
   // Send the shader previewer widget
-  // embed_widget->set_shader_previewer_widget(n_o->get_shader_previewer_widget());
+  embed_widget->set_shader_previewer_widget(n_o->get_shader_previewer_widget());
 
-  // if (ShaderPreviewerWidget* spw{n_o->get_shader_previewer_widget()}) {
-  //   QObject::connect(spw, &ShaderPreviewerWidget::scene_update_requested, this,
-  //                    &VisualShaderGraphicsScene::on_scene_update_requested);
-  // }
+  if (ShaderPreviewerWidget* spw{n_o->get_shader_previewer_widget()}) {
+    QObject::connect(spw, &ShaderPreviewerWidget::scene_update_requested, this,
+                     &VisualShaderGraphicsScene::on_scene_update_requested);
+  }
 
   QObject::connect(n_o, &VisualShaderNodeGraphicsObject::node_deleted, this,
                    &VisualShaderGraphicsScene::on_node_deleted);
@@ -1027,20 +1030,18 @@ bool VisualShaderGraphicsScene::delete_node(const int& n_id, const int& in_port_
 }
 
 void VisualShaderGraphicsScene::on_update_shader_previewer_widgets_requested() {
-  // for (auto& [n_id, n_o] : node_graphics_objects) {
-  //   if (n_id == (int)VisualShader::NODE_ID_OUTPUT) {
-  //     continue;
-  //   }
+  for (auto& [n_id, n_o] : node_graphics_objects) {
+    SILENT_CONTINUE_IF_TRUE(n_id == 0);  // Skip the output node
 
-  //   ShaderPreviewerWidget* spw{n_o->get_shader_previewer_widget()};
-  //   if (!spw) {
-  //     continue;
-  //   }
+    ShaderPreviewerWidget* spw{n_o->get_shader_previewer_widget()};
+    if (!spw) {
+      continue;
+    }
 
-  //   spw->set_code(vs->generate_preview_shader(n_id, 0));  // 0 is the output port index
-  // }
+    spw->set_code(shadergen_visual_shader_generator::generate_preview_shader(n_id, 0));  // 0 is the output port index
+  }
 
-  // on_scene_update_requested();
+  on_scene_update_requested();
 }
 
 void VisualShaderGraphicsScene::on_scene_update_requested() { update(); }
@@ -1255,6 +1256,8 @@ void VisualShaderGraphicsScene::on_node_deleted(const int& n_id, const int& in_p
   if (!result) {
     DEBUG_PRINT("Failed to delete node");
   }
+
+  Q_EMIT visual_shader_model->dataChanged(QModelIndex(), QModelIndex()); // To update the serialized data
 }
 
 void VisualShaderGraphicsScene::on_port_pressed(QGraphicsObject* port, const QPointF& coordinate) {
@@ -1586,20 +1589,20 @@ void VisualShaderGraphicsView::drawBackground(QPainter* painter, const QRectF& r
 }
 
 void VisualShaderGraphicsView::contextMenuEvent(QContextMenuEvent* event) {
-  // QGraphicsItem* item{itemAt(event->pos())};
+  QGraphicsItem* item{itemAt(event->pos())};
 
-  // // If there is an item and this item is a node object, pass the event to the
-  // // children
-  // if (item && dynamic_cast<VisualShaderNodeGraphicsObject*>(item)) {
-  //   QGraphicsView::contextMenuEvent(event);
-  //   return;
-  // } else if (item) {
-  //   return;
-  // }
+  // If there is an item and this item is a node object, pass the event to the
+  // children
+  if (item && dynamic_cast<VisualShaderNodeGraphicsObject*>(item)) {
+    QGraphicsView::contextMenuEvent(event);
+    return;
+  } else if (item) {
+    return;
+  }
 
-  // this->last_context_menu_coordinate = mapToScene(event->pos());
+  this->last_context_menu_coordinate = mapToScene(event->pos());
 
-  // context_menu->exec(event->globalPos());
+  context_menu->exec(event->globalPos());
 }
 
 void VisualShaderGraphicsView::wheelEvent(QWheelEvent* event) {
@@ -1762,10 +1765,10 @@ VisualShaderNodeGraphicsObject::VisualShaderNodeGraphicsObject(const int& n_id, 
     matching_image_widget_proxy->setWidget(matching_image_widget);
   } else {
     // Create the shader previewer widget
-    // QGraphicsProxyWidget* shader_previewer_widget_proxy{new QGraphicsProxyWidget(this)};
-    // shader_previewer_widget = new ShaderPreviewerWidget();
-    // shader_previewer_widget->setVisible(false);
-    // shader_previewer_widget_proxy->setWidget(shader_previewer_widget);
+    QGraphicsProxyWidget* shader_previewer_widget_proxy{new QGraphicsProxyWidget(this)};
+    shader_previewer_widget = new ShaderPreviewerWidget();
+    shader_previewer_widget->setVisible(false);
+    shader_previewer_widget_proxy->setWidget(shader_previewer_widget);
   }
 
   // Set the context menu
