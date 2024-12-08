@@ -1093,10 +1093,12 @@ int VisualShaderGraphicsScene::get_new_connection_id(ProtoModel* visual_shader_m
     if (c_id > max_id) max_id = c_id;
   }
 
-  return max_id + 1;
+  return max_id + 1; // Minimum id is 0
 }
 
 int VisualShaderGraphicsScene::find_node_entry(ProtoModel* visual_shader_model, ProtoModel* nodes_model, const int& n_id) {
+  CHECK_CONDITION_TRUE_NON_VOID(n_id == 0, -1, "The id " + std::to_string(n_id) + " is reserved for the output node");
+
   int size {nodes_model->rowCount()};
 
   for (int i{0}; i < size; i++) {

@@ -186,14 +186,21 @@ bool RepeatedMessageModel::removeRows(int row, int count, const QModelIndex &par
     VALIDATE_INDEX_NON_VOID(row, rowCount(), false, "Index out of range.");
     CHECK_CONDITION_TRUE_NON_VOID(count != 1, false, "Invalid number of rows: " + std::to_string(count) + ". Adding multiple rows at once is not supported yet.");
 
-    delete m_sub_models.at(row);
-    m_sub_models.erase(m_sub_models.begin() + row);
+    int last_row {rowCount() - 1};
+
+    std::swap(m_sub_models.at(row), m_sub_models.at(last_row));
+
+    delete m_sub_models.at(last_row);
+    m_sub_models.erase(m_sub_models.begin() + last_row);
 
     // We remove a row by swapping the last row with the row to be removed and then removing the last row.
     // https://protobuf.dev/reference/cpp/api-docs/google.protobuf.message/#Reflection.RemoveLast.details
     const Reflection* refl {m_message_buffer->GetReflection()};
-    if (row < (rowCount() - 1)) refl->SwapElements(m_message_buffer, m_field_desc, row, rowCount() - 1);
+    if (row < last_row) refl->SwapElements(m_message_buffer, m_field_desc, row, last_row);
     refl->RemoveLast(m_message_buffer, m_field_desc);
+
+    // Must be done after removing the row
+    for (int i {row}; i < rowCount(); i++) m_sub_models.at(i)->set_index_in_parent(i); // Update the index in parent
 
     return true;
 }
@@ -203,7 +210,7 @@ void RepeatedMessageModel::clear_sub_models() {
     m_sub_models.clear();
 
     const Reflection* refl {m_message_buffer->GetReflection()};
-    refl->ClearField(m_message_buffer, m_field_desc);
+    refl->ClearField(m_message_buffer, m_field_desc);   
 }
 
 void RepeatedMessageModel::append_row(const int& row) {

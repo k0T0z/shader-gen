@@ -70,6 +70,16 @@ public:
     const ProtoModel* get_root_model() const;
     virtual Message* get_message_buffer() const { return nullptr; }
     const ProtoModel* get_parent_model() const { return m_parent_model; }
+
+    /**
+     * @brief Set the index in parent object
+     * 
+     * @note Only used to update the index of repeated models' children
+     *       when a row is removed.
+     * 
+     * @param index 
+     */
+    void set_index_in_parent(const int& index) { m_index_in_parent = index; }
     int get_index_in_parent() const { return m_index_in_parent; }
 
 protected:
