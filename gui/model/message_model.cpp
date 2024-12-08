@@ -143,7 +143,7 @@ const ProtoModel* MessageModel::get_sub_model(const int& field_number) const {
     return it->second;
 }
 
-const ProtoModel* MessageModel::get_sub_model(const FieldPath& path, const bool& for_set_data) const {
+const ProtoModel* MessageModel::get_sub_model(const FieldPath& path, const bool& for_set_data, const bool& for_get_oneof) const {
     SILENT_CHECK_PARAM_NULLPTR_NON_VOID(m_message_buffer, nullptr);
     const Descriptor* desc {m_message_buffer->GetDescriptor()};
     CHECK_CONDITION_TRUE_NON_VOID(!path.is_valid(), nullptr, "Invalid path for " + desc->full_name());
@@ -159,7 +159,7 @@ const ProtoModel* MessageModel::get_sub_model(const FieldPath& path, const bool&
         const OneofDescriptor* oneof_desc {field_desc->real_containing_oneof()};
         auto it {m_sub_models_by_oneof_name.find(oneof_desc->name())};
         SILENT_CHECK_CONDITION_TRUE_NON_VOID(it == m_sub_models_by_oneof_name.end(), nullptr);
-        return it->second->get_sub_model(path, for_set_data);
+        return it->second->get_sub_model(path, for_set_data, for_get_oneof);
     }
     
     auto it {m_sub_models_by_field_number.find(fn)};
@@ -169,7 +169,7 @@ const ProtoModel* MessageModel::get_sub_model(const FieldPath& path, const bool&
 
     last_accessed_field_index = field_desc->index(); // This is important for back propagation of dataChanged signal
     
-    return it->second->get_sub_model(path, for_set_data);
+    return it->second->get_sub_model(path, for_set_data, for_get_oneof);
 }
 
 const FieldDescriptor* MessageModel::get_column_descriptor(const int& column) const {

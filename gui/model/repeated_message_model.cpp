@@ -56,7 +56,7 @@ MessageModel* RepeatedMessageModel::get_sub_model(const int& index) const {
     return m;
 }
 
-const ProtoModel* RepeatedMessageModel::get_sub_model(const FieldPath& path, const bool& for_set_data) const {
+const ProtoModel* RepeatedMessageModel::get_sub_model(const FieldPath& path, const bool& for_set_data, const bool& for_get_oneof) const {
     CHECK_CONDITION_TRUE_NON_VOID(!path.is_valid(), nullptr, "Invalid path for " + m_field_desc->full_name());
     SILENT_CHECK_CONDITION_TRUE_NON_VOID(path.is_empty(), this);
 
@@ -67,7 +67,7 @@ const ProtoModel* RepeatedMessageModel::get_sub_model(const FieldPath& path, con
 
     CHECK_CONDITION_TRUE_NON_VOID(!path.skip_component(), nullptr, "Failed to skip repeated index.");
 
-    return m_sub_models.at(index)->get_sub_model(path, for_set_data);
+    return m_sub_models.at(index)->get_sub_model(path, for_set_data, for_get_oneof);
 }
 
 QModelIndex RepeatedMessageModel::parent([[maybe_unused]] const QModelIndex& child) const {

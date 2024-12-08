@@ -35,7 +35,7 @@ public:
     bool set_data(const QVariant& value) override;
     
     MessageModel* get_sub_model(const int& index) const;
-    const ProtoModel* get_sub_model(const FieldPath& path, const bool& for_set_data = false) const override;
+    const ProtoModel* get_sub_model(const FieldPath& path, const bool& for_set_data = false, const bool& for_get_oneof = false) const override;
 
     QModelIndex parent(const QModelIndex &child) const override;
     int rowCount(const QModelIndex &parent = QModelIndex()) const override;

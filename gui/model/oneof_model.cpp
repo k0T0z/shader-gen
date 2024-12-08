@@ -87,10 +87,11 @@ const ProtoModel* OneofModel::get_sub_model(const int& field_number) const {
     return m_sub_model;
 }
 
-const ProtoModel* OneofModel::get_sub_model(const FieldPath& path, const bool& for_set_data) const {
+const ProtoModel* OneofModel::get_sub_model(const FieldPath& path, const bool& for_set_data, const bool& for_get_oneof) const {
     SILENT_CHECK_PARAM_NULLPTR_NON_VOID(m_message_buffer, nullptr);
     const Descriptor* desc {m_message_buffer->GetDescriptor()};
     CHECK_CONDITION_TRUE_NON_VOID(!path.is_valid(), nullptr, "Invalid path for " + desc->full_name());
+    SILENT_CHECK_CONDITION_TRUE_NON_VOID(for_get_oneof, this);
 
     int fn {-1};
 
@@ -110,7 +111,15 @@ const ProtoModel* OneofModel::get_sub_model(const FieldPath& path, const bool& f
 
     CHECK_CONDITION_TRUE_NON_VOID(!path.skip_component(), nullptr, "Failed to skip field number.");
 
-    return m_sub_model->get_sub_model(path, for_set_data);
+    return m_sub_model->get_sub_model(path, for_set_data, for_get_oneof);
+}
+
+int OneofModel::get_oneof_value_field_number() const {
+    const Reflection* refl {m_message_buffer->GetReflection()};
+    CHECK_PARAM_NULLPTR_NON_VOID(m_message_buffer, -1, "Message buffer is null.");
+    CHECK_PARAM_NULLPTR_NON_VOID(m_oneof_desc, -1, "Oneof descriptor is null.");
+    SILENT_CHECK_CONDITION_TRUE_NON_VOID(!is_set() && !refl->HasOneof(*m_message_buffer, m_oneof_desc), -1);
+    return m_current_field_desc->number();
 }
 
 const FieldDescriptor* OneofModel::get_column_descriptor(const int& column) const {

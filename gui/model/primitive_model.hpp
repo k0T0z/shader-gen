@@ -25,7 +25,7 @@ public:
     QVariant data() const override;
     bool set_data(const QVariant& value) override;
     
-    const ProtoModel* get_sub_model(const FieldPath& path, const bool& for_set_data = false) const override;
+    const ProtoModel* get_sub_model(const FieldPath& path, const bool& for_set_data = false, const bool& for_get_oneof = false) const override;
 
     const FieldDescriptor* get_column_descriptor(const int& column) const override;
 

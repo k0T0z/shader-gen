@@ -148,6 +148,8 @@ TEST(MessageModelTest, TestValidSetGet) {
     ASSERT_TRUE(model->set_data(FieldPath::Of<OrganizationTestSchema>(FieldPath::FieldNumber(OrganizationTestSchema::kVirtualHeadquartersFieldNumber)), "Virtual Testville"));
     ASSERT_EQ(model->data(FieldPath::Of<OrganizationTestSchema>(FieldPath::FieldNumber(OrganizationTestSchema::kVirtualHeadquartersFieldNumber))).toString(), "Virtual Testville");
     ASSERT_EQ(org.virtual_headquarters(), "Virtual Testville");
+
+    delete model; // For the AddressSanitizer to not complain about memory leaks
 }
 
 TEST(MessageModelTest, TestAddRemoveRow) {
@@ -189,6 +191,8 @@ TEST(MessageModelTest, TestAddRemoveRow) {
 
     // Remove the first row from OrganizationTestSchema.employees again
     ASSERT_TRUE(employees->remove_row(employee_idx));
+
+    delete model; // For the AddressSanitizer to not complain about memory leaks
 }
 
 TEST(MessageModelTest, TestOneofModel) {
@@ -218,6 +222,8 @@ TEST(MessageModelTest, TestOneofModel) {
 
     // Get preferred_email
     ASSERT_FALSE(model->data(FieldPath::Of<OrganizationTestSchema>(FieldPath::FieldNumber(OrganizationTestSchema::kEmployeesFieldNumber), FieldPath::RepeatedAt(employee_idx), FieldPath::FieldNumber(Person::kPreferredEmailFieldNumber))).isValid());
+
+    delete model; // For the AddressSanitizer to not complain about memory leaks
 }
 
 TEST(MessageModelTest, TestDataChangedSignalPrimitiveModel) {
@@ -316,4 +322,6 @@ TEST(MessageModelTest, TestDataChangedSignalPrimitiveModel) {
     QModelIndex expected_top_left5 = model->index(0, 1);
     ASSERT_TRUE(expected_top_left5.isValid());
     verify_indices(model_spy, expected_top_left5, expected_top_left5);
+
+    delete model; // For the AddressSanitizer to not complain about memory leaks
 }

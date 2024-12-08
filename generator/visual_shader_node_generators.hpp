@@ -31,8 +31,6 @@
 #include <string>
 #include <vector>
 
-#include <google/protobuf/descriptor.h>
-
 #include "gui/model/schema/visual_shader_nodes.pb.h"
 
 using namespace gui::model::schema;

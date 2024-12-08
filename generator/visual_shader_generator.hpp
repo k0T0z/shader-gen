@@ -30,17 +30,12 @@
 
 #include <string>
 #include <vector>
-#include <google/protobuf/descriptor.h>
-
-#include "gui/model/schema/visual_shader.pb.h"
-#include "gui/model/schema/visual_shader_nodes.pb.h"
-
-using namespace gui::model::schema;
+#include "gui/model/proto_model.hpp"
 
 namespace shadergen_visual_shader_generator {
     bool generate_shader(std::string& code,
-                                std::vector<VisualShader::VisualShaderNode> nodes, 
-                                std::vector<VisualShader::VisualShaderConnection> connections) noexcept;
+                         const ProtoModel* nodes, 
+                         const ProtoModel* connections) noexcept;
     std::string generate_preview_shader(const int& node_id, const int& port) noexcept;
 }
 

@@ -35,7 +35,34 @@ public:
     virtual QVariant data() const = 0;
     virtual bool set_data(const QVariant& value) = 0;
 
-    virtual const ProtoModel* get_sub_model(const FieldPath& path, const bool& for_set_data = false) const = 0; // A read-only version of ProtoModel
+    /**
+     * @brief Get the sub model object
+     * 
+     * @param path 
+     * @param for_set_data This is used for setting data in the model only
+     *                     in the oneof model. For exmaple, if we want to set 
+     *                     a specific field, to get to this field we need to 
+     *                     pass on multiple oneofs, so what if one of the oneofs 
+     *                     is not set? We need to set it and then move on, otherwise
+     *                     this specific oneof will block our way to the desired field.
+     * 
+     * @param for_get_oneof Currently, the FieldPath class supports getting sub-models 
+     *                      for all models except for the oneof model. For example, if we 
+     *                      want to get a pointer to a specific repeated field to append 
+     *                      a new row, we can use the FieldPath class to get to the repeated,
+     *                      however, this won't work for the oneof model. This is because
+     *                      if FieldPath::FieldNumber(3) is inside a oneof, I don't skip it, 
+     *                      however, I leave it to be skipped inside the OneofModel itself
+     *                      and the way I return the sub-models is to check if the FieldPath
+     *                      is empty. If you noticed, I don't skip the oneof field number,
+     *                      this means every time I reach a oneof model, I will have a non-empty
+     *                      FieldPath. So, set this parameter to true if you want to get the
+     *                      sub-model of a oneof model.
+     * @return const ProtoModel* 
+     */
+    virtual const ProtoModel* get_sub_model(const FieldPath& path, const bool& for_set_data = false, const bool& for_get_oneof = false) const = 0; // A read-only version of ProtoModel
+
+    virtual int get_oneof_value_field_number() const { return -1; }
 
     virtual const FieldDescriptor* get_column_descriptor(const int& column) const = 0;
 

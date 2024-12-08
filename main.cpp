@@ -32,8 +32,6 @@
 #include <QCommandLineParser>
 #include <filesystem>
 
-#include <google/protobuf/stubs/common.h>
-
 #include "gui/model/schema/visual_shader.pb.h"
 
 #include "gui/model/message_model.hpp"

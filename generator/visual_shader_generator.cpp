@@ -30,13 +30,42 @@
 #include <algorithm>
 #include <iomanip>
 #include <sstream>
+#include <memory>
 
 #include "generator/visual_shader_node_generators.hpp"
+#include "gui/controller/graph_node.hpp"
+#include "error_macros.hpp"
+#include "gui/model/repeated_message_model.hpp"
+
 
 namespace shadergen_visual_shader_generator {
-    static inline std::vector<VisualShaderNodeGenerator> to_generators(const std::vector<VisualShader::VisualShaderNode>& nodes) noexcept {
-        std::vector<VisualShaderNodeGenerator> generators;
-        
+    static inline std::vector<std::unique_ptr<VisualShaderNodeGenerator>> to_generators(const ProtoModel* nodes) noexcept {
+        int size {nodes->rowCount()};
+        std::vector<std::unique_ptr<VisualShaderNodeGenerator>> generators;
+        generators.resize(size);
+
+        // Cast to ReapeatedMessageModel
+        const RepeatedMessageModel* repeated_nodes {dynamic_cast<const RepeatedMessageModel*>(nodes)};
+        CHECK_PARAM_NULLPTR_NON_VOID(repeated_nodes, std::vector<std::unique_ptr<VisualShaderNodeGenerator>>(), "Nodes is not a repeated message model.");
+
+        for (int i {0}; i < size; ++i) {
+            const MessageModel* node_model {repeated_nodes->get_sub_model(i)};
+            // I don't care about the field number, just send any field number inside the oneof model you want to get
+            const ProtoModel* oneof_model {node_model->get_sub_model(FieldPath::Of<VisualShader::VisualShaderNode>(FieldPath::FieldNumber(VisualShader::VisualShaderNode::kInputFieldNumber)), false, true)};
+            const int oneof_value_field_number {oneof_model->get_oneof_value_field_number()};
+
+            switch (oneof_value_field_number) {
+                case VisualShader::VisualShaderNode::kInputFieldNumber: {
+                    const VisualShaderNodeInputType input_type {(VisualShaderNodeInputType)oneof_model->get_sub_model(FieldPath::Of<VisualShader::VisualShaderNode>(FieldPath::FieldNumber(VisualShader::VisualShaderNode::kInputFieldNumber), FieldPath::FieldNumber(VisualShaderNodeInput::kTypeFieldNumber)))->data().toInt()};
+                    generators.at(i) = std::make_unique<VisualShaderNodeGeneratorInput>(input_type);
+                    break;
+                }
+                default:
+                    WARN_PRINT("Unsupported node type: " + std::to_string(oneof_value_field_number));
+                    break;
+            }
+        }
+
         return generators;
     }
 
@@ -47,10 +76,10 @@ namespace shadergen_visual_shader_generator {
                                                      std::unordered_set<std::string>& global_processed) noexcept;
 
     bool generate_shader(std::string& code,
-                         std::vector<VisualShader::VisualShaderNode> nodes, 
-                         std::vector<VisualShader::VisualShaderConnection> connections) noexcept {
+                         const ProtoModel* nodes, 
+                         const ProtoModel* connections) noexcept {
 
-        std::vector<VisualShaderNodeGenerator> generators = to_generators(nodes);
+        std::vector<std::unique_ptr<VisualShaderNodeGenerator>> generators = to_generators(nodes);
         
 
         return true;

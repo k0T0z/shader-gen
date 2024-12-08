@@ -415,13 +415,17 @@ void VisualShaderEditor::on_create_node_button_pressed() {
 
 void VisualShaderEditor::on_preview_shader_button_pressed() {
   std::string code;
-  std::vector<VisualShader::VisualShaderNode> nodes;
-  std::vector<VisualShader::VisualShaderConnection> connections;
 
-  bool result{shadergen_visual_shader_generator::generate_shader(code, nodes, connections)};
+  bool result{shadergen_visual_shader_generator::generate_shader(code, nodes_model, connections_model)};
   CHECK_CONDITION_TRUE(!result, "Failed to generate shader code");
+
   code_previewer->setPlainText(QString::fromStdString(code));
   code_previewer_dialog->exec();
+  
+  result = visual_shader_model->set_data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kFragmentShaderCodeFieldNumber)), QString::fromStdString(code));
+  if (!result) {
+    ERROR_PRINT("Failed to set fragment shader code");
+  }
 }
 
 void VisualShaderEditor::on_menu_button_pressed() {
@@ -909,7 +913,7 @@ bool VisualShaderGraphicsScene::add_node(const std::shared_ptr<IGraphNode>& grap
 
   QList<QGraphicsView*> views{this->views()};
   if (views.isEmpty()) {
-    DEBUG_PRINT("No views available");
+    ERROR_PRINT("No views available");
     return false;
   }
 
@@ -919,7 +923,7 @@ bool VisualShaderGraphicsScene::add_node(const std::shared_ptr<IGraphNode>& grap
       coordinate.x() > view->get_x() + view->get_width() ||
       coordinate.y() < view->get_y() ||
       coordinate.y() > view->get_y() + view->get_height()) {
-    DEBUG_PRINT("Node is out of view bounds");
+    WARN_PRINT("Node is out of view bounds");
   }
 
   std::vector<std::string> in_port_captions;
@@ -1042,6 +1046,12 @@ void VisualShaderGraphicsScene::on_update_shader_previewer_widgets_requested() {
   }
 
   on_scene_update_requested();
+
+  // Reset the generated shader code
+  bool result {visual_shader_model->set_data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kFragmentShaderCodeFieldNumber)), "")};
+  if (!result) {
+    ERROR_PRINT("Failed to reset the generated shader code");
+  }
 }
 
 void VisualShaderGraphicsScene::on_scene_update_requested() { update(); }
@@ -1138,7 +1148,7 @@ bool VisualShaderGraphicsScene::add_connection(const int& from_node_id, const in
 
   if (from_o_port->get_global_coordinate().x() < view->get_x() ||
       from_o_port->get_global_coordinate().x() > view->get_x() + view->get_width()) {
-    DEBUG_PRINT("Start of connection is out of view bounds");
+    WARN_PRINT("Start of connection is out of view bounds");
   }
 
   if (!this->temporary_connection_graphics_object) {
@@ -1160,7 +1170,7 @@ bool VisualShaderGraphicsScene::add_connection(const int& from_node_id, const in
 
     if (to_i_port->get_global_coordinate().y() < view->get_y() ||
         to_i_port->get_global_coordinate().y() > view->get_y() + view->get_height()) {
-      DEBUG_PRINT("End of connection is out of view bounds");
+      WARN_PRINT("End of connection is out of view bounds");
     }
 
     int c_id{get_new_connection_id(visual_shader_model, connections_model)};
@@ -1256,7 +1266,7 @@ void VisualShaderGraphicsScene::on_node_deleted(const int& n_id, const int& in_p
 
   bool result{delete_node(n_id, in_port_count, out_port_count)};
   if (!result) {
-    DEBUG_PRINT("Failed to delete node");
+    ERROR_PRINT("Failed to delete node");
   }
 
   Q_EMIT visual_shader_model->dataChanged(QModelIndex(), QModelIndex()); // To update the serialized data
@@ -1283,7 +1293,7 @@ void VisualShaderGraphicsScene::on_port_dragged(QGraphicsObject* port, const QPo
       VALIDATE_INDEX(row_entry, connections_model->rowCount(), "Connection entry not found");
       bool result{connections_model->remove_row(row_entry)};
       if (!result) {
-        DEBUG_PRINT("Failed to remove connection entry");
+        ERROR_PRINT("Failed to remove connection entry");
       }
       i_port->detach_connection();
       c_o->detach_end();
@@ -1340,7 +1350,7 @@ void VisualShaderGraphicsScene::on_port_dropped(QGraphicsObject* port, const QPo
       bool result{this->delete_connection(c_id, c_o->get_from_node_id(),
                                c_o->get_from_port_index())};
       if (!result) {
-        DEBUG_PRINT("Failed to delete connection");
+        ERROR_PRINT("Failed to delete connection");
       }
 
       return;  // Return because we dragging an input port and dropped on nothing
@@ -1356,7 +1366,7 @@ void VisualShaderGraphicsScene::on_port_dropped(QGraphicsObject* port, const QPo
                                           c_o->get_from_port_index())};
 
       if (!result) {
-        DEBUG_PRINT("Failed to delete connection");
+        ERROR_PRINT("Failed to delete connection");
       }
 
       return;  // Return because we dragging an input port and dropped on nothing
@@ -1371,7 +1381,7 @@ void VisualShaderGraphicsScene::on_port_dropped(QGraphicsObject* port, const QPo
                                         c_o->get_from_port_index())};
 
     if (!result) {
-      DEBUG_PRINT("Failed to delete connection");
+      ERROR_PRINT("Failed to delete connection");
     }
 
     return;  // Return because we dragging an output port and dropped on nothing
@@ -1386,7 +1396,7 @@ void VisualShaderGraphicsScene::on_port_dropped(QGraphicsObject* port, const QPo
                                         c_o->get_from_port_index())};
 
     if (!result) {
-      DEBUG_PRINT("Failed to delete connection");
+      ERROR_PRINT("Failed to delete connection");
     }
 
     return;
@@ -1702,13 +1712,13 @@ void VisualShaderGraphicsView::move_view_to_fit_items() {
   centerOn(items_bounding_rect.center());
 
   if ((float)transform().m11() > zoom_max) {
-    DEBUG_PRINT("Current zoom level is greater than the maximum zoom level.");
-    DEBUG_PRINT("Maybe due to having a very large distance between the nodes.");
+    WARN_PRINT("Current zoom level is greater than the maximum zoom level.");
+    WARN_PRINT("Maybe due to having a very large distance between the nodes.");
   }
 
   if ((float)transform().m11() < zoom_min) {
-    DEBUG_PRINT("Current zoom level is less than the minimum zoom level.");
-    DEBUG_PRINT("Maybe due to having all the nodes outside the scene bounds.");
+    WARN_PRINT("Current zoom level is less than the minimum zoom level.");
+    WARN_PRINT("Maybe due to having all the nodes outside the scene bounds.");
   }
 }
 

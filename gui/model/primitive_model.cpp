@@ -51,7 +51,7 @@ bool PrimitiveModel::set_data(const QVariant& value) {
     return setData(this->index(0, 0, this->parent(QModelIndex())), value);
 }
 
-const ProtoModel* PrimitiveModel::get_sub_model([[maybe_unused]] const FieldPath& path, const bool& for_set_data) const {
+const ProtoModel* PrimitiveModel::get_sub_model([[maybe_unused]] const FieldPath& path, const bool& for_set_data, const bool& for_get_oneof) const {
     const Descriptor* desc {m_message_buffer->GetDescriptor()};
     CHECK_CONDITION_TRUE_NON_VOID(!path.is_valid(), nullptr, "Invalid path for " + desc->full_name());
     CHECK_CONDITION_TRUE_NON_VOID(!path.is_empty(), nullptr, "Trying to get sub-model of a primitive model.");
