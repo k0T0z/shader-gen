@@ -30,9 +30,6 @@
 #include <unordered_map>
 #include <sstream>
 #include "error_macros.hpp"
-#include <QMetaType>
-
-Q_DECLARE_METATYPE(variant_node_type) // Register variant_node_type as a meta type so we can use it in signals and slots
 
 using VisualShader = gui::model::schema::VisualShader;
 
@@ -78,10 +75,12 @@ VisualShaderEditor::VisualShaderEditor(MessageModel* model, QWidget* parent)
       connections_model(nullptr) {
   VisualShaderEditor::init();
 
-  nodes_model = dynamic_cast<RepeatedMessageModel*>(const_cast<ProtoModel*>(visual_shader_model->get_sub_model(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber)))));
+  scene->set_model(visual_shader_model);
+
+  nodes_model = const_cast<ProtoModel*>(visual_shader_model->get_sub_model(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber))));
   scene->set_nodes_model(nodes_model);
 
-  connections_model = dynamic_cast<RepeatedMessageModel*>(const_cast<ProtoModel*>(visual_shader_model->get_sub_model(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kConnectionsFieldNumber)))));
+  connections_model = const_cast<ProtoModel*>(visual_shader_model->get_sub_model(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kConnectionsFieldNumber))));
   scene->set_connections_model(connections_model);
 }
 
@@ -293,42 +292,44 @@ void VisualShaderEditor::init() {
   // CreateNodeDialog Nodes Tree Children
   //////////////////////////////////////////
 
-  qRegisterMetaType<variant_node_type>("variant_node_type"); // Register the variant_node_type for the QVariant
+  std::shared_ptr<IGraphNode> input_node = std::make_shared<GraphNode<VisualShaderNodeInput>>();
+  create_node_dialog_nodes_tree_items.emplace_back(input_node->get_caption(), input_node->get_category_path(),
+                                                   input_node->get_description(), input_node);
 
-  GraphNode<VisualShaderNodeFloatConstant> float_constant_node;
-  create_node_dialog_nodes_tree_items.emplace_back(float_constant_node.get_caption(), float_constant_node.get_category_path(),
-                                                   float_constant_node.get_description(), float_constant_node);
-  GraphNode<VisualShaderNodeIntConstant> int_constant_node;
-  create_node_dialog_nodes_tree_items.emplace_back(int_constant_node.get_caption(), int_constant_node.get_category_path(),
-                                                   int_constant_node.get_description(), int_constant_node);
-  GraphNode<VisualShaderNodeUIntConstant> uint_constant_node;
-  create_node_dialog_nodes_tree_items.emplace_back(uint_constant_node.get_caption(), uint_constant_node.get_category_path(),
-                                                   uint_constant_node.get_description(), uint_constant_node);
-  GraphNode<VisualShaderNodeBooleanConstant> boolean_constant_node;
-  create_node_dialog_nodes_tree_items.emplace_back(boolean_constant_node.get_caption(), boolean_constant_node.get_category_path(),
-                                                   boolean_constant_node.get_description(), boolean_constant_node);
-  GraphNode<VisualShaderNodeColorConstant> color_constant_node;
-  create_node_dialog_nodes_tree_items.emplace_back(color_constant_node.get_caption(), color_constant_node.get_category_path(),
-                                                   color_constant_node.get_description(), color_constant_node);
-  GraphNode<VisualShaderNodeVec2Constant> vec2_constant_node;
-  create_node_dialog_nodes_tree_items.emplace_back(vec2_constant_node.get_caption(), vec2_constant_node.get_category_path(),
-                                                   vec2_constant_node.get_description(), vec2_constant_node);
-  GraphNode<VisualShaderNodeVec3Constant> vec3_constant_node;
-  create_node_dialog_nodes_tree_items.emplace_back(vec3_constant_node.get_caption(), vec3_constant_node.get_category_path(),
-                                                   vec3_constant_node.get_description(), vec3_constant_node);
-  GraphNode<VisualShaderNodeVec4Constant> vec4_constant_node;
-  create_node_dialog_nodes_tree_items.emplace_back(vec4_constant_node.get_caption(), vec4_constant_node.get_category_path(),
-                                                   vec4_constant_node.get_description(), vec4_constant_node);
+  // GraphNode<VisualShaderNodeFloatConstant> float_constant_node;
+  // create_node_dialog_nodes_tree_items.emplace_back(float_constant_node.get_caption(), float_constant_node.get_category_path(),
+  //                                                  float_constant_node.get_description(), float_constant_node);
+  // GraphNode<VisualShaderNodeIntConstant> int_constant_node;
+  // create_node_dialog_nodes_tree_items.emplace_back(int_constant_node.get_caption(), int_constant_node.get_category_path(),
+  //                                                  int_constant_node.get_description(), int_constant_node);
+  // GraphNode<VisualShaderNodeUIntConstant> uint_constant_node;
+  // create_node_dialog_nodes_tree_items.emplace_back(uint_constant_node.get_caption(), uint_constant_node.get_category_path(),
+  //                                                  uint_constant_node.get_description(), uint_constant_node);
+  // GraphNode<VisualShaderNodeBooleanConstant> boolean_constant_node;
+  // create_node_dialog_nodes_tree_items.emplace_back(boolean_constant_node.get_caption(), boolean_constant_node.get_category_path(),
+  //                                                  boolean_constant_node.get_description(), boolean_constant_node);
+  // GraphNode<VisualShaderNodeColorConstant> color_constant_node;
+  // create_node_dialog_nodes_tree_items.emplace_back(color_constant_node.get_caption(), color_constant_node.get_category_path(),
+  //                                                  color_constant_node.get_description(), color_constant_node);
+  // GraphNode<VisualShaderNodeVec2Constant> vec2_constant_node;
+  // create_node_dialog_nodes_tree_items.emplace_back(vec2_constant_node.get_caption(), vec2_constant_node.get_category_path(),
+  //                                                  vec2_constant_node.get_description(), vec2_constant_node);
+  // GraphNode<VisualShaderNodeVec3Constant> vec3_constant_node;
+  // create_node_dialog_nodes_tree_items.emplace_back(vec3_constant_node.get_caption(), vec3_constant_node.get_category_path(),
+  //                                                  vec3_constant_node.get_description(), vec3_constant_node);
+  // GraphNode<VisualShaderNodeVec4Constant> vec4_constant_node;
+  // create_node_dialog_nodes_tree_items.emplace_back(vec4_constant_node.get_caption(), vec4_constant_node.get_category_path(),
+  //                                                  vec4_constant_node.get_description(), vec4_constant_node);
 
-  GraphNode<VisualShaderNodeValueNoise> value_noise_node;
-  create_node_dialog_nodes_tree_items.emplace_back(value_noise_node.get_caption(), value_noise_node.get_category_path(),
-                                                   value_noise_node.get_description(), value_noise_node);
-  GraphNode<VisualShaderNodePerlinNoise> perlin_noise_node;
-  create_node_dialog_nodes_tree_items.emplace_back(perlin_noise_node.get_caption(), perlin_noise_node.get_category_path(),
-                                                   perlin_noise_node.get_description(), perlin_noise_node);
-  GraphNode<VisualShaderNodeVoronoiNoise> voronoi_noise_node;
-  create_node_dialog_nodes_tree_items.emplace_back(voronoi_noise_node.get_caption(), voronoi_noise_node.get_category_path(),
-                                                   voronoi_noise_node.get_description(), voronoi_noise_node);
+  // GraphNode<VisualShaderNodeValueNoise> value_noise_node;
+  // create_node_dialog_nodes_tree_items.emplace_back(value_noise_node.get_caption(), value_noise_node.get_category_path(),
+  //                                                  value_noise_node.get_description(), value_noise_node);
+  // GraphNode<VisualShaderNodePerlinNoise> perlin_noise_node;
+  // create_node_dialog_nodes_tree_items.emplace_back(perlin_noise_node.get_caption(), perlin_noise_node.get_category_path(),
+  //                                                  perlin_noise_node.get_description(), perlin_noise_node);
+  // GraphNode<VisualShaderNodeVoronoiNoise> voronoi_noise_node;
+  // create_node_dialog_nodes_tree_items.emplace_back(voronoi_noise_node.get_caption(), voronoi_noise_node.get_category_path(),
+  //                                                  voronoi_noise_node.get_description(), voronoi_noise_node);
 
   // Map to store category items
   std::unordered_map<std::string, QTreeWidgetItem*> category_path_map;
@@ -355,7 +356,7 @@ void VisualShaderEditor::init() {
     QTreeWidgetItem* node_item = new QTreeWidgetItem(parent);
     node_item->setText(0, QString::fromStdString(item.name));
     node_item->setData(1, Qt::DisplayRole, QString::fromStdString(item.description));
-    node_item->setData(1, VARIANT_NODE_TYPE_USER_ROLE, QVariant::fromValue(item.v_node_type));
+    node_item->setData(1, IGRAPHNODE_SHARED_PTR_USER_ROLE, QVariant::fromValue(item.graph_node));
   }
 
   //////////////// Start of Footer ////////////////
@@ -380,11 +381,11 @@ void VisualShaderEditor::create_node(const QPointF& coordinate) {
 }
 
 void VisualShaderEditor::add_node(QTreeWidgetItem* selected_item, const QPointF& coordinate) {
-  QVariant v_node_type = selected_item->data(1, VARIANT_NODE_TYPE_USER_ROLE);
+  QVariant graph_node = selected_item->data(1, IGRAPHNODE_SHARED_PTR_USER_ROLE);
 
-  CHECK_CONDITION_TRUE(!v_node_type.canConvert<variant_node_type>(), "Node type is empty");
+  CHECK_CONDITION_TRUE(!graph_node.canConvert<std::shared_ptr<IGraphNode>>(), "Node type is empty");
 
-  scene->add_node(v_node_type.value<variant_node_type>(), coordinate);
+  scene->add_node(graph_node.value<std::shared_ptr<IGraphNode>>(), coordinate);
 }
 
 void VisualShaderEditor::show_create_node_dialog(const QPointF& coordinate) {
@@ -809,164 +810,218 @@ VisualShaderGraphicsScene::VisualShaderGraphicsScene(QObject* parent)
 
 VisualShaderGraphicsScene::~VisualShaderGraphicsScene() {}
 
-bool VisualShaderGraphicsScene::add_node(const variant_node_type& v_node_type, const QPointF& coordinate) {
-  // Make sure the node doesn't already exist, we don't want to overwrite a node.
-  // if (node_graphics_objects.find(n_id) != node_graphics_objects.end()) {
-  //   return false;
+bool VisualShaderGraphicsScene::add_node(const std::shared_ptr<IGraphNode>& graph_node, const QPointF& coordinate) {
+  int n_id{VisualShaderGraphicsScene::get_new_node_id(visual_shader_model, nodes_model)};
+  CHECK_CONDITION_TRUE_NON_VOID(n_id == 0, false, "The id " + std::to_string(n_id) + " is reserved for the output node");
+
+  int row_entry{nodes_model->append_row()};
+  // CHECK_CONDITION_TRUE_NON_VOID(row_entry == 0, false, "The row entry " + std::to_string(row_entry) + " is reserved for the output node");
+
+  bool result = visual_shader_model->set_data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kIdFieldNumber)), n_id);
+  CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to set node id");
+
+  result = visual_shader_model->set_data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kXCoordinateFieldNumber)), coordinate.x());
+  CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to set node x coordinate");
+
+  result = visual_shader_model->set_data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kYCoordinateFieldNumber)), coordinate.y());
+  CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to set node y coordinate");
+
+  if (auto input_node = std::dynamic_pointer_cast<GraphNode<VisualShaderNodeInput>>(graph_node)) {
+    result = visual_shader_model->set_data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kInputFieldNumber), FieldPath::FieldNumber(VisualShaderNodeInput::kTypeFieldNumber)), VisualShaderNodeInputType::INPUT_TYPE_UNSPECIFIED);
+    CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to set input node");
+  } else {
+    FAIL_AND_RETURN_NON_VOID(false, "Unknown node type");
+  }
+
+  // switch (graph_node.index()) {
+    // case VARIANT_NODE_TYPE_VISUAL_SHADER_NODE_FLOAT_CONSTANT_INDEX:
+    //   result = visual_shader_model->set_data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kFloatConstantFieldNumber), FieldPath::FieldNumber(VisualShaderNodeFloatConstant::kValueFieldNumber)), 0.0f);
+    //   CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to set float constant value");
+    //   break;
+    // case VARIANT_NODE_TYPE_VISUAL_SHADER_NODE_INT_CONSTANT_INDEX:
+    //   result = visual_shader_model->set_data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kIntConstantFieldNumber), FieldPath::FieldNumber(VisualShaderNodeIntConstant::kValueFieldNumber)), 0);
+    //   CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to set int constant value");
+    //   break;
+    // case VARIANT_NODE_TYPE_VISUAL_SHADER_NODE_UINT_CONSTANT_INDEX:
+    //   result = visual_shader_model->set_data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kUintConstantFieldNumber), FieldPath::FieldNumber(VisualShaderNodeUIntConstant::kValueFieldNumber)), 0u);
+    //   CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to set uint constant value");
+    //   break;
+    // case VARIANT_NODE_TYPE_VISUAL_SHADER_NODE_BOOLEAN_CONSTANT_INDEX:
+    //   result = visual_shader_model->set_data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kBooleanConstantFieldNumber), FieldPath::FieldNumber(VisualShaderNodeBooleanConstant::kValueFieldNumber)), false);
+    //   CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to set boolean constant value");
+    //   break;
+    // case VARIANT_NODE_TYPE_VISUAL_SHADER_NODE_COLOR_CONSTANT_INDEX:
+    //   result = visual_shader_model->set_data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kColorConstantFieldNumber), FieldPath::FieldNumber(VisualShaderNodeColorConstant::kRFieldNumber)), 0.0f);
+    //   CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to set color constant R");
+    //   result = visual_shader_model->set_data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kColorConstantFieldNumber), FieldPath::FieldNumber(VisualShaderNodeColorConstant::kGFieldNumber)), 0.0f);
+    //   CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to set color constant G");
+    //   result = visual_shader_model->set_data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kColorConstantFieldNumber), FieldPath::FieldNumber(VisualShaderNodeColorConstant::kBFieldNumber)), 0.0f);
+    //   CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to set color constant B");
+    //   result = visual_shader_model->set_data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kColorConstantFieldNumber), FieldPath::FieldNumber(VisualShaderNodeColorConstant::kAFieldNumber)), 0.0f);
+    //   CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to set color constant A");
+    //   break;
+    // case VARIANT_NODE_TYPE_VISUAL_SHADER_NODE_VEC2_CONSTANT_INDEX:
+    //   result = visual_shader_model->set_data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec2ConstantFieldNumber), FieldPath::FieldNumber(VisualShaderNodeVec2Constant::kXFieldNumber)), 0.0f);
+    //   CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to set vec2 constant X");
+    //   result = visual_shader_model->set_data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec2ConstantFieldNumber), FieldPath::FieldNumber(VisualShaderNodeVec2Constant::kYFieldNumber)), 0.0f);
+    //   CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to set vec2 constant Y");
+    //   break;
+    // case VARIANT_NODE_TYPE_VISUAL_SHADER_NODE_VEC3_CONSTANT_INDEX:
+    //   result = visual_shader_model->set_data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec3ConstantFieldNumber), FieldPath::FieldNumber(VisualShaderNodeVec3Constant::kXFieldNumber)), 0.0f);
+    //   CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to set vec3 constant X");
+    //   result = visual_shader_model->set_data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec3ConstantFieldNumber), FieldPath::FieldNumber(VisualShaderNodeVec3Constant::kYFieldNumber)), 0.0f);
+    //   CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to set vec3 constant Y");
+    //   result = visual_shader_model->set_data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec3ConstantFieldNumber), FieldPath::FieldNumber(VisualShaderNodeVec3Constant::kZFieldNumber)), 0.0f);
+    //   CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to set vec3 constant Z");
+    //   break;
+    // case VARIANT_NODE_TYPE_VISUAL_SHADER_NODE_VEC4_CONSTANT_INDEX:
+    //   result = visual_shader_model->set_data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec4ConstantFieldNumber), FieldPath::FieldNumber(VisualShaderNodeVec4Constant::kXFieldNumber)), 0.0f);
+    //   CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to set vec4 constant X");
+    //   result = visual_shader_model->set_data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec4ConstantFieldNumber), FieldPath::FieldNumber(VisualShaderNodeVec4Constant::kYFieldNumber)), 0.0f);
+    //   CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to set vec4 constant Y");
+    //   result = visual_shader_model->set_data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec4ConstantFieldNumber), FieldPath::FieldNumber(VisualShaderNodeVec4Constant::kZFieldNumber)), 0.0f);
+    //   CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to set vec4 constant Z");
+    //   result = visual_shader_model->set_data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec4ConstantFieldNumber), FieldPath::FieldNumber(VisualShaderNodeVec4Constant::kWFieldNumber)), 0.0f);
+    //   CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to set vec4 constant W");
+    //   break;
+    // case VARIANT_NODE_TYPE_VISUAL_SHADER_NODE_VALUE_NOISE_INDEX:
+    //   result = visual_shader_model->set_data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kValueNoiseFieldNumber), FieldPath::FieldNumber(VisualShaderNodeValueNoise::kScaleFieldNumber)), 0.0f);
+    //   CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to set value noise scale");
+    //   break;
+    // case VARIANT_NODE_TYPE_VISUAL_SHADER_NODE_PERLIN_NOISE_INDEX:
+    //   result = visual_shader_model->set_data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kPerlinNoiseFieldNumber), FieldPath::FieldNumber(VisualShaderNodePerlinNoise::kScaleFieldNumber)), 0.0f);
+    //   CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to set perlin noise scale");
+    //   break;
+    // case VARIANT_NODE_TYPE_VISUAL_SHADER_NODE_VORONOI_NOISE_INDEX:
+    //   result = visual_shader_model->set_data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVoronoiNoiseFieldNumber), FieldPath::FieldNumber(VisualShaderNodeVoronoiNoise::kAngleOffsetFieldNumber)), 0.0f);
+    //   CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to set voronoi noise angle offset");
+    //   result = visual_shader_model->set_data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVoronoiNoiseFieldNumber), FieldPath::FieldNumber(VisualShaderNodeVoronoiNoise::kCellDensityFieldNumber)), 0.0f);
+    //   CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to set voronoi noise cell density");
+    //   break;
+  //   default:
+  //     FAIL_AND_RETURN_NON_VOID(false, "Unknown node type");
   // }
 
-  // QList<QGraphicsView*> views{this->views()};
-  // if (views.isEmpty()) {
-  //   DEBUG_PRINT("No views available");
-  //   return false;
-  // }
+  CHECK_CONDITION_TRUE_NON_VOID(node_graphics_objects.find(n_id) != node_graphics_objects.end(), false, "Graphics node object already exists");
 
-  // // The output node cannot be removed or added by the user
-  // if (n_id >= (int)VisualShader::NODE_ID_OUTPUT + 1) {
-  //   bool result{vs->add_node(n, {(float)coordinate.x(), (float)coordinate.y()}, n_id)};
+  QList<QGraphicsView*> views{this->views()};
+  if (views.isEmpty()) {
+    DEBUG_PRINT("No views available");
+    return false;
+  }
 
-  //   if (!result) {
-  //     return false;
-  //   }
-  // }
+  VisualShaderGraphicsView* view{dynamic_cast<VisualShaderGraphicsView*>(views.first())};
 
-  // VisualShaderGraphicsView* view{dynamic_cast<VisualShaderGraphicsView*>(views.first())};
+  if (coordinate.x() < view->get_x() ||
+      coordinate.x() > view->get_x() + view->get_width() ||
+      coordinate.y() < view->get_y() ||
+      coordinate.y() > view->get_y() + view->get_height()) {
+    DEBUG_PRINT("Node is out of view bounds");
+  }
 
-  // if (vs->get_node_coordinate(n_id).x < view->get_x() ||
-  //     vs->get_node_coordinate(n_id).x > view->get_x() + view->get_width() ||
-  //     vs->get_node_coordinate(n_id).y < view->get_y() ||
-  //     vs->get_node_coordinate(n_id).y > view->get_y() + view->get_height()) {
-  //   DEBUG_PRINT("Node is out of view bounds");
-  // }
+  std::vector<std::string> in_port_captions;
+  std::vector<std::string> out_port_captions;
+  in_port_captions.resize(graph_node->get_input_port_count());
+  out_port_captions.resize(graph_node->get_output_port_count());
 
-  // VisualShaderNodeGraphicsObject* n_o{new VisualShaderNodeGraphicsObject(n_id, coordinate, n)};
+  for (int i{0}; i < (int)in_port_captions.size(); i++) in_port_captions.at(i) = graph_node->get_input_port_caption(i);
+  for (int i{0}; i < (int)out_port_captions.size(); i++) out_port_captions.at(i) = graph_node->get_output_port_caption(i);
 
-  // QObject::connect(n_o, &VisualShaderNodeGraphicsObject::node_moved, this, &VisualShaderGraphicsScene::on_node_moved);
-  // QObject::connect(n_o, &VisualShaderNodeGraphicsObject::in_port_pressed, this,
-  //                  &VisualShaderGraphicsScene::on_port_pressed);
-  // QObject::connect(n_o, &VisualShaderNodeGraphicsObject::in_port_dragged, this,
-  //                  &VisualShaderGraphicsScene::on_port_dragged);
-  // QObject::connect(n_o, &VisualShaderNodeGraphicsObject::in_port_dropped, this,
-  //                  &VisualShaderGraphicsScene::on_port_dropped);
-  // QObject::connect(n_o, &VisualShaderNodeGraphicsObject::out_port_pressed, this,
-  //                  &VisualShaderGraphicsScene::on_port_pressed);
-  // QObject::connect(n_o, &VisualShaderNodeGraphicsObject::out_port_dragged, this,
-  //                  &VisualShaderGraphicsScene::on_port_dragged);
-  // QObject::connect(n_o, &VisualShaderNodeGraphicsObject::out_port_dropped, this,
-  //                  &VisualShaderGraphicsScene::on_port_dropped);
+  VisualShaderNodeGraphicsObject* n_o{new VisualShaderNodeGraphicsObject(n_id, coordinate, graph_node->get_caption(), in_port_captions, out_port_captions)};
 
-  // QObject::connect(n_o, &VisualShaderNodeGraphicsObject::scene_update_requested, this,
-  //                  &VisualShaderGraphicsScene::on_scene_update_requested);
-  // QObject::connect(n_o, &VisualShaderNodeGraphicsObject::in_port_remove_requested, this,
-  //                  &VisualShaderGraphicsScene::on_in_port_remove_requested);
-  // QObject::connect(n_o, &VisualShaderNodeGraphicsObject::out_port_remove_requested, this,
-  //                  &VisualShaderGraphicsScene::on_out_port_remove_requested);
+  QObject::connect(n_o, &VisualShaderNodeGraphicsObject::node_moved, this, &VisualShaderGraphicsScene::on_node_moved);
+  QObject::connect(n_o, &VisualShaderNodeGraphicsObject::in_port_pressed, this,
+                   &VisualShaderGraphicsScene::on_port_pressed);
+  QObject::connect(n_o, &VisualShaderNodeGraphicsObject::in_port_dragged, this,
+                   &VisualShaderGraphicsScene::on_port_dragged);
+  QObject::connect(n_o, &VisualShaderNodeGraphicsObject::in_port_dropped, this,
+                   &VisualShaderGraphicsScene::on_port_dropped);
+  QObject::connect(n_o, &VisualShaderNodeGraphicsObject::out_port_pressed, this,
+                   &VisualShaderGraphicsScene::on_port_pressed);
+  QObject::connect(n_o, &VisualShaderNodeGraphicsObject::out_port_dragged, this,
+                   &VisualShaderGraphicsScene::on_port_dragged);
+  QObject::connect(n_o, &VisualShaderNodeGraphicsObject::out_port_dropped, this,
+                   &VisualShaderGraphicsScene::on_port_dropped);
 
-  // if (n_id != (int)VisualShader::NODE_ID_OUTPUT) {
-  //   VisualShaderNodeEmbedWidget* embed_widget{new VisualShaderNodeEmbedWidget(n)};
-  //   QGraphicsProxyWidget* embed_widget_proxy{new QGraphicsProxyWidget(n_o)};
-  //   embed_widget_proxy->setWidget(embed_widget);
-  //   n_o->set_embed_widget(embed_widget);
-  //   QObject::connect(embed_widget, &VisualShaderNodeEmbedWidget::shader_preview_update_requested, this,
-  //                    &VisualShaderGraphicsScene::on_update_shader_previewer_widgets_requested);
+  QObject::connect(n_o, &VisualShaderNodeGraphicsObject::scene_update_requested, this,
+                   &VisualShaderGraphicsScene::on_scene_update_requested);
+  QObject::connect(n_o, &VisualShaderNodeGraphicsObject::in_port_remove_requested, this,
+                   &VisualShaderGraphicsScene::on_in_port_remove_requested);
+  QObject::connect(n_o, &VisualShaderNodeGraphicsObject::out_port_remove_requested, this,
+                   &VisualShaderGraphicsScene::on_out_port_remove_requested);
 
-  //   QObject::connect(embed_widget, &VisualShaderNodeEmbedWidget::node_update_requested, n_o,
-  //                    &VisualShaderNodeGraphicsObject::on_node_update_requested);
+  VisualShaderNodeEmbedWidget* embed_widget{new VisualShaderNodeEmbedWidget(visual_shader_model, nodes_model, n_id, graph_node)};
+  QGraphicsProxyWidget* embed_widget_proxy{new QGraphicsProxyWidget(n_o)};
+  embed_widget_proxy->setWidget(embed_widget);
+  n_o->set_embed_widget(embed_widget);
+  QObject::connect(embed_widget, &VisualShaderNodeEmbedWidget::shader_preview_update_requested, this,
+                    &VisualShaderGraphicsScene::on_update_shader_previewer_widgets_requested);
 
-  //   // Send the shader previewer widget
-  //   embed_widget->set_shader_previewer_widget(n_o->get_shader_previewer_widget());
-  // }
+  QObject::connect(embed_widget, &VisualShaderNodeEmbedWidget::node_update_requested, n_o,
+                    &VisualShaderNodeGraphicsObject::on_node_update_requested);
 
-  // if (ShaderPreviewerWidget * spw{n_o->get_shader_previewer_widget()}) {
+  // Send the shader previewer widget
+  // embed_widget->set_shader_previewer_widget(n_o->get_shader_previewer_widget());
+
+  // if (ShaderPreviewerWidget* spw{n_o->get_shader_previewer_widget()}) {
   //   QObject::connect(spw, &ShaderPreviewerWidget::scene_update_requested, this,
   //                    &VisualShaderGraphicsScene::on_scene_update_requested);
   // }
 
-  // QObject::connect(n_o, &VisualShaderNodeGraphicsObject::node_deleted, this,
-  //                  &VisualShaderGraphicsScene::on_node_deleted);
+  QObject::connect(n_o, &VisualShaderNodeGraphicsObject::node_deleted, this,
+                   &VisualShaderGraphicsScene::on_node_deleted);
 
-  // node_graphics_objects[n_id] = n_o;
+  node_graphics_objects[n_id] = n_o;
 
-  // addItem(n_o);
-
-  return VisualShaderGraphicsScene::add_node(coordinate);
-}
-
-bool VisualShaderGraphicsScene::add_node(const QPointF& coordinate) {
-  
+  addItem(n_o);
 
   return true;
 }
 
-bool VisualShaderGraphicsScene::delete_node(const int& n_id) {
-  // const std::shared_ptr<VisualShaderNode> n{vs->get_node(n_id)};
+bool VisualShaderGraphicsScene::delete_node(const int& n_id, const int& in_port_count, const int& out_port_count) {
+  int row_entry{find_node_entry(visual_shader_model, nodes_model, n_id)};
+  VALIDATE_INDEX_NON_VOID(row_entry, nodes_model->rowCount(), false, "Node entry not found");
 
-  // if (!n) {
-  //   return false;
-  // }
+  VisualShaderNodeGraphicsObject* n_o{this->get_node_graphics_object(n_id)};
+  CHECK_PARAM_NULLPTR_NON_VOID(n_o, false, "Node graphics object is null");
 
-  // VisualShaderNodeGraphicsObject* n_o{this->get_node_graphics_object(n_id)};
+  // Remove all connections to the node
+  for (int i{0}; i < in_port_count; i++) {
+    VisualShaderInputPortGraphicsObject* i_port{n_o->get_input_port_graphics_object(i)};
+    SILENT_CONTINUE_IF_TRUE(!i_port || !i_port->is_connected());
 
-  // if (!n_o) {
-  //   return false;
-  // }
+    // Get the output port of the connection
+    VisualShaderConnectionGraphicsObject* c_o{i_port->get_connection_graphics_object()};
+    SILENT_CONTINUE_IF_TRUE(!c_o);
 
-  // // Remove all connections to the node
-  // for (int i{0}; i < n->get_input_port_count(); i++) {
-  //   VisualShaderInputPortGraphicsObject* i_port{n_o->get_input_port_graphics_object(i)};
+    bool result{this->delete_connection(c_o->get_from_node_id(), c_o->get_from_port_index(), n_id, i)};
+    CONTINUE_IF_TRUE(!result, "Failed to delete connection");
+  }
 
-  //   if (!i_port || !i_port->is_connected()) {
-  //     continue;
-  //   }
+  for (int i{0}; i < out_port_count; i++) {
+    VisualShaderOutputPortGraphicsObject* o_port{n_o->get_output_port_graphics_object(i)};
+    SILENT_CONTINUE_IF_TRUE(!o_port || !o_port->is_connected());
 
-  //   // Get the output port of the connection
-  //   VisualShaderConnectionGraphicsObject* c_o{i_port->get_connection_graphics_object()};
+    std::vector<VisualShaderConnectionGraphicsObject*> c_os{o_port->get_connection_graphics_objects()};
 
-  //   if (!c_o) {
-  //     continue;
-  //   }
+    for (VisualShaderConnectionGraphicsObject* c_o : c_os) {
+      SILENT_CONTINUE_IF_TRUE(!c_o);
 
-  //   bool result{this->delete_connection(c_o->get_from_node_id(), c_o->get_from_port_index(), n_id, i)};
+      bool result{this->delete_connection(n_id, i, c_o->get_to_node_id(), c_o->get_to_port_index())};
+      CONTINUE_IF_TRUE(!result, "Failed to delete connection");
+    }
+  }
 
-  //   if (!result) {
-  //     DEBUG_PRINT("Failed to delete connection");
-  //     continue;
-  //   }
-  // }
+  // Remove the node from the model
+  bool result{nodes_model->remove_row(row_entry)};
+  CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to remove row");
 
-  // for (int i{0}; i < n->get_output_port_count(); i++) {
-  //   VisualShaderOutputPortGraphicsObject* o_port{n_o->get_output_port_graphics_object(i)};
-
-  //   if (!o_port || !o_port->is_connected()) {
-  //     continue;
-  //   }
-
-  //   std::vector<VisualShaderConnectionGraphicsObject*> c_os{o_port->get_connection_graphics_objects()};
-
-  //   for (VisualShaderConnectionGraphicsObject* c_o : c_os) {
-  //     if (!c_o) {
-  //       continue;
-  //     }
-
-  //     bool result{this->delete_connection(n_id, i, c_o->get_to_node_id(), c_o->get_to_port_index())};
-
-  //     if (!result) {
-  //       DEBUG_PRINT("Failed to delete connection");
-  //       continue;
-  //     }
-  //   }
-  // }
-
-  // bool result{vs->remove_node(n_id)};
-
-  // if (!result) {
-  //   return false;
-  // }
-
-  // // Remove the node from the scene
-  // // TODO: Why if we exchange the order of these two lines, the program crashes?
-  // this->node_graphics_objects.erase(n_id);
-  // remove_item(n_o);
+  // Remove the node from the scene
+  // TODO: Why if we exchange the order of these two lines, the program crashes?
+  int erased_count {(int)this->node_graphics_objects.erase(n_id)};
+  CHECK_CONDITION_TRUE_NON_VOID(erased_count == 0, false, "Failed to erase node graphics object");
+  
+  remove_item(n_o);
 
   return true;
 }
@@ -991,167 +1046,196 @@ void VisualShaderGraphicsScene::on_update_shader_previewer_widgets_requested() {
 void VisualShaderGraphicsScene::on_scene_update_requested() { update(); }
 
 void VisualShaderGraphicsScene::on_in_port_remove_requested(VisualShaderInputPortGraphicsObject* in_port) {
-  // if (in_port->is_connected()) {
-  //   VisualShaderConnectionGraphicsObject* c_o{in_port->get_connection_graphics_object()};
-  //   delete_connection(c_o->get_from_node_id(), c_o->get_from_port_index(), c_o->get_to_node_id(),
-  //                     c_o->get_to_port_index());
-  // }
+  if (in_port->is_connected()) {
+    VisualShaderConnectionGraphicsObject* c_o{in_port->get_connection_graphics_object()};
+    delete_connection(c_o->get_from_node_id(), c_o->get_from_port_index(), c_o->get_to_node_id(),
+                      c_o->get_to_port_index());
+  }
 
-  // remove_item(in_port);
+  remove_item(in_port);
 }
 
 void VisualShaderGraphicsScene::on_out_port_remove_requested(VisualShaderOutputPortGraphicsObject* out_port) {
-  // if (out_port->is_connected()) {
-  //   std::vector<VisualShaderConnectionGraphicsObject*> c_os{out_port->get_connection_graphics_objects()};
-  //   for (VisualShaderConnectionGraphicsObject* c_o : c_os) {
-  //     delete_connection(c_o->get_from_node_id(), c_o->get_from_port_index(), c_o->get_to_node_id(),
-  //                       c_o->get_to_port_index());
-  //   }
-  // }
+  if (out_port->is_connected()) {
+    std::vector<VisualShaderConnectionGraphicsObject*> c_os{out_port->get_connection_graphics_objects()};
+    for (VisualShaderConnectionGraphicsObject* c_o : c_os) {
+      delete_connection(c_o->get_from_node_id(), c_o->get_from_port_index(), c_o->get_to_node_id(),
+                        c_o->get_to_port_index());
+    }
+  }
 
-  // remove_item(out_port);
+  remove_item(out_port);
 }
 
-// bool VisualShaderGraphicsScene::add_connection(const int& from_node_id, const int& from_port_index,
-//                                                const int& to_node_id, const int& to_port_index) {
-//   QList<QGraphicsView*> views{this->views()};
-//   if (views.isEmpty()) {
-//     DEBUG_PRINT("No views available");
-//     return false;
-//   }
+int VisualShaderGraphicsScene::get_new_node_id(ProtoModel* visual_shader_model, ProtoModel* nodes_model) {
+  int size {nodes_model->rowCount()};
 
-//   // Create the connection and set its start
-//   VisualShaderNodeGraphicsObject* from_n_o{this->get_node_graphics_object(from_node_id)};
+  int max_id {0};
+  for (int i{0}; i < size; i++) {
+    // Path to the id field of the node
+    FieldPath path{FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(i), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kIdFieldNumber))};
+    int n_id {visual_shader_model->data(path).toInt()};
+    if (n_id > max_id) max_id = n_id;
+  }
 
-//   if (!from_n_o) {
-//     return false;
-//   }
+  return max_id + 1; // Minimum id is 1 (0 is reserved for the output node)
+}
 
-//   VisualShaderOutputPortGraphicsObject* from_o_port{from_n_o->get_output_port_graphics_object(from_port_index)};
+int VisualShaderGraphicsScene::get_new_connection_id(ProtoModel* visual_shader_model, ProtoModel* connections_model) {
+  int size {connections_model->rowCount()};
 
-//   if (!from_o_port) {
-//     return false;
-//   }
+  int max_id {-1};
+  for (int i{0}; i < size; i++) {
+    // Path to the id field of the connection
+    FieldPath path{FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kConnectionsFieldNumber), FieldPath::RepeatedAt(i), FieldPath::FieldNumber(VisualShader::VisualShaderConnection::kIdFieldNumber))};
+    int c_id {visual_shader_model->data(path).toInt()};
+    if (c_id > max_id) max_id = c_id;
+  }
 
-//   VisualShaderGraphicsView* view{dynamic_cast<VisualShaderGraphicsView*>(views.first())};
+  return max_id + 1;
+}
 
-//   if (from_o_port->get_global_coordinate().x() < view->get_x() ||
-//       from_o_port->get_global_coordinate().x() > view->get_x() + view->get_width()) {
-//     DEBUG_PRINT("Start of connection is out of view bounds");
-//   }
+int VisualShaderGraphicsScene::find_node_entry(ProtoModel* visual_shader_model, ProtoModel* nodes_model, const int& n_id) {
+  int size {nodes_model->rowCount()};
 
-//   if (!this->temporary_connection_graphics_object) {
-//     this->temporary_connection_graphics_object =
-//         new VisualShaderConnectionGraphicsObject(from_node_id, from_port_index, from_o_port->get_global_coordinate());
-//     from_o_port->connect(this->temporary_connection_graphics_object);
-//     addItem(this->temporary_connection_graphics_object);
-//     return true;
-//   }
+  for (int i{0}; i < size; i++) {
+    // Path to the id field of the node
+    FieldPath path{FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(i), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kIdFieldNumber))};
+    if (visual_shader_model->data(path).toInt() == n_id) return i;
+  }
 
-//   if (to_node_id != (int)VisualShader::NODE_ID_INVALID && to_port_index != (int)VisualShader::PORT_INDEX_INVALID) {
-//     // Set the end of the connection
-//     VisualShaderNodeGraphicsObject* to_n_o{this->get_node_graphics_object(to_node_id)};
+  return -1;
+}
 
-//     if (!to_n_o) {
-//       return false;
-//     }
+int VisualShaderGraphicsScene::find_connection_entry(ProtoModel* visual_shader_model, ProtoModel* connections_model, const int& c_id) {
+  int size {connections_model->rowCount()};
 
-//     VisualShaderInputPortGraphicsObject* to_i_port{to_n_o->get_input_port_graphics_object(to_port_index)};
+  for (int i{0}; i < size; i++) {
+    // Path to the id field of the connection
+    FieldPath path{FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kConnectionsFieldNumber), FieldPath::RepeatedAt(i), FieldPath::FieldNumber(VisualShader::VisualShaderConnection::kIdFieldNumber))};
+    if (visual_shader_model->data(path).toInt() == c_id) return i;
+  }
 
-//     if (!to_i_port) {
-//       return false;
-//     }
+  return -1;
+}
 
-//     if (to_i_port->get_global_coordinate().y() < view->get_y() ||
-//         to_i_port->get_global_coordinate().y() > view->get_y() + view->get_height()) {
-//       DEBUG_PRINT("End of connection is out of view bounds");
-//     }
+bool VisualShaderGraphicsScene::add_connection(const int& from_node_id, const int& from_port_index,
+                                               const int& to_node_id, const int& to_port_index) {
+  QList<QGraphicsView*> views{this->views()};
+  CHECK_CONDITION_TRUE_NON_VOID(views.isEmpty(), false, "No views available");
 
-//     // Connect the nodes in the VisualShader
-//     bool result{vs->can_connect_nodes(from_node_id, from_port_index, to_node_id, to_port_index)};
-//     if (!result) {
-//       DEBUG_PRINT("Can't connect nodes");
-//       return false;
-//     }
+  // Create the connection and set its start
+  VisualShaderNodeGraphicsObject* from_n_o{this->get_node_graphics_object(from_node_id)};
+  CHECK_PARAM_NULLPTR_NON_VOID(from_n_o, false, "Failed to get from node graphics object");
 
-//     result = vs->connect_nodes(from_node_id, from_port_index, to_node_id, to_port_index);
-//     if (!result) {
-//       DEBUG_PRINT("Failed to connect nodes");
-//       return false;
-//     }
+  VisualShaderOutputPortGraphicsObject* from_o_port{from_n_o->get_output_port_graphics_object(from_port_index)};
+  CHECK_PARAM_NULLPTR_NON_VOID(from_o_port, false, "Failed to get from output port graphics object");
 
-//     this->temporary_connection_graphics_object->set_end_coordinate(to_i_port->get_global_coordinate());
-//     to_i_port->connect(this->temporary_connection_graphics_object);
-//     this->temporary_connection_graphics_object->set_to_node_id(to_node_id);
-//     this->temporary_connection_graphics_object->set_to_port_index(to_port_index);
-//     this->temporary_connection_graphics_object = nullptr;  // Make sure to reset the temporary connection object
+  VisualShaderGraphicsView* view{dynamic_cast<VisualShaderGraphicsView*>(views.first())};
 
-//     on_update_shader_previewer_widgets_requested();
+  if (from_o_port->get_global_coordinate().x() < view->get_x() ||
+      from_o_port->get_global_coordinate().x() > view->get_x() + view->get_width()) {
+    DEBUG_PRINT("Start of connection is out of view bounds");
+  }
 
-//     return true;
-//   }
+  if (!this->temporary_connection_graphics_object) {
+    int c_id{get_new_connection_id(visual_shader_model, connections_model)};
+    this->temporary_connection_graphics_object =
+        new VisualShaderConnectionGraphicsObject(c_id, from_node_id, from_port_index, from_o_port->get_global_coordinate());
+    from_o_port->connect(this->temporary_connection_graphics_object);
+    addItem(this->temporary_connection_graphics_object);
+    return true;
+  }
 
-//   return false;
-// }
+  if (to_node_id != -1 && to_port_index != -1) {
+    // Set the end of the connection
+    VisualShaderNodeGraphicsObject* to_n_o{this->get_node_graphics_object(to_node_id)};
+    CHECK_PARAM_NULLPTR_NON_VOID(to_n_o, false, "Failed to get to node graphics object");
 
-// bool VisualShaderGraphicsScene::delete_connection(const int& from_node_id, const int& from_port_index,
-//                                                   const int& to_node_id, const int& to_port_index) {
-//   VisualShaderNodeGraphicsObject* from_n_o{this->get_node_graphics_object(from_node_id)};
+    VisualShaderInputPortGraphicsObject* to_i_port{to_n_o->get_input_port_graphics_object(to_port_index)};
+    CHECK_PARAM_NULLPTR_NON_VOID(to_i_port, false, "Failed to get to input port graphics object");
 
-//   if (!from_n_o) {
-//     return false;
-//   }
+    if (to_i_port->get_global_coordinate().y() < view->get_y() ||
+        to_i_port->get_global_coordinate().y() > view->get_y() + view->get_height()) {
+      DEBUG_PRINT("End of connection is out of view bounds");
+    }
 
-//   VisualShaderOutputPortGraphicsObject* from_o_port{from_n_o->get_output_port_graphics_object(from_port_index)};
+    int c_id{get_new_connection_id(visual_shader_model, connections_model)};
 
-//   if (!from_o_port) {
-//     return false;
-//   }
+    int row_entry{connections_model->append_row()};
 
-//   if (this->temporary_connection_graphics_object) {
-//     from_o_port->detach_connection(this->temporary_connection_graphics_object);
-//     remove_item(this->temporary_connection_graphics_object);
-//     this->temporary_connection_graphics_object = nullptr;
-//     return true;
-//   }
+    bool result = visual_shader_model->set_data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kConnectionsFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderConnection::kIdFieldNumber)), c_id);
+    CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to set connection id");
 
-//   // If we have a complete connection, then we can disconnect the nodes
-//   if (to_node_id != (int)VisualShader::NODE_ID_INVALID && to_port_index != (int)VisualShader::PORT_INDEX_INVALID) {
-//     VisualShaderConnectionGraphicsObject* c_o{from_o_port->get_connection_graphics_object(to_node_id, to_port_index)};
+    result = visual_shader_model->set_data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kConnectionsFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderConnection::kFromNodeIdFieldNumber)), from_node_id);
+    CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to set connection from node id");
 
-//     if (!c_o) {
-//       return false;
-//     }
+    result = visual_shader_model->set_data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kConnectionsFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderConnection::kFromPortIndexFieldNumber)), from_port_index);
+    CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to set connection from port index");
 
-//     VisualShaderNodeGraphicsObject* to_n_o{this->get_node_graphics_object(to_node_id)};
+    result = visual_shader_model->set_data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kConnectionsFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderConnection::kToNodeIdFieldNumber)), to_node_id);
+    CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to set connection to node id");
 
-//     if (!to_n_o) {
-//       return false;
-//     }
+    result = visual_shader_model->set_data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kConnectionsFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderConnection::kToPortIndexFieldNumber)), to_port_index);
+    CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to set connection to port index");
 
-//     VisualShaderInputPortGraphicsObject* to_i_port{to_n_o->get_input_port_graphics_object(to_port_index)};
+    this->temporary_connection_graphics_object->set_end_coordinate(to_i_port->get_global_coordinate());
+    to_i_port->connect(this->temporary_connection_graphics_object);
+    this->temporary_connection_graphics_object->set_to_node_id(to_node_id);
+    this->temporary_connection_graphics_object->set_to_port_index(to_port_index);
+    this->temporary_connection_graphics_object = nullptr;  // Make sure to reset the temporary connection object
 
-//     if (!to_i_port) {
-//       return false;
-//     }
+    on_update_shader_previewer_widgets_requested();
 
-//     bool result{vs->disconnect_nodes(from_node_id, from_port_index, to_node_id, to_port_index)};
+    return true;
+  }
 
-//     if (!result) {
-//       return false;
-//     }
+  return false;
+}
 
-//     to_i_port->detach_connection();
-//     from_o_port->detach_connection(c_o);
-//     remove_item(c_o);
+bool VisualShaderGraphicsScene::delete_connection(const int& c_id, const int& from_node_id, const int& from_port_index,
+                                                  const int& to_node_id, const int& to_port_index) {
+  VisualShaderNodeGraphicsObject* from_n_o{this->get_node_graphics_object(from_node_id)};
+  CHECK_PARAM_NULLPTR_NON_VOID(from_n_o, false, "Failed to get from node graphics object");
 
-//     on_update_shader_previewer_widgets_requested();
+  VisualShaderOutputPortGraphicsObject* from_o_port{from_n_o->get_output_port_graphics_object(from_port_index)};
+  CHECK_PARAM_NULLPTR_NON_VOID(from_o_port, false, "Failed to get from output port graphics object");
 
-//     return true;
-//   }
+  if (this->temporary_connection_graphics_object) {
+    from_o_port->detach_connection(this->temporary_connection_graphics_object);
+    remove_item(this->temporary_connection_graphics_object);
+    this->temporary_connection_graphics_object = nullptr;
+    return true;
+  }
 
-//   return false;
-// }
+  // If we have a complete connection, then we can disconnect the nodes
+  if (to_node_id != -1 && to_port_index != -1) {
+    VisualShaderConnectionGraphicsObject* c_o{from_o_port->get_connection_graphics_object(to_node_id, to_port_index)};
+    CHECK_PARAM_NULLPTR_NON_VOID(c_o, false, "Failed to get connection graphics object");
+
+    VisualShaderNodeGraphicsObject* to_n_o{this->get_node_graphics_object(to_node_id)};
+    CHECK_PARAM_NULLPTR_NON_VOID(to_n_o, false, "Failed to get to node graphics object");
+
+    VisualShaderInputPortGraphicsObject* to_i_port{to_n_o->get_input_port_graphics_object(to_port_index)};
+    CHECK_PARAM_NULLPTR_NON_VOID(to_i_port, false, "Failed to get to input port graphics object");
+
+    int row_entry{find_connection_entry(visual_shader_model, connections_model, c_id)};
+    VALIDATE_INDEX_NON_VOID(row_entry, connections_model->rowCount(), false, "Connection entry not found");
+
+    bool result{connections_model->remove_row(row_entry)};
+    CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to remove connection entry");
+
+    to_i_port->detach_connection();
+    from_o_port->detach_connection(c_o);
+    remove_item(c_o);
+
+    on_update_shader_previewer_widgets_requested();
+
+    return true;
+  }
+
+  return false;
+}
 
 VisualShaderNodeGraphicsObject* VisualShaderGraphicsScene::get_node_graphics_object(const int& n_id) const {
   VisualShaderNodeGraphicsObject* n_o{nullptr};
@@ -1164,204 +1248,182 @@ VisualShaderNodeGraphicsObject* VisualShaderGraphicsScene::get_node_graphics_obj
   return n_o;
 }
 
-void VisualShaderGraphicsScene::on_node_moved(const int& n_id, const QPointF& new_coordinate) {
-  // const std::shared_ptr<VisualShaderNode> n{vs->get_node(n_id)};
+void VisualShaderGraphicsScene::on_node_deleted(const int& n_id, const int& in_port_count, const int& out_port_count) {
+  CHECK_CONDITION_TRUE(n_id == 0, "Cannot delete the output node");
 
-  // if (!n) {
-  //   return;
-  // }
-
-  // // Update the node's coordinate in the VisualShader
-  // vs->set_node_coordinate(n_id, {(float)new_coordinate.x(), (float)new_coordinate.y()});
-
-  // // Update coordinates of all connected connections
-  // VisualShaderNodeGraphicsObject* n_o{this->get_node_graphics_object(n_id)};
-
-  // for (int i{0}; i < n->get_input_port_count(); i++) {
-  //   VisualShaderInputPortGraphicsObject* i_port{n_o->get_input_port_graphics_object(i)};
-
-  //   if (!i_port || !i_port->is_connected()) {
-  //     continue;
-  //   }
-
-  //   VisualShaderConnectionGraphicsObject* c_o{i_port->get_connection_graphics_object()};
-
-  //   if (!c_o) {
-  //     continue;
-  //   }
-
-  //   c_o->set_end_coordinate(i_port->get_global_coordinate());
-  // }
-
-  // for (int i{0}; i < n->get_output_port_count(); i++) {
-  //   VisualShaderOutputPortGraphicsObject* o_port{n_o->get_output_port_graphics_object(i)};
-
-  //   if (!o_port || !o_port->is_connected()) {
-  //     continue;
-  //   }
-
-  //   std::vector<VisualShaderConnectionGraphicsObject*> c_os{o_port->get_connection_graphics_objects()};
-
-  //   for (VisualShaderConnectionGraphicsObject* c_o : c_os) {
-  //     if (!c_o) {
-  //       continue;
-  //     }
-
-  //     c_o->set_start_coordinate(o_port->get_global_coordinate());
-  //   }
-  // }
+  bool result{delete_node(n_id, in_port_count, out_port_count)};
+  if (!result) {
+    DEBUG_PRINT("Failed to delete node");
+  }
 }
 
-void VisualShaderGraphicsScene::on_node_deleted(const int& n_id) {
-  // if (n_id == (int)VisualShader::NODE_ID_OUTPUT) {
-  //   return;
-  // }
-
-  // bool result{this->delete_node(n_id)};
-
-  // if (!result) {
-  //   DEBUG_PRINT("Failed to delete node");
-  // }
+void VisualShaderGraphicsScene::on_port_pressed(QGraphicsObject* port, const QPointF& coordinate) {
+  this->temporary_connection_graphics_object = nullptr;  // Reset the temporary connection object
 }
 
-// void VisualShaderGraphicsScene::on_port_pressed(QGraphicsObject* port, const QPointF& coordinate) {
-//   this->temporary_connection_graphics_object = nullptr;  // Reset the temporary connection object
-// }
+void VisualShaderGraphicsScene::on_port_dragged(QGraphicsObject* port, const QPointF& coordinate) {
+  VisualShaderConnectionGraphicsObject* c_o{nullptr};
 
-// void VisualShaderGraphicsScene::on_port_dragged(QGraphicsObject* port, const QPointF& coordinate) {
-//   VisualShaderConnectionGraphicsObject* c_o{nullptr};
+  VisualShaderOutputPortGraphicsObject* o_port{dynamic_cast<VisualShaderOutputPortGraphicsObject*>(port)};
 
-//   VisualShaderOutputPortGraphicsObject* o_port{dynamic_cast<VisualShaderOutputPortGraphicsObject*>(port)};
+  if (!o_port) {
+    VisualShaderInputPortGraphicsObject* i_port{dynamic_cast<VisualShaderInputPortGraphicsObject*>(port)};
+    SILENT_CHECK_PARAM_NULLPTR(i_port);
 
-//   if (!o_port) {
-//     VisualShaderInputPortGraphicsObject* i_port{dynamic_cast<VisualShaderInputPortGraphicsObject*>(port)};
+    if (i_port->is_connected() && !temporary_connection_graphics_object) {
+      c_o = i_port->get_connection_graphics_object();
+      temporary_connection_graphics_object = c_o;  // Store the connection object for access in the next drag call
+      int c_id{c_o->get_id()};
+      int row_entry{find_connection_entry(visual_shader_model, connections_model, c_id)};
+      VALIDATE_INDEX(row_entry, connections_model->rowCount(), "Connection entry not found");
+      bool result{connections_model->remove_row(row_entry)};
+      if (!result) {
+        DEBUG_PRINT("Failed to remove connection entry");
+      }
+      i_port->detach_connection();
+      c_o->detach_end();
 
-//     if (!i_port) {
-//       return;
-//     }
+      on_update_shader_previewer_widgets_requested();
+    } else if (!i_port->is_connected() && temporary_connection_graphics_object) {
+      c_o = temporary_connection_graphics_object;
+      on_scene_update_requested();
+    } else {
+      return;
+    }
 
-//     if (i_port->is_connected() && !temporary_connection_graphics_object) {
-//       c_o = i_port->get_connection_graphics_object();
-//       temporary_connection_graphics_object = c_o;  // Store the connection object for access in the next drag call
-//       bool result{vs->disconnect_nodes(c_o->get_from_node_id(), c_o->get_from_port_index(), c_o->get_to_node_id(),
-//                                        c_o->get_to_port_index())};
-//       if (!result) {
-//         DEBUG_PRINT("Failed to disconnect nodes");
-//       }
-//       i_port->detach_connection();
-//       c_o->detach_end();
+    c_o->set_end_coordinate(coordinate);
 
-//       on_update_shader_previewer_widgets_requested();
-//     } else if (!i_port->is_connected() && temporary_connection_graphics_object) {
-//       c_o = temporary_connection_graphics_object;
-//       on_scene_update_requested();
-//     } else {
-//       return;
-//     }
+    return;
+  }
 
-//     c_o->set_end_coordinate(coordinate);
+  if (o_port->is_connected() && temporary_connection_graphics_object) {
+    c_o = temporary_connection_graphics_object;
+  } else if (!temporary_connection_graphics_object) {
+    bool result{this->add_connection(o_port->get_node_id(), o_port->get_port_index())};
+    CHECK_CONDITION_TRUE(!result, "Failed to add connection");
+    c_o = temporary_connection_graphics_object;
+  } else {
+    return;
+  }
 
-//     return;
-//   }
+  c_o->set_end_coordinate(coordinate);
+}
 
-//   if (o_port->is_connected() && temporary_connection_graphics_object) {
-//     c_o = temporary_connection_graphics_object;
-//   } else if (!temporary_connection_graphics_object) {
-//     bool result{this->add_connection(o_port->get_node_id(), o_port->get_port_index())};
-//     if (!result) {
-//       DEBUG_PRINT("Failed to add connection");
-//       return;
-//     }
-//     c_o = temporary_connection_graphics_object;
-//   } else {
-//     return;
-//   }
+void VisualShaderGraphicsScene::on_port_dropped(QGraphicsObject* port, const QPointF& coordinate) {
+  VisualShaderConnectionGraphicsObject* c_o{temporary_connection_graphics_object};
+  SILENT_CHECK_PARAM_NULLPTR(c_o);
 
-//   c_o->set_end_coordinate(coordinate);
-// }
+  // Find all items under the coordinate
+  QList<QGraphicsItem*> items_at_coordinate{this->items(coordinate)};
 
-// void VisualShaderGraphicsScene::on_port_dropped(QGraphicsObject* port, const QPointF& coordinate) {
-//   if (!temporary_connection_graphics_object) {
-//     return;
-//   }
+  // Iterate through the items and check if an input port is under the mouse
+  VisualShaderInputPortGraphicsObject* in_p_o{nullptr};
+  for (QGraphicsItem* item : items_at_coordinate) {
+    // Check if the item is an input port
+    in_p_o = dynamic_cast<VisualShaderInputPortGraphicsObject*>(item);
+    SILENT_BREAK_IF_TRUE(in_p_o);
+  }
 
-//   // Find all items under the coordinate
-//   QList<QGraphicsItem*> items_at_coordinate{this->items(coordinate)};
+  VisualShaderOutputPortGraphicsObject* o_port{dynamic_cast<VisualShaderOutputPortGraphicsObject*>(port)};
 
-//   // Iterate through the items and check if an input port is under the mouse
-//   VisualShaderInputPortGraphicsObject* in_p_o{nullptr};
-//   for (QGraphicsItem* item : items_at_coordinate) {
-//     // Check if the item is an input port
-//     in_p_o = dynamic_cast<VisualShaderInputPortGraphicsObject*>(item);
+  if (!o_port) {
+    VisualShaderInputPortGraphicsObject* i_port{dynamic_cast<VisualShaderInputPortGraphicsObject*>(port)};
+    SILENT_CHECK_PARAM_NULLPTR(i_port);
 
-//     if (in_p_o) {
-//       break;
-//     }
-//   }
+    if (!in_p_o) {
+      int c_id{c_o->get_id()};
+      bool result{this->delete_connection(c_id, c_o->get_from_node_id(),
+                               c_o->get_from_port_index())};
+      if (!result) {
+        DEBUG_PRINT("Failed to delete connection");
+      }
 
-//   VisualShaderOutputPortGraphicsObject* o_port{dynamic_cast<VisualShaderOutputPortGraphicsObject*>(port)};
+      return;  // Return because we dragging an input port and dropped on nothing
+    }
 
-//   if (!o_port) {
-//     VisualShaderInputPortGraphicsObject* i_port{dynamic_cast<VisualShaderInputPortGraphicsObject*>(port)};
+    bool result{add_connection(c_o->get_from_node_id(),
+                               c_o->get_from_port_index(), in_p_o->get_node_id(),
+                               in_p_o->get_port_index())};
 
-//     if (!i_port) {
-//       return;
-//     }
+    if (!result) {
+      int c_id{c_o->get_id()};
+      bool result{this->delete_connection(c_id, c_o->get_from_node_id(),
+                                          c_o->get_from_port_index())};
 
-//     if (!in_p_o) {
-//       bool result{this->delete_connection(temporary_connection_graphics_object->get_from_node_id(),
-//                                           temporary_connection_graphics_object->get_from_port_index())};
+      if (!result) {
+        DEBUG_PRINT("Failed to delete connection");
+      }
 
-//       if (!result) {
-//         DEBUG_PRINT("Failed to delete connection");
-//       }
+      return;  // Return because we dragging an input port and dropped on nothing
+    }
 
-//       return;  // Return because we dragging an input port and dropped on nothing
-//     }
+    return;
+  }
 
-//     bool result{add_connection(temporary_connection_graphics_object->get_from_node_id(),
-//                                temporary_connection_graphics_object->get_from_port_index(), in_p_o->get_node_id(),
-//                                in_p_o->get_port_index())};
+  if (!in_p_o) {
+    int c_id{c_o->get_id()};
+    bool result{this->delete_connection(c_id, c_o->get_from_node_id(),
+                                        c_o->get_from_port_index())};
 
-//     if (!result) {
-//       bool result{this->delete_connection(temporary_connection_graphics_object->get_from_node_id(),
-//                                           temporary_connection_graphics_object->get_from_port_index())};
+    if (!result) {
+      DEBUG_PRINT("Failed to delete connection");
+    }
 
-//       if (!result) {
-//         DEBUG_PRINT("Failed to delete connection");
-//       }
+    return;  // Return because we dragging an output port and dropped on nothing
+  }
 
-//       return;  // Return because we dragging an input port and dropped on nothing
-//     }
+  bool result{
+      add_connection(o_port->get_node_id(), o_port->get_port_index(), in_p_o->get_node_id(), in_p_o->get_port_index())};
 
-//     return;
-//   }
+  if (!result) {
+    int c_id{c_o->get_id()};
+    bool result{this->delete_connection(c_id, c_o->get_from_node_id(),
+                                        c_o->get_from_port_index())};
 
-//   if (!in_p_o) {
-//     bool result{this->delete_connection(temporary_connection_graphics_object->get_from_node_id(),
-//                                         temporary_connection_graphics_object->get_from_port_index())};
+    if (!result) {
+      DEBUG_PRINT("Failed to delete connection");
+    }
 
-//     if (!result) {
-//       DEBUG_PRINT("Failed to delete connection");
-//     }
+    return;
+  }
+}
 
-//     return;  // Return because we dragging an output port and dropped on nothing
-//   }
+void VisualShaderGraphicsScene::on_node_moved(const int& n_id, const int& in_port_count, const int& out_port_count, const QPointF& new_coordinate) {
+  int row_entry{find_node_entry(visual_shader_model, nodes_model, n_id)};
+  VALIDATE_INDEX(row_entry, nodes_model->rowCount(), "Node entry not found");
 
-//   bool result{
-//       add_connection(o_port->get_node_id(), o_port->get_port_index(), in_p_o->get_node_id(), in_p_o->get_port_index())};
+  bool result = visual_shader_model->set_data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kXCoordinateFieldNumber)), new_coordinate.x());
+  CHECK_CONDITION_TRUE(!result, "Failed to set node x coordinate");
 
-//   if (!result) {
-//     bool result{this->delete_connection(temporary_connection_graphics_object->get_from_node_id(),
-//                                         temporary_connection_graphics_object->get_from_port_index())};
+  result = visual_shader_model->set_data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kYCoordinateFieldNumber)), new_coordinate.y());
+  CHECK_CONDITION_TRUE(!result, "Failed to set node y coordinate");
 
-//     if (!result) {
-//       DEBUG_PRINT("Failed to delete connection");
-//     }
+  // Update coordinates of all connected connections
+  VisualShaderNodeGraphicsObject* n_o{this->get_node_graphics_object(n_id)};
 
-//     return;
-//   }
-// }
+  for (int i{0}; i < in_port_count; i++) {
+    VisualShaderInputPortGraphicsObject* i_port{n_o->get_input_port_graphics_object(i)};
+    SILENT_CONTINUE_IF_TRUE(!i_port || !i_port->is_connected());
+
+    VisualShaderConnectionGraphicsObject* c_o{i_port->get_connection_graphics_object()};
+    SILENT_CONTINUE_IF_TRUE(!c_o);
+
+    c_o->set_end_coordinate(i_port->get_global_coordinate());
+  }
+
+  for (int i{0}; i < out_port_count; i++) {
+    VisualShaderOutputPortGraphicsObject* o_port{n_o->get_output_port_graphics_object(i)};
+    SILENT_CONTINUE_IF_TRUE(!o_port || !o_port->is_connected());
+
+    std::vector<VisualShaderConnectionGraphicsObject*> c_os{o_port->get_connection_graphics_objects()};
+
+    for (VisualShaderConnectionGraphicsObject* c_o : c_os) {
+      SILENT_CONTINUE_IF_TRUE(!c_o);
+
+      c_o->set_start_coordinate(o_port->get_global_coordinate());
+    }
+  }
+}
 
 void VisualShaderGraphicsScene::remove_item(QGraphicsItem* item) {
   removeItem(item);
@@ -1655,580 +1717,580 @@ void VisualShaderGraphicsView::move_view_to_fit_items() {
 /**********************************************************************/
 /**********************************************************************/
 
-// VisualShaderNodeGraphicsObject::VisualShaderNodeGraphicsObject(const int& n_id, const QPointF& coordinate,
-//                                                                const std::shared_ptr<VisualShaderNode>& node,
-//                                                                QGraphicsItem* parent)
-//     : QGraphicsObject(parent),
-//       n_id(n_id),
-//       coordinate(coordinate),
-//       node(node),
-//       context_menu(nullptr),
-//       delete_node_action(nullptr),
-//       rect_width(0.0f),
-//       caption_rect_height(0.0f),
-//       rect_height(0.0f),
-//       rect_margin(0.0f),
-//       rect_padding(0.0f),
-//       embed_widget(nullptr),
-//       matching_image_widget(nullptr),
-//       shader_previewer_widget(nullptr) {
-//   setFlag(QGraphicsItem::ItemDoesntPropagateOpacityToChildren, true);
-//   setFlag(QGraphicsItem::ItemIsFocusable, true);
-//   setFlag(QGraphicsItem::ItemIsMovable, true);
-//   setFlag(QGraphicsItem::ItemIsSelectable, true);
-//   setFlag(QGraphicsItem::ItemSendsScenePositionChanges, true);
-
-//   setCacheMode(QGraphicsItem::DeviceCoordinateCache);
-
-//   setVisible(true);
-//   setOpacity(this->opacity);
-
-//   setZValue(0);
-
-//   setPos(coordinate.x(), coordinate.y());
-
-//   // Output node should have a matching image widget
-//   if (n_id == (int)VisualShader::NODE_ID_OUTPUT) {
-//     QGraphicsProxyWidget* matching_image_widget_proxy{new QGraphicsProxyWidget(this)};
-//     matching_image_widget = new OriginalMatchingImageWidget();
-//     matching_image_widget_proxy->setWidget(matching_image_widget);
-//   } else {
-//     // Create the shader previewer widget
-//     QGraphicsProxyWidget* shader_previewer_widget_proxy{new QGraphicsProxyWidget(this)};
-//     shader_previewer_widget = new ShaderPreviewerWidget();
-//     shader_previewer_widget->setVisible(false);
-//     shader_previewer_widget_proxy->setWidget(shader_previewer_widget);
-//   }
-
-//   // Set the context menu
-//   context_menu = new QMenu();
-//   delete_node_action = new QAction(QStringLiteral("Delete Node"), context_menu);
-//   delete_node_action->setShortcutContext(Qt::ShortcutContext::WidgetShortcut);
-//   delete_node_action->setShortcut(QKeySequence(QKeySequence::Delete));
-//   QObject::connect(delete_node_action, &QAction::triggered, this,
-//                    &VisualShaderNodeGraphicsObject::on_delete_node_action_triggered);
-//   context_menu->addAction(delete_node_action);
-// }
-
-// VisualShaderNodeGraphicsObject::~VisualShaderNodeGraphicsObject() {
-//   if (context_menu) delete context_menu;
-// }
-
-// void VisualShaderNodeGraphicsObject::on_delete_node_action_triggered() { Q_EMIT node_deleted(n_id); }
-
-// VisualShaderInputPortGraphicsObject* VisualShaderNodeGraphicsObject::get_input_port_graphics_object(
-//     const int& p_index) const {
-//   if (in_port_graphics_objects.find(p_index) != in_port_graphics_objects.end()) {
-//     return in_port_graphics_objects.at(p_index);
-//   }
-
-//   return nullptr;
-// }
-
-// VisualShaderOutputPortGraphicsObject* VisualShaderNodeGraphicsObject::get_output_port_graphics_object(
-//     const int& p_index) const {
-//   if (out_port_graphics_objects.find(p_index) != out_port_graphics_objects.end()) {
-//     return out_port_graphics_objects.at(p_index);
-//   }
-
-//   return nullptr;
-// }
-
-// void VisualShaderNodeGraphicsObject::on_node_update_requested() {
-//   // Here if the number of ports changed, for example, changing the operation type in a decompose node,
-//   // we need to remove any extra ports that are not needed anymore. Don't forget to remove the connections
-//   // as well.
-//   if (in_port_graphics_objects.size() > node->get_input_port_count()) {
-//     int p_index{node->get_input_port_count()};
-//     int size{(int)in_port_graphics_objects.size() - p_index};
-//     for (int i{0}; i < size; ++i) {
-//       Q_EMIT in_port_remove_requested(in_port_graphics_objects.at(p_index));
-//       in_port_graphics_objects.erase(p_index);
-//       p_index++;
-//     }
-//   }
-
-//   if (out_port_graphics_objects.size() > node->get_output_port_count()) {
-//     int p_index{node->get_output_port_count()};
-//     int size{(int)out_port_graphics_objects.size() - p_index};
-//     for (int i{0}; i < size; ++i) {
-//       Q_EMIT out_port_remove_requested(out_port_graphics_objects.at(p_index));
-//       out_port_graphics_objects.erase(p_index);
-//       p_index++;
-//     }
-//   }
+VisualShaderNodeGraphicsObject::VisualShaderNodeGraphicsObject(const int& n_id, const QPointF& coordinate,
+                                                               const std::string& caption,
+                                                               const std::vector<std::string>& in_port_captions,
+                                                               const std::vector<std::string>& out_port_captions, 
+                                                               QGraphicsItem* parent)
+    : QGraphicsObject(parent),
+      n_id(n_id),
+      coordinate(coordinate),
+      caption(caption),
+      in_port_count(in_port_captions.size()),
+      out_port_count(out_port_captions.size()),
+      in_port_captions(in_port_captions),
+      out_port_captions(out_port_captions),
+      context_menu(nullptr),
+      delete_node_action(nullptr),
+      rect_width(0.0f),
+      caption_rect_height(0.0f),
+      rect_height(0.0f),
+      rect_margin(0.0f),
+      rect_padding(0.0f),
+      embed_widget(nullptr),
+      matching_image_widget(nullptr)// ,
+      { //shader_previewer_widget(nullptr) {
+  setFlag(QGraphicsItem::ItemDoesntPropagateOpacityToChildren, true);
+  setFlag(QGraphicsItem::ItemIsFocusable, true);
+  setFlag(QGraphicsItem::ItemIsMovable, true);
+  setFlag(QGraphicsItem::ItemIsSelectable, true);
+  setFlag(QGraphicsItem::ItemSendsScenePositionChanges, true);
+
+  setCacheMode(QGraphicsItem::DeviceCoordinateCache);
+
+  setVisible(true);
+  setOpacity(this->opacity);
+
+  setZValue(0);
+
+  setPos(coordinate.x(), coordinate.y());
+
+  // Output node should have a matching image widget
+  if (n_id == 0) {
+    QGraphicsProxyWidget* matching_image_widget_proxy{new QGraphicsProxyWidget(this)};
+    matching_image_widget = new OriginalMatchingImageWidget();
+    matching_image_widget_proxy->setWidget(matching_image_widget);
+  } else {
+    // Create the shader previewer widget
+    // QGraphicsProxyWidget* shader_previewer_widget_proxy{new QGraphicsProxyWidget(this)};
+    // shader_previewer_widget = new ShaderPreviewerWidget();
+    // shader_previewer_widget->setVisible(false);
+    // shader_previewer_widget_proxy->setWidget(shader_previewer_widget);
+  }
+
+  // Set the context menu
+  context_menu = new QMenu();
+  delete_node_action = new QAction(QStringLiteral("Delete Node"), context_menu);
+  delete_node_action->setShortcutContext(Qt::ShortcutContext::WidgetShortcut);
+  delete_node_action->setShortcut(QKeySequence(QKeySequence::Delete));
+  QObject::connect(delete_node_action, &QAction::triggered, this,
+                   &VisualShaderNodeGraphicsObject::on_delete_node_action_triggered);
+  context_menu->addAction(delete_node_action);
+}
+
+VisualShaderNodeGraphicsObject::~VisualShaderNodeGraphicsObject() {
+  if (context_menu) delete context_menu;
+}
+
+void VisualShaderNodeGraphicsObject::on_delete_node_action_triggered() { Q_EMIT node_deleted(n_id, in_port_count, out_port_count); }
+
+VisualShaderInputPortGraphicsObject* VisualShaderNodeGraphicsObject::get_input_port_graphics_object(
+    const int& p_index) const {
+  if (in_port_graphics_objects.find(p_index) != in_port_graphics_objects.end()) {
+    return in_port_graphics_objects.at(p_index);
+  }
+
+  return nullptr;
+}
+
+VisualShaderOutputPortGraphicsObject* VisualShaderNodeGraphicsObject::get_output_port_graphics_object(
+    const int& p_index) const {
+  if (out_port_graphics_objects.find(p_index) != out_port_graphics_objects.end()) {
+    return out_port_graphics_objects.at(p_index);
+  }
+
+  return nullptr;
+}
+
+void VisualShaderNodeGraphicsObject::on_node_update_requested() {
+  // Here if the number of ports changed, for example, changing the operation type in a decompose node,
+  // we need to remove any extra ports that are not needed anymore. Don't forget to remove the connections
+  // as well.
+  if ((int)in_port_graphics_objects.size() > in_port_count) {
+    int p_index{in_port_count};
+    int size{(int)in_port_graphics_objects.size() - p_index};
+    for (int i{0}; i < size; ++i) {
+      Q_EMIT in_port_remove_requested(in_port_graphics_objects.at(p_index));
+      in_port_graphics_objects.erase(p_index);
+      p_index++;
+    }
+  }
+
+  if ((int)out_port_graphics_objects.size() > out_port_count) {
+    int p_index{out_port_count};
+    int size{(int)out_port_graphics_objects.size() - p_index};
+    for (int i{0}; i < size; ++i) {
+      Q_EMIT out_port_remove_requested(out_port_graphics_objects.at(p_index));
+      out_port_graphics_objects.erase(p_index);
+      p_index++;
+    }
+  }
+
+  update();
+  Q_EMIT scene_update_requested();
+}
+
+QRectF VisualShaderNodeGraphicsObject::boundingRect() const {
+  QFont f("Arial", caption_font_size);
+  f.setBold(true);
+  QFontMetrics fm(f);
+
+  QString t_caption{QString::fromStdString(caption)};
 
-//   update();
-//   Q_EMIT scene_update_requested();
-// }
+  rect_width = (float)(fm.horizontalAdvance(t_caption, t_caption.length()) + caption_h_padding * 2.0f);
+
+  caption_rect_height = (float)((fm.height()) + caption_v_padding * 2.0f);
 
-// QRectF VisualShaderNodeGraphicsObject::boundingRect() const {
-//   QFont f("Arial", caption_font_size);
-//   f.setBold(true);
-//   QFontMetrics fm(f);
+  int max_num_ports{qMax(in_port_count, out_port_count)};
 
-//   QString caption{QString::fromStdString(node->get_caption())};
+  // Calculate the height of the node
+  float t_rect_h{caption_rect_height};
 
-//   rect_width = (float)(fm.horizontalAdvance(caption, caption.length()) + caption_h_padding * 2.0f);
+  t_rect_h += body_rect_header_height;  // Header
+  if (max_num_ports >= 0) {
+    t_rect_h += (float)(max_num_ports - 1) * body_rect_port_step;  // Ports
+  }
+  t_rect_h += body_rect_footer_height;  // Footer
+
+  rect_height = t_rect_h;
 
-//   caption_rect_height = (float)((fm.height()) + caption_v_padding * 2.0f);
+  // Correct node rect if it has an embed widget (if needed).
+  if (embed_widget) {
+    float embed_widget_width{(float)embed_widget->width()};
+
+    // Find biggest horizontal length of input port names
+    float max_in_p_width{0.0f};
+    for (int i{0}; i < in_port_count; ++i) {
+      QString p_n{QString::fromStdString(in_port_captions.at(i))};
+
+      QFont f("Arial", port_caption_font_size);
+      QFontMetrics fm(f);
+
+      float w{0.0f};
+
+      if (!p_n.isEmpty()) {
+        w = (float)fm.horizontalAdvance(p_n);
+      } else {
+        // If the port name is empty, use a default name
+        // This is because the horizontal advance of an empty string is 0 and
+        // this will wrong the calculation of the rect width
+        w = (float)fm.horizontalAdvance("Input");
+      }
+
+      if ((w + port_caption_spacing) > max_in_p_width) {
+        max_in_p_width = w + port_caption_spacing;
+      }
+    }
+
+    // Find biggest horizontal length of output port names
+    float max_out_p_width{0.0f};
+    for (int i{0}; i < out_port_count; ++i) {
+      QString p_n{QString::fromStdString(out_port_captions.at(i))};
+
+      QFont f("Arial", port_caption_font_size);
+      QFontMetrics fm(f);
+
+      float w{0.0f};
+
+      if (!p_n.isEmpty()) {
+        w = (float)fm.horizontalAdvance(p_n);
+      } else {
+        // If the port name is empty, use a default name
+        // This is because the horizontal advance of an empty string is 0 and
+        // this will wrong the calculation of the rect width
+        w = (float)fm.horizontalAdvance("Output");
+      }
+
+      if ((w + port_caption_spacing) > max_out_p_width) {
+        max_out_p_width = w + port_caption_spacing;
+      }
+    }
+
+    float calculated_rect{max_in_p_width + embed_widget_width + max_out_p_width + embed_widget_h_padding * 2.0f};
+
+    if (calculated_rect > rect_width) {
+      rect_width = calculated_rect;
+    }
+
+    // Check the height
+    float calculated_height{caption_rect_height + body_rect_header_height + embed_widget->height() +
+                            body_rect_footer_height + embed_widget_v_padding * 2.0f};
+
+    if (calculated_height > rect_height) {
+      rect_height = calculated_height;
+    }
+  }
+
+  QRectF r({0.0f, 0.0f}, QSizeF(rect_width, rect_height));
+
+  // Calculate the margin
+  this->rect_margin = port_diameter * 0.5f;
+
+  // Calculate the rect padding
+  // We add a safe area around the rect to prevent the ports from being cut off
+  this->rect_padding = port_diameter * 0.5f;
 
-//   int max_num_ports{qMax(node->get_input_port_count(), node->get_output_port_count())};
+  r.adjust(-rect_margin - rect_padding, -rect_margin - rect_padding, rect_margin + rect_padding,
+           rect_margin + rect_padding);
 
-//   // Calculate the height of the node
-//   float t_rect_h{caption_rect_height};
+  return r;
+}
 
-//   t_rect_h += body_rect_header_height;  // Header
-//   if (max_num_ports >= 0) {
-//     t_rect_h += (float)(max_num_ports - 1) * body_rect_port_step;  // Ports
-//   }
-//   t_rect_h += body_rect_footer_height;  // Footer
+void VisualShaderNodeGraphicsObject::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget) {
+  painter->setClipRect(option->exposedRect);
 
-//   rect_height = t_rect_h;
+  // Get the rect without the padding
+  QRectF r{this->boundingRect()};
 
-//   // Correct node rect if it has an embed widget (if needed).
-//   if (embed_widget) {
-//     float embed_widget_width{(float)embed_widget->width()};
+  // {
+  //   // Draw Node Rect
+  //   painter->setPen(Qt::red);
+  //   painter->setBrush(Qt::NoBrush);
+  //   painter->drawRect(r);
+  // }
 
-//     // Find biggest horizontal length of input port names
-//     int in_p_count{node->get_input_port_count()};
-//     float max_in_p_width{0.0f};
-//     for (unsigned i{0}; i < in_p_count; ++i) {
-//       QString p_n{QString::fromStdString(node->get_input_port_name(i))};
+  // Add the padding to the rect
+  r.adjust(rect_padding, rect_padding, -rect_padding, -rect_padding);
 
-//       QFont f("Arial", port_caption_font_size);
-//       QFontMetrics fm(f);
+  {
+    // Draw Node Rect
+    QColor rect_color;
+    if (isSelected()) {
+      rect_color = this->normal_boundary_color;
+    } else {
+      rect_color = this->selected_boundary_color;
+    }
 
-//       float w{0.0f};
+    QPen p(rect_color, this->pen_width);
+    painter->setPen(p);
 
-//       if (!p_n.isEmpty()) {
-//         w = (float)fm.horizontalAdvance(p_n);
-//       } else {
-//         // If the port name is empty, use a default name
-//         // This is because the horizontal advance of an empty string is 0 and
-//         // this will wrong the calculation of the rect width
-//         w = (float)fm.horizontalAdvance("Input");
-//       }
+    painter->setBrush(this->fill_color);
 
-//       if ((w + port_caption_spacing) > max_in_p_width) {
-//         max_in_p_width = w + port_caption_spacing;
-//       }
-//     }
-
-//     // Find biggest horizontal length of output port names
-//     int out_p_count{node->get_output_port_count()};
-//     float max_out_p_width{0.0f};
-//     for (unsigned i{0}; i < out_p_count; ++i) {
-//       QString p_n{QString::fromStdString(node->get_output_port_name(i))};
-
-//       QFont f("Arial", port_caption_font_size);
-//       QFontMetrics fm(f);
-
-//       float w{0.0f};
-
-//       if (!p_n.isEmpty()) {
-//         w = (float)fm.horizontalAdvance(p_n);
-//       } else {
-//         // If the port name is empty, use a default name
-//         // This is because the horizontal advance of an empty string is 0 and
-//         // this will wrong the calculation of the rect width
-//         w = (float)fm.horizontalAdvance("Output");
-//       }
-
-//       if ((w + port_caption_spacing) > max_out_p_width) {
-//         max_out_p_width = w + port_caption_spacing;
-//       }
-//     }
+    painter->drawRoundedRect(r, this->corner_radius, this->corner_radius);
+  }
 
-//     float calculated_rect{max_in_p_width + embed_widget_width + max_out_p_width + embed_widget_h_padding * 2.0f};
+  // Draw Matching Image Widget
+  if (n_id == 0) {
+    float matching_image_widget_x{(float)r.x() + (float)r.width() + spacing_between_output_node_and_matching_image};
+    float matching_image_widget_y{(float)r.y()};
 
-//     if (calculated_rect > rect_width) {
-//       rect_width = calculated_rect;
-//     }
-
-//     // Check the height
-//     float calculated_height{caption_rect_height + body_rect_header_height + embed_widget->height() +
-//                             body_rect_footer_height + embed_widget_v_padding * 2.0f};
+    matching_image_widget->setGeometry(matching_image_widget_x, matching_image_widget_y, r.height(), r.height());
+  } else {
+    // Draw Shader Previewer Widget
+    // float shader_previewer_widget_x{(float)r.x()};
+    // float shader_previewer_widget_y{(float)r.y() + (float)r.height() +
+    //                                 spacing_between_current_node_and_shader_previewer};
+    // shader_previewer_widget->setGeometry(shader_previewer_widget_x, shader_previewer_widget_y, r.width(), r.width());
+  }
 
-//     if (calculated_height > rect_height) {
-//       rect_height = calculated_height;
-//     }
-//   }
+  // Add the margin to the rect
+  r.adjust(rect_margin, rect_margin, -rect_margin, -rect_margin);
 
-//   QRectF r({0.0f, 0.0f}, QSizeF(rect_width, rect_height));
-
-//   // Calculate the margin
-//   this->rect_margin = port_diameter * 0.5f;
+  // {
+  //   // Draw Node Rect
+  //   painter->setPen(Qt::red);
+  //   painter->setBrush(Qt::NoBrush);
+  //   painter->drawRect(r);
+  // }
 
-//   // Calculate the rect padding
-//   // We add a safe area around the rect to prevent the ports from being cut off
-//   this->rect_padding = port_diameter * 0.5f;
+  float rect_x{(float)r.topLeft().x()};
+  float rect_y{(float)r.topLeft().y()};
 
-//   r.adjust(-rect_margin - rect_padding, -rect_margin - rect_padding, rect_margin + rect_padding,
-//            rect_margin + rect_padding);
+  float rect_w{(float)r.width()};
+  float rect_h{(float)r.height()};
 
-//   return r;
-// }
+  QRectF caption_rect(rect_x, rect_y, rect_w, caption_rect_height);
 
-// void VisualShaderNodeGraphicsObject::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget) {
-//   painter->setClipRect(option->exposedRect);
+  {
+    // Draw Caption
+    QString t_caption{QString::fromStdString(caption)};
 
-//   // Get the rect without the padding
-//   QRectF r{this->boundingRect()};
+    QFont t_f{painter->font()};
 
-//   // {
-//   //   // Draw Node Rect
-//   //   painter->setPen(Qt::red);
-//   //   painter->setBrush(Qt::NoBrush);
-//   //   painter->drawRect(r);
-//   // }
+    QFont f("Arial", caption_font_size);
+    f.setBold(true);
+    QFontMetrics fm(f);
+    painter->setFont(f);
 
-//   // Add the padding to the rect
-//   r.adjust(rect_padding, rect_padding, -rect_padding, -rect_padding);
+    // Calculate the coordinates of the caption
+    float x{(float)(caption_rect.center().x() - (float)fm.horizontalAdvance(t_caption) * 0.5f)};
 
-//   {
-//     // Draw Node Rect
-//     QColor rect_color;
-//     if (isSelected()) {
-//       rect_color = this->normal_boundary_color;
-//     } else {
-//       rect_color = this->selected_boundary_color;
-//     }
+    // Instead of subtracting, add the ascent to properly align text within the rect
+    float y{(float)(caption_rect.center().y() + (float)((fm.ascent() + fm.descent()) * 0.5f - fm.descent()))};
 
-//     QPen p(rect_color, this->pen_width);
-//     painter->setPen(p);
+    // {
+    //   painter->setPen(Qt::red);
+    //   painter->setBrush(Qt::NoBrush);
+    //   painter->drawRect(QRectF(x,y, (float)fm.horizontalAdvance(caption), (float)(fm.ascent() + fm.descent())));
+    // }
 
-//     painter->setBrush(this->fill_color);
+    QPointF coordinate{x, y};
 
-//     painter->drawRoundedRect(r, this->corner_radius, this->corner_radius);
-//   }
+    painter->setPen(this->font_color);
+    painter->drawText(coordinate, t_caption);
 
-//   // Draw Matching Image Widget
-//   if (n_id == (int)VisualShader::NODE_ID_OUTPUT) {
-//     float matching_image_widget_x{(float)r.x() + (float)r.width() + spacing_between_output_node_and_matching_image};
-//     float matching_image_widget_y{(float)r.y()};
+    painter->setFont(t_f);  // Reset the font
+  }
 
-//     matching_image_widget->setGeometry(matching_image_widget_x, matching_image_widget_y, r.height(), r.height());
-//   } else {
-//     // Draw Shader Previewer Widget
-//     float shader_previewer_widget_x{(float)r.x()};
-//     float shader_previewer_widget_y{(float)r.y() + (float)r.height() +
-//                                     spacing_between_current_node_and_shader_previewer};
-//     shader_previewer_widget->setGeometry(shader_previewer_widget_x, shader_previewer_widget_y, r.width(), r.width());
-//   }
+  QPointF caption_rect_bl{caption_rect.bottomLeft()};
+  QPointF first_in_port_coordinate{caption_rect_bl.x(), caption_rect_bl.y() + body_rect_header_height};
 
-//   // Add the margin to the rect
-//   r.adjust(rect_margin, rect_margin, -rect_margin, -rect_margin);
+  // Correct X coordinate: Remove the margin
+  first_in_port_coordinate.setX((float)first_in_port_coordinate.x() - this->rect_margin);
 
-//   // {
-//   //   // Draw Node Rect
-//   //   painter->setPen(Qt::red);
-//   //   painter->setBrush(Qt::NoBrush);
-//   //   painter->drawRect(r);
-//   // }
+  {
+    // Draw Input Ports
+    for (int i{0}; i < in_port_count; ++i) {
+      QPointF port_coordinate{first_in_port_coordinate.x(), first_in_port_coordinate.y() + body_rect_port_step * i};
 
-//   float rect_x{(float)r.topLeft().x()};
-//   float rect_y{(float)r.topLeft().y()};
+      QRectF port_rect(port_coordinate.x(), port_coordinate.y(), port_diameter, port_diameter);
 
-//   float rect_w{(float)r.width()};
-//   float rect_h{(float)r.height()};
+      // Adjust the port rect to be centered
+      port_rect.adjust(-port_rect.width() * 0.5f, -port_rect.height() * 0.5f, -port_rect.width() * 0.5f,
+                       -port_rect.height() * 0.5f);
 
-//   QRectF caption_rect(rect_x, rect_y, rect_w, caption_rect_height);
+      // Draw caption
+      QString p_n{QString::fromStdString(in_port_captions.at(i))};
 
-//   {
-//     // Draw Caption
-//     QString caption{QString::fromStdString(node->get_caption())};
+      if (!p_n.isEmpty()) {
+        QFont t_f{painter->font()};
 
-//     QFont t_f{painter->font()};
+        QFont f("Arial", port_caption_font_size);
+        QFontMetrics fm(f);
+        painter->setFont(f);
 
-//     QFont f("Arial", caption_font_size);
-//     f.setBold(true);
-//     QFontMetrics fm(f);
-//     painter->setFont(f);
+        float x{rect_x + port_caption_spacing};
 
-//     // Calculate the coordinates of the caption
-//     float x{(float)(caption_rect.center().x() - (float)fm.horizontalAdvance(caption) * 0.5f)};
+        float y{(float)(port_rect.center().y()) + (float)((fm.ascent() + fm.descent()) * 0.5f - fm.descent())};
 
-//     // Instead of subtracting, add the ascent to properly align text within the rect
-//     float y{(float)(caption_rect.center().y() + (float)((fm.ascent() + fm.descent()) * 0.5f - fm.descent()))};
+        // {
+        //   painter->setPen(Qt::red);
+        //   painter->setBrush(Qt::NoBrush);
+        //   painter->drawRect(QRectF(x,y, (float)fm.horizontalAdvance(p_n), (float)(fm.ascent() + fm.descent())));
+        // }
 
-//     // {
-//     //   painter->setPen(Qt::red);
-//     //   painter->setBrush(Qt::NoBrush);
-//     //   painter->drawRect(QRectF(x,y, (float)fm.horizontalAdvance(caption), (float)(fm.ascent() + fm.descent())));
-//     // }
+        QPointF coordinate{x, y};
 
-//     QPointF coordinate{x, y};
+        painter->setPen(this->font_color);
+        painter->drawText(coordinate, p_n);
 
-//     painter->setPen(this->font_color);
-//     painter->drawText(coordinate, caption);
+        painter->setFont(t_f);  // Reset the font
+      }
 
-//     painter->setFont(t_f);  // Reset the font
-//   }
+      if (in_port_graphics_objects.find(i) != in_port_graphics_objects.end()) continue;
 
-//   QPointF caption_rect_bl{caption_rect.bottomLeft()};
-//   QPointF first_in_port_coordinate{caption_rect_bl.x(), caption_rect_bl.y() + body_rect_header_height};
+      // Draw the port
+      VisualShaderInputPortGraphicsObject* p_o{new VisualShaderInputPortGraphicsObject(port_rect, n_id, i, this)};
+      in_port_graphics_objects[i] = p_o;
 
-//   // Correct X coordinate: Remove the margin
-//   first_in_port_coordinate.setX((float)first_in_port_coordinate.x() - this->rect_margin);
+      // Connect the signals
+      QObject::connect(p_o, &VisualShaderInputPortGraphicsObject::port_pressed, this,
+                       &VisualShaderNodeGraphicsObject::on_in_port_pressed);
+      QObject::connect(p_o, &VisualShaderInputPortGraphicsObject::port_dragged, this,
+                       &VisualShaderNodeGraphicsObject::on_in_port_dragged);
+      QObject::connect(p_o, &VisualShaderInputPortGraphicsObject::port_dropped, this,
+                       &VisualShaderNodeGraphicsObject::on_in_port_dropped);
+    }
+  }
 
-//   {
-//     // Draw Input Ports
-//     int in_port_count{node->get_input_port_count()};
+  QPointF caption_rect_br{caption_rect.bottomRight()};
+  QPointF first_out_port_coordinate{caption_rect_br.x(), caption_rect_br.y() + body_rect_header_height};
 
-//     for (unsigned i{0}; i < in_port_count; ++i) {
-//       QPointF port_coordinate{first_in_port_coordinate.x(), first_in_port_coordinate.y() + body_rect_port_step * i};
+  // Correct X coordinate: Remove the margin
+  first_out_port_coordinate.setX((float)first_out_port_coordinate.x() + this->rect_margin);
 
-//       QRectF port_rect(port_coordinate.x(), port_coordinate.y(), port_diameter, port_diameter);
+  {
+    // Draw Output Ports
+    for (int i{0}; i < out_port_count; ++i) {
+      QPointF port_coordinate{first_out_port_coordinate.x(), first_out_port_coordinate.y() + body_rect_port_step * i};
 
-//       // Adjust the port rect to be centered
-//       port_rect.adjust(-port_rect.width() * 0.5f, -port_rect.height() * 0.5f, -port_rect.width() * 0.5f,
-//                        -port_rect.height() * 0.5f);
+      QRectF port_rect(port_coordinate.x(), port_coordinate.y(), port_diameter, port_diameter);
 
-//       // Draw caption
-//       QString p_n{QString::fromStdString(node->get_input_port_name(i))};
+      // Adjust the port rect to be centered
+      port_rect.adjust(-port_rect.width() * 0.5f, -port_rect.height() * 0.5f, -port_rect.width() * 0.5f,
+                       -port_rect.height() * 0.5f);
 
-//       if (!p_n.isEmpty()) {
-//         QFont t_f{painter->font()};
+      // Draw caption
+      QString p_n{QString::fromStdString(out_port_captions.at(i))};
 
-//         QFont f("Arial", port_caption_font_size);
-//         QFontMetrics fm(f);
-//         painter->setFont(f);
+      if (!p_n.isEmpty()) {
+        QFont t_f{painter->font()};
 
-//         float x{rect_x + port_caption_spacing};
+        QFont f("Arial", port_caption_font_size);
+        QFontMetrics fm(f);
+        painter->setFont(f);
 
-//         float y{(float)(port_rect.center().y()) + (float)((fm.ascent() + fm.descent()) * 0.5f - fm.descent())};
+        float x{rect_x + rect_w - (float)fm.horizontalAdvance(p_n) - port_caption_spacing};
 
-//         // {
-//         //   painter->setPen(Qt::red);
-//         //   painter->setBrush(Qt::NoBrush);
-//         //   painter->drawRect(QRectF(x,y, (float)fm.horizontalAdvance(p_n), (float)(fm.ascent() + fm.descent())));
-//         // }
+        float y{(float)(port_rect.center().y()) + (float)((fm.ascent() + fm.descent()) * 0.5f - fm.descent())};
 
-//         QPointF coordinate{x, y};
+        // {
+        //   painter->setPen(Qt::red);
+        //   painter->setBrush(Qt::NoBrush);
+        //   painter->drawRect(QRectF(x,y, (float)fm.horizontalAdvance(p_n), (float)(fm.ascent() + fm.descent())));
+        // }
 
-//         painter->setPen(this->font_color);
-//         painter->drawText(coordinate, p_n);
+        QPointF coordinate{x, y};
 
-//         painter->setFont(t_f);  // Reset the font
-//       }
+        painter->setPen(this->font_color);
+        painter->drawText(coordinate, p_n);
 
-//       if (in_port_graphics_objects.find(i) != in_port_graphics_objects.end()) continue;
+        painter->setFont(t_f);  // Reset the font
+      }
 
-//       // Draw the port
-//       VisualShaderInputPortGraphicsObject* p_o{new VisualShaderInputPortGraphicsObject(port_rect, n_id, i, this)};
-//       in_port_graphics_objects[i] = p_o;
+      if (out_port_graphics_objects.find(i) != out_port_graphics_objects.end()) continue;
 
-//       // Connect the signals
-//       QObject::connect(p_o, &VisualShaderInputPortGraphicsObject::port_pressed, this,
-//                        &VisualShaderNodeGraphicsObject::on_in_port_pressed);
-//       QObject::connect(p_o, &VisualShaderInputPortGraphicsObject::port_dragged, this,
-//                        &VisualShaderNodeGraphicsObject::on_in_port_dragged);
-//       QObject::connect(p_o, &VisualShaderInputPortGraphicsObject::port_dropped, this,
-//                        &VisualShaderNodeGraphicsObject::on_in_port_dropped);
-//     }
-//   }
+      // Draw the port
+      VisualShaderOutputPortGraphicsObject* p_o{new VisualShaderOutputPortGraphicsObject(port_rect, n_id, i, this)};
+      out_port_graphics_objects[i] = p_o;
 
-//   QPointF caption_rect_br{caption_rect.bottomRight()};
-//   QPointF first_out_port_coordinate{caption_rect_br.x(), caption_rect_br.y() + body_rect_header_height};
+      // Connect the signals
+      QObject::connect(p_o, &VisualShaderOutputPortGraphicsObject::port_pressed, this,
+                       &VisualShaderNodeGraphicsObject::on_out_port_pressed);
+      QObject::connect(p_o, &VisualShaderOutputPortGraphicsObject::port_dragged, this,
+                       &VisualShaderNodeGraphicsObject::on_out_port_dragged);
+      QObject::connect(p_o, &VisualShaderOutputPortGraphicsObject::port_dropped, this,
+                       &VisualShaderNodeGraphicsObject::on_out_port_dropped);
+    }
+  }
 
-//   // Correct X coordinate: Remove the margin
-//   first_out_port_coordinate.setX((float)first_out_port_coordinate.x() + this->rect_margin);
+  {
+    // Correct the coordinate of the embed widget
+    if (embed_widget) {
+      float embed_widget_x{rect_x + rect_w * 0.5f - embed_widget->width() * 0.5f};
+      float embed_widget_y{rect_y + caption_rect_height + body_rect_header_height + embed_widget_v_padding};
 
-//   {
-//     // Draw Output Ports
-//     int out_port_count{node->get_output_port_count()};
+      embed_widget->setGeometry(embed_widget_x, embed_widget_y, embed_widget->width(), embed_widget->height());
 
-//     for (unsigned i{0}; i < out_port_count; ++i) {
-//       QPointF port_coordinate{first_out_port_coordinate.x(), first_out_port_coordinate.y() + body_rect_port_step * i};
+      // {
+      //   // Draw Embed Widget
+      //   painter->setPen(Qt::red);
+      //   painter->setBrush(Qt::NoBrush);
+      //   painter->drawRect(embed_widget_x, embed_widget_y, embed_widget->width(), embed_widget->height());
+      // }
+    }
+  }
+}
 
-//       QRectF port_rect(port_coordinate.x(), port_coordinate.y(), port_diameter, port_diameter);
+QVariant VisualShaderNodeGraphicsObject::itemChange(GraphicsItemChange change, const QVariant& value) {
+  if (change == ItemScenePositionHasChanged) {
+    Q_EMIT node_moved(n_id, in_port_count, out_port_count, scenePos());
+  }
 
-//       // Adjust the port rect to be centered
-//       port_rect.adjust(-port_rect.width() * 0.5f, -port_rect.height() * 0.5f, -port_rect.width() * 0.5f,
-//                        -port_rect.height() * 0.5f);
+  return QGraphicsObject::itemChange(change, value);
+}
 
-//       // Draw caption
-//       QString p_n{QString::fromStdString(node->get_output_port_name(i))};
+void VisualShaderNodeGraphicsObject::contextMenuEvent(QGraphicsSceneContextMenuEvent* event) {
+  context_menu->exec(event->screenPos());
+}
 
-//       if (!p_n.isEmpty()) {
-//         QFont t_f{painter->font()};
+VisualShaderInputPortGraphicsObject::VisualShaderInputPortGraphicsObject(const QRectF& rect, const int& n_id,
+                                                                         const int& p_index, QGraphicsItem* parent)
+    : QGraphicsObject(parent), rect(rect), n_id(n_id), p_index(p_index), connection_graphics_object(nullptr) {
+  setFlag(QGraphicsItem::ItemDoesntPropagateOpacityToChildren, true);
+  setFlag(QGraphicsItem::ItemIsFocusable, true);
+  setFlag(QGraphicsItem::ItemIsSelectable, true);
 
-//         QFont f("Arial", port_caption_font_size);
-//         QFontMetrics fm(f);
-//         painter->setFont(f);
+  setCursor(Qt::PointingHandCursor);
 
-//         float x{rect_x + rect_w - (float)fm.horizontalAdvance(p_n) - port_caption_spacing};
+  setCacheMode(QGraphicsItem::DeviceCoordinateCache);
 
-//         float y{(float)(port_rect.center().y()) + (float)((fm.ascent() + fm.descent()) * 0.5f - fm.descent())};
+  setVisible(true);
+  setOpacity(this->opacity);
 
-//         // {
-//         //   painter->setPen(Qt::red);
-//         //   painter->setBrush(Qt::NoBrush);
-//         //   painter->drawRect(QRectF(x,y, (float)fm.horizontalAdvance(p_n), (float)(fm.ascent() + fm.descent())));
-//         // }
+  setZValue(0);
+}
 
-//         QPointF coordinate{x, y};
+VisualShaderInputPortGraphicsObject::~VisualShaderInputPortGraphicsObject() {}
 
-//         painter->setPen(this->font_color);
-//         painter->drawText(coordinate, p_n);
+QRectF VisualShaderInputPortGraphicsObject::boundingRect() const {
+  QRectF t_rect{rect};
+  t_rect.adjust(-padding, -padding, padding, padding);
+  return t_rect;
+}
 
-//         painter->setFont(t_f);  // Reset the font
-//       }
+void VisualShaderInputPortGraphicsObject::paint(QPainter* painter, const QStyleOptionGraphicsItem* option,
+                                                QWidget* widget) {
+  painter->setClipRect(option->exposedRect);
 
-//       if (out_port_graphics_objects.find(i) != out_port_graphics_objects.end()) continue;
+  painter->setBrush(this->connection_point_color);
 
-//       // Draw the port
-//       VisualShaderOutputPortGraphicsObject* p_o{new VisualShaderOutputPortGraphicsObject(port_rect, n_id, i, this)};
-//       out_port_graphics_objects[i] = p_o;
+  painter->drawEllipse(rect);
+}
 
-//       // Connect the signals
-//       QObject::connect(p_o, &VisualShaderOutputPortGraphicsObject::port_pressed, this,
-//                        &VisualShaderNodeGraphicsObject::on_out_port_pressed);
-//       QObject::connect(p_o, &VisualShaderOutputPortGraphicsObject::port_dragged, this,
-//                        &VisualShaderNodeGraphicsObject::on_out_port_dragged);
-//       QObject::connect(p_o, &VisualShaderOutputPortGraphicsObject::port_dropped, this,
-//                        &VisualShaderNodeGraphicsObject::on_out_port_dropped);
-//     }
-//   }
+void VisualShaderInputPortGraphicsObject::mousePressEvent(QGraphicsSceneMouseEvent* event) {
+  Q_EMIT port_pressed(this, event->scenePos());
+  QGraphicsObject::mousePressEvent(event);
+}
 
-//   {
-//     // Correct the coordinate of the embed widget
-//     if (embed_widget) {
-//       float embed_widget_x{rect_x + rect_w * 0.5f - embed_widget->width() * 0.5f};
-//       float embed_widget_y{rect_y + caption_rect_height + body_rect_header_height + embed_widget_v_padding};
+void VisualShaderInputPortGraphicsObject::mouseMoveEvent(QGraphicsSceneMouseEvent* event) {
+  Q_EMIT port_dragged(this, event->scenePos());
+  QGraphicsObject::mouseMoveEvent(event);
+}
 
-//       embed_widget->setGeometry(embed_widget_x, embed_widget_y, embed_widget->width(), embed_widget->height());
+void VisualShaderInputPortGraphicsObject::mouseReleaseEvent(QGraphicsSceneMouseEvent* event) {
+  Q_EMIT port_dropped(this, event->scenePos());
+  QGraphicsObject::mouseReleaseEvent(event);
+}
 
-//       // {
-//       //   // Draw Embed Widget
-//       //   painter->setPen(Qt::red);
-//       //   painter->setBrush(Qt::NoBrush);
-//       //   painter->drawRect(embed_widget_x, embed_widget_y, embed_widget->width(), embed_widget->height());
-//       // }
-//     }
-//   }
-// }
+VisualShaderOutputPortGraphicsObject::VisualShaderOutputPortGraphicsObject(const QRectF& rect, const int& n_id,
+                                                                           const int& p_index, QGraphicsItem* parent)
+    : QGraphicsObject(parent), rect(rect), n_id(n_id), p_index(p_index) {
+  setFlag(QGraphicsItem::ItemDoesntPropagateOpacityToChildren, true);
+  setFlag(QGraphicsItem::ItemIsFocusable, true);
+  setFlag(QGraphicsItem::ItemIsSelectable, true);
 
-// QVariant VisualShaderNodeGraphicsObject::itemChange(GraphicsItemChange change, const QVariant& value) {
-//   if (change == ItemScenePositionHasChanged) {
-//     Q_EMIT node_moved(n_id, scenePos());
-//   }
+  setCursor(Qt::PointingHandCursor);
 
-//   return QGraphicsObject::itemChange(change, value);
-// }
+  setCacheMode(QGraphicsItem::DeviceCoordinateCache);
 
-// void VisualShaderNodeGraphicsObject::contextMenuEvent(QGraphicsSceneContextMenuEvent* event) {
-//   context_menu->exec(event->screenPos());
-// }
+  setVisible(true);
+  setOpacity(this->opacity);
 
-// VisualShaderInputPortGraphicsObject::VisualShaderInputPortGraphicsObject(const QRectF& rect, const int& n_id,
-//                                                                          const int& p_index, QGraphicsItem* parent)
-//     : QGraphicsObject(parent), rect(rect), n_id(n_id), p_index(p_index), connection_graphics_object(nullptr) {
-//   setFlag(QGraphicsItem::ItemDoesntPropagateOpacityToChildren, true);
-//   setFlag(QGraphicsItem::ItemIsFocusable, true);
-//   setFlag(QGraphicsItem::ItemIsSelectable, true);
+  setZValue(0);
+}
 
-//   setCursor(Qt::PointingHandCursor);
+VisualShaderOutputPortGraphicsObject::~VisualShaderOutputPortGraphicsObject() {}
 
-//   setCacheMode(QGraphicsItem::DeviceCoordinateCache);
+VisualShaderConnectionGraphicsObject* VisualShaderOutputPortGraphicsObject::get_connection_graphics_object(
+    const int& to_node_id, const int& to_port_index) const {
+  for (auto c_g_o : connection_graphics_objects) {
+    if (c_g_o->get_to_node_id() == to_node_id && c_g_o->get_to_port_index() == to_port_index) {
+      return c_g_o;
+    }
+  }
+  return nullptr;
+}
 
-//   setVisible(true);
-//   setOpacity(this->opacity);
+QRectF VisualShaderOutputPortGraphicsObject::boundingRect() const {
+  QRectF t_rect{rect};
+  t_rect.adjust(-padding, -padding, padding, padding);
+  return t_rect;
+}
 
-//   setZValue(0);
-// }
+void VisualShaderOutputPortGraphicsObject::paint(QPainter* painter, const QStyleOptionGraphicsItem* option,
+                                                 QWidget* widget) {
+  painter->setClipRect(option->exposedRect);
 
-// VisualShaderInputPortGraphicsObject::~VisualShaderInputPortGraphicsObject() {}
+  painter->setBrush(this->connection_point_color);
 
-// QRectF VisualShaderInputPortGraphicsObject::boundingRect() const {
-//   QRectF t_rect{rect};
-//   t_rect.adjust(-padding, -padding, padding, padding);
-//   return t_rect;
-// }
+  painter->drawEllipse(rect);
+}
 
-// void VisualShaderInputPortGraphicsObject::paint(QPainter* painter, const QStyleOptionGraphicsItem* option,
-//                                                 QWidget* widget) {
-//   painter->setClipRect(option->exposedRect);
+void VisualShaderOutputPortGraphicsObject::mousePressEvent(QGraphicsSceneMouseEvent* event) {
+  Q_EMIT port_pressed(this, event->scenePos());
+  QGraphicsObject::mousePressEvent(event);
+}
 
-//   painter->setBrush(this->connection_point_color);
+void VisualShaderOutputPortGraphicsObject::mouseMoveEvent(QGraphicsSceneMouseEvent* event) {
+  Q_EMIT port_dragged(this, event->scenePos());
+  QGraphicsObject::mouseMoveEvent(event);
+}
 
-//   painter->drawEllipse(rect);
-// }
-
-// void VisualShaderInputPortGraphicsObject::mousePressEvent(QGraphicsSceneMouseEvent* event) {
-//   Q_EMIT port_pressed(this, event->scenePos());
-//   QGraphicsObject::mousePressEvent(event);
-// }
-
-// void VisualShaderInputPortGraphicsObject::mouseMoveEvent(QGraphicsSceneMouseEvent* event) {
-//   Q_EMIT port_dragged(this, event->scenePos());
-//   QGraphicsObject::mouseMoveEvent(event);
-// }
-
-// void VisualShaderInputPortGraphicsObject::mouseReleaseEvent(QGraphicsSceneMouseEvent* event) {
-//   Q_EMIT port_dropped(this, event->scenePos());
-//   QGraphicsObject::mouseReleaseEvent(event);
-// }
-
-// VisualShaderOutputPortGraphicsObject::VisualShaderOutputPortGraphicsObject(const QRectF& rect, const int& n_id,
-//                                                                            const int& p_index, QGraphicsItem* parent)
-//     : QGraphicsObject(parent), rect(rect), n_id(n_id), p_index(p_index) {
-//   setFlag(QGraphicsItem::ItemDoesntPropagateOpacityToChildren, true);
-//   setFlag(QGraphicsItem::ItemIsFocusable, true);
-//   setFlag(QGraphicsItem::ItemIsSelectable, true);
-
-//   setCursor(Qt::PointingHandCursor);
-
-//   setCacheMode(QGraphicsItem::DeviceCoordinateCache);
-
-//   setVisible(true);
-//   setOpacity(this->opacity);
-
-//   setZValue(0);
-// }
-
-// VisualShaderOutputPortGraphicsObject::~VisualShaderOutputPortGraphicsObject() {}
-
-// VisualShaderConnectionGraphicsObject* VisualShaderOutputPortGraphicsObject::get_connection_graphics_object(
-//     const int& to_node_id, const int& to_port_index) const {
-//   for (auto c_g_o : connection_graphics_objects) {
-//     if (c_g_o->get_to_node_id() == to_node_id && c_g_o->get_to_port_index() == to_port_index) {
-//       return c_g_o;
-//     }
-//   }
-//   return nullptr;
-// }
-
-// QRectF VisualShaderOutputPortGraphicsObject::boundingRect() const {
-//   QRectF t_rect{rect};
-//   t_rect.adjust(-padding, -padding, padding, padding);
-//   return t_rect;
-// }
-
-// void VisualShaderOutputPortGraphicsObject::paint(QPainter* painter, const QStyleOptionGraphicsItem* option,
-//                                                  QWidget* widget) {
-//   painter->setClipRect(option->exposedRect);
-
-//   painter->setBrush(this->connection_point_color);
-
-//   painter->drawEllipse(rect);
-// }
-
-// void VisualShaderOutputPortGraphicsObject::mousePressEvent(QGraphicsSceneMouseEvent* event) {
-//   Q_EMIT port_pressed(this, event->scenePos());
-//   QGraphicsObject::mousePressEvent(event);
-// }
-
-// void VisualShaderOutputPortGraphicsObject::mouseMoveEvent(QGraphicsSceneMouseEvent* event) {
-//   Q_EMIT port_dragged(this, event->scenePos());
-//   QGraphicsObject::mouseMoveEvent(event);
-// }
-
-// void VisualShaderOutputPortGraphicsObject::mouseReleaseEvent(QGraphicsSceneMouseEvent* event) {
-//   Q_EMIT port_dropped(this, event->scenePos());
-//   QGraphicsObject::mouseReleaseEvent(event);
-// }
+void VisualShaderOutputPortGraphicsObject::mouseReleaseEvent(QGraphicsSceneMouseEvent* event) {
+  Q_EMIT port_dropped(this, event->scenePos());
+  QGraphicsObject::mouseReleaseEvent(event);
+}
 
 /**********************************************************************/
 /**********************************************************************/
@@ -2240,271 +2302,273 @@ void VisualShaderGraphicsView::move_view_to_fit_items() {
 /**********************************************************************/
 /**********************************************************************/
 
-// VisualShaderConnectionGraphicsObject::VisualShaderConnectionGraphicsObject(const int& from_n_id,
-//                                                                            const int& from_p_index,
-//                                                                            const QPointF& start_coordinate,
-//                                                                            QGraphicsItem* parent)
-//     : QGraphicsObject(parent),
-//       from_n_id(from_n_id),
-//       from_p_index(from_p_index),
-//       to_n_id((int)VisualShader::NODE_ID_INVALID),
-//       to_p_index((int)VisualShader::PORT_INDEX_INVALID),
-//       start_coordinate(start_coordinate),
-//       end_coordinate(start_coordinate),
-//       rect_padding(0.0f) {
-//   setFlag(QGraphicsItem::ItemIsFocusable, true);
-//   setFlag(QGraphicsItem::ItemIsSelectable, true);
-//   setAcceptedMouseButtons(Qt::NoButton);
+VisualShaderConnectionGraphicsObject::VisualShaderConnectionGraphicsObject(const int& c_id, 
+                                                                           const int& from_n_id,
+                                                                           const int& from_p_index,
+                                                                           const QPointF& start_coordinate,
+                                                                           QGraphicsItem* parent)
+    : QGraphicsObject(parent),
+      c_id(c_id),
+      from_n_id(from_n_id),
+      from_p_index(from_p_index),
+      to_n_id(-1),
+      to_p_index(-1),
+      start_coordinate(start_coordinate),
+      end_coordinate(start_coordinate),
+      rect_padding(0.0f) {
+  setFlag(QGraphicsItem::ItemIsFocusable, true);
+  setFlag(QGraphicsItem::ItemIsSelectable, true);
+  setAcceptedMouseButtons(Qt::NoButton);
 
-//   setZValue(-1.0f);
-// }
+  setZValue(-1.0f);
+}
 
-// VisualShaderConnectionGraphicsObject::~VisualShaderConnectionGraphicsObject() {}
+VisualShaderConnectionGraphicsObject::~VisualShaderConnectionGraphicsObject() {}
 
-// QRectF VisualShaderConnectionGraphicsObject::boundingRect() const {
-//   QRectF r{calculate_bounding_rect_from_coordinates(start_coordinate, end_coordinate)};
+QRectF VisualShaderConnectionGraphicsObject::boundingRect() const {
+  QRectF r{calculate_bounding_rect_from_coordinates(start_coordinate, end_coordinate)};
 
-//   // Calculate the rect padding
-//   // We add a safe area around the rect to prevent the ports from being cut off
-//   // Due to inaccuracy in the calculation of the bounding rect we use the point diameter not the radius
-//   this->rect_padding = this->point_diameter;
+  // Calculate the rect padding
+  // We add a safe area around the rect to prevent the ports from being cut off
+  // Due to inaccuracy in the calculation of the bounding rect we use the point diameter not the radius
+  this->rect_padding = this->point_diameter;
 
-//   r.adjust(-rect_padding, -rect_padding, rect_padding, rect_padding);
+  r.adjust(-rect_padding, -rect_padding, rect_padding, rect_padding);
 
-//   return r;
-// }
+  return r;
+}
 
-// void VisualShaderConnectionGraphicsObject::paint(QPainter* painter, const QStyleOptionGraphicsItem* option,
-//                                                  QWidget* widget) {
-//   painter->setClipRect(option->exposedRect);
+void VisualShaderConnectionGraphicsObject::paint(QPainter* painter, const QStyleOptionGraphicsItem* option,
+                                                 QWidget* widget) {
+  painter->setClipRect(option->exposedRect);
 
-//   {
-//     // Draw the connection
-//     QPen p;
-//     p.setWidth(this->line_width);
+  {
+    // Draw the connection
+    QPen p;
+    p.setWidth(this->line_width);
 
-//     const bool selected{this->isSelected()};
+    const bool selected{this->isSelected()};
 
-//     std::pair<QPointF, QPointF> control_points{calculate_control_points(start_coordinate, end_coordinate)};
+    std::pair<QPointF, QPointF> control_points{calculate_control_points(start_coordinate, end_coordinate)};
 
-//     QPainterPath cubic(start_coordinate);
-//     cubic.cubicTo(control_points.first, control_points.second, end_coordinate);
+    QPainterPath cubic(start_coordinate);
+    cubic.cubicTo(control_points.first, control_points.second, end_coordinate);
 
-//     p.setColor(this->normal_color);
+    p.setColor(this->normal_color);
 
-//     if (selected) {
-//       p.setColor(this->selected_color);
-//     }
+    if (selected) {
+      p.setColor(this->selected_color);
+    }
 
-//     painter->setPen(p);
-//     painter->setBrush(Qt::NoBrush);
+    painter->setPen(p);
+    painter->setBrush(Qt::NoBrush);
 
-//     painter->drawPath(cubic);
-//   }
+    painter->drawPath(cubic);
+  }
 
-//   painter->setBrush(this->connection_point_color);
+  painter->setBrush(this->connection_point_color);
 
-//   {
-//     // Draw start point
-//     QRectF start_rect(start_coordinate.x(), start_coordinate.y(), this->point_diameter, this->point_diameter);
+  {
+    // Draw start point
+    QRectF start_rect(start_coordinate.x(), start_coordinate.y(), this->point_diameter, this->point_diameter);
 
-//     // Adjust the port rect to be centered
-//     start_rect.adjust(-start_rect.width() * 0.5f, -start_rect.height() * 0.5f, -start_rect.width() * 0.5f,
-//                       -start_rect.height() * 0.5f);
+    // Adjust the port rect to be centered
+    start_rect.adjust(-start_rect.width() * 0.5f, -start_rect.height() * 0.5f, -start_rect.width() * 0.5f,
+                      -start_rect.height() * 0.5f);
 
-//     painter->drawEllipse(start_rect);
-//   }
+    painter->drawEllipse(start_rect);
+  }
 
-//   {
-//     // Draw end point
-//     QRectF end_rect(end_coordinate.x(), end_coordinate.y(), this->point_diameter, this->point_diameter);
+  {
+    // Draw end point
+    QRectF end_rect(end_coordinate.x(), end_coordinate.y(), this->point_diameter, this->point_diameter);
 
-//     // Adjust the port rect to be centered
-//     end_rect.adjust(-end_rect.width() * 0.5f, -end_rect.height() * 0.5f, -end_rect.width() * 0.5f,
-//                     -end_rect.height() * 0.5f);
+    // Adjust the port rect to be centered
+    end_rect.adjust(-end_rect.width() * 0.5f, -end_rect.height() * 0.5f, -end_rect.width() * 0.5f,
+                    -end_rect.height() * 0.5f);
 
-//     painter->drawEllipse(end_rect);
-//   }
-// }
+    painter->drawEllipse(end_rect);
+  }
+}
 
-// int VisualShaderConnectionGraphicsObject::detect_quadrant(const QPointF& reference, const QPointF& target) const {
-//   float relative_x{(float)(target.x() - reference.x())};
-//   float relative_y{(float)(target.y() - reference.y())};
+int VisualShaderConnectionGraphicsObject::detect_quadrant(const QPointF& reference, const QPointF& target) const {
+  float relative_x{(float)(target.x() - reference.x())};
+  float relative_y{(float)(target.y() - reference.y())};
 
-//   // Note that the default coordinate system in Qt is as follows:
-//   // - X-axis: Positive to the right, negative to the left
-//   // - Y-axis: Positive downwards, negative upwards
+  // Note that the default coordinate system in Qt is as follows:
+  // - X-axis: Positive to the right, negative to the left
+  // - Y-axis: Positive downwards, negative upwards
 
-//   // Check if the point is on an axis or the origin
-//   if (relative_x == 0 && relative_y == 0) {
-//     return 0;  // Stack on the reference
-//   } else if (relative_y == 0) {
-//     return (relative_x > 0) ? 5 : 6;  // On X-axis: 5 is the +ve part while 6 is the -ve one.
-//   } else if (relative_x == 0) {
-//     return (relative_y < 0) ? 7 : 8;  // On Y-axis: 7 is the +ve part while 8 is the -ve one.
-//   }
+  // Check if the point is on an axis or the origin
+  if (relative_x == 0 && relative_y == 0) {
+    return 0;  // Stack on the reference
+  } else if (relative_y == 0) {
+    return (relative_x > 0) ? 5 : 6;  // On X-axis: 5 is the +ve part while 6 is the -ve one.
+  } else if (relative_x == 0) {
+    return (relative_y < 0) ? 7 : 8;  // On Y-axis: 7 is the +ve part while 8 is the -ve one.
+  }
 
-//   // Determine the quadrant based on the relative coordinates
-//   if (relative_x > 0 && relative_y < 0) {
-//     return 1;  // Quadrant I
-//   } else if (relative_x < 0 && relative_y < 0) {
-//     return 2;  // Quadrant II
-//   } else if (relative_x < 0 && relative_y > 0) {
-//     return 3;  // Quadrant III
-//   } else if (relative_x > 0 && relative_y > 0) {
-//     return 4;  // Quadrant IV
-//   }
+  // Determine the quadrant based on the relative coordinates
+  if (relative_x > 0 && relative_y < 0) {
+    return 1;  // Quadrant I
+  } else if (relative_x < 0 && relative_y < 0) {
+    return 2;  // Quadrant II
+  } else if (relative_x < 0 && relative_y > 0) {
+    return 3;  // Quadrant III
+  } else if (relative_x > 0 && relative_y > 0) {
+    return 4;  // Quadrant IV
+  }
 
-//   // Default case (should not reach here)
-//   return -1;
-// }
+  // Default case (should not reach here)
+  return -1;
+}
 
-// QRectF VisualShaderConnectionGraphicsObject::calculate_bounding_rect_from_coordinates(
-//     const QPointF& start_coordinate, const QPointF& end_coordinate) const {
-//   const float x1{(float)start_coordinate.x()};
-//   const float y1{(float)start_coordinate.y()};
-//   const float x2{(float)end_coordinate.x()};
-//   const float y2{(float)end_coordinate.y()};
+QRectF VisualShaderConnectionGraphicsObject::calculate_bounding_rect_from_coordinates(
+    const QPointF& start_coordinate, const QPointF& end_coordinate) const {
+  const float x1{(float)start_coordinate.x()};
+  const float y1{(float)start_coordinate.y()};
+  const float x2{(float)end_coordinate.x()};
+  const float y2{(float)end_coordinate.y()};
 
-//   // Calculate the expanded rect
-//   const float min_x{qMin(x1, x2)};
-//   const float min_y{qMin(y1, y2)};
-//   const float max_x{qMax(x1, x2)};
-//   const float max_y{qMax(y1, y2)};
+  // Calculate the expanded rect
+  const float min_x{qMin(x1, x2)};
+  const float min_y{qMin(y1, y2)};
+  const float max_x{qMax(x1, x2)};
+  const float max_y{qMax(y1, y2)};
 
-//   QRectF r({min_x, min_y}, QSizeF(max_x - min_x, max_y - min_y));
+  QRectF r({min_x, min_y}, QSizeF(max_x - min_x, max_y - min_y));
 
-//   const bool in_h_abnormal_region{x2 < (x1 + h_abnormal_offset)};
-//   const bool in_v_abnormal_region{std::abs(y2 - y1) < v_abnormal_offset};
+  const bool in_h_abnormal_region{x2 < (x1 + h_abnormal_offset)};
+  const bool in_v_abnormal_region{std::abs(y2 - y1) < v_abnormal_offset};
 
-//   const int quadrant{detect_quadrant({x1, y1}, {x2, y2})};
+  const int quadrant{detect_quadrant({x1, y1}, {x2, y2})};
 
-//   // We will expand the bounding rect horizontally so that our connection don't get cut off
-//   const float a_width_expansion{((x1 + h_abnormal_offset) - x2) * abnormal_face_to_back_control_width_expansion_factor};
-//   const float a_height_expansion{a_width_expansion * abnormal_face_to_back_control_height_expansion_factor};
+  // We will expand the bounding rect horizontally so that our connection don't get cut off
+  const float a_width_expansion{((x1 + h_abnormal_offset) - x2) * abnormal_face_to_back_control_width_expansion_factor};
+  const float a_height_expansion{a_width_expansion * abnormal_face_to_back_control_height_expansion_factor};
 
-//   if (in_h_abnormal_region) {
-//     r.adjust(-a_width_expansion, 0.0f, a_width_expansion, 0.0f);
-//   }
+  if (in_h_abnormal_region) {
+    r.adjust(-a_width_expansion, 0.0f, a_width_expansion, 0.0f);
+  }
 
-//   switch (quadrant) {
-//     case 2:  // Quadrant II: Abnormal face to back
-//     case 3:  // Quadrant III: Abnormal face to back
-//     case 6:  // On -ve X-axis: Abnormal face to back
-//       // Elipse like curve
-//       if (in_v_abnormal_region) {
-//         r.adjust(0.0f, -a_height_expansion, 0.0f, a_height_expansion);
-//       }
-//       break;
-//     default:
-//       break;
-//   }
+  switch (quadrant) {
+    case 2:  // Quadrant II: Abnormal face to back
+    case 3:  // Quadrant III: Abnormal face to back
+    case 6:  // On -ve X-axis: Abnormal face to back
+      // Elipse like curve
+      if (in_v_abnormal_region) {
+        r.adjust(0.0f, -a_height_expansion, 0.0f, a_height_expansion);
+      }
+      break;
+    default:
+      break;
+  }
 
-//   return r;
-// }
+  return r;
+}
 
-// std::pair<QPointF, QPointF> VisualShaderConnectionGraphicsObject::calculate_control_points(
-//     const QPointF& start_coordinate, [[maybe_unused]] const QPointF& end_coordinated) const {
-//   QPointF cp1;
-//   QPointF cp2;
+std::pair<QPointF, QPointF> VisualShaderConnectionGraphicsObject::calculate_control_points(
+    const QPointF& start_coordinate, [[maybe_unused]] const QPointF& end_coordinated) const {
+  QPointF cp1;
+  QPointF cp2;
 
-//   const float x1{(float)start_coordinate.x()};
-//   const float y1{(float)start_coordinate.y()};
-//   const float x2{(float)end_coordinate.x()};
-//   const float y2{(float)end_coordinate.y()};
+  const float x1{(float)start_coordinate.x()};
+  const float y1{(float)start_coordinate.y()};
+  const float x2{(float)end_coordinate.x()};
+  const float y2{(float)end_coordinate.y()};
 
-//   QRectF r{calculate_bounding_rect_from_coordinates(start_coordinate, end_coordinate)};
+  QRectF r{calculate_bounding_rect_from_coordinates(start_coordinate, end_coordinate)};
 
-//   const bool in_h_abnormal_region{x2 < (x1 + h_abnormal_offset)};
-//   const bool in_v_abnormal_region{std::abs(y2 - y1) < v_abnormal_offset};
+  const bool in_h_abnormal_region{x2 < (x1 + h_abnormal_offset)};
+  const bool in_v_abnormal_region{std::abs(y2 - y1) < v_abnormal_offset};
 
-//   const int quadrant{detect_quadrant({x1, y1}, {x2, y2})};
+  const int quadrant{detect_quadrant({x1, y1}, {x2, y2})};
 
-//   // We will expand the bounding rect horizontally so that our connection don't get cut off
-//   const float a_width_expansion{((x1 + h_abnormal_offset) - x2) * abnormal_face_to_back_control_width_expansion_factor};
-//   const float a_height_expansion{a_width_expansion * abnormal_face_to_back_control_height_expansion_factor};
+  // We will expand the bounding rect horizontally so that our connection don't get cut off
+  const float a_width_expansion{((x1 + h_abnormal_offset) - x2) * abnormal_face_to_back_control_width_expansion_factor};
+  const float a_height_expansion{a_width_expansion * abnormal_face_to_back_control_height_expansion_factor};
 
-//   const float cp_x_delta_factor{0.8f};
-//   const float cp_y_delta_factor{0.25f};
+  const float cp_x_delta_factor{0.8f};
+  const float cp_y_delta_factor{0.25f};
 
-//   // Normal region control points deltas
-//   const float cp_x_delta{(float)r.width() * cp_x_delta_factor};
-//   const float cp_y_delta{(float)r.height() * cp_y_delta_factor};
+  // Normal region control points deltas
+  const float cp_x_delta{(float)r.width() * cp_x_delta_factor};
+  const float cp_y_delta{(float)r.height() * cp_y_delta_factor};
 
-//   // Abnormal region control points deltas
-//   const float a_cp_x_delta{((float)r.width() - a_width_expansion) * cp_x_delta_factor};
-//   const float a_cp_y_delta{((float)r.height() - a_height_expansion) * cp_y_delta_factor};
+  // Abnormal region control points deltas
+  const float a_cp_x_delta{((float)r.width() - a_width_expansion) * cp_x_delta_factor};
+  const float a_cp_y_delta{((float)r.height() - a_height_expansion) * cp_y_delta_factor};
 
-//   switch (quadrant) {
-//     case 1:  // Quadrant I: Normal face to back
-//       // Find out if the connection is going from left to right normally
-//       if (in_h_abnormal_region) {
-//         // The connection is not going from left to right normally
-//         // Our control points will be outside the end_coordinate and start_coordinate bounding rect
-//         // We will expand the bounding rect horizontally to make it easier to get an accurate coordinate of the size
+  switch (quadrant) {
+    case 1:  // Quadrant I: Normal face to back
+      // Find out if the connection is going from left to right normally
+      if (in_h_abnormal_region) {
+        // The connection is not going from left to right normally
+        // Our control points will be outside the end_coordinate and start_coordinate bounding rect
+        // We will expand the bounding rect horizontally to make it easier to get an accurate coordinate of the size
 
-//         // Here we cover cases of nodes not facing each other.
-//         // This means we can't just send the path straight to the node.
+        // Here we cover cases of nodes not facing each other.
+        // This means we can't just send the path straight to the node.
 
-//         // Treated as inside Quadrant II
-//         cp1 = {x1 + a_cp_x_delta, y1};
-//         cp2 = {x2 - a_cp_x_delta, y2};
-//       } else {
-//         // Treated as inside Quadrant I
-//         cp1 = {x1 + cp_x_delta, y1 - cp_y_delta};
-//         cp2 = {x2 - cp_x_delta, y2 + cp_y_delta};
-//       }
-//       break;
-//     case 2:  // Quadrant II: Abnormal face to back
-//       if (in_v_abnormal_region) {
-//         cp1 = {x1 + a_cp_x_delta, y1 - a_cp_y_delta};
-//         cp2 = {x2 - a_cp_x_delta, y2 - a_cp_y_delta};
-//       } else {
-//         cp1 = {x1 + a_cp_x_delta, y1};
-//         cp2 = {x2 - a_cp_x_delta, y2};
-//       }
-//       break;
-//     case 3:  // Quadrant III: Abnormal face to back
-//       if (in_v_abnormal_region) {
-//         cp1 = {x1 + a_cp_x_delta, y1 - a_cp_y_delta};
-//         cp2 = {x2 - a_cp_x_delta, y2 - a_cp_y_delta};
-//       } else {
-//         cp1 = {x1 + a_width_expansion, y1};
-//         cp2 = {x2 - a_width_expansion, y2};
-//       }
-//       break;
-//     case 4:  // Quadrant IV: Normal face to back
-//       if (in_h_abnormal_region) {
-//         // Treated as inside Quadrant III
-//         cp1 = {x1 + a_cp_x_delta, y1};
-//         cp2 = {x2 - a_cp_x_delta, y2};
-//       } else {
-//         // Treated as inside Quadrant IV
-//         cp1 = {x1 + cp_x_delta, y1 + cp_y_delta};
-//         cp2 = {x2 - cp_x_delta, y2 - cp_y_delta};
-//       }
-//       break;
-//     case 5:  // On +ve X-axis: Normal face to back
-//       // Straight line
-//       cp1 = {x1, y1};
-//       cp2 = {x2, y2};
-//       break;
-//     case 6:  // On -ve X-axis: Abnormal face to back
-//       // Elipse like curve
-//       cp1 = {x1 + a_cp_x_delta, y1 - a_cp_y_delta};
-//       cp2 = {x2 - a_cp_x_delta, y2 - a_cp_y_delta};
-//       break;
-//     case 7:  // On +ve Y-axis: Abnormal face to back
-//     case 8:  // On -ve Y-axis: Abnormal face to back
-//       cp1 = {x1 + a_cp_x_delta, y1};
-//       cp2 = {x2 - a_cp_x_delta, y2};
-//       break;
-//     default:
-//       return std::make_pair(start_coordinate, end_coordinate);
-//   }
+        // Treated as inside Quadrant II
+        cp1 = {x1 + a_cp_x_delta, y1};
+        cp2 = {x2 - a_cp_x_delta, y2};
+      } else {
+        // Treated as inside Quadrant I
+        cp1 = {x1 + cp_x_delta, y1 - cp_y_delta};
+        cp2 = {x2 - cp_x_delta, y2 + cp_y_delta};
+      }
+      break;
+    case 2:  // Quadrant II: Abnormal face to back
+      if (in_v_abnormal_region) {
+        cp1 = {x1 + a_cp_x_delta, y1 - a_cp_y_delta};
+        cp2 = {x2 - a_cp_x_delta, y2 - a_cp_y_delta};
+      } else {
+        cp1 = {x1 + a_cp_x_delta, y1};
+        cp2 = {x2 - a_cp_x_delta, y2};
+      }
+      break;
+    case 3:  // Quadrant III: Abnormal face to back
+      if (in_v_abnormal_region) {
+        cp1 = {x1 + a_cp_x_delta, y1 - a_cp_y_delta};
+        cp2 = {x2 - a_cp_x_delta, y2 - a_cp_y_delta};
+      } else {
+        cp1 = {x1 + a_width_expansion, y1};
+        cp2 = {x2 - a_width_expansion, y2};
+      }
+      break;
+    case 4:  // Quadrant IV: Normal face to back
+      if (in_h_abnormal_region) {
+        // Treated as inside Quadrant III
+        cp1 = {x1 + a_cp_x_delta, y1};
+        cp2 = {x2 - a_cp_x_delta, y2};
+      } else {
+        // Treated as inside Quadrant IV
+        cp1 = {x1 + cp_x_delta, y1 + cp_y_delta};
+        cp2 = {x2 - cp_x_delta, y2 - cp_y_delta};
+      }
+      break;
+    case 5:  // On +ve X-axis: Normal face to back
+      // Straight line
+      cp1 = {x1, y1};
+      cp2 = {x2, y2};
+      break;
+    case 6:  // On -ve X-axis: Abnormal face to back
+      // Elipse like curve
+      cp1 = {x1 + a_cp_x_delta, y1 - a_cp_y_delta};
+      cp2 = {x2 - a_cp_x_delta, y2 - a_cp_y_delta};
+      break;
+    case 7:  // On +ve Y-axis: Abnormal face to back
+    case 8:  // On -ve Y-axis: Abnormal face to back
+      cp1 = {x1 + a_cp_x_delta, y1};
+      cp2 = {x2 - a_cp_x_delta, y2};
+      break;
+    default:
+      return std::make_pair(start_coordinate, end_coordinate);
+  }
 
-//   return std::make_pair(cp1, cp2);
-// }
+  return std::make_pair(cp1, cp2);
+}
 
 /**********************************************************************/
 /**********************************************************************/
@@ -2516,231 +2580,87 @@ void VisualShaderGraphicsView::move_view_to_fit_items() {
 /**********************************************************************/
 /**********************************************************************/
 
-// VisualShaderNodeEmbedWidget::VisualShaderNodeEmbedWidget(const std::shared_ptr<VisualShaderNode>& node, QWidget* parent)
-//     : QWidget(parent), layout(nullptr), preview_shader_button(nullptr), shader_previewer_widget(nullptr) {
-//   layout = new QVBoxLayout(this);
-//   layout->setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
-//   layout->setSizeConstraint(QLayout::SetNoConstraint);
-//   layout->setSpacing(2);
-//   layout->setAlignment(Qt::AlignVCenter | Qt::AlignHCenter);
+VisualShaderNodeEmbedWidget::VisualShaderNodeEmbedWidget(ProtoModel* visual_shader_model, 
+                                                         ProtoModel* nodes_model, 
+                                                         const int& n_id, 
+                                                         const std::shared_ptr<IGraphNode>& graph_node, 
+                                                         QWidget* parent) : QWidget(parent), 
+                                                                            layout(nullptr), 
+                                                                            preview_shader_button(nullptr), 
+                                                                            shader_previewer_widget(nullptr) {
+  layout = new QVBoxLayout(this);
+  layout->setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
+  layout->setSizeConstraint(QLayout::SetNoConstraint);
+  layout->setSpacing(2);
+  layout->setAlignment(Qt::AlignVCenter | Qt::AlignHCenter);
 
-//   if (auto p{std::dynamic_pointer_cast<VisualShaderNodeInput>(node)}) {
-//     VisualShaderNodeInputEmbedWidget* embed_widget = new VisualShaderNodeInputEmbedWidget(p);
-//     layout->addWidget(embed_widget);
-//     QObject::connect(embed_widget, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
-//                      &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
-//   } else if (auto p{std::dynamic_pointer_cast<VisualShaderNodeFloatFunc>(node)}) {
-//     VisualShaderNodeFloatFuncEmbedWidget* embed_widget = new VisualShaderNodeFloatFuncEmbedWidget(p);
-//     layout->addWidget(embed_widget);
-//     QObject::connect(embed_widget, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
-//                      &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
-//   } else if (auto p{std::dynamic_pointer_cast<VisualShaderNodeIntFunc>(node)}) {
-//     VisualShaderNodeIntFuncEmbedWidget* embed_widget = new VisualShaderNodeIntFuncEmbedWidget(p);
-//     layout->addWidget(embed_widget);
-//     QObject::connect(embed_widget, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
-//                      &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
-//   } else if (auto p{std::dynamic_pointer_cast<VisualShaderNodeUIntFunc>(node)}) {
-//     VisualShaderNodeUIntFuncEmbedWidget* embed_widget = new VisualShaderNodeUIntFuncEmbedWidget(p);
-//     layout->addWidget(embed_widget);
-//     QObject::connect(embed_widget, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
-//                      &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
-//   } else if (auto p{std::dynamic_pointer_cast<VisualShaderNodeFloatOp>(node)}) {
-//     VisualShaderNodeFloatOpEmbedWidget* embed_widget = new VisualShaderNodeFloatOpEmbedWidget(p);
-//     layout->addWidget(embed_widget);
-//     QObject::connect(embed_widget, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
-//                      &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
-//   } else if (auto p{std::dynamic_pointer_cast<VisualShaderNodeIntOp>(node)}) {
-//     VisualShaderNodeIntOpEmbedWidget* embed_widget = new VisualShaderNodeIntOpEmbedWidget(p);
-//     layout->addWidget(embed_widget);
-//     QObject::connect(embed_widget, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
-//                      &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
-//   } else if (auto p{std::dynamic_pointer_cast<VisualShaderNodeUIntOp>(node)}) {
-//     VisualShaderNodeUIntOpEmbedWidget* embed_widget = new VisualShaderNodeUIntOpEmbedWidget(p);
-//     layout->addWidget(embed_widget);
-//     QObject::connect(embed_widget, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
-//                      &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
-//   } else if (auto p{std::dynamic_pointer_cast<VisualShaderNodeValueNoise>(node)}) {
-//     VisualShaderNodeValueNoiseEmbedWidget* embed_widget = new VisualShaderNodeValueNoiseEmbedWidget(p);
-//     layout->addWidget(embed_widget);
-//     QObject::connect(embed_widget, &QLineEdit::textChanged, this,
-//                      &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
-//   } else if (auto p{std::dynamic_pointer_cast<VisualShaderNodePerlinNoise>(node)}) {
-//     VisualShaderNodePerlinNoiseEmbedWidget* embed_widget = new VisualShaderNodePerlinNoiseEmbedWidget(p);
-//     layout->addWidget(embed_widget);
-//     QObject::connect(embed_widget, &QLineEdit::textChanged, this,
-//                      &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
-//   } else if (auto p{std::dynamic_pointer_cast<VisualShaderNodeVoronoiNoise>(node)}) {
-//     VisualShaderNodeVoronoiNoiseAngleOffsetEmbedWidget* embed_widget =
-//         new VisualShaderNodeVoronoiNoiseAngleOffsetEmbedWidget(p);
-//     VisualShaderNodeVoronoiNoiseCellDensityEmbedWidget* embed_widget2 =
-//         new VisualShaderNodeVoronoiNoiseCellDensityEmbedWidget(p);
-//     layout->addWidget(embed_widget);
-//     layout->addWidget(embed_widget2);
-//     QObject::connect(embed_widget, &QLineEdit::textChanged, this,
-//                      &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
-//     QObject::connect(embed_widget2, &QLineEdit::textChanged, this,
-//                      &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
-//   } else if (auto p{std::dynamic_pointer_cast<VisualShaderNodeColorConstant>(node)}) {
-//     VisualShaderNodeColorConstantEmbedWidget* embed_widget = new VisualShaderNodeColorConstantEmbedWidget(p);
-//     layout->addWidget(embed_widget);
-//     QObject::connect(embed_widget, &VisualShaderNodeColorConstantEmbedWidget::color_changed, this,
-//                      &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
-//   } else if (auto p{std::dynamic_pointer_cast<VisualShaderNodeBooleanConstant>(node)}) {
-//     VisualShaderNodeBooleanConstantEmbedWidget* embed_widget = new VisualShaderNodeBooleanConstantEmbedWidget(p);
-//     layout->addWidget(embed_widget);
-//     QObject::connect(embed_widget, &QCheckBox::stateChanged, this,
-//                      &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
-//   } else if (auto p{std::dynamic_pointer_cast<VisualShaderNodeFloatConstant>(node)}) {
-//     VisualShaderNodeFloatConstantEmbedWidget* embed_widget = new VisualShaderNodeFloatConstantEmbedWidget(p);
-//     layout->addWidget(embed_widget);
-//     QObject::connect(embed_widget, &QLineEdit::textChanged, this,
-//                      &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
-//   } else if (auto p{std::dynamic_pointer_cast<VisualShaderNodeIntConstant>(node)}) {
-//     VisualShaderNodeIntConstantEmbedWidget* embed_widget = new VisualShaderNodeIntConstantEmbedWidget(p);
-//     layout->addWidget(embed_widget);
-//     QObject::connect(embed_widget, &QLineEdit::textChanged, this,
-//                      &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
-//   } else if (auto p{std::dynamic_pointer_cast<VisualShaderNodeUIntConstant>(node)}) {
-//     VisualShaderNodeUIntConstantEmbedWidget* embed_widget = new VisualShaderNodeUIntConstantEmbedWidget(p);
-//     layout->addWidget(embed_widget);
-//     QObject::connect(embed_widget, &QLineEdit::textChanged, this,
-//                      &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
-//   } else if (auto p{std::dynamic_pointer_cast<VisualShaderNodeVec2Constant>(node)}) {
-//     VisualShaderNodeVec2ConstantEmbedWidget* embed_widget = new VisualShaderNodeVec2ConstantEmbedWidget(p);
-//     layout->addLayout(embed_widget);
-//     QObject::connect(embed_widget->get_x_edit_widget(), &QLineEdit::textChanged, this,
-//                      &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
-//     QObject::connect(embed_widget->get_y_edit_widget(), &QLineEdit::textChanged, this,
-//                      &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
-//   } else if (auto p{std::dynamic_pointer_cast<VisualShaderNodeVec3Constant>(node)}) {
-//     VisualShaderNodeVec3ConstantEmbedWidget* embed_widget = new VisualShaderNodeVec3ConstantEmbedWidget(p);
-//     layout->addLayout(embed_widget);
-//     QObject::connect(embed_widget->get_x_edit_widget(), &QLineEdit::textChanged, this,
-//                      &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
-//     QObject::connect(embed_widget->get_y_edit_widget(), &QLineEdit::textChanged, this,
-//                      &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
-//     QObject::connect(embed_widget->get_z_edit_widget(), &QLineEdit::textChanged, this,
-//                      &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
-//   } else if (auto p{std::dynamic_pointer_cast<VisualShaderNodeVec4Constant>(node)}) {
-//     VisualShaderNodeVec4ConstantEmbedWidget* embed_widget = new VisualShaderNodeVec4ConstantEmbedWidget(p);
-//     layout->addLayout(embed_widget);
-//     QObject::connect(embed_widget->get_x_edit_widget(), &QLineEdit::textChanged, this,
-//                      &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
-//     QObject::connect(embed_widget->get_y_edit_widget(), &QLineEdit::textChanged, this,
-//                      &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
-//     QObject::connect(embed_widget->get_z_edit_widget(), &QLineEdit::textChanged, this,
-//                      &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
-//     QObject::connect(embed_widget->get_w_edit_widget(), &QLineEdit::textChanged, this,
-//                      &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
-//   } else if (auto p{std::dynamic_pointer_cast<VisualShaderNodeVectorOp>(node)}) {
-//     VisualShaderNodeVectorBaseEmbedWidget* embed_widget = new VisualShaderNodeVectorBaseEmbedWidget(p);
-//     layout->addWidget(embed_widget);
-//     VisualShaderNodeVectorOpEmbedWidget* embed_widget2 = new VisualShaderNodeVectorOpEmbedWidget(p);
-//     layout->addWidget(embed_widget2);
-//     QObject::connect(embed_widget2, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
-//                      &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
-//   } else if (auto p{std::dynamic_pointer_cast<VisualShaderNodeVectorFunc>(node)}) {
-//     VisualShaderNodeVectorBaseEmbedWidget* embed_widget = new VisualShaderNodeVectorBaseEmbedWidget(p);
-//     layout->addWidget(embed_widget);
-//     VisualShaderNodeVectorFuncEmbedWidget* embed_widget2 = new VisualShaderNodeVectorFuncEmbedWidget(p);
-//     layout->addWidget(embed_widget2);
-//     QObject::connect(embed_widget2, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
-//                      &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
-//   } else if (auto p{std::dynamic_pointer_cast<VisualShaderNodeVectorCompose>(node)}) {
-//     VisualShaderNodeVectorBaseEmbedWidget* embed_widget = new VisualShaderNodeVectorBaseEmbedWidget(p);
-//     layout->addWidget(embed_widget);
-//     QObject::connect(embed_widget, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
-//                      &VisualShaderNodeEmbedWidget::on_node_update_requested);
-//   } else if (auto p{std::dynamic_pointer_cast<VisualShaderNodeVectorDecompose>(node)}) {
-//     VisualShaderNodeVectorBaseEmbedWidget* embed_widget = new VisualShaderNodeVectorBaseEmbedWidget(p);
-//     layout->addWidget(embed_widget);
-//     QObject::connect(embed_widget, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
-//                      &VisualShaderNodeEmbedWidget::on_node_update_requested);
-//   } else if (auto p{std::dynamic_pointer_cast<VisualShaderNodeDerivativeFunc>(node)}) {
-//     VisualShaderNodeDerivativeFuncEmbedWidget* embed_widget = new VisualShaderNodeDerivativeFuncEmbedWidget(p);
-//     layout->addLayout(embed_widget);
-//     QObject::connect(embed_widget->get_op_type_combo_box(), QOverload<int>::of(&QComboBox::currentIndexChanged), this,
-//                      &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
+  if (auto input_node = std::dynamic_pointer_cast<GraphNode<VisualShaderNodeInput>>(graph_node)) {
+    VisualShaderNodeInputEmbedWidget* embed_widget = new VisualShaderNodeInputEmbedWidget(visual_shader_model, nodes_model, n_id, graph_node);
+    layout->addWidget(embed_widget);
+    QObject::connect(embed_widget, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
+                    &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
+  } else {
+    FAIL_AND_RETURN("Unknown node type");
+  }
 
-//     QObject::connect(embed_widget->get_function_combo_box(), QOverload<int>::of(&QComboBox::currentIndexChanged), this,
-//                      &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
-//     QObject::connect(embed_widget->get_precision_combo_box(), QOverload<int>::of(&QComboBox::currentIndexChanged), this,
-//                      &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
-//   } else if (auto p{std::dynamic_pointer_cast<VisualShaderNodeCompare>(node)}) {
-//     VisualShaderNodeCompareEmbedWidget* embed_widget = new VisualShaderNodeCompareEmbedWidget(p);
-//     layout->addLayout(embed_widget);
-//     QObject::connect(embed_widget->get_comparison_type_combo_box(), QOverload<int>::of(&QComboBox::currentIndexChanged),
-//                      this, &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
-//     QObject::connect(embed_widget->get_func_combo_box(), QOverload<int>::of(&QComboBox::currentIndexChanged), this,
-//                      &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
-//     QObject::connect(embed_widget->get_condition_combo_box(), QOverload<int>::of(&QComboBox::currentIndexChanged), this,
-//                      &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
-//   } else if (auto p{std::dynamic_pointer_cast<VisualShaderNodeSwitch>(node)}) {
-//     VisualShaderNodeSwitchEmbedWidget* embed_widget = new VisualShaderNodeSwitchEmbedWidget(p);
-//     layout->addWidget(embed_widget);
-//     QObject::connect(embed_widget, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
-//                      &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
-//   } else if (auto p{std::dynamic_pointer_cast<VisualShaderNodeIs>(node)}) {
-//     VisualShaderNodeIsEmbedWidget* embed_widget = new VisualShaderNodeIsEmbedWidget(p);
-//     layout->addWidget(embed_widget);
-//     QObject::connect(embed_widget, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
-//                      &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
-//   }
+  // Create the button that will show/hide the shader previewer
+  preview_shader_button = new QPushButton("Show Preview", this);
+  preview_shader_button->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+  preview_shader_button->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
+  preview_shader_button->setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
+  preview_shader_button->setToolTip("Create a new node");
+  layout->addWidget(preview_shader_button);
+  QObject::connect(preview_shader_button, &QPushButton::pressed, this,
+                   &VisualShaderNodeEmbedWidget::on_preview_shader_button_pressed);
 
-//   // Create the button that will show/hide the shader previewer
-//   preview_shader_button = new QPushButton("Show Preview", this);
-//   preview_shader_button->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
-//   preview_shader_button->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
-//   preview_shader_button->setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
-//   preview_shader_button->setToolTip("Create a new node");
-//   layout->addWidget(preview_shader_button);
-//   QObject::connect(preview_shader_button, &QPushButton::pressed, this,
-//                    &VisualShaderNodeEmbedWidget::on_preview_shader_button_pressed);
+  this->setContentsMargins(10, 10, 10, 10);  // Left, top, right, bottom
+  setLayout(layout);
+}
 
-//   this->setContentsMargins(10, 10, 10, 10);  // Left, top, right, bottom
-//   setLayout(layout);
-// }
+/*************************************/
+/* Input Node                        */
+/*************************************/
 
-// VisualShaderNodeEmbedWidget::~VisualShaderNodeEmbedWidget() {}
+VisualShaderNodeInputEmbedWidget::VisualShaderNodeInputEmbedWidget(ProtoModel* visual_shader_model, 
+                                                                   ProtoModel* nodes_model, 
+                                                                   const int& n_id, 
+                                                                   const std::shared_ptr<IGraphNode>& graph_node) : QComboBox(), 
+                                                                                                           visual_shader_model(visual_shader_model),
+                                                                                                           nodes_model(nodes_model), 
+                                                                                                           n_id(n_id),
+                                                                                                           graph_node(graph_node) {
+  setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
+  setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
 
-// /*************************************/
-// /* Input Node                        */
-// /*************************************/
+  int input_type_count{graph_node->get_input_type_count()};
+  for (int i{0}; i < input_type_count; ++i) {
+    VisualShaderNodeInputType input_type{graph_node->get_input_type(i)};
+    addItem(QString::fromStdString(graph_node->get_input_type_caption(input_type)));
+  }
 
-// VisualShaderNodeInputEmbedWidget::VisualShaderNodeInputEmbedWidget(const std::shared_ptr<VisualShaderNodeInput>& node)
-//     : QComboBox(), node(node) {
-//   setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
-//   setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
+  int row_entry{VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, n_id)};
+  setCurrentIndex(visual_shader_model->data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kInputFieldNumber), FieldPath::FieldNumber(VisualShaderNodeInput::kTypeFieldNumber))).toInt());
 
-//   // Add the default item
-//   addItem(QString::fromStdString(node->get_input_name()), "");
+  QObject::connect(this, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
+                   &VisualShaderNodeInputEmbedWidget::on_current_index_changed);
+}
 
-//   const VisualShaderNodeInput::Port* ps{VisualShaderNodeInput::get_ports()};
+VisualShaderNodeInputEmbedWidget::~VisualShaderNodeInputEmbedWidget() {}
 
-//   int i{0};
+void VisualShaderNodeInputEmbedWidget::on_current_index_changed(const int& index) {
+  int row_entry{VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, n_id)};
+  bool result = visual_shader_model->set_data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kInputFieldNumber), FieldPath::FieldNumber(VisualShaderNodeInput::kTypeFieldNumber)), (VisualShaderNodeInputType)index);
+  if (!result) {
+    ERROR_PRINT("Failed to set data");
+  }
+}
 
-//   while (ps[i].type != VisualShaderNode::PortType::PORT_TYPE_ENUM_SIZE) {
-//     addItem(QString::fromStdString(ps[i].name));
-//     i++;
-//   }
+/*************************************/
+/* Float Op Node                     */
+/*************************************/
 
-//   QObject::connect(this, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
-//                    &VisualShaderNodeInputEmbedWidget::on_current_index_changed);
-// }
-
-// VisualShaderNodeInputEmbedWidget::~VisualShaderNodeInputEmbedWidget() {}
-
-// void VisualShaderNodeInputEmbedWidget::on_current_index_changed(const int& index) {
-//   node->set_input_name(itemText(index).toStdString());
-// }
-
-// /*************************************/
-// /* Float Op Node                     */
-// /*************************************/
-
-// VisualShaderNodeFloatOpEmbedWidget::VisualShaderNodeFloatOpEmbedWidget(
-//     const std::shared_ptr<VisualShaderNodeFloatOp>& node)
-//     : QComboBox(), node(node) {
+// VisualShaderNodeFloatOpEmbedWidget::VisualShaderNodeFloatOpEmbedWidget(const std::shared_ptr<IGraphNode>& graph_node)
+//     : QComboBox(), graph_node(graph_node) {
 //   setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
 //   setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
 
@@ -2771,8 +2691,8 @@ void VisualShaderGraphicsView::move_view_to_fit_items() {
 // /* Int Op Node                       */
 // /*************************************/
 
-// VisualShaderNodeIntOpEmbedWidget::VisualShaderNodeIntOpEmbedWidget(const std::shared_ptr<VisualShaderNodeIntOp>& node)
-//     : QComboBox(), node(node) {
+// VisualShaderNodeIntOpEmbedWidget::VisualShaderNodeIntOpEmbedWidget(const std::shared_ptr<IGraphNode>& graph_node)
+//     : QComboBox(), graph_node(graph_node) {
 //   setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
 //   setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
 
@@ -2805,9 +2725,8 @@ void VisualShaderGraphicsView::move_view_to_fit_items() {
 // /* UInt Op Node                      */
 // /*************************************/
 
-// VisualShaderNodeUIntOpEmbedWidget::VisualShaderNodeUIntOpEmbedWidget(
-//     const std::shared_ptr<VisualShaderNodeUIntOp>& node)
-//     : QComboBox(), node(node) {
+// VisualShaderNodeUIntOpEmbedWidget::VisualShaderNodeUIntOpEmbedWidget(const std::shared_ptr<IGraphNode>& graph_node)
+//     : QComboBox(), graph_node(graph_node) {
 //   setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
 //   setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
 
@@ -2840,9 +2759,8 @@ void VisualShaderGraphicsView::move_view_to_fit_items() {
 // /* Float Funcs Node                  */
 // /*************************************/
 
-// VisualShaderNodeFloatFuncEmbedWidget::VisualShaderNodeFloatFuncEmbedWidget(
-//     const std::shared_ptr<VisualShaderNodeFloatFunc>& node)
-//     : QComboBox(), node(node) {
+// VisualShaderNodeFloatFuncEmbedWidget::VisualShaderNodeFloatFuncEmbedWidget(const std::shared_ptr<IGraphNode>& graph_node)
+//     : QComboBox(), graph_node(graph_node) {
 //   setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
 //   setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
 
@@ -2895,9 +2813,8 @@ void VisualShaderGraphicsView::move_view_to_fit_items() {
 // /* Int Funcs Node                    */
 // /*************************************/
 
-// VisualShaderNodeIntFuncEmbedWidget::VisualShaderNodeIntFuncEmbedWidget(
-//     const std::shared_ptr<VisualShaderNodeIntFunc>& node)
-//     : QComboBox(), node(node) {
+// VisualShaderNodeIntFuncEmbedWidget::VisualShaderNodeIntFuncEmbedWidget(const std::shared_ptr<IGraphNode>& graph_node)
+//     : QComboBox(), graph_node(graph_node) {
 //   setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
 //   setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
 
@@ -2922,9 +2839,8 @@ void VisualShaderGraphicsView::move_view_to_fit_items() {
 // /* UInt Funcs Node                   */
 // /*************************************/
 
-// VisualShaderNodeUIntFuncEmbedWidget::VisualShaderNodeUIntFuncEmbedWidget(
-//     const std::shared_ptr<VisualShaderNodeUIntFunc>& node)
-//     : QComboBox(), node(node) {
+// VisualShaderNodeUIntFuncEmbedWidget::VisualShaderNodeUIntFuncEmbedWidget(const std::shared_ptr<IGraphNode>& graph_node)
+//     : QComboBox(), graph_node(graph_node) {
 //   setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
 //   setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
 
@@ -2947,9 +2863,8 @@ void VisualShaderGraphicsView::move_view_to_fit_items() {
 // /* Vector Base                       */
 // /*************************************/
 
-// VisualShaderNodeVectorBaseEmbedWidget::VisualShaderNodeVectorBaseEmbedWidget(
-//     const std::shared_ptr<VisualShaderNodeVectorBase>& node)
-//     : QComboBox(), node(node) {
+// VisualShaderNodeVectorBaseEmbedWidget::VisualShaderNodeVectorBaseEmbedWidget(const std::shared_ptr<IGraphNode>& graph_node)
+//     : QComboBox(), graph_node(graph_node) {
 //   setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
 //   setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
 
@@ -2974,9 +2889,8 @@ void VisualShaderGraphicsView::move_view_to_fit_items() {
 // /* Vector Op Node                    */
 // /*************************************/
 
-// VisualShaderNodeVectorOpEmbedWidget::VisualShaderNodeVectorOpEmbedWidget(
-//     const std::shared_ptr<VisualShaderNodeVectorOp>& node)
-//     : QComboBox(), node(node) {
+// VisualShaderNodeVectorOpEmbedWidget::VisualShaderNodeVectorOpEmbedWidget(const std::shared_ptr<IGraphNode>& graph_node)
+//     : QComboBox(), graph_node(graph_node) {
 //   setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
 //   setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
 
@@ -3009,9 +2923,8 @@ void VisualShaderGraphicsView::move_view_to_fit_items() {
 // /* Vector Funcs Node                 */
 // /*************************************/
 
-// VisualShaderNodeVectorFuncEmbedWidget::VisualShaderNodeVectorFuncEmbedWidget(
-//     const std::shared_ptr<VisualShaderNodeVectorFunc>& node)
-//     : QComboBox(), node(node) {
+// VisualShaderNodeVectorFuncEmbedWidget::VisualShaderNodeVectorFuncEmbedWidget(const std::shared_ptr<IGraphNode>& graph_node)
+//     : QComboBox(), graph_node(graph_node) {
 //   setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
 //   setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
 
@@ -3065,9 +2978,8 @@ void VisualShaderGraphicsView::move_view_to_fit_items() {
 // /* Color Constant Node               */
 // /*************************************/
 
-// VisualShaderNodeColorConstantEmbedWidget::VisualShaderNodeColorConstantEmbedWidget(
-//     const std::shared_ptr<VisualShaderNodeColorConstant>& node)
-//     : QPushButton(), node(node) {
+// VisualShaderNodeColorConstantEmbedWidget::VisualShaderNodeColorConstantEmbedWidget(const std::shared_ptr<IGraphNode>& graph_node)
+//     : QPushButton(), graph_node(graph_node) {
 //   setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
 //   setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
 
@@ -3109,9 +3021,8 @@ void VisualShaderGraphicsView::move_view_to_fit_items() {
 // /* Boolean Constant Node             */
 // /*************************************/
 
-// VisualShaderNodeBooleanConstantEmbedWidget::VisualShaderNodeBooleanConstantEmbedWidget(
-//     const std::shared_ptr<VisualShaderNodeBooleanConstant>& node)
-//     : QCheckBox(), node(node) {
+// VisualShaderNodeBooleanConstantEmbedWidget::VisualShaderNodeBooleanConstantEmbedWidget(const std::shared_ptr<IGraphNode>& graph_node)
+//     : QCheckBox(), graph_node(graph_node) {
 //   setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
 //   setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
 
@@ -3130,9 +3041,8 @@ void VisualShaderGraphicsView::move_view_to_fit_items() {
 // /* Float Constant                    */
 // /*************************************/
 
-// VisualShaderNodeFloatConstantEmbedWidget::VisualShaderNodeFloatConstantEmbedWidget(
-//     const std::shared_ptr<VisualShaderNodeFloatConstant>& node)
-//     : QLineEdit(), node(node) {
+// VisualShaderNodeFloatConstantEmbedWidget::VisualShaderNodeFloatConstantEmbedWidget(const std::shared_ptr<IGraphNode>& graph_node)
+//     : QLineEdit(), graph_node(graph_node) {
 //   setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
 //   setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
 
@@ -3164,9 +3074,8 @@ void VisualShaderGraphicsView::move_view_to_fit_items() {
 // /* Int Constant                      */
 // /*************************************/
 
-// VisualShaderNodeIntConstantEmbedWidget::VisualShaderNodeIntConstantEmbedWidget(
-//     const std::shared_ptr<VisualShaderNodeIntConstant>& node)
-//     : QLineEdit(), node(node) {
+// VisualShaderNodeIntConstantEmbedWidget::VisualShaderNodeIntConstantEmbedWidget(const std::shared_ptr<IGraphNode>& graph_node)
+//     : QLineEdit(), graph_node(graph_node) {
 //   setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
 //   setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
 
@@ -3198,9 +3107,8 @@ void VisualShaderGraphicsView::move_view_to_fit_items() {
 // /* UInt Constant                     */
 // /*************************************/
 
-// VisualShaderNodeUIntConstantEmbedWidget::VisualShaderNodeUIntConstantEmbedWidget(
-//     const std::shared_ptr<VisualShaderNodeUIntConstant>& node)
-//     : QLineEdit(), node(node) {
+// VisualShaderNodeUIntConstantEmbedWidget::VisualShaderNodeUIntConstantEmbedWidget(const std::shared_ptr<IGraphNode>& graph_node)
+//     : QLineEdit(), graph_node(graph_node) {
 //   setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
 //   setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
 
@@ -3232,9 +3140,8 @@ void VisualShaderGraphicsView::move_view_to_fit_items() {
 // /* Vec2 Constant Node                */
 // /*************************************/
 
-// VisualShaderNodeVec2ConstantEmbedWidget::VisualShaderNodeVec2ConstantEmbedWidget(
-//     const std::shared_ptr<VisualShaderNodeVec2Constant>& node)
-//     : QVBoxLayout(), node(node) {
+// VisualShaderNodeVec2ConstantEmbedWidget::VisualShaderNodeVec2ConstantEmbedWidget(const std::shared_ptr<IGraphNode>& graph_node)
+//     : QVBoxLayout(), graph_node(graph_node) {
 //   setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
 //   setSizeConstraint(QLayout::SetNoConstraint);
 //   setSpacing(2);
@@ -3294,9 +3201,8 @@ void VisualShaderGraphicsView::move_view_to_fit_items() {
 // /* Vec3 Constant Node                */
 // /*************************************/
 
-// VisualShaderNodeVec3ConstantEmbedWidget::VisualShaderNodeVec3ConstantEmbedWidget(
-//     const std::shared_ptr<VisualShaderNodeVec3Constant>& node)
-//     : QVBoxLayout(), node(node) {
+// VisualShaderNodeVec3ConstantEmbedWidget::VisualShaderNodeVec3ConstantEmbedWidget(const std::shared_ptr<IGraphNode>& graph_node)
+//     : QVBoxLayout(), graph_node(graph_node) {
 //   setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
 //   setSizeConstraint(QLayout::SetNoConstraint);
 //   setSpacing(2);
@@ -3377,9 +3283,8 @@ void VisualShaderGraphicsView::move_view_to_fit_items() {
 // /* Vec4 Constant Node                */
 // /*************************************/
 
-// VisualShaderNodeVec4ConstantEmbedWidget::VisualShaderNodeVec4ConstantEmbedWidget(
-//     const std::shared_ptr<VisualShaderNodeVec4Constant>& node)
-//     : QVBoxLayout(), node(node) {
+// VisualShaderNodeVec4ConstantEmbedWidget::VisualShaderNodeVec4ConstantEmbedWidget(const std::shared_ptr<IGraphNode>& graph_node)
+//     : QVBoxLayout(), graph_node(graph_node) {
 //   setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
 //   setSizeConstraint(QLayout::SetNoConstraint);
 //   setSpacing(2);
@@ -3481,9 +3386,8 @@ void VisualShaderGraphicsView::move_view_to_fit_items() {
 // /* Derivative Func Node              */
 // /*************************************/
 
-// VisualShaderNodeDerivativeFuncEmbedWidget::VisualShaderNodeDerivativeFuncEmbedWidget(
-//     const std::shared_ptr<VisualShaderNodeDerivativeFunc>& node)
-//     : QVBoxLayout(), node(node) {
+// VisualShaderNodeDerivativeFuncEmbedWidget::VisualShaderNodeDerivativeFuncEmbedWidget(const std::shared_ptr<IGraphNode>& graph_node)
+//     : QVBoxLayout(), graph_node(graph_node) {
 //   setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
 //   setSizeConstraint(QLayout::SetNoConstraint);
 //   setSpacing(2);
@@ -3542,9 +3446,8 @@ void VisualShaderGraphicsView::move_view_to_fit_items() {
 // /* Value Noise Node                  */
 // /*************************************/
 
-// VisualShaderNodeValueNoiseEmbedWidget::VisualShaderNodeValueNoiseEmbedWidget(
-//     const std::shared_ptr<VisualShaderNodeValueNoise>& node)
-//     : QLineEdit(), node(node) {
+// VisualShaderNodeValueNoiseEmbedWidget::VisualShaderNodeValueNoiseEmbedWidget(const std::shared_ptr<IGraphNode>& graph_node)
+//     : QLineEdit(), graph_node(graph_node) {
 //   setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
 //   setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
 
@@ -3576,9 +3479,8 @@ void VisualShaderGraphicsView::move_view_to_fit_items() {
 // /* Perlin Noise Node                 */
 // /*************************************/
 
-// VisualShaderNodePerlinNoiseEmbedWidget::VisualShaderNodePerlinNoiseEmbedWidget(
-//     const std::shared_ptr<VisualShaderNodePerlinNoise>& node)
-//     : QLineEdit(), node(node) {
+// VisualShaderNodePerlinNoiseEmbedWidget::VisualShaderNodePerlinNoiseEmbedWidget(const std::shared_ptr<IGraphNode>& graph_node)
+//     : QLineEdit(), graph_node(graph_node) {
 //   setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
 //   setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
 
@@ -3610,9 +3512,8 @@ void VisualShaderGraphicsView::move_view_to_fit_items() {
 // /* Voronoi Noise Node                */
 // /*************************************/
 
-// VisualShaderNodeVoronoiNoiseAngleOffsetEmbedWidget::VisualShaderNodeVoronoiNoiseAngleOffsetEmbedWidget(
-//     const std::shared_ptr<VisualShaderNodeVoronoiNoise>& node)
-//     : QLineEdit(), node(node) {
+// VisualShaderNodeVoronoiNoiseAngleOffsetEmbedWidget::VisualShaderNodeVoronoiNoiseAngleOffsetEmbedWidget(const std::shared_ptr<IGraphNode>& graph_node)
+//     : QLineEdit(), graph_node(graph_node) {
 //   setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
 //   setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
 
@@ -3641,9 +3542,8 @@ void VisualShaderGraphicsView::move_view_to_fit_items() {
 //   }
 // }
 
-// VisualShaderNodeVoronoiNoiseCellDensityEmbedWidget::VisualShaderNodeVoronoiNoiseCellDensityEmbedWidget(
-//     const std::shared_ptr<VisualShaderNodeVoronoiNoise>& node)
-//     : QLineEdit(), node(node) {
+// VisualShaderNodeVoronoiNoiseCellDensityEmbedWidget::VisualShaderNodeVoronoiNoiseCellDensityEmbedWidget(const std::shared_ptr<IGraphNode>& graph_node)
+//     : QLineEdit(), graph_node(graph_node) {
 //   setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
 //   setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
 
@@ -3680,9 +3580,8 @@ void VisualShaderGraphicsView::move_view_to_fit_items() {
 // /* Compare Node                      */
 // /*************************************/
 
-// VisualShaderNodeCompareEmbedWidget::VisualShaderNodeCompareEmbedWidget(
-//     const std::shared_ptr<VisualShaderNodeCompare>& node)
-//     : QVBoxLayout(), node(node) {
+// VisualShaderNodeCompareEmbedWidget::VisualShaderNodeCompareEmbedWidget(const std::shared_ptr<IGraphNode>& graph_node)
+//     : QVBoxLayout(), graph_node(graph_node) {
 //   setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
 //   setSizeConstraint(QLayout::SetNoConstraint);
 //   setSpacing(2);
@@ -3738,9 +3637,8 @@ void VisualShaderGraphicsView::move_view_to_fit_items() {
 // /* Switch Node                       */
 // /*************************************/
 
-// VisualShaderNodeSwitchEmbedWidget::VisualShaderNodeSwitchEmbedWidget(
-//     const std::shared_ptr<VisualShaderNodeSwitch>& node)
-//     : QComboBox(), node(node) {
+// VisualShaderNodeSwitchEmbedWidget::VisualShaderNodeSwitchEmbedWidget(const std::shared_ptr<IGraphNode>& graph_node)
+//     : QComboBox(), graph_node(graph_node) {
 //   setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
 //   setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
 
@@ -3768,8 +3666,8 @@ void VisualShaderGraphicsView::move_view_to_fit_items() {
 // /* Is Node                           */
 // /*************************************/
 
-// VisualShaderNodeIsEmbedWidget::VisualShaderNodeIsEmbedWidget(const std::shared_ptr<VisualShaderNodeIs>& node)
-//     : QComboBox(), node(node) {
+// VisualShaderNodeIsEmbedWidget::VisualShaderNodeIsEmbedWidget(const std::shared_ptr<IGraphNode>& graph_node)
+//     : QComboBox(), graph_node(graph_node) {
 //   setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
 //   setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
 
