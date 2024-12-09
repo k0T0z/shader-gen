@@ -30,14 +30,14 @@
 
 #ifndef ENIGMA_ORG_NAME
 #error "No organization name defined"
-#endif // ENIGMA_ORG_NAME
+#endif  // ENIGMA_ORG_NAME
 
 #ifndef SHADER_GEN_PROJECT_NAME
 #error "No project name defined"
-#endif // SHADER_GEN_PROJECT_NAME
+#endif  // SHADER_GEN_PROJECT_NAME
 
 #ifndef SHADER_GEN_PROJECT_VERSION
 #error "No project version defined"
-#endif // SHADER_GEN_PROJECT_VERSION
+#endif  // SHADER_GEN_PROJECT_VERSION
 
-#endif // MAIN_HPP
+#endif  // MAIN_HPP

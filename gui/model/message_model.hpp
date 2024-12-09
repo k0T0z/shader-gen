@@ -28,9 +28,9 @@
 #ifndef MESSAGE_MODEL_HPP
 #define MESSAGE_MODEL_HPP
 
-#include <vector>
-#include <memory>
 #include <google/protobuf/message.h>
+#include <memory>
+#include <vector>
 #include "gui/model/proto_model.hpp"
 
 using Message = google::protobuf::Message;
@@ -54,41 +54,41 @@ using FieldDescriptor = google::protobuf::FieldDescriptor;
     @todo Make lazy allocation of sub-models' messages
 */
 class MessageModel : public ProtoModel {
-    Q_OBJECT
+  Q_OBJECT
 
-public:
-    MessageModel(Message* message_buffer, ProtoModel* parent_model = nullptr, const int& index_in_parent = -1);
-    virtual ~MessageModel() override {
-        clear_sub_models();
-    }
+ public:
+  MessageModel(Message* message_buffer, ProtoModel* parent_model = nullptr, const int& index_in_parent = -1);
+  virtual ~MessageModel() override { clear_sub_models(); }
 
-    virtual void build_sub_models() override;
+  virtual void build_sub_models() override;
 
-    virtual void parent_data_changed() const override;
+  virtual void parent_data_changed() const override;
 
-    QVariant data() const override;
-    bool set_data(const QVariant& value) override;
-    
-    const ProtoModel* get_sub_model(const int& field_number) const;
-    const ProtoModel* get_sub_model(const FieldPath& path, const bool& for_set_data = false, const bool& for_get_oneof = false) const override;
+  QVariant data() const override;
+  bool set_data(const QVariant& value) override;
 
-    const FieldDescriptor* get_column_descriptor(const int& column) const override;
+  const ProtoModel* get_sub_model(const int& field_number) const;
+  const ProtoModel* get_sub_model(const FieldPath& path, const bool& for_set_data = false,
+                                  const bool& for_get_oneof = false) const override;
 
-    virtual QModelIndex parent(const QModelIndex &child) const override;
-    virtual int rowCount([[maybe_unused]] const QModelIndex &parent = QModelIndex()) const override { return 1; }
-    virtual int columnCount(const QModelIndex &parent = QModelIndex()) const override;
-    virtual QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override;
-    virtual bool setData(const QModelIndex &index, const QVariant &value, int role = Qt::EditRole) override;
-    virtual QVariant headerData([[maybe_unused]] int section, [[maybe_unused]] Qt::Orientation orientation, [[maybe_unused]] int role = Qt::DisplayRole) const override;
+  const FieldDescriptor* get_column_descriptor(const int& column) const override;
 
-    virtual Message* get_message_buffer() const override { return m_message_buffer; }
+  virtual QModelIndex parent(const QModelIndex& child) const override;
+  virtual int rowCount([[maybe_unused]] const QModelIndex& parent = QModelIndex()) const override { return 1; }
+  virtual int columnCount(const QModelIndex& parent = QModelIndex()) const override;
+  virtual QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const override;
+  virtual bool setData(const QModelIndex& index, const QVariant& value, int role = Qt::EditRole) override;
+  virtual QVariant headerData([[maybe_unused]] int section, [[maybe_unused]] Qt::Orientation orientation,
+                              [[maybe_unused]] int role = Qt::DisplayRole) const override;
 
-private:
-    Message* m_message_buffer;
-    std::unordered_map<int, ProtoModel*> m_sub_models_by_field_number;
-    std::unordered_map<std::string, ProtoModel*> m_sub_models_by_oneof_name;
+  virtual Message* get_message_buffer() const override { return m_message_buffer; }
 
-    /*
+ private:
+  Message* m_message_buffer;
+  std::unordered_map<int, ProtoModel*> m_sub_models_by_field_number;
+  std::unordered_map<std::string, ProtoModel*> m_sub_models_by_oneof_name;
+
+  /*
         This last_accessed_field_index is only needed in one case: When I need to propagate a
         column index from a message to its parent which is a repeated message model.
 
@@ -116,10 +116,10 @@ private:
         Check MessageModel::parent_data_changed(), the RepeatedMessageModel if branch for more 
         information. This is the only branch we use the last_accessed_field_index for.
     */
-    mutable int last_accessed_field_index;
+  mutable int last_accessed_field_index;
 
-    virtual void clear_sub_models() override;
-    int map_to_oneof_index(const int& field_index) const;
+  virtual void clear_sub_models() override;
+  int map_to_oneof_index(const int& field_index) const;
 };
 
-#endif // MESSAGE_MODEL_HPP
+#endif  // MESSAGE_MODEL_HPP

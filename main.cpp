@@ -34,44 +34,44 @@
 
 #include "gui/model/schema/visual_shader.pb.h"
 
-#include "gui/model/message_model.hpp"
 #include "gui/controller/visual_shader_editor.hpp"
+#include "gui/model/message_model.hpp"
 
 using VisualShader = gui::model::schema::VisualShader;
 
-int main(int argc, char **argv) {
-	// Verify that the version of the library that we linked against is
-  	// compatible with the version of the headers we compiled against.
-	GOOGLE_PROTOBUF_VERIFY_VERSION;
+int main(int argc, char** argv) {
+  // Verify that the version of the library that we linked against is
+  // compatible with the version of the headers we compiled against.
+  GOOGLE_PROTOBUF_VERIFY_VERSION;
 
-	QApplication shader_gen_app(argc, argv);
-	QCoreApplication::setOrganizationName(ENIGMA_ORG_NAME);
-	QCoreApplication::setApplicationName(SHADER_GEN_PROJECT_NAME);
-	QCoreApplication::setApplicationVersion(SHADER_GEN_PROJECT_VERSION);
-	QCommandLineParser parser;
-	parser.setApplicationDescription(QCoreApplication::applicationName());
-	parser.addHelpOption();
-	parser.addVersionOption();
-	parser.process(shader_gen_app);
+  QApplication shader_gen_app(argc, argv);
+  QCoreApplication::setOrganizationName(ENIGMA_ORG_NAME);
+  QCoreApplication::setApplicationName(SHADER_GEN_PROJECT_NAME);
+  QCoreApplication::setApplicationVersion(SHADER_GEN_PROJECT_VERSION);
+  QCommandLineParser parser;
+  parser.setApplicationDescription(QCoreApplication::applicationName());
+  parser.addHelpOption();
+  parser.addVersionOption();
+  parser.process(shader_gen_app);
 
-	VisualShader visual_shader;
+  VisualShader visual_shader;
 
-	MessageModel* root_model = new MessageModel(&visual_shader);
-	// bool load_result = dynamic_cast<ProtoModel*>(root_model)->loadFromJson("model.json");
-	// if (!load_result) {
-	// 	ERROR_PRINT("Failed to load model from JSON");
-	// }
-	root_model->build_sub_models();
+  MessageModel* root_model = new MessageModel(&visual_shader);
+  // bool load_result = dynamic_cast<ProtoModel*>(root_model)->loadFromJson("model.json");
+  // if (!load_result) {
+  // 	ERROR_PRINT("Failed to load model from JSON");
+  // }
+  root_model->build_sub_models();
 
-	VisualShaderEditor* w = new VisualShaderEditor(root_model);
+  VisualShaderEditor* w = new VisualShaderEditor(root_model);
 
-	w->resize(1440, 720);
-	w->show();
+  w->resize(1440, 720);
+  w->show();
 
-	int result {shader_gen_app.exec()};
+  int result{shader_gen_app.exec()};
 
-	delete w;
-	delete root_model;
+  delete w;
+  delete root_model;
 
-	return result;
+  return result;
 }

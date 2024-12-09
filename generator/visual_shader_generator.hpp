@@ -33,10 +33,8 @@
 #include "gui/model/proto_model.hpp"
 
 namespace shadergen_visual_shader_generator {
-    bool generate_shader(std::string& code,
-                         const ProtoModel* nodes, 
-                         const ProtoModel* connections) noexcept;
-    std::string generate_preview_shader(const int& node_id, const int& port) noexcept;
-}
+bool generate_shader(std::string& code, const ProtoModel* nodes, const ProtoModel* connections) noexcept;
+std::string generate_preview_shader(const int& node_id, const int& port) noexcept;
+}  // namespace shadergen_visual_shader_generator
 
 #endif  // ENIGMA_VISUAL_SHADER_GENERATOR_HPP

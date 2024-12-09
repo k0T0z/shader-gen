@@ -56,8 +56,8 @@
 #include <QOpenGLShaderProgram>
 
 #include <string>
-#include <vector>
 #include <variant>
+#include <vector>
 
 // #include "generator/visual_shader.hpp"
 // #include "generator/visual_shader_nodes.hpp"
@@ -181,11 +181,9 @@ class VisualShaderEditor : public QWidget {
     std::string description;
     std::shared_ptr<IGraphNode> graph_node;
 
-    CreateNodeDialogNodesTreeItem(const std::string& caption,
-                                  const std::string& category_path,
-                                  const std::string& description,
-                                  const std::shared_ptr<IGraphNode>& graph_node) :
-        caption(caption), category_path(category_path), description(description), graph_node(graph_node) {}
+    CreateNodeDialogNodesTreeItem(const std::string& caption, const std::string& category_path,
+                                  const std::string& description, const std::shared_ptr<IGraphNode>& graph_node)
+        : caption(caption), category_path(category_path), description(description), graph_node(graph_node) {}
   };
 
   std::vector<CreateNodeDialogNodesTreeItem> create_node_dialog_nodes_tree_items;
@@ -397,13 +395,11 @@ class VisualShaderGraphicsScene : public QGraphicsScene {
      * @return true 
      * @return false 
      */
-  bool add_connection(const int& from_node_id, const int& from_port_index,
-                      const int& to_node_id = -1,
+  bool add_connection(const int& from_node_id, const int& from_port_index, const int& to_node_id = -1,
                       const int& to_port_index = -1);
 
   bool delete_connection(const int& c_id, const int& from_node_id, const int& from_port_index,
-                         const int& to_node_id = -1,
-                         const int& to_port_index = -1);
+                         const int& to_node_id = -1, const int& to_port_index = -1);
 
   VisualShaderNodeGraphicsObject* get_node_graphics_object(const int& n_id) const;
 
@@ -435,7 +431,8 @@ class VisualShaderGraphicsScene : public QGraphicsScene {
    * @param n_id 
    * @param new_coordinate 
    */
-  void on_node_moved(const int& n_id, const int& in_port_count, const int& out_port_count, const QPointF& new_coordinate);
+  void on_node_moved(const int& n_id, const int& in_port_count, const int& out_port_count,
+                     const QPointF& new_coordinate);
 
   /**
    * @brief Called when a delete node action is triggered.
@@ -580,11 +577,9 @@ class VisualShaderNodeGraphicsObject : public QGraphicsObject {
   Q_OBJECT
 
  public:
-  VisualShaderNodeGraphicsObject(const int& n_id, const QPointF& coordinate,
-                                 const std::string& caption,
+  VisualShaderNodeGraphicsObject(const int& n_id, const QPointF& coordinate, const std::string& caption,
                                  const std::vector<std::string>& in_port_captions,
-                                 const std::vector<std::string>& out_port_captions, 
-                                 QGraphicsItem* parent = nullptr);
+                                 const std::vector<std::string>& out_port_captions, QGraphicsItem* parent = nullptr);
   ~VisualShaderNodeGraphicsObject();
 
   VisualShaderInputPortGraphicsObject* get_input_port_graphics_object(const int& p_index) const;
@@ -879,8 +874,8 @@ class VisualShaderConnectionGraphicsObject : public QGraphicsObject {
   Q_OBJECT
 
  public:
-  VisualShaderConnectionGraphicsObject(const int& c_id, const int& from_n_id, const int& from_p_index, const QPointF& start_coordinate,
-                                       QGraphicsItem* parent = nullptr);
+  VisualShaderConnectionGraphicsObject(const int& c_id, const int& from_n_id, const int& from_p_index,
+                                       const QPointF& start_coordinate, QGraphicsItem* parent = nullptr);
   ~VisualShaderConnectionGraphicsObject();
 
   int get_id() const { return c_id; }
@@ -958,11 +953,8 @@ class VisualShaderNodeEmbedWidget : public QWidget {
   Q_OBJECT
 
  public:
-  VisualShaderNodeEmbedWidget(ProtoModel* visual_shader_model, 
-                              ProtoModel* nodes_model, 
-                              const int& n_id, 
-                              const std::shared_ptr<IGraphNode>& graph_node, 
-                              QWidget* parent = nullptr);
+  VisualShaderNodeEmbedWidget(ProtoModel* visual_shader_model, ProtoModel* nodes_model, const int& n_id,
+                              const std::shared_ptr<IGraphNode>& graph_node, QWidget* parent = nullptr);
   ~VisualShaderNodeEmbedWidget() = default;
 
   void set_shader_previewer_widget(QWidget* shader_previewer_widget) {
@@ -1000,9 +992,7 @@ class VisualShaderNodeInputEmbedWidget : public QComboBox {
   Q_OBJECT
 
  public:
-  VisualShaderNodeInputEmbedWidget(ProtoModel* visual_shader_model, 
-                                   ProtoModel* nodes_model, 
-                                   const int& n_id, 
+  VisualShaderNodeInputEmbedWidget(ProtoModel* visual_shader_model, ProtoModel* nodes_model, const int& n_id,
                                    const std::shared_ptr<IGraphNode>& graph_node);
   ~VisualShaderNodeInputEmbedWidget() = default;
 
@@ -1026,16 +1016,15 @@ class VisualShaderNodeFloatConstantEmbedWidget : public QLineEdit {
   Q_OBJECT
 
  public:
-  VisualShaderNodeFloatConstantEmbedWidget(ProtoModel* visual_shader_model, 
-                                                                   ProtoModel* nodes_model, 
-                                                                   const int& n_id, const std::shared_ptr<IGraphNode>& graph_node);
+  VisualShaderNodeFloatConstantEmbedWidget(ProtoModel* visual_shader_model, ProtoModel* nodes_model, const int& n_id,
+                                           const std::shared_ptr<IGraphNode>& graph_node);
   ~VisualShaderNodeFloatConstantEmbedWidget() = default;
 
  private Q_SLOTS:
   void on_text_changed(const QString& text);
 
  private:
- ProtoModel* visual_shader_model;
+  ProtoModel* visual_shader_model;
   ProtoModel* nodes_model;
   int n_id;
   std::shared_ptr<IGraphNode> graph_node;
@@ -1045,16 +1034,15 @@ class VisualShaderNodeIntConstantEmbedWidget : public QLineEdit {
   Q_OBJECT
 
  public:
-  VisualShaderNodeIntConstantEmbedWidget(ProtoModel* visual_shader_model, 
-                                                                   ProtoModel* nodes_model, 
-                                                                   const int& n_id, const std::shared_ptr<IGraphNode>& graph_node);
+  VisualShaderNodeIntConstantEmbedWidget(ProtoModel* visual_shader_model, ProtoModel* nodes_model, const int& n_id,
+                                         const std::shared_ptr<IGraphNode>& graph_node);
   ~VisualShaderNodeIntConstantEmbedWidget() = default;
 
  private Q_SLOTS:
   void on_text_changed(const QString& text);
 
  private:
- ProtoModel* visual_shader_model;
+  ProtoModel* visual_shader_model;
   ProtoModel* nodes_model;
   int n_id;
   std::shared_ptr<IGraphNode> graph_node;
@@ -1064,16 +1052,15 @@ class VisualShaderNodeUIntConstantEmbedWidget : public QLineEdit {
   Q_OBJECT
 
  public:
-  VisualShaderNodeUIntConstantEmbedWidget(ProtoModel* visual_shader_model, 
-                                                                   ProtoModel* nodes_model, 
-                                                                   const int& n_id, const std::shared_ptr<IGraphNode>& graph_node);
+  VisualShaderNodeUIntConstantEmbedWidget(ProtoModel* visual_shader_model, ProtoModel* nodes_model, const int& n_id,
+                                          const std::shared_ptr<IGraphNode>& graph_node);
   ~VisualShaderNodeUIntConstantEmbedWidget() = default;
 
  private Q_SLOTS:
   void on_text_changed(const QString& text);
 
  private:
- ProtoModel* visual_shader_model;
+  ProtoModel* visual_shader_model;
   ProtoModel* nodes_model;
   int n_id;
   std::shared_ptr<IGraphNode> graph_node;
@@ -1083,9 +1070,8 @@ class VisualShaderNodeColorConstantEmbedWidget : public QPushButton {
   Q_OBJECT
 
  public:
-  VisualShaderNodeColorConstantEmbedWidget(ProtoModel* visual_shader_model, 
-                                                                   ProtoModel* nodes_model, 
-                                                                   const int& n_id, const std::shared_ptr<IGraphNode>& graph_node);
+  VisualShaderNodeColorConstantEmbedWidget(ProtoModel* visual_shader_model, ProtoModel* nodes_model, const int& n_id,
+                                           const std::shared_ptr<IGraphNode>& graph_node);
   ~VisualShaderNodeColorConstantEmbedWidget() = default;
 
  Q_SIGNALS:
@@ -1095,7 +1081,7 @@ class VisualShaderNodeColorConstantEmbedWidget : public QPushButton {
   void on_pressed();
 
  private:
- ProtoModel* visual_shader_model;
+  ProtoModel* visual_shader_model;
   ProtoModel* nodes_model;
   int n_id;
   std::shared_ptr<IGraphNode> graph_node;
@@ -1105,16 +1091,15 @@ class VisualShaderNodeBooleanConstantEmbedWidget : public QCheckBox {
   Q_OBJECT
 
  public:
-  VisualShaderNodeBooleanConstantEmbedWidget(ProtoModel* visual_shader_model, 
-                                                                   ProtoModel* nodes_model, 
-                                                                   const int& n_id, const std::shared_ptr<IGraphNode>& graph_node);
+  VisualShaderNodeBooleanConstantEmbedWidget(ProtoModel* visual_shader_model, ProtoModel* nodes_model, const int& n_id,
+                                             const std::shared_ptr<IGraphNode>& graph_node);
   ~VisualShaderNodeBooleanConstantEmbedWidget() = default;
 
  private Q_SLOTS:
   void on_state_changed(const int& state);
 
  private:
- ProtoModel* visual_shader_model;
+  ProtoModel* visual_shader_model;
   ProtoModel* nodes_model;
   int n_id;
   std::shared_ptr<IGraphNode> graph_node;
@@ -1124,9 +1109,8 @@ class VisualShaderNodeVec2ConstantEmbedWidget : public QVBoxLayout {
   Q_OBJECT
 
  public:
-  VisualShaderNodeVec2ConstantEmbedWidget(ProtoModel* visual_shader_model, 
-                                                                   ProtoModel* nodes_model, 
-                                                                   const int& n_id, const std::shared_ptr<IGraphNode>& graph_node);
+  VisualShaderNodeVec2ConstantEmbedWidget(ProtoModel* visual_shader_model, ProtoModel* nodes_model, const int& n_id,
+                                          const std::shared_ptr<IGraphNode>& graph_node);
   ~VisualShaderNodeVec2ConstantEmbedWidget() = default;
 
   QLineEdit* get_x_edit_widget() const { return x_edit_widget; }
@@ -1138,7 +1122,7 @@ class VisualShaderNodeVec2ConstantEmbedWidget : public QVBoxLayout {
   void on_y_text_changed(const QString& text);
 
  private:
- ProtoModel* visual_shader_model;
+  ProtoModel* visual_shader_model;
   ProtoModel* nodes_model;
   int n_id;
   std::shared_ptr<IGraphNode> graph_node;
@@ -1151,9 +1135,8 @@ class VisualShaderNodeVec3ConstantEmbedWidget : public QVBoxLayout {
   Q_OBJECT
 
  public:
-  VisualShaderNodeVec3ConstantEmbedWidget(ProtoModel* visual_shader_model, 
-                                                                   ProtoModel* nodes_model, 
-                                                                   const int& n_id, const std::shared_ptr<IGraphNode>& graph_node);
+  VisualShaderNodeVec3ConstantEmbedWidget(ProtoModel* visual_shader_model, ProtoModel* nodes_model, const int& n_id,
+                                          const std::shared_ptr<IGraphNode>& graph_node);
   ~VisualShaderNodeVec3ConstantEmbedWidget() = default;
 
   QLineEdit* get_x_edit_widget() const { return x_edit_widget; }
@@ -1167,7 +1150,7 @@ class VisualShaderNodeVec3ConstantEmbedWidget : public QVBoxLayout {
   void on_z_text_changed(const QString& text);
 
  private:
- ProtoModel* visual_shader_model;
+  ProtoModel* visual_shader_model;
   ProtoModel* nodes_model;
   int n_id;
   std::shared_ptr<IGraphNode> graph_node;
@@ -1181,9 +1164,8 @@ class VisualShaderNodeVec4ConstantEmbedWidget : public QVBoxLayout {
   Q_OBJECT
 
  public:
-  VisualShaderNodeVec4ConstantEmbedWidget(ProtoModel* visual_shader_model, 
-                                                                   ProtoModel* nodes_model, 
-                                                                   const int& n_id, const std::shared_ptr<IGraphNode>& graph_node);
+  VisualShaderNodeVec4ConstantEmbedWidget(ProtoModel* visual_shader_model, ProtoModel* nodes_model, const int& n_id,
+                                          const std::shared_ptr<IGraphNode>& graph_node);
   ~VisualShaderNodeVec4ConstantEmbedWidget() = default;
 
   QLineEdit* get_x_edit_widget() const { return x_edit_widget; }
@@ -1199,7 +1181,7 @@ class VisualShaderNodeVec4ConstantEmbedWidget : public QVBoxLayout {
   void on_w_text_changed(const QString& text);
 
  private:
- ProtoModel* visual_shader_model;
+  ProtoModel* visual_shader_model;
   ProtoModel* nodes_model;
   int n_id;
   std::shared_ptr<IGraphNode> graph_node;
@@ -1218,9 +1200,8 @@ class VisualShaderNodeFloatOpEmbedWidget : public QComboBox {
   Q_OBJECT
 
  public:
-  VisualShaderNodeFloatOpEmbedWidget(ProtoModel* visual_shader_model, 
-                                                                   ProtoModel* nodes_model, 
-                                                                   const int& n_id, const std::shared_ptr<IGraphNode>& graph_node);
+  VisualShaderNodeFloatOpEmbedWidget(ProtoModel* visual_shader_model, ProtoModel* nodes_model, const int& n_id,
+                                     const std::shared_ptr<IGraphNode>& graph_node);
   ~VisualShaderNodeFloatOpEmbedWidget() = default;
 
   void set_current_index(const int& index) { this->setCurrentIndex(index); }
@@ -1229,7 +1210,7 @@ class VisualShaderNodeFloatOpEmbedWidget : public QComboBox {
   void on_current_index_changed(const int& index);
 
  private:
- ProtoModel* visual_shader_model;
+  ProtoModel* visual_shader_model;
   ProtoModel* nodes_model;
   int n_id;
   std::shared_ptr<IGraphNode> graph_node;
@@ -1239,9 +1220,8 @@ class VisualShaderNodeIntOpEmbedWidget : public QComboBox {
   Q_OBJECT
 
  public:
-  VisualShaderNodeIntOpEmbedWidget(ProtoModel* visual_shader_model, 
-                                                                   ProtoModel* nodes_model, 
-                                                                   const int& n_id, const std::shared_ptr<IGraphNode>& graph_node);
+  VisualShaderNodeIntOpEmbedWidget(ProtoModel* visual_shader_model, ProtoModel* nodes_model, const int& n_id,
+                                   const std::shared_ptr<IGraphNode>& graph_node);
   ~VisualShaderNodeIntOpEmbedWidget() = default;
 
   void set_current_index(const int& index) { this->setCurrentIndex(index); }
@@ -1250,7 +1230,7 @@ class VisualShaderNodeIntOpEmbedWidget : public QComboBox {
   void on_current_index_changed(const int& index);
 
  private:
- ProtoModel* visual_shader_model;
+  ProtoModel* visual_shader_model;
   ProtoModel* nodes_model;
   int n_id;
   std::shared_ptr<IGraphNode> graph_node;
@@ -1260,9 +1240,8 @@ class VisualShaderNodeUIntOpEmbedWidget : public QComboBox {
   Q_OBJECT
 
  public:
-  VisualShaderNodeUIntOpEmbedWidget(ProtoModel* visual_shader_model, 
-                                                                   ProtoModel* nodes_model, 
-                                                                   const int& n_id, const std::shared_ptr<IGraphNode>& graph_node);
+  VisualShaderNodeUIntOpEmbedWidget(ProtoModel* visual_shader_model, ProtoModel* nodes_model, const int& n_id,
+                                    const std::shared_ptr<IGraphNode>& graph_node);
   ~VisualShaderNodeUIntOpEmbedWidget() = default;
 
   void set_current_index(const int& index) { this->setCurrentIndex(index); }
@@ -1271,7 +1250,7 @@ class VisualShaderNodeUIntOpEmbedWidget : public QComboBox {
   void on_current_index_changed(const int& index);
 
  private:
- ProtoModel* visual_shader_model;
+  ProtoModel* visual_shader_model;
   ProtoModel* nodes_model;
   int n_id;
   std::shared_ptr<IGraphNode> graph_node;
@@ -1281,9 +1260,8 @@ class VisualShaderNodeVectorBaseEmbedWidget : public QComboBox {
   Q_OBJECT
 
  public:
-  VisualShaderNodeVectorBaseEmbedWidget(ProtoModel* visual_shader_model, 
-                                                                   ProtoModel* nodes_model, 
-                                                                   const int& n_id, const std::shared_ptr<IGraphNode>& graph_node);
+  VisualShaderNodeVectorBaseEmbedWidget(ProtoModel* visual_shader_model, ProtoModel* nodes_model, const int& n_id,
+                                        const std::shared_ptr<IGraphNode>& graph_node);
   ~VisualShaderNodeVectorBaseEmbedWidget() = default;
 
   void set_current_index(const int& index) { this->setCurrentIndex(index); }
@@ -1292,7 +1270,7 @@ class VisualShaderNodeVectorBaseEmbedWidget : public QComboBox {
   void on_current_index_changed(const int& index);
 
  private:
- ProtoModel* visual_shader_model;
+  ProtoModel* visual_shader_model;
   ProtoModel* nodes_model;
   int n_id;
   std::shared_ptr<IGraphNode> graph_node;
@@ -1302,9 +1280,8 @@ class VisualShaderNodeVectorOpEmbedWidget : public QComboBox {
   Q_OBJECT
 
  public:
-  VisualShaderNodeVectorOpEmbedWidget(ProtoModel* visual_shader_model, 
-                                                                   ProtoModel* nodes_model, 
-                                                                   const int& n_id, const std::shared_ptr<IGraphNode>& graph_node);
+  VisualShaderNodeVectorOpEmbedWidget(ProtoModel* visual_shader_model, ProtoModel* nodes_model, const int& n_id,
+                                      const std::shared_ptr<IGraphNode>& graph_node);
   ~VisualShaderNodeVectorOpEmbedWidget() = default;
 
   void set_current_index(const int& index) { this->setCurrentIndex(index); }
@@ -1313,7 +1290,7 @@ class VisualShaderNodeVectorOpEmbedWidget : public QComboBox {
   void on_current_index_changed(const int& index);
 
  private:
- ProtoModel* visual_shader_model;
+  ProtoModel* visual_shader_model;
   ProtoModel* nodes_model;
   int n_id;
   std::shared_ptr<IGraphNode> graph_node;
@@ -1327,9 +1304,8 @@ class VisualShaderNodeFloatFuncEmbedWidget : public QComboBox {
   Q_OBJECT
 
  public:
-  VisualShaderNodeFloatFuncEmbedWidget(ProtoModel* visual_shader_model, 
-                                                                   ProtoModel* nodes_model, 
-                                                                   const int& n_id, const std::shared_ptr<IGraphNode>& graph_node);
+  VisualShaderNodeFloatFuncEmbedWidget(ProtoModel* visual_shader_model, ProtoModel* nodes_model, const int& n_id,
+                                       const std::shared_ptr<IGraphNode>& graph_node);
   ~VisualShaderNodeFloatFuncEmbedWidget() = default;
 
   void set_current_index(const int& index) { this->setCurrentIndex(index); }
@@ -1338,7 +1314,7 @@ class VisualShaderNodeFloatFuncEmbedWidget : public QComboBox {
   void on_current_index_changed(const int& index);
 
  private:
- ProtoModel* visual_shader_model;
+  ProtoModel* visual_shader_model;
   ProtoModel* nodes_model;
   int n_id;
   std::shared_ptr<IGraphNode> graph_node;
@@ -1348,9 +1324,8 @@ class VisualShaderNodeIntFuncEmbedWidget : public QComboBox {
   Q_OBJECT
 
  public:
-  VisualShaderNodeIntFuncEmbedWidget(ProtoModel* visual_shader_model, 
-                                                                   ProtoModel* nodes_model, 
-                                                                   const int& n_id, const std::shared_ptr<IGraphNode>& graph_node);
+  VisualShaderNodeIntFuncEmbedWidget(ProtoModel* visual_shader_model, ProtoModel* nodes_model, const int& n_id,
+                                     const std::shared_ptr<IGraphNode>& graph_node);
   ~VisualShaderNodeIntFuncEmbedWidget() = default;
 
   void set_current_index(const int& index) { this->setCurrentIndex(index); }
@@ -1359,7 +1334,7 @@ class VisualShaderNodeIntFuncEmbedWidget : public QComboBox {
   void on_current_index_changed(const int& index);
 
  private:
- ProtoModel* visual_shader_model;
+  ProtoModel* visual_shader_model;
   ProtoModel* nodes_model;
   int n_id;
   std::shared_ptr<IGraphNode> graph_node;
@@ -1369,9 +1344,8 @@ class VisualShaderNodeUIntFuncEmbedWidget : public QComboBox {
   Q_OBJECT
 
  public:
-  VisualShaderNodeUIntFuncEmbedWidget(ProtoModel* visual_shader_model, 
-                                                                   ProtoModel* nodes_model, 
-                                                                   const int& n_id, const std::shared_ptr<IGraphNode>& graph_node);
+  VisualShaderNodeUIntFuncEmbedWidget(ProtoModel* visual_shader_model, ProtoModel* nodes_model, const int& n_id,
+                                      const std::shared_ptr<IGraphNode>& graph_node);
   ~VisualShaderNodeUIntFuncEmbedWidget() = default;
 
   void set_current_index(const int& index) { this->setCurrentIndex(index); }
@@ -1380,7 +1354,7 @@ class VisualShaderNodeUIntFuncEmbedWidget : public QComboBox {
   void on_current_index_changed(const int& index);
 
  private:
- ProtoModel* visual_shader_model;
+  ProtoModel* visual_shader_model;
   ProtoModel* nodes_model;
   int n_id;
   std::shared_ptr<IGraphNode> graph_node;
@@ -1390,9 +1364,8 @@ class VisualShaderNodeVectorFuncEmbedWidget : public QComboBox {
   Q_OBJECT
 
  public:
-  VisualShaderNodeVectorFuncEmbedWidget(ProtoModel* visual_shader_model, 
-                                                                   ProtoModel* nodes_model, 
-                                                                   const int& n_id, const std::shared_ptr<IGraphNode>& graph_node);
+  VisualShaderNodeVectorFuncEmbedWidget(ProtoModel* visual_shader_model, ProtoModel* nodes_model, const int& n_id,
+                                        const std::shared_ptr<IGraphNode>& graph_node);
   ~VisualShaderNodeVectorFuncEmbedWidget() = default;
 
   void set_current_index(const int& index) { this->setCurrentIndex(index); }
@@ -1401,7 +1374,7 @@ class VisualShaderNodeVectorFuncEmbedWidget : public QComboBox {
   void on_current_index_changed(const int& index);
 
  private:
- ProtoModel* visual_shader_model;
+  ProtoModel* visual_shader_model;
   ProtoModel* nodes_model;
   int n_id;
   std::shared_ptr<IGraphNode> graph_node;
@@ -1415,16 +1388,15 @@ class VisualShaderNodeValueNoiseEmbedWidget : public QLineEdit {
   Q_OBJECT
 
  public:
-  VisualShaderNodeValueNoiseEmbedWidget(ProtoModel* visual_shader_model, 
-                                                                   ProtoModel* nodes_model, 
-                                                                   const int& n_id, const std::shared_ptr<IGraphNode>& graph_node);
+  VisualShaderNodeValueNoiseEmbedWidget(ProtoModel* visual_shader_model, ProtoModel* nodes_model, const int& n_id,
+                                        const std::shared_ptr<IGraphNode>& graph_node);
   ~VisualShaderNodeValueNoiseEmbedWidget() = default;
 
  private Q_SLOTS:
   void on_text_changed(const QString& text);
 
  private:
- ProtoModel* visual_shader_model;
+  ProtoModel* visual_shader_model;
   ProtoModel* nodes_model;
   int n_id;
   std::shared_ptr<IGraphNode> graph_node;
@@ -1438,16 +1410,15 @@ class VisualShaderNodePerlinNoiseEmbedWidget : public QLineEdit {
   Q_OBJECT
 
  public:
-  VisualShaderNodePerlinNoiseEmbedWidget(ProtoModel* visual_shader_model, 
-                                                                   ProtoModel* nodes_model, 
-                                                                   const int& n_id, const std::shared_ptr<IGraphNode>& graph_node);
+  VisualShaderNodePerlinNoiseEmbedWidget(ProtoModel* visual_shader_model, ProtoModel* nodes_model, const int& n_id,
+                                         const std::shared_ptr<IGraphNode>& graph_node);
   ~VisualShaderNodePerlinNoiseEmbedWidget() = default;
 
  private Q_SLOTS:
   void on_text_changed(const QString& text);
 
  private:
- ProtoModel* visual_shader_model;
+  ProtoModel* visual_shader_model;
   ProtoModel* nodes_model;
   int n_id;
   std::shared_ptr<IGraphNode> graph_node;
@@ -1461,16 +1432,15 @@ class VisualShaderNodeVoronoiNoiseAngleOffsetEmbedWidget : public QLineEdit {
   Q_OBJECT
 
  public:
-  VisualShaderNodeVoronoiNoiseAngleOffsetEmbedWidget(ProtoModel* visual_shader_model, 
-                                                                   ProtoModel* nodes_model, 
-                                                                   const int& n_id, const std::shared_ptr<IGraphNode>& graph_node);
+  VisualShaderNodeVoronoiNoiseAngleOffsetEmbedWidget(ProtoModel* visual_shader_model, ProtoModel* nodes_model,
+                                                     const int& n_id, const std::shared_ptr<IGraphNode>& graph_node);
   ~VisualShaderNodeVoronoiNoiseAngleOffsetEmbedWidget() = default;
 
  private Q_SLOTS:
   void on_text_changed(const QString& text);
 
  private:
- ProtoModel* visual_shader_model;
+  ProtoModel* visual_shader_model;
   ProtoModel* nodes_model;
   int n_id;
   std::shared_ptr<IGraphNode> graph_node;
@@ -1480,16 +1450,15 @@ class VisualShaderNodeVoronoiNoiseCellDensityEmbedWidget : public QLineEdit {
   Q_OBJECT
 
  public:
-  VisualShaderNodeVoronoiNoiseCellDensityEmbedWidget(ProtoModel* visual_shader_model, 
-                                                                   ProtoModel* nodes_model, 
-                                                                   const int& n_id, const std::shared_ptr<IGraphNode>& graph_node);
+  VisualShaderNodeVoronoiNoiseCellDensityEmbedWidget(ProtoModel* visual_shader_model, ProtoModel* nodes_model,
+                                                     const int& n_id, const std::shared_ptr<IGraphNode>& graph_node);
   ~VisualShaderNodeVoronoiNoiseCellDensityEmbedWidget() = default;
 
  private Q_SLOTS:
   void on_text_changed(const QString& text);
 
  private:
- ProtoModel* visual_shader_model;
+  ProtoModel* visual_shader_model;
   ProtoModel* nodes_model;
   int n_id;
   std::shared_ptr<IGraphNode> graph_node;
@@ -1503,9 +1472,8 @@ class VisualShaderNodeCompareEmbedWidget : public QVBoxLayout {
   Q_OBJECT
 
  public:
-  VisualShaderNodeCompareEmbedWidget(ProtoModel* visual_shader_model, 
-                                                                   ProtoModel* nodes_model, 
-                                                                   const int& n_id, const std::shared_ptr<IGraphNode>& graph_node);
+  VisualShaderNodeCompareEmbedWidget(ProtoModel* visual_shader_model, ProtoModel* nodes_model, const int& n_id,
+                                     const std::shared_ptr<IGraphNode>& graph_node);
   ~VisualShaderNodeCompareEmbedWidget() = default;
 
   QComboBox* get_comparison_type_combo_box() const { return comparison_type_combo_box; }
@@ -1518,7 +1486,7 @@ class VisualShaderNodeCompareEmbedWidget : public QVBoxLayout {
   void on_condition_current_index_changed(const int& index);
 
  private:
- ProtoModel* visual_shader_model;
+  ProtoModel* visual_shader_model;
   ProtoModel* nodes_model;
   int n_id;
   std::shared_ptr<IGraphNode> graph_node;
@@ -1532,9 +1500,8 @@ class VisualShaderNodeSwitchEmbedWidget : public QComboBox {
   Q_OBJECT
 
  public:
-  VisualShaderNodeSwitchEmbedWidget(ProtoModel* visual_shader_model, 
-                                                                   ProtoModel* nodes_model, 
-                                                                   const int& n_id, const std::shared_ptr<IGraphNode>& graph_node);
+  VisualShaderNodeSwitchEmbedWidget(ProtoModel* visual_shader_model, ProtoModel* nodes_model, const int& n_id,
+                                    const std::shared_ptr<IGraphNode>& graph_node);
   ~VisualShaderNodeSwitchEmbedWidget() = default;
 
   void set_current_index(const int& index) { this->setCurrentIndex(index); }
@@ -1543,7 +1510,7 @@ class VisualShaderNodeSwitchEmbedWidget : public QComboBox {
   void on_current_index_changed(const int& index);
 
  private:
- ProtoModel* visual_shader_model;
+  ProtoModel* visual_shader_model;
   ProtoModel* nodes_model;
   int n_id;
   std::shared_ptr<IGraphNode> graph_node;
@@ -1553,9 +1520,8 @@ class VisualShaderNodeIsEmbedWidget : public QComboBox {
   Q_OBJECT
 
  public:
-  VisualShaderNodeIsEmbedWidget(ProtoModel* visual_shader_model, 
-                                                                   ProtoModel* nodes_model, 
-                                                                   const int& n_id, const std::shared_ptr<IGraphNode>& graph_node);
+  VisualShaderNodeIsEmbedWidget(ProtoModel* visual_shader_model, ProtoModel* nodes_model, const int& n_id,
+                                const std::shared_ptr<IGraphNode>& graph_node);
   ~VisualShaderNodeIsEmbedWidget() = default;
 
   void set_current_index(const int& index) { this->setCurrentIndex(index); }
@@ -1564,7 +1530,7 @@ class VisualShaderNodeIsEmbedWidget : public QComboBox {
   void on_current_index_changed(const int& index);
 
  private:
- ProtoModel* visual_shader_model;
+  ProtoModel* visual_shader_model;
   ProtoModel* nodes_model;
   int n_id;
   std::shared_ptr<IGraphNode> graph_node;

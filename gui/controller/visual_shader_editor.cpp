@@ -27,8 +27,8 @@
 
 #include "gui/controller/visual_shader_editor.hpp"
 
-#include <unordered_map>
 #include <sstream>
+#include <unordered_map>
 #include "error_macros.hpp"
 #include "gui/model/utils/utils.hpp"
 
@@ -47,7 +47,7 @@ using VisualShader = gui::model::schema::VisualShader;
 /**********************************************************************/
 
 VisualShaderEditor::VisualShaderEditor(MessageModel* model, QWidget* parent)
-    : QWidget(parent), 
+    : QWidget(parent),
       layout(nullptr),
       side_widget(nullptr),
       side_outer_layout(nullptr),
@@ -80,10 +80,12 @@ VisualShaderEditor::VisualShaderEditor(MessageModel* model, QWidget* parent)
 
   scene->set_model(visual_shader_model);
 
-  nodes_model = const_cast<ProtoModel*>(visual_shader_model->get_sub_model(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber))));
+  nodes_model = const_cast<ProtoModel*>(visual_shader_model->get_sub_model(
+      FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber))));
   scene->set_nodes_model(nodes_model);
 
-  connections_model = const_cast<ProtoModel*>(visual_shader_model->get_sub_model(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kConnectionsFieldNumber))));
+  connections_model = const_cast<ProtoModel*>(visual_shader_model->get_sub_model(
+      FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kConnectionsFieldNumber))));
   scene->set_connections_model(connections_model);
 }
 
@@ -432,8 +434,10 @@ void VisualShaderEditor::on_preview_shader_button_pressed() {
 
   code_previewer->setPlainText(QString::fromStdString(code));
   code_previewer_dialog->exec();
-  
-  result = visual_shader_model->set_data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kFragmentShaderCodeFieldNumber)), QString::fromStdString(code));
+
+  result = visual_shader_model->set_data(
+      FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kFragmentShaderCodeFieldNumber)),
+      QString::fromStdString(code));
   if (!result) {
     ERROR_PRINT("Failed to set fragment shader code");
   }
@@ -830,129 +834,234 @@ VisualShaderGraphicsScene::~VisualShaderGraphicsScene() {}
 
 bool VisualShaderGraphicsScene::add_node(const std::shared_ptr<IGraphNode>& graph_node, const QPointF& coordinate) {
   int n_id{VisualShaderGraphicsScene::get_new_node_id(visual_shader_model, nodes_model)};
-  CHECK_CONDITION_TRUE_NON_VOID(n_id == 0, false, "The id " + std::to_string(n_id) + " is reserved for the output node");
+  CHECK_CONDITION_TRUE_NON_VOID(n_id == 0, false,
+                                "The id " + std::to_string(n_id) + " is reserved for the output node");
 
   int row_entry{nodes_model->append_row()};
   // CHECK_CONDITION_TRUE_NON_VOID(row_entry == 0, false, "The row entry " + std::to_string(row_entry) + " is reserved for the output node");
 
-  bool result = visual_shader_model->set_data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kIdFieldNumber)), n_id);
+  bool result = visual_shader_model->set_data(
+      FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
+                                  FieldPath::RepeatedAt(row_entry),
+                                  FieldPath::FieldNumber(VisualShader::VisualShaderNode::kIdFieldNumber)),
+      n_id);
   CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to set node id");
 
-  result = visual_shader_model->set_data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kXCoordinateFieldNumber)), coordinate.x());
+  result = visual_shader_model->set_data(
+      FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
+                                  FieldPath::RepeatedAt(row_entry),
+                                  FieldPath::FieldNumber(VisualShader::VisualShaderNode::kXCoordinateFieldNumber)),
+      coordinate.x());
   CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to set node x coordinate");
 
-  result = visual_shader_model->set_data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kYCoordinateFieldNumber)), coordinate.y());
+  result = visual_shader_model->set_data(
+      FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
+                                  FieldPath::RepeatedAt(row_entry),
+                                  FieldPath::FieldNumber(VisualShader::VisualShaderNode::kYCoordinateFieldNumber)),
+      coordinate.y());
   CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to set node y coordinate");
 
   if (auto input_node = std::dynamic_pointer_cast<GraphNode<VisualShaderNodeInput>>(graph_node)) {
-    result = visual_shader_model->set_data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kInputFieldNumber), FieldPath::FieldNumber(VisualShaderNodeInput::kTypeFieldNumber)), 0);
+    result = visual_shader_model->set_data(
+        FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
+                                    FieldPath::RepeatedAt(row_entry),
+                                    FieldPath::FieldNumber(VisualShader::VisualShaderNode::kInputFieldNumber),
+                                    FieldPath::FieldNumber(VisualShaderNodeInput::kTypeFieldNumber)),
+        0);
     CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to set input node");
-  } else if (auto float_constant_node = std::dynamic_pointer_cast<GraphNode<VisualShaderNodeFloatConstant>>(graph_node)) {
-    result = visual_shader_model->set_data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kFloatConstantFieldNumber), FieldPath::FieldNumber(VisualShaderNodeFloatConstant::kValueFieldNumber)), 0.0f);
+  } else if (auto float_constant_node =
+                 std::dynamic_pointer_cast<GraphNode<VisualShaderNodeFloatConstant>>(graph_node)) {
+    result = visual_shader_model->set_data(
+        FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
+                                    FieldPath::RepeatedAt(row_entry),
+                                    FieldPath::FieldNumber(VisualShader::VisualShaderNode::kFloatConstantFieldNumber),
+                                    FieldPath::FieldNumber(VisualShaderNodeFloatConstant::kValueFieldNumber)),
+        0.0f);
     CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to set float constant value");
   } else if (auto int_constant_node = std::dynamic_pointer_cast<GraphNode<VisualShaderNodeIntConstant>>(graph_node)) {
-    result = visual_shader_model->set_data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kIntConstantFieldNumber), FieldPath::FieldNumber(VisualShaderNodeIntConstant::kValueFieldNumber)), 0);
+    result = visual_shader_model->set_data(
+        FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
+                                    FieldPath::RepeatedAt(row_entry),
+                                    FieldPath::FieldNumber(VisualShader::VisualShaderNode::kIntConstantFieldNumber),
+                                    FieldPath::FieldNumber(VisualShaderNodeIntConstant::kValueFieldNumber)),
+        0);
     CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to set int constant value");
   } else if (auto uint_constant_node = std::dynamic_pointer_cast<GraphNode<VisualShaderNodeUIntConstant>>(graph_node)) {
-    result = visual_shader_model->set_data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kUintConstantFieldNumber), FieldPath::FieldNumber(VisualShaderNodeUIntConstant::kValueFieldNumber)), 0u);
+    result = visual_shader_model->set_data(
+        FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
+                                    FieldPath::RepeatedAt(row_entry),
+                                    FieldPath::FieldNumber(VisualShader::VisualShaderNode::kUintConstantFieldNumber),
+                                    FieldPath::FieldNumber(VisualShaderNodeUIntConstant::kValueFieldNumber)),
+        0u);
     CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to set uint constant value");
-  } else if (auto boolean_constant_node = std::dynamic_pointer_cast<GraphNode<VisualShaderNodeBooleanConstant>>(graph_node)) {
-    result = visual_shader_model->set_data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kBooleanConstantFieldNumber), FieldPath::FieldNumber(VisualShaderNodeBooleanConstant::kValueFieldNumber)), false);
+  } else if (auto boolean_constant_node =
+                 std::dynamic_pointer_cast<GraphNode<VisualShaderNodeBooleanConstant>>(graph_node)) {
+    result = visual_shader_model->set_data(
+        FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
+                                    FieldPath::RepeatedAt(row_entry),
+                                    FieldPath::FieldNumber(VisualShader::VisualShaderNode::kBooleanConstantFieldNumber),
+                                    FieldPath::FieldNumber(VisualShaderNodeBooleanConstant::kValueFieldNumber)),
+        false);
     CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to set boolean constant value");
-  } else if (auto color_constant_node = std::dynamic_pointer_cast<GraphNode<VisualShaderNodeColorConstant>>(graph_node)) {
-    result = visual_shader_model->set_data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kColorConstantFieldNumber), FieldPath::FieldNumber(VisualShaderNodeColorConstant::kRFieldNumber)), 0.0f);
+  } else if (auto color_constant_node =
+                 std::dynamic_pointer_cast<GraphNode<VisualShaderNodeColorConstant>>(graph_node)) {
+    result = visual_shader_model->set_data(
+        FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
+                                    FieldPath::RepeatedAt(row_entry),
+                                    FieldPath::FieldNumber(VisualShader::VisualShaderNode::kColorConstantFieldNumber),
+                                    FieldPath::FieldNumber(VisualShaderNodeColorConstant::kRFieldNumber)),
+        0.0f);
     CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to set color constant R");
   } else if (auto vec2_constant_node = std::dynamic_pointer_cast<GraphNode<VisualShaderNodeVec2Constant>>(graph_node)) {
-    result = visual_shader_model->set_data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec2ConstantFieldNumber), FieldPath::FieldNumber(VisualShaderNodeVec2Constant::kXFieldNumber)), 0.0f);
+    result = visual_shader_model->set_data(
+        FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
+                                    FieldPath::RepeatedAt(row_entry),
+                                    FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec2ConstantFieldNumber),
+                                    FieldPath::FieldNumber(VisualShaderNodeVec2Constant::kXFieldNumber)),
+        0.0f);
     CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to set vec2 constant X");
   } else if (auto vec3_constant_node = std::dynamic_pointer_cast<GraphNode<VisualShaderNodeVec3Constant>>(graph_node)) {
-    result = visual_shader_model->set_data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec3ConstantFieldNumber), FieldPath::FieldNumber(VisualShaderNodeVec3Constant::kXFieldNumber)), 0.0f);
+    result = visual_shader_model->set_data(
+        FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
+                                    FieldPath::RepeatedAt(row_entry),
+                                    FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec3ConstantFieldNumber),
+                                    FieldPath::FieldNumber(VisualShaderNodeVec3Constant::kXFieldNumber)),
+        0.0f);
     CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to set vec3 constant X");
   } else if (auto vec4_constant_node = std::dynamic_pointer_cast<GraphNode<VisualShaderNodeVec4Constant>>(graph_node)) {
-    result = visual_shader_model->set_data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec4ConstantFieldNumber), FieldPath::FieldNumber(VisualShaderNodeVec4Constant::kXFieldNumber)), 0.0f);
+    result = visual_shader_model->set_data(
+        FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
+                                    FieldPath::RepeatedAt(row_entry),
+                                    FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec4ConstantFieldNumber),
+                                    FieldPath::FieldNumber(VisualShaderNodeVec4Constant::kXFieldNumber)),
+        0.0f);
     CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to set vec4 constant X");
   } else if (auto float_op_node = std::dynamic_pointer_cast<GraphNode<VisualShaderNodeFloatOp>>(graph_node)) {
-    result = visual_shader_model->set_data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kFloatOpFieldNumber), FieldPath::FieldNumber(VisualShaderNodeFloatOp::kOpFieldNumber)), 0);
+    result = visual_shader_model->set_data(
+        FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
+                                    FieldPath::RepeatedAt(row_entry),
+                                    FieldPath::FieldNumber(VisualShader::VisualShaderNode::kFloatOpFieldNumber),
+                                    FieldPath::FieldNumber(VisualShaderNodeFloatOp::kOpFieldNumber)),
+        0);
     CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to set float op");
   } else if (auto int_op_node = std::dynamic_pointer_cast<GraphNode<VisualShaderNodeIntOp>>(graph_node)) {
-    result = visual_shader_model->set_data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kIntOpFieldNumber), FieldPath::FieldNumber(VisualShaderNodeIntOp::kOpFieldNumber)), 0);
+    result = visual_shader_model->set_data(
+        FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
+                                    FieldPath::RepeatedAt(row_entry),
+                                    FieldPath::FieldNumber(VisualShader::VisualShaderNode::kIntOpFieldNumber),
+                                    FieldPath::FieldNumber(VisualShaderNodeIntOp::kOpFieldNumber)),
+        0);
     CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to set int op");
   } else if (auto uint_op_node = std::dynamic_pointer_cast<GraphNode<VisualShaderNodeUIntOp>>(graph_node)) {
-    result = visual_shader_model->set_data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kUintOpFieldNumber), FieldPath::FieldNumber(VisualShaderNodeUIntOp::kOpFieldNumber)), 0);
+    result = visual_shader_model->set_data(
+        FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
+                                    FieldPath::RepeatedAt(row_entry),
+                                    FieldPath::FieldNumber(VisualShader::VisualShaderNode::kUintOpFieldNumber),
+                                    FieldPath::FieldNumber(VisualShaderNodeUIntOp::kOpFieldNumber)),
+        0);
     CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to set uint op");
   } else if (auto vector_op_node = std::dynamic_pointer_cast<GraphNode<VisualShaderNodeVectorOp>>(graph_node)) {
-    result = visual_shader_model->set_data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVectorOpFieldNumber), FieldPath::FieldNumber(VisualShaderNodeVectorOp::kOpFieldNumber)), 0);
+    result = visual_shader_model->set_data(
+        FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
+                                    FieldPath::RepeatedAt(row_entry),
+                                    FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVectorOpFieldNumber),
+                                    FieldPath::FieldNumber(VisualShaderNodeVectorOp::kOpFieldNumber)),
+        0);
     CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to set vector op");
   } else if (auto float_func_node = std::dynamic_pointer_cast<GraphNode<VisualShaderNodeFloatFunc>>(graph_node)) {
-    result = visual_shader_model->set_data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kFloatFuncFieldNumber), FieldPath::FieldNumber(VisualShaderNodeFloatFunc::kFuncFieldNumber)), 0);
+    result = visual_shader_model->set_data(
+        FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
+                                    FieldPath::RepeatedAt(row_entry),
+                                    FieldPath::FieldNumber(VisualShader::VisualShaderNode::kFloatFuncFieldNumber),
+                                    FieldPath::FieldNumber(VisualShaderNodeFloatFunc::kFuncFieldNumber)),
+        0);
     CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to set float func");
   } else if (auto int_func_node = std::dynamic_pointer_cast<GraphNode<VisualShaderNodeIntFunc>>(graph_node)) {
-    result = visual_shader_model->set_data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kIntFuncFieldNumber), FieldPath::FieldNumber(VisualShaderNodeIntFunc::kFuncFieldNumber)), 0);
+    result = visual_shader_model->set_data(
+        FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
+                                    FieldPath::RepeatedAt(row_entry),
+                                    FieldPath::FieldNumber(VisualShader::VisualShaderNode::kIntFuncFieldNumber),
+                                    FieldPath::FieldNumber(VisualShaderNodeIntFunc::kFuncFieldNumber)),
+        0);
     CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to set int func");
   } else if (auto uint_func_node = std::dynamic_pointer_cast<GraphNode<VisualShaderNodeUIntFunc>>(graph_node)) {
-    result = visual_shader_model->set_data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kUintFuncFieldNumber), FieldPath::FieldNumber(VisualShaderNodeUIntFunc::kFuncFieldNumber)), 0);
+    result = visual_shader_model->set_data(
+        FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
+                                    FieldPath::RepeatedAt(row_entry),
+                                    FieldPath::FieldNumber(VisualShader::VisualShaderNode::kUintFuncFieldNumber),
+                                    FieldPath::FieldNumber(VisualShaderNodeUIntFunc::kFuncFieldNumber)),
+        0);
     CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to set uint func");
   } else if (auto vector_func_node = std::dynamic_pointer_cast<GraphNode<VisualShaderNodeVectorFunc>>(graph_node)) {
-    result = visual_shader_model->set_data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVectorFuncFieldNumber), FieldPath::FieldNumber(VisualShaderNodeVectorFunc::kFuncFieldNumber)), 0);
+    result = visual_shader_model->set_data(
+        FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
+                                    FieldPath::RepeatedAt(row_entry),
+                                    FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVectorFuncFieldNumber),
+                                    FieldPath::FieldNumber(VisualShaderNodeVectorFunc::kFuncFieldNumber)),
+        0);
     CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to set vector func");
   } else if (auto value_noise_node = std::dynamic_pointer_cast<GraphNode<VisualShaderNodeValueNoise>>(graph_node)) {
-    result = visual_shader_model->set_data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kValueNoiseFieldNumber), FieldPath::FieldNumber(VisualShaderNodeValueNoise::kScaleFieldNumber)), 0.0f);
+    result = visual_shader_model->set_data(
+        FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
+                                    FieldPath::RepeatedAt(row_entry),
+                                    FieldPath::FieldNumber(VisualShader::VisualShaderNode::kValueNoiseFieldNumber),
+                                    FieldPath::FieldNumber(VisualShaderNodeValueNoise::kScaleFieldNumber)),
+        0.0f);
     CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to set value noise scale");
   } else if (auto perlin_noise_node = std::dynamic_pointer_cast<GraphNode<VisualShaderNodePerlinNoise>>(graph_node)) {
-    result = visual_shader_model->set_data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kPerlinNoiseFieldNumber), FieldPath::FieldNumber(VisualShaderNodePerlinNoise::kScaleFieldNumber)), 0.0f);
+    result = visual_shader_model->set_data(
+        FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
+                                    FieldPath::RepeatedAt(row_entry),
+                                    FieldPath::FieldNumber(VisualShader::VisualShaderNode::kPerlinNoiseFieldNumber),
+                                    FieldPath::FieldNumber(VisualShaderNodePerlinNoise::kScaleFieldNumber)),
+        0.0f);
     CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to set perlin noise scale");
   } else if (auto voronoi_noise_node = std::dynamic_pointer_cast<GraphNode<VisualShaderNodeVoronoiNoise>>(graph_node)) {
-    result = visual_shader_model->set_data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVoronoiNoiseFieldNumber), FieldPath::FieldNumber(VisualShaderNodeVoronoiNoise::kAngleOffsetFieldNumber)), 0.0f);
+    result = visual_shader_model->set_data(
+        FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
+                                    FieldPath::RepeatedAt(row_entry),
+                                    FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVoronoiNoiseFieldNumber),
+                                    FieldPath::FieldNumber(VisualShaderNodeVoronoiNoise::kAngleOffsetFieldNumber)),
+        0.0f);
     CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to set voronoi noise angle offset");
   } else if (auto dot_product_node = std::dynamic_pointer_cast<GraphNode<VisualShaderNodeDotProduct>>(graph_node)) {
-    
   } else if (auto vector_len_node = std::dynamic_pointer_cast<GraphNode<VisualShaderNodeVectorLen>>(graph_node)) {
-    
   } else if (auto clamp_node = std::dynamic_pointer_cast<GraphNode<VisualShaderNodeClamp>>(graph_node)) {
-    
   } else if (auto step_node = std::dynamic_pointer_cast<GraphNode<VisualShaderNodeStep>>(graph_node)) {
-    
   } else if (auto smooth_step_node = std::dynamic_pointer_cast<GraphNode<VisualShaderNodeSmoothStep>>(graph_node)) {
-    
-  } else if (auto vector_distance_node = std::dynamic_pointer_cast<GraphNode<VisualShaderNodeVectorDistance>>(graph_node)) {
-    
+  } else if (auto vector_distance_node =
+                 std::dynamic_pointer_cast<GraphNode<VisualShaderNodeVectorDistance>>(graph_node)) {
   } else if (auto mix_node = std::dynamic_pointer_cast<GraphNode<VisualShaderNodeMix>>(graph_node)) {
-    
-  } else if (auto vector_compose_2d_node = std::dynamic_pointer_cast<GraphNode<VisualShaderNode2dVectorCompose>>(graph_node)) {
-    
-  } else if (auto vector_compose_3d_node = std::dynamic_pointer_cast<GraphNode<VisualShaderNode3dVectorCompose>>(graph_node)) {
-    
-  } else if (auto vector_compose_4d_node = std::dynamic_pointer_cast<GraphNode<VisualShaderNode4dVectorCompose>>(graph_node)) {
-    
-  } else if (auto vector_decompose_2d_node = std::dynamic_pointer_cast<GraphNode<VisualShaderNode2dVectorDecompose>>(graph_node)) {
-    
-  } else if (auto vector_decompose_3d_node = std::dynamic_pointer_cast<GraphNode<VisualShaderNode3dVectorDecompose>>(graph_node)) {
-    
-  } else if (auto vector_decompose_4d_node = std::dynamic_pointer_cast<GraphNode<VisualShaderNode4dVectorDecompose>>(graph_node)) {
-    
+  } else if (auto vector_compose_2d_node =
+                 std::dynamic_pointer_cast<GraphNode<VisualShaderNode2dVectorCompose>>(graph_node)) {
+  } else if (auto vector_compose_3d_node =
+                 std::dynamic_pointer_cast<GraphNode<VisualShaderNode3dVectorCompose>>(graph_node)) {
+  } else if (auto vector_compose_4d_node =
+                 std::dynamic_pointer_cast<GraphNode<VisualShaderNode4dVectorCompose>>(graph_node)) {
+  } else if (auto vector_decompose_2d_node =
+                 std::dynamic_pointer_cast<GraphNode<VisualShaderNode2dVectorDecompose>>(graph_node)) {
+  } else if (auto vector_decompose_3d_node =
+                 std::dynamic_pointer_cast<GraphNode<VisualShaderNode3dVectorDecompose>>(graph_node)) {
+  } else if (auto vector_decompose_4d_node =
+                 std::dynamic_pointer_cast<GraphNode<VisualShaderNode4dVectorDecompose>>(graph_node)) {
   } else if (auto if_node = std::dynamic_pointer_cast<GraphNode<VisualShaderNodeIf>>(graph_node)) {
-    
   } else if (auto switch_node = std::dynamic_pointer_cast<GraphNode<VisualShaderNodeSwitch>>(graph_node)) {
-    
   } else if (auto is_node = std::dynamic_pointer_cast<GraphNode<VisualShaderNodeIs>>(graph_node)) {
-    
   } else if (auto compare_node = std::dynamic_pointer_cast<GraphNode<VisualShaderNodeCompare>>(graph_node)) {
-    
   } else {
     FAIL_AND_RETURN_NON_VOID(false, "Unknown node type");
   }
 
-  CHECK_CONDITION_TRUE_NON_VOID(node_graphics_objects.find(n_id) != node_graphics_objects.end(), false, "Graphics node object already exists");
+  CHECK_CONDITION_TRUE_NON_VOID(node_graphics_objects.find(n_id) != node_graphics_objects.end(), false,
+                                "Graphics node object already exists");
 
   QList<QGraphicsView*> views{this->views()};
   CHECK_CONDITION_TRUE_NON_VOID(views.isEmpty(), false, "No views available");
 
   VisualShaderGraphicsView* view{dynamic_cast<VisualShaderGraphicsView*>(views.first())};
 
-  if (coordinate.x() < view->get_x() ||
-      coordinate.x() > view->get_x() + view->get_width() ||
-      coordinate.y() < view->get_y() ||
-      coordinate.y() > view->get_y() + view->get_height()) {
+  if (coordinate.x() < view->get_x() || coordinate.x() > view->get_x() + view->get_width() ||
+      coordinate.y() < view->get_y() || coordinate.y() > view->get_y() + view->get_height()) {
     WARN_PRINT("Node is out of view bounds");
   }
 
@@ -962,9 +1071,11 @@ bool VisualShaderGraphicsScene::add_node(const std::shared_ptr<IGraphNode>& grap
   out_port_captions.resize(graph_node->get_output_port_count());
 
   for (int i{0}; i < (int)in_port_captions.size(); i++) in_port_captions.at(i) = graph_node->get_input_port_caption(i);
-  for (int i{0}; i < (int)out_port_captions.size(); i++) out_port_captions.at(i) = graph_node->get_output_port_caption(i);
+  for (int i{0}; i < (int)out_port_captions.size(); i++)
+    out_port_captions.at(i) = graph_node->get_output_port_caption(i);
 
-  VisualShaderNodeGraphicsObject* n_o{new VisualShaderNodeGraphicsObject(n_id, coordinate, graph_node->get_caption(), in_port_captions, out_port_captions)};
+  VisualShaderNodeGraphicsObject* n_o{new VisualShaderNodeGraphicsObject(n_id, coordinate, graph_node->get_caption(),
+                                                                         in_port_captions, out_port_captions)};
 
   QObject::connect(n_o, &VisualShaderNodeGraphicsObject::node_moved, this, &VisualShaderGraphicsScene::on_node_moved);
   QObject::connect(n_o, &VisualShaderNodeGraphicsObject::in_port_pressed, this,
@@ -987,20 +1098,21 @@ bool VisualShaderGraphicsScene::add_node(const std::shared_ptr<IGraphNode>& grap
   QObject::connect(n_o, &VisualShaderNodeGraphicsObject::out_port_remove_requested, this,
                    &VisualShaderGraphicsScene::on_out_port_remove_requested);
 
-  VisualShaderNodeEmbedWidget* embed_widget{new VisualShaderNodeEmbedWidget(visual_shader_model, nodes_model, n_id, graph_node)};
+  VisualShaderNodeEmbedWidget* embed_widget{
+      new VisualShaderNodeEmbedWidget(visual_shader_model, nodes_model, n_id, graph_node)};
   QGraphicsProxyWidget* embed_widget_proxy{new QGraphicsProxyWidget(n_o)};
   embed_widget_proxy->setWidget(embed_widget);
   n_o->set_embed_widget(embed_widget);
   QObject::connect(embed_widget, &VisualShaderNodeEmbedWidget::shader_preview_update_requested, this,
-                    &VisualShaderGraphicsScene::on_update_shader_previewer_widgets_requested);
+                   &VisualShaderGraphicsScene::on_update_shader_previewer_widgets_requested);
 
   QObject::connect(embed_widget, &VisualShaderNodeEmbedWidget::node_update_requested, n_o,
-                    &VisualShaderNodeGraphicsObject::on_node_update_requested);
+                   &VisualShaderNodeGraphicsObject::on_node_update_requested);
 
   // Send the shader previewer widget
   embed_widget->set_shader_previewer_widget(n_o->get_shader_previewer_widget());
 
-  if (ShaderPreviewerWidget* spw{n_o->get_shader_previewer_widget()}) {
+  if (ShaderPreviewerWidget * spw{n_o->get_shader_previewer_widget()}) {
     QObject::connect(spw, &ShaderPreviewerWidget::scene_update_requested, this,
                      &VisualShaderGraphicsScene::on_scene_update_requested);
   }
@@ -1055,9 +1167,9 @@ bool VisualShaderGraphicsScene::delete_node(const int& n_id, const int& in_port_
 
   // Remove the node from the scene
   // TODO: Why if we exchange the order of these two lines, the program crashes?
-  int erased_count {(int)this->node_graphics_objects.erase(n_id)};
+  int erased_count{(int)this->node_graphics_objects.erase(n_id)};
   CHECK_CONDITION_TRUE_NON_VOID(erased_count == 0, false, "Failed to erase node graphics object");
-  
+
   remove_item(n_o);
 
   return true;
@@ -1078,7 +1190,8 @@ void VisualShaderGraphicsScene::on_update_shader_previewer_widgets_requested() {
   on_scene_update_requested();
 
   // Reset the generated shader code
-  bool result {visual_shader_model->set_data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kFragmentShaderCodeFieldNumber)), "")};
+  bool result{visual_shader_model->set_data(
+      FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kFragmentShaderCodeFieldNumber)), "")};
   if (!result) {
     ERROR_PRINT("Failed to reset the generated shader code");
   }
@@ -1109,53 +1222,63 @@ void VisualShaderGraphicsScene::on_out_port_remove_requested(VisualShaderOutputP
 }
 
 int VisualShaderGraphicsScene::get_new_node_id(ProtoModel* visual_shader_model, ProtoModel* nodes_model) {
-  int size {nodes_model->rowCount()};
+  int size{nodes_model->rowCount()};
 
-  int max_id {0};
+  int max_id{0};
   for (int i{0}; i < size; i++) {
     // Path to the id field of the node
-    FieldPath path{FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(i), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kIdFieldNumber))};
-    int n_id {visual_shader_model->data(path).toInt()};
+    FieldPath path{FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
+                                               FieldPath::RepeatedAt(i),
+                                               FieldPath::FieldNumber(VisualShader::VisualShaderNode::kIdFieldNumber))};
+    int n_id{visual_shader_model->data(path).toInt()};
     if (n_id > max_id) max_id = n_id;
   }
 
-  return max_id + 1; // Minimum id is 1 (0 is reserved for the output node)
+  return max_id + 1;  // Minimum id is 1 (0 is reserved for the output node)
 }
 
 int VisualShaderGraphicsScene::get_new_connection_id(ProtoModel* visual_shader_model, ProtoModel* connections_model) {
-  int size {connections_model->rowCount()};
+  int size{connections_model->rowCount()};
 
-  int max_id {-1};
+  int max_id{-1};
   for (int i{0}; i < size; i++) {
     // Path to the id field of the connection
-    FieldPath path{FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kConnectionsFieldNumber), FieldPath::RepeatedAt(i), FieldPath::FieldNumber(VisualShader::VisualShaderConnection::kIdFieldNumber))};
-    int c_id {visual_shader_model->data(path).toInt()};
+    FieldPath path{FieldPath::Of<VisualShader>(
+        FieldPath::FieldNumber(VisualShader::kConnectionsFieldNumber), FieldPath::RepeatedAt(i),
+        FieldPath::FieldNumber(VisualShader::VisualShaderConnection::kIdFieldNumber))};
+    int c_id{visual_shader_model->data(path).toInt()};
     if (c_id > max_id) max_id = c_id;
   }
 
-  return max_id + 1; // Minimum id is 0
+  return max_id + 1;  // Minimum id is 0
 }
 
-int VisualShaderGraphicsScene::find_node_entry(ProtoModel* visual_shader_model, ProtoModel* nodes_model, const int& n_id) {
+int VisualShaderGraphicsScene::find_node_entry(ProtoModel* visual_shader_model, ProtoModel* nodes_model,
+                                               const int& n_id) {
   CHECK_CONDITION_TRUE_NON_VOID(n_id == 0, -1, "The id " + std::to_string(n_id) + " is reserved for the output node");
 
-  int size {nodes_model->rowCount()};
+  int size{nodes_model->rowCount()};
 
   for (int i{0}; i < size; i++) {
     // Path to the id field of the node
-    FieldPath path{FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(i), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kIdFieldNumber))};
+    FieldPath path{FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
+                                               FieldPath::RepeatedAt(i),
+                                               FieldPath::FieldNumber(VisualShader::VisualShaderNode::kIdFieldNumber))};
     if (visual_shader_model->data(path).toInt() == n_id) return i;
   }
 
   return -1;
 }
 
-int VisualShaderGraphicsScene::find_connection_entry(ProtoModel* visual_shader_model, ProtoModel* connections_model, const int& c_id) {
-  int size {connections_model->rowCount()};
+int VisualShaderGraphicsScene::find_connection_entry(ProtoModel* visual_shader_model, ProtoModel* connections_model,
+                                                     const int& c_id) {
+  int size{connections_model->rowCount()};
 
   for (int i{0}; i < size; i++) {
     // Path to the id field of the connection
-    FieldPath path{FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kConnectionsFieldNumber), FieldPath::RepeatedAt(i), FieldPath::FieldNumber(VisualShader::VisualShaderConnection::kIdFieldNumber))};
+    FieldPath path{FieldPath::Of<VisualShader>(
+        FieldPath::FieldNumber(VisualShader::kConnectionsFieldNumber), FieldPath::RepeatedAt(i),
+        FieldPath::FieldNumber(VisualShader::VisualShaderConnection::kIdFieldNumber))};
     if (visual_shader_model->data(path).toInt() == c_id) return i;
   }
 
@@ -1183,8 +1306,8 @@ bool VisualShaderGraphicsScene::add_connection(const int& from_node_id, const in
 
   if (!this->temporary_connection_graphics_object) {
     int c_id{get_new_connection_id(visual_shader_model, connections_model)};
-    this->temporary_connection_graphics_object =
-        new VisualShaderConnectionGraphicsObject(c_id, from_node_id, from_port_index, from_o_port->get_global_coordinate());
+    this->temporary_connection_graphics_object = new VisualShaderConnectionGraphicsObject(
+        c_id, from_node_id, from_port_index, from_o_port->get_global_coordinate());
     from_o_port->connect(this->temporary_connection_graphics_object);
     addItem(this->temporary_connection_graphics_object);
     return true;
@@ -1207,19 +1330,39 @@ bool VisualShaderGraphicsScene::add_connection(const int& from_node_id, const in
 
     int row_entry{connections_model->append_row()};
 
-    bool result = visual_shader_model->set_data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kConnectionsFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderConnection::kIdFieldNumber)), c_id);
+    bool result = visual_shader_model->set_data(
+        FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kConnectionsFieldNumber),
+                                    FieldPath::RepeatedAt(row_entry),
+                                    FieldPath::FieldNumber(VisualShader::VisualShaderConnection::kIdFieldNumber)),
+        c_id);
     CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to set connection id");
 
-    result = visual_shader_model->set_data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kConnectionsFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderConnection::kFromNodeIdFieldNumber)), from_node_id);
+    result = visual_shader_model->set_data(
+        FieldPath::Of<VisualShader>(
+            FieldPath::FieldNumber(VisualShader::kConnectionsFieldNumber), FieldPath::RepeatedAt(row_entry),
+            FieldPath::FieldNumber(VisualShader::VisualShaderConnection::kFromNodeIdFieldNumber)),
+        from_node_id);
     CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to set connection from node id");
 
-    result = visual_shader_model->set_data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kConnectionsFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderConnection::kFromPortIndexFieldNumber)), from_port_index);
+    result = visual_shader_model->set_data(
+        FieldPath::Of<VisualShader>(
+            FieldPath::FieldNumber(VisualShader::kConnectionsFieldNumber), FieldPath::RepeatedAt(row_entry),
+            FieldPath::FieldNumber(VisualShader::VisualShaderConnection::kFromPortIndexFieldNumber)),
+        from_port_index);
     CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to set connection from port index");
 
-    result = visual_shader_model->set_data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kConnectionsFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderConnection::kToNodeIdFieldNumber)), to_node_id);
+    result = visual_shader_model->set_data(
+        FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kConnectionsFieldNumber),
+                                    FieldPath::RepeatedAt(row_entry),
+                                    FieldPath::FieldNumber(VisualShader::VisualShaderConnection::kToNodeIdFieldNumber)),
+        to_node_id);
     CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to set connection to node id");
 
-    result = visual_shader_model->set_data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kConnectionsFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderConnection::kToPortIndexFieldNumber)), to_port_index);
+    result = visual_shader_model->set_data(
+        FieldPath::Of<VisualShader>(
+            FieldPath::FieldNumber(VisualShader::kConnectionsFieldNumber), FieldPath::RepeatedAt(row_entry),
+            FieldPath::FieldNumber(VisualShader::VisualShaderConnection::kToPortIndexFieldNumber)),
+        to_port_index);
     CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to set connection to port index");
 
     this->temporary_connection_graphics_object->set_end_coordinate(to_i_port->get_global_coordinate());
@@ -1299,7 +1442,7 @@ void VisualShaderGraphicsScene::on_node_deleted(const int& n_id, const int& in_p
     ERROR_PRINT("Failed to delete node");
   }
 
-  Q_EMIT visual_shader_model->dataChanged(QModelIndex(), QModelIndex()); // To update the serialized data
+  Q_EMIT visual_shader_model->dataChanged(QModelIndex(), QModelIndex());  // To update the serialized data
 }
 
 void VisualShaderGraphicsScene::on_port_pressed(QGraphicsObject* port, const QPointF& coordinate) {
@@ -1377,8 +1520,7 @@ void VisualShaderGraphicsScene::on_port_dropped(QGraphicsObject* port, const QPo
 
     if (!in_p_o) {
       int c_id{c_o->get_id()};
-      bool result{this->delete_connection(c_id, c_o->get_from_node_id(),
-                               c_o->get_from_port_index())};
+      bool result{this->delete_connection(c_id, c_o->get_from_node_id(), c_o->get_from_port_index())};
       if (!result) {
         ERROR_PRINT("Failed to delete connection");
       }
@@ -1386,14 +1528,12 @@ void VisualShaderGraphicsScene::on_port_dropped(QGraphicsObject* port, const QPo
       return;  // Return because we dragging an input port and dropped on nothing
     }
 
-    bool result{add_connection(c_o->get_from_node_id(),
-                               c_o->get_from_port_index(), in_p_o->get_node_id(),
+    bool result{add_connection(c_o->get_from_node_id(), c_o->get_from_port_index(), in_p_o->get_node_id(),
                                in_p_o->get_port_index())};
 
     if (!result) {
       int c_id{c_o->get_id()};
-      bool result{this->delete_connection(c_id, c_o->get_from_node_id(),
-                                          c_o->get_from_port_index())};
+      bool result{this->delete_connection(c_id, c_o->get_from_node_id(), c_o->get_from_port_index())};
 
       if (!result) {
         ERROR_PRINT("Failed to delete connection");
@@ -1407,8 +1547,7 @@ void VisualShaderGraphicsScene::on_port_dropped(QGraphicsObject* port, const QPo
 
   if (!in_p_o) {
     int c_id{c_o->get_id()};
-    bool result{this->delete_connection(c_id, c_o->get_from_node_id(),
-                                        c_o->get_from_port_index())};
+    bool result{this->delete_connection(c_id, c_o->get_from_node_id(), c_o->get_from_port_index())};
 
     if (!result) {
       ERROR_PRINT("Failed to delete connection");
@@ -1422,8 +1561,7 @@ void VisualShaderGraphicsScene::on_port_dropped(QGraphicsObject* port, const QPo
 
   if (!result) {
     int c_id{c_o->get_id()};
-    bool result{this->delete_connection(c_id, c_o->get_from_node_id(),
-                                        c_o->get_from_port_index())};
+    bool result{this->delete_connection(c_id, c_o->get_from_node_id(), c_o->get_from_port_index())};
 
     if (!result) {
       ERROR_PRINT("Failed to delete connection");
@@ -1433,14 +1571,23 @@ void VisualShaderGraphicsScene::on_port_dropped(QGraphicsObject* port, const QPo
   }
 }
 
-void VisualShaderGraphicsScene::on_node_moved(const int& n_id, const int& in_port_count, const int& out_port_count, const QPointF& new_coordinate) {
+void VisualShaderGraphicsScene::on_node_moved(const int& n_id, const int& in_port_count, const int& out_port_count,
+                                              const QPointF& new_coordinate) {
   int row_entry{find_node_entry(visual_shader_model, nodes_model, n_id)};
   VALIDATE_INDEX(row_entry, nodes_model->rowCount(), "Node entry not found");
 
-  bool result = visual_shader_model->set_data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kXCoordinateFieldNumber)), new_coordinate.x());
+  bool result = visual_shader_model->set_data(
+      FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
+                                  FieldPath::RepeatedAt(row_entry),
+                                  FieldPath::FieldNumber(VisualShader::VisualShaderNode::kXCoordinateFieldNumber)),
+      new_coordinate.x());
   CHECK_CONDITION_TRUE(!result, "Failed to set node x coordinate");
 
-  result = visual_shader_model->set_data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kYCoordinateFieldNumber)), new_coordinate.y());
+  result = visual_shader_model->set_data(
+      FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
+                                  FieldPath::RepeatedAt(row_entry),
+                                  FieldPath::FieldNumber(VisualShader::VisualShaderNode::kYCoordinateFieldNumber)),
+      new_coordinate.y());
   CHECK_CONDITION_TRUE(!result, "Failed to set node y coordinate");
 
   // Update coordinates of all connected connections
@@ -1765,7 +1912,7 @@ void VisualShaderGraphicsView::move_view_to_fit_items() {
 VisualShaderNodeGraphicsObject::VisualShaderNodeGraphicsObject(const int& n_id, const QPointF& coordinate,
                                                                const std::string& caption,
                                                                const std::vector<std::string>& in_port_captions,
-                                                               const std::vector<std::string>& out_port_captions, 
+                                                               const std::vector<std::string>& out_port_captions,
                                                                QGraphicsItem* parent)
     : QGraphicsObject(parent),
       n_id(n_id),
@@ -1783,8 +1930,8 @@ VisualShaderNodeGraphicsObject::VisualShaderNodeGraphicsObject(const int& n_id, 
       rect_margin(0.0f),
       rect_padding(0.0f),
       embed_widget(nullptr),
-      matching_image_widget(nullptr)// ,
-      { //shader_previewer_widget(nullptr) {
+      matching_image_widget(nullptr)  // ,
+{                                     //shader_previewer_widget(nullptr) {
   setFlag(QGraphicsItem::ItemDoesntPropagateOpacityToChildren, true);
   setFlag(QGraphicsItem::ItemIsFocusable, true);
   setFlag(QGraphicsItem::ItemIsMovable, true);
@@ -1827,7 +1974,9 @@ VisualShaderNodeGraphicsObject::~VisualShaderNodeGraphicsObject() {
   if (context_menu) delete context_menu;
 }
 
-void VisualShaderNodeGraphicsObject::on_delete_node_action_triggered() { Q_EMIT node_deleted(n_id, in_port_count, out_port_count); }
+void VisualShaderNodeGraphicsObject::on_delete_node_action_triggered() {
+  Q_EMIT node_deleted(n_id, in_port_count, out_port_count);
+}
 
 VisualShaderInputPortGraphicsObject* VisualShaderNodeGraphicsObject::get_input_port_graphics_object(
     const int& p_index) const {
@@ -2347,8 +2496,7 @@ void VisualShaderOutputPortGraphicsObject::mouseReleaseEvent(QGraphicsSceneMouse
 /**********************************************************************/
 /**********************************************************************/
 
-VisualShaderConnectionGraphicsObject::VisualShaderConnectionGraphicsObject(const int& c_id, 
-                                                                           const int& from_n_id,
+VisualShaderConnectionGraphicsObject::VisualShaderConnectionGraphicsObject(const int& c_id, const int& from_n_id,
                                                                            const int& from_p_index,
                                                                            const QPointF& start_coordinate,
                                                                            QGraphicsItem* parent)
@@ -2625,14 +2773,10 @@ std::pair<QPointF, QPointF> VisualShaderConnectionGraphicsObject::calculate_cont
 /**********************************************************************/
 /**********************************************************************/
 
-VisualShaderNodeEmbedWidget::VisualShaderNodeEmbedWidget(ProtoModel* visual_shader_model, 
-                                                         ProtoModel* nodes_model, 
-                                                         const int& n_id, 
-                                                         const std::shared_ptr<IGraphNode>& graph_node, 
-                                                         QWidget* parent) : QWidget(parent), 
-                                                                            layout(nullptr), 
-                                                                            preview_shader_button(nullptr), 
-                                                                            shader_previewer_widget(nullptr) {
+VisualShaderNodeEmbedWidget::VisualShaderNodeEmbedWidget(ProtoModel* visual_shader_model, ProtoModel* nodes_model,
+                                                         const int& n_id, const std::shared_ptr<IGraphNode>& graph_node,
+                                                         QWidget* parent)
+    : QWidget(parent), layout(nullptr), preview_shader_button(nullptr), shader_previewer_widget(nullptr) {
   layout = new QVBoxLayout(this);
   layout->setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
   layout->setSizeConstraint(QLayout::SetNoConstraint);
@@ -2640,44 +2784,55 @@ VisualShaderNodeEmbedWidget::VisualShaderNodeEmbedWidget(ProtoModel* visual_shad
   layout->setAlignment(Qt::AlignVCenter | Qt::AlignHCenter);
 
   if (auto input_node = std::dynamic_pointer_cast<GraphNode<VisualShaderNodeInput>>(graph_node)) {
-    VisualShaderNodeInputEmbedWidget* embed_widget = new VisualShaderNodeInputEmbedWidget(visual_shader_model, nodes_model, n_id, graph_node);
+    VisualShaderNodeInputEmbedWidget* embed_widget =
+        new VisualShaderNodeInputEmbedWidget(visual_shader_model, nodes_model, n_id, graph_node);
     layout->addWidget(embed_widget);
     QObject::connect(embed_widget, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
-                    &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
-  } else if (auto float_constant_node = std::dynamic_pointer_cast<GraphNode<VisualShaderNodeFloatConstant>>(graph_node)) {
-    VisualShaderNodeFloatConstantEmbedWidget* embed_widget = new VisualShaderNodeFloatConstantEmbedWidget(visual_shader_model, nodes_model, n_id, graph_node);
+                     &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
+  } else if (auto float_constant_node =
+                 std::dynamic_pointer_cast<GraphNode<VisualShaderNodeFloatConstant>>(graph_node)) {
+    VisualShaderNodeFloatConstantEmbedWidget* embed_widget =
+        new VisualShaderNodeFloatConstantEmbedWidget(visual_shader_model, nodes_model, n_id, graph_node);
     layout->addWidget(embed_widget);
     QObject::connect(embed_widget, &QLineEdit::textChanged, this,
                      &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
   } else if (auto int_constant_node = std::dynamic_pointer_cast<GraphNode<VisualShaderNodeIntConstant>>(graph_node)) {
-    VisualShaderNodeIntConstantEmbedWidget* embed_widget = new VisualShaderNodeIntConstantEmbedWidget(visual_shader_model, nodes_model, n_id, graph_node);
+    VisualShaderNodeIntConstantEmbedWidget* embed_widget =
+        new VisualShaderNodeIntConstantEmbedWidget(visual_shader_model, nodes_model, n_id, graph_node);
     layout->addWidget(embed_widget);
     QObject::connect(embed_widget, &QLineEdit::textChanged, this,
                      &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
   } else if (auto uint_constant_node = std::dynamic_pointer_cast<GraphNode<VisualShaderNodeUIntConstant>>(graph_node)) {
-    VisualShaderNodeUIntConstantEmbedWidget* embed_widget = new VisualShaderNodeUIntConstantEmbedWidget(visual_shader_model, nodes_model, n_id, graph_node);
+    VisualShaderNodeUIntConstantEmbedWidget* embed_widget =
+        new VisualShaderNodeUIntConstantEmbedWidget(visual_shader_model, nodes_model, n_id, graph_node);
     layout->addWidget(embed_widget);
     QObject::connect(embed_widget, &QLineEdit::textChanged, this,
                      &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
-  } else if (auto boolean_constant_node = std::dynamic_pointer_cast<GraphNode<VisualShaderNodeBooleanConstant>>(graph_node)) {
-    VisualShaderNodeBooleanConstantEmbedWidget* embed_widget = new VisualShaderNodeBooleanConstantEmbedWidget(visual_shader_model, nodes_model, n_id, graph_node);
+  } else if (auto boolean_constant_node =
+                 std::dynamic_pointer_cast<GraphNode<VisualShaderNodeBooleanConstant>>(graph_node)) {
+    VisualShaderNodeBooleanConstantEmbedWidget* embed_widget =
+        new VisualShaderNodeBooleanConstantEmbedWidget(visual_shader_model, nodes_model, n_id, graph_node);
     layout->addWidget(embed_widget);
     QObject::connect(embed_widget, &QCheckBox::stateChanged, this,
                      &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
-  } else if (auto color_constant_node = std::dynamic_pointer_cast<GraphNode<VisualShaderNodeColorConstant>>(graph_node)) {
-    VisualShaderNodeColorConstantEmbedWidget* embed_widget = new VisualShaderNodeColorConstantEmbedWidget(visual_shader_model, nodes_model, n_id, graph_node);
+  } else if (auto color_constant_node =
+                 std::dynamic_pointer_cast<GraphNode<VisualShaderNodeColorConstant>>(graph_node)) {
+    VisualShaderNodeColorConstantEmbedWidget* embed_widget =
+        new VisualShaderNodeColorConstantEmbedWidget(visual_shader_model, nodes_model, n_id, graph_node);
     layout->addWidget(embed_widget);
     QObject::connect(embed_widget, &VisualShaderNodeColorConstantEmbedWidget::color_changed, this,
                      &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
   } else if (auto vec2_constant_node = std::dynamic_pointer_cast<GraphNode<VisualShaderNodeVec2Constant>>(graph_node)) {
-    VisualShaderNodeVec2ConstantEmbedWidget* embed_widget = new VisualShaderNodeVec2ConstantEmbedWidget(visual_shader_model, nodes_model, n_id, graph_node);
+    VisualShaderNodeVec2ConstantEmbedWidget* embed_widget =
+        new VisualShaderNodeVec2ConstantEmbedWidget(visual_shader_model, nodes_model, n_id, graph_node);
     layout->addLayout(embed_widget);
     QObject::connect(embed_widget->get_x_edit_widget(), &QLineEdit::textChanged, this,
                      &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
     QObject::connect(embed_widget->get_y_edit_widget(), &QLineEdit::textChanged, this,
                      &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
   } else if (auto vec3_constant_node = std::dynamic_pointer_cast<GraphNode<VisualShaderNodeVec3Constant>>(graph_node)) {
-    VisualShaderNodeVec3ConstantEmbedWidget* embed_widget = new VisualShaderNodeVec3ConstantEmbedWidget(visual_shader_model, nodes_model, n_id, graph_node);
+    VisualShaderNodeVec3ConstantEmbedWidget* embed_widget =
+        new VisualShaderNodeVec3ConstantEmbedWidget(visual_shader_model, nodes_model, n_id, graph_node);
     layout->addLayout(embed_widget);
     QObject::connect(embed_widget->get_x_edit_widget(), &QLineEdit::textChanged, this,
                      &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
@@ -2686,7 +2841,8 @@ VisualShaderNodeEmbedWidget::VisualShaderNodeEmbedWidget(ProtoModel* visual_shad
     QObject::connect(embed_widget->get_z_edit_widget(), &QLineEdit::textChanged, this,
                      &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
   } else if (auto vec4_constant_node = std::dynamic_pointer_cast<GraphNode<VisualShaderNodeVec4Constant>>(graph_node)) {
-    VisualShaderNodeVec4ConstantEmbedWidget* embed_widget = new VisualShaderNodeVec4ConstantEmbedWidget(visual_shader_model, nodes_model, n_id, graph_node);
+    VisualShaderNodeVec4ConstantEmbedWidget* embed_widget =
+        new VisualShaderNodeVec4ConstantEmbedWidget(visual_shader_model, nodes_model, n_id, graph_node);
     layout->addLayout(embed_widget);
     QObject::connect(embed_widget->get_x_edit_widget(), &QLineEdit::textChanged, this,
                      &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
@@ -2697,56 +2853,68 @@ VisualShaderNodeEmbedWidget::VisualShaderNodeEmbedWidget(ProtoModel* visual_shad
     QObject::connect(embed_widget->get_w_edit_widget(), &QLineEdit::textChanged, this,
                      &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
   } else if (auto float_op_node = std::dynamic_pointer_cast<GraphNode<VisualShaderNodeFloatOp>>(graph_node)) {
-    VisualShaderNodeFloatOpEmbedWidget* embed_widget = new VisualShaderNodeFloatOpEmbedWidget(visual_shader_model, nodes_model, n_id, graph_node);
+    VisualShaderNodeFloatOpEmbedWidget* embed_widget =
+        new VisualShaderNodeFloatOpEmbedWidget(visual_shader_model, nodes_model, n_id, graph_node);
     layout->addWidget(embed_widget);
     QObject::connect(embed_widget, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
                      &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
   } else if (auto int_op_node = std::dynamic_pointer_cast<GraphNode<VisualShaderNodeIntOp>>(graph_node)) {
-    VisualShaderNodeIntOpEmbedWidget* embed_widget = new VisualShaderNodeIntOpEmbedWidget(visual_shader_model, nodes_model, n_id, graph_node);
+    VisualShaderNodeIntOpEmbedWidget* embed_widget =
+        new VisualShaderNodeIntOpEmbedWidget(visual_shader_model, nodes_model, n_id, graph_node);
     layout->addWidget(embed_widget);
     QObject::connect(embed_widget, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
                      &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
   } else if (auto uint_op_node = std::dynamic_pointer_cast<GraphNode<VisualShaderNodeUIntOp>>(graph_node)) {
-    VisualShaderNodeUIntOpEmbedWidget* embed_widget = new VisualShaderNodeUIntOpEmbedWidget(visual_shader_model, nodes_model, n_id, graph_node);
+    VisualShaderNodeUIntOpEmbedWidget* embed_widget =
+        new VisualShaderNodeUIntOpEmbedWidget(visual_shader_model, nodes_model, n_id, graph_node);
     layout->addWidget(embed_widget);
     QObject::connect(embed_widget, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
                      &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
   } else if (auto vector_op_node = std::dynamic_pointer_cast<GraphNode<VisualShaderNodeVectorOp>>(graph_node)) {
-    VisualShaderNodeVectorBaseEmbedWidget* embed_widget = new VisualShaderNodeVectorBaseEmbedWidget(visual_shader_model, nodes_model, n_id, graph_node);
+    VisualShaderNodeVectorBaseEmbedWidget* embed_widget =
+        new VisualShaderNodeVectorBaseEmbedWidget(visual_shader_model, nodes_model, n_id, graph_node);
     layout->addWidget(embed_widget);
-    VisualShaderNodeVectorOpEmbedWidget* embed_widget2 = new VisualShaderNodeVectorOpEmbedWidget(visual_shader_model, nodes_model, n_id, graph_node);
+    VisualShaderNodeVectorOpEmbedWidget* embed_widget2 =
+        new VisualShaderNodeVectorOpEmbedWidget(visual_shader_model, nodes_model, n_id, graph_node);
     layout->addWidget(embed_widget2);
     QObject::connect(embed_widget2, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
                      &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
   } else if (auto float_func_node = std::dynamic_pointer_cast<GraphNode<VisualShaderNodeFloatFunc>>(graph_node)) {
-    VisualShaderNodeFloatFuncEmbedWidget* embed_widget = new VisualShaderNodeFloatFuncEmbedWidget(visual_shader_model, nodes_model, n_id, graph_node);
+    VisualShaderNodeFloatFuncEmbedWidget* embed_widget =
+        new VisualShaderNodeFloatFuncEmbedWidget(visual_shader_model, nodes_model, n_id, graph_node);
     layout->addWidget(embed_widget);
     QObject::connect(embed_widget, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
                      &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
   } else if (auto int_func_node = std::dynamic_pointer_cast<GraphNode<VisualShaderNodeIntFunc>>(graph_node)) {
-    VisualShaderNodeIntFuncEmbedWidget* embed_widget = new VisualShaderNodeIntFuncEmbedWidget(visual_shader_model, nodes_model, n_id, graph_node);
+    VisualShaderNodeIntFuncEmbedWidget* embed_widget =
+        new VisualShaderNodeIntFuncEmbedWidget(visual_shader_model, nodes_model, n_id, graph_node);
     layout->addWidget(embed_widget);
     QObject::connect(embed_widget, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
                      &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
   } else if (auto uint_func_node = std::dynamic_pointer_cast<GraphNode<VisualShaderNodeUIntFunc>>(graph_node)) {
-    VisualShaderNodeUIntFuncEmbedWidget* embed_widget = new VisualShaderNodeUIntFuncEmbedWidget(visual_shader_model, nodes_model, n_id, graph_node);
+    VisualShaderNodeUIntFuncEmbedWidget* embed_widget =
+        new VisualShaderNodeUIntFuncEmbedWidget(visual_shader_model, nodes_model, n_id, graph_node);
     layout->addWidget(embed_widget);
     QObject::connect(embed_widget, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
                      &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
   } else if (auto vector_func_node = std::dynamic_pointer_cast<GraphNode<VisualShaderNodeVectorFunc>>(graph_node)) {
-    VisualShaderNodeVectorBaseEmbedWidget* embed_widget = new VisualShaderNodeVectorBaseEmbedWidget(visual_shader_model, nodes_model, n_id, graph_node);
+    VisualShaderNodeVectorBaseEmbedWidget* embed_widget =
+        new VisualShaderNodeVectorBaseEmbedWidget(visual_shader_model, nodes_model, n_id, graph_node);
     layout->addWidget(embed_widget);
-    VisualShaderNodeVectorFuncEmbedWidget* embed_widget2 = new VisualShaderNodeVectorFuncEmbedWidget(visual_shader_model, nodes_model, n_id, graph_node);
+    VisualShaderNodeVectorFuncEmbedWidget* embed_widget2 =
+        new VisualShaderNodeVectorFuncEmbedWidget(visual_shader_model, nodes_model, n_id, graph_node);
     layout->addWidget(embed_widget2);
     QObject::connect(embed_widget2, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
                      &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
   } else if (auto value_noise_node = std::dynamic_pointer_cast<GraphNode<VisualShaderNodeValueNoise>>(graph_node)) {
-    VisualShaderNodeValueNoiseEmbedWidget* embed_widget = new VisualShaderNodeValueNoiseEmbedWidget(visual_shader_model, nodes_model, n_id, graph_node);
+    VisualShaderNodeValueNoiseEmbedWidget* embed_widget =
+        new VisualShaderNodeValueNoiseEmbedWidget(visual_shader_model, nodes_model, n_id, graph_node);
     layout->addWidget(embed_widget);
     QObject::connect(embed_widget, &QLineEdit::textChanged, this,
                      &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
   } else if (auto perlin_noise_node = std::dynamic_pointer_cast<GraphNode<VisualShaderNodePerlinNoise>>(graph_node)) {
-    VisualShaderNodePerlinNoiseEmbedWidget* embed_widget = new VisualShaderNodePerlinNoiseEmbedWidget(visual_shader_model, nodes_model, n_id, graph_node);
+    VisualShaderNodePerlinNoiseEmbedWidget* embed_widget =
+        new VisualShaderNodePerlinNoiseEmbedWidget(visual_shader_model, nodes_model, n_id, graph_node);
     layout->addWidget(embed_widget);
     QObject::connect(embed_widget, &QLineEdit::textChanged, this,
                      &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
@@ -2762,45 +2930,41 @@ VisualShaderNodeEmbedWidget::VisualShaderNodeEmbedWidget(ProtoModel* visual_shad
     QObject::connect(embed_widget2, &QLineEdit::textChanged, this,
                      &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
   } else if (auto dot_product_node = std::dynamic_pointer_cast<GraphNode<VisualShaderNodeDotProduct>>(graph_node)) {
-    
   } else if (auto vector_len_node = std::dynamic_pointer_cast<GraphNode<VisualShaderNodeVectorLen>>(graph_node)) {
-    
   } else if (auto clamp_node = std::dynamic_pointer_cast<GraphNode<VisualShaderNodeClamp>>(graph_node)) {
-    
   } else if (auto step_node = std::dynamic_pointer_cast<GraphNode<VisualShaderNodeStep>>(graph_node)) {
-    
   } else if (auto smooth_step_node = std::dynamic_pointer_cast<GraphNode<VisualShaderNodeSmoothStep>>(graph_node)) {
-    
-  } else if (auto vector_distance_node = std::dynamic_pointer_cast<GraphNode<VisualShaderNodeVectorDistance>>(graph_node)) {
-    
+  } else if (auto vector_distance_node =
+                 std::dynamic_pointer_cast<GraphNode<VisualShaderNodeVectorDistance>>(graph_node)) {
   } else if (auto mix_node = std::dynamic_pointer_cast<GraphNode<VisualShaderNodeMix>>(graph_node)) {
-    
-  } else if (auto vector_compose_2d_node = std::dynamic_pointer_cast<GraphNode<VisualShaderNode2dVectorCompose>>(graph_node)) {
-    
-  } else if (auto vector_compose_3d_node = std::dynamic_pointer_cast<GraphNode<VisualShaderNode3dVectorCompose>>(graph_node)) {
-    
-  } else if (auto vector_compose_4d_node = std::dynamic_pointer_cast<GraphNode<VisualShaderNode4dVectorCompose>>(graph_node)) {
-    
-  } else if (auto vector_decompose_2d_node = std::dynamic_pointer_cast<GraphNode<VisualShaderNode2dVectorDecompose>>(graph_node)) {
-    
-  } else if (auto vector_decompose_3d_node = std::dynamic_pointer_cast<GraphNode<VisualShaderNode3dVectorDecompose>>(graph_node)) {
-    
-  } else if (auto vector_decompose_4d_node = std::dynamic_pointer_cast<GraphNode<VisualShaderNode4dVectorDecompose>>(graph_node)) {
-    
+  } else if (auto vector_compose_2d_node =
+                 std::dynamic_pointer_cast<GraphNode<VisualShaderNode2dVectorCompose>>(graph_node)) {
+  } else if (auto vector_compose_3d_node =
+                 std::dynamic_pointer_cast<GraphNode<VisualShaderNode3dVectorCompose>>(graph_node)) {
+  } else if (auto vector_compose_4d_node =
+                 std::dynamic_pointer_cast<GraphNode<VisualShaderNode4dVectorCompose>>(graph_node)) {
+  } else if (auto vector_decompose_2d_node =
+                 std::dynamic_pointer_cast<GraphNode<VisualShaderNode2dVectorDecompose>>(graph_node)) {
+  } else if (auto vector_decompose_3d_node =
+                 std::dynamic_pointer_cast<GraphNode<VisualShaderNode3dVectorDecompose>>(graph_node)) {
+  } else if (auto vector_decompose_4d_node =
+                 std::dynamic_pointer_cast<GraphNode<VisualShaderNode4dVectorDecompose>>(graph_node)) {
   } else if (auto if_node = std::dynamic_pointer_cast<GraphNode<VisualShaderNodeIf>>(graph_node)) {
-    
   } else if (auto switch_node = std::dynamic_pointer_cast<GraphNode<VisualShaderNodeSwitch>>(graph_node)) {
-    VisualShaderNodeSwitchEmbedWidget* embed_widget = new VisualShaderNodeSwitchEmbedWidget(visual_shader_model, nodes_model, n_id, graph_node);
+    VisualShaderNodeSwitchEmbedWidget* embed_widget =
+        new VisualShaderNodeSwitchEmbedWidget(visual_shader_model, nodes_model, n_id, graph_node);
     layout->addWidget(embed_widget);
     QObject::connect(embed_widget, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
                      &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
   } else if (auto is_node = std::dynamic_pointer_cast<GraphNode<VisualShaderNodeIs>>(graph_node)) {
-    VisualShaderNodeIsEmbedWidget* embed_widget = new VisualShaderNodeIsEmbedWidget(visual_shader_model, nodes_model, n_id, graph_node);
+    VisualShaderNodeIsEmbedWidget* embed_widget =
+        new VisualShaderNodeIsEmbedWidget(visual_shader_model, nodes_model, n_id, graph_node);
     layout->addWidget(embed_widget);
     QObject::connect(embed_widget, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
                      &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
   } else if (auto compare_node = std::dynamic_pointer_cast<GraphNode<VisualShaderNodeCompare>>(graph_node)) {
-    VisualShaderNodeCompareEmbedWidget* embed_widget = new VisualShaderNodeCompareEmbedWidget(visual_shader_model, nodes_model, n_id, graph_node);
+    VisualShaderNodeCompareEmbedWidget* embed_widget =
+        new VisualShaderNodeCompareEmbedWidget(visual_shader_model, nodes_model, n_id, graph_node);
     layout->addLayout(embed_widget);
     QObject::connect(embed_widget->get_comparison_type_combo_box(), QOverload<int>::of(&QComboBox::currentIndexChanged),
                      this, &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
@@ -2830,25 +2994,31 @@ VisualShaderNodeEmbedWidget::VisualShaderNodeEmbedWidget(ProtoModel* visual_shad
 /* Input Node                        */
 /*************************************/
 
-VisualShaderNodeInputEmbedWidget::VisualShaderNodeInputEmbedWidget(ProtoModel* visual_shader_model, 
-                                                                   ProtoModel* nodes_model, 
-                                                                   const int& n_id, 
-                                                                   const std::shared_ptr<IGraphNode>& graph_node) : QComboBox(), 
-                                                                                                           visual_shader_model(visual_shader_model),
-                                                                                                           nodes_model(nodes_model), 
-                                                                                                           n_id(n_id),
-                                                                                                           graph_node(graph_node) {
+VisualShaderNodeInputEmbedWidget::VisualShaderNodeInputEmbedWidget(ProtoModel* visual_shader_model,
+                                                                   ProtoModel* nodes_model, const int& n_id,
+                                                                   const std::shared_ptr<IGraphNode>& graph_node)
+    : QComboBox(),
+      visual_shader_model(visual_shader_model),
+      nodes_model(nodes_model),
+      n_id(n_id),
+      graph_node(graph_node) {
   setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
   setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
 
   int size{VisualShaderNodeInputType_descriptor()->value_count()};
   for (int i{0}; i < size; ++i) {
     int input_type{shadergen_utils::get_enum_value_by_index(VisualShaderNodeInputType_descriptor(), i)};
-    addItem(QString::fromStdString(shadergen_utils::get_enum_value_caption(VisualShaderNodeInputType_descriptor(), input_type)));
+    addItem(QString::fromStdString(
+        shadergen_utils::get_enum_value_caption(VisualShaderNodeInputType_descriptor(), input_type)));
   }
 
   int row_entry{VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, n_id)};
-  setCurrentIndex(visual_shader_model->data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kInputFieldNumber), FieldPath::FieldNumber(VisualShaderNodeInput::kTypeFieldNumber))).toInt());
+  setCurrentIndex(visual_shader_model
+                      ->data(FieldPath::Of<VisualShader>(
+                          FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry),
+                          FieldPath::FieldNumber(VisualShader::VisualShaderNode::kInputFieldNumber),
+                          FieldPath::FieldNumber(VisualShaderNodeInput::kTypeFieldNumber)))
+                      .toInt());
 
   QObject::connect(this, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
                    &VisualShaderNodeInputEmbedWidget::on_current_index_changed);
@@ -2856,7 +3026,12 @@ VisualShaderNodeInputEmbedWidget::VisualShaderNodeInputEmbedWidget(ProtoModel* v
 
 void VisualShaderNodeInputEmbedWidget::on_current_index_changed(const int& index) {
   int row_entry{VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, n_id)};
-  bool result = visual_shader_model->set_data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kInputFieldNumber), FieldPath::FieldNumber(VisualShaderNodeInput::kTypeFieldNumber)), index);
+  bool result = visual_shader_model->set_data(
+      FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
+                                  FieldPath::RepeatedAt(row_entry),
+                                  FieldPath::FieldNumber(VisualShader::VisualShaderNode::kInputFieldNumber),
+                                  FieldPath::FieldNumber(VisualShaderNodeInput::kTypeFieldNumber)),
+      index);
   if (!result) {
     ERROR_PRINT("Failed to set data");
   }
@@ -2866,9 +3041,9 @@ void VisualShaderNodeInputEmbedWidget::on_current_index_changed(const int& index
 /* CONSTANTS                         */
 /*************************************/
 
-VisualShaderNodeFloatConstantEmbedWidget::VisualShaderNodeFloatConstantEmbedWidget(ProtoModel* visual_shader_model, 
-                                                                   ProtoModel* nodes_model, 
-                                                                   const int& n_id, const std::shared_ptr<IGraphNode>& graph_node)
+VisualShaderNodeFloatConstantEmbedWidget::VisualShaderNodeFloatConstantEmbedWidget(
+    ProtoModel* visual_shader_model, ProtoModel* nodes_model, const int& n_id,
+    const std::shared_ptr<IGraphNode>& graph_node)
     : QLineEdit(), graph_node(graph_node) {
   setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
   setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
@@ -2876,7 +3051,13 @@ VisualShaderNodeFloatConstantEmbedWidget::VisualShaderNodeFloatConstantEmbedWidg
   setPlaceholderText("Value");
 
   int row_entry{VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, n_id)};
-  setText(QString::number(visual_shader_model->data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kFloatConstantFieldNumber), FieldPath::FieldNumber(VisualShaderNodeFloatConstant::kValueFieldNumber))).toFloat()));
+  setText(
+      QString::number(visual_shader_model
+                          ->data(FieldPath::Of<VisualShader>(
+                              FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry),
+                              FieldPath::FieldNumber(VisualShader::VisualShaderNode::kFloatConstantFieldNumber),
+                              FieldPath::FieldNumber(VisualShaderNodeFloatConstant::kValueFieldNumber)))
+                          .toFloat()));
 
   QObject::connect(this, &QLineEdit::textChanged, this, &VisualShaderNodeFloatConstantEmbedWidget::on_text_changed);
 }
@@ -2885,7 +3066,12 @@ void VisualShaderNodeFloatConstantEmbedWidget::on_text_changed(const QString& te
   int row_entry{VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, n_id)};
 
   if (text.isEmpty()) {
-    bool result = visual_shader_model->set_data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kFloatConstantFieldNumber), FieldPath::FieldNumber(VisualShaderNodeFloatConstant::kValueFieldNumber)), 0.0f);
+    bool result = visual_shader_model->set_data(
+        FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
+                                    FieldPath::RepeatedAt(row_entry),
+                                    FieldPath::FieldNumber(VisualShader::VisualShaderNode::kFloatConstantFieldNumber),
+                                    FieldPath::FieldNumber(VisualShaderNodeFloatConstant::kValueFieldNumber)),
+        0.0f);
     if (!result) {
       ERROR_PRINT("Failed to set data");
     }
@@ -2893,12 +3079,22 @@ void VisualShaderNodeFloatConstantEmbedWidget::on_text_changed(const QString& te
     bool ok;
     text.toFloat(&ok);
     if (ok) {
-      bool result = visual_shader_model->set_data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kFloatConstantFieldNumber), FieldPath::FieldNumber(VisualShaderNodeFloatConstant::kValueFieldNumber)), text.toFloat());
+      bool result = visual_shader_model->set_data(
+          FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
+                                      FieldPath::RepeatedAt(row_entry),
+                                      FieldPath::FieldNumber(VisualShader::VisualShaderNode::kFloatConstantFieldNumber),
+                                      FieldPath::FieldNumber(VisualShaderNodeFloatConstant::kValueFieldNumber)),
+          text.toFloat());
       if (!result) {
         ERROR_PRINT("Failed to set data");
       }
     } else {
-      bool result = visual_shader_model->set_data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kFloatConstantFieldNumber), FieldPath::FieldNumber(VisualShaderNodeFloatConstant::kValueFieldNumber)), 0.0f);
+      bool result = visual_shader_model->set_data(
+          FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
+                                      FieldPath::RepeatedAt(row_entry),
+                                      FieldPath::FieldNumber(VisualShader::VisualShaderNode::kFloatConstantFieldNumber),
+                                      FieldPath::FieldNumber(VisualShaderNodeFloatConstant::kValueFieldNumber)),
+          0.0f);
       if (!result) {
         ERROR_PRINT("Failed to set data");
       }
@@ -2907,9 +3103,9 @@ void VisualShaderNodeFloatConstantEmbedWidget::on_text_changed(const QString& te
   }
 }
 
-VisualShaderNodeIntConstantEmbedWidget::VisualShaderNodeIntConstantEmbedWidget(ProtoModel* visual_shader_model, 
-                                                                   ProtoModel* nodes_model, 
-                                                                   const int& n_id, const std::shared_ptr<IGraphNode>& graph_node)
+VisualShaderNodeIntConstantEmbedWidget::VisualShaderNodeIntConstantEmbedWidget(
+    ProtoModel* visual_shader_model, ProtoModel* nodes_model, const int& n_id,
+    const std::shared_ptr<IGraphNode>& graph_node)
     : QLineEdit(), graph_node(graph_node) {
   setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
   setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
@@ -2917,7 +3113,13 @@ VisualShaderNodeIntConstantEmbedWidget::VisualShaderNodeIntConstantEmbedWidget(P
   setPlaceholderText("Value");
 
   int row_entry{VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, n_id)};
-  setText(QString::number(visual_shader_model->data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kIntConstantFieldNumber), FieldPath::FieldNumber(VisualShaderNodeIntConstant::kValueFieldNumber))).toInt()));
+  setText(
+      QString::number(visual_shader_model
+                          ->data(FieldPath::Of<VisualShader>(
+                              FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry),
+                              FieldPath::FieldNumber(VisualShader::VisualShaderNode::kIntConstantFieldNumber),
+                              FieldPath::FieldNumber(VisualShaderNodeIntConstant::kValueFieldNumber)))
+                          .toInt()));
 
   QObject::connect(this, &QLineEdit::textChanged, this, &VisualShaderNodeIntConstantEmbedWidget::on_text_changed);
 }
@@ -2926,7 +3128,12 @@ void VisualShaderNodeIntConstantEmbedWidget::on_text_changed(const QString& text
   int row_entry{VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, n_id)};
 
   if (text.isEmpty()) {
-    bool result = visual_shader_model->set_data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kIntConstantFieldNumber), FieldPath::FieldNumber(VisualShaderNodeFloatConstant::kValueFieldNumber)), 0);
+    bool result = visual_shader_model->set_data(
+        FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
+                                    FieldPath::RepeatedAt(row_entry),
+                                    FieldPath::FieldNumber(VisualShader::VisualShaderNode::kIntConstantFieldNumber),
+                                    FieldPath::FieldNumber(VisualShaderNodeFloatConstant::kValueFieldNumber)),
+        0);
     if (!result) {
       ERROR_PRINT("Failed to set data");
     }
@@ -2934,12 +3141,22 @@ void VisualShaderNodeIntConstantEmbedWidget::on_text_changed(const QString& text
     bool ok;
     text.toFloat(&ok);
     if (ok) {
-      bool result = visual_shader_model->set_data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kIntConstantFieldNumber), FieldPath::FieldNumber(VisualShaderNodeFloatConstant::kValueFieldNumber)), text.toInt());
+      bool result = visual_shader_model->set_data(
+          FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
+                                      FieldPath::RepeatedAt(row_entry),
+                                      FieldPath::FieldNumber(VisualShader::VisualShaderNode::kIntConstantFieldNumber),
+                                      FieldPath::FieldNumber(VisualShaderNodeFloatConstant::kValueFieldNumber)),
+          text.toInt());
       if (!result) {
         ERROR_PRINT("Failed to set data");
       }
     } else {
-      bool result = visual_shader_model->set_data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kIntConstantFieldNumber), FieldPath::FieldNumber(VisualShaderNodeFloatConstant::kValueFieldNumber)), 0);
+      bool result = visual_shader_model->set_data(
+          FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
+                                      FieldPath::RepeatedAt(row_entry),
+                                      FieldPath::FieldNumber(VisualShader::VisualShaderNode::kIntConstantFieldNumber),
+                                      FieldPath::FieldNumber(VisualShaderNodeFloatConstant::kValueFieldNumber)),
+          0);
       if (!result) {
         ERROR_PRINT("Failed to set data");
       }
@@ -2948,9 +3165,9 @@ void VisualShaderNodeIntConstantEmbedWidget::on_text_changed(const QString& text
   }
 }
 
-VisualShaderNodeUIntConstantEmbedWidget::VisualShaderNodeUIntConstantEmbedWidget(ProtoModel* visual_shader_model, 
-                                                                   ProtoModel* nodes_model, 
-                                                                   const int& n_id, const std::shared_ptr<IGraphNode>& graph_node)
+VisualShaderNodeUIntConstantEmbedWidget::VisualShaderNodeUIntConstantEmbedWidget(
+    ProtoModel* visual_shader_model, ProtoModel* nodes_model, const int& n_id,
+    const std::shared_ptr<IGraphNode>& graph_node)
     : QLineEdit(), graph_node(graph_node) {
   setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
   setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
@@ -2958,7 +3175,13 @@ VisualShaderNodeUIntConstantEmbedWidget::VisualShaderNodeUIntConstantEmbedWidget
   setPlaceholderText("Value");
 
   int row_entry{VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, n_id)};
-  setText(QString::number(visual_shader_model->data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kUintConstantFieldNumber), FieldPath::FieldNumber(VisualShaderNodeUIntConstant::kValueFieldNumber))).toUInt()));
+  setText(
+      QString::number(visual_shader_model
+                          ->data(FieldPath::Of<VisualShader>(
+                              FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry),
+                              FieldPath::FieldNumber(VisualShader::VisualShaderNode::kUintConstantFieldNumber),
+                              FieldPath::FieldNumber(VisualShaderNodeUIntConstant::kValueFieldNumber)))
+                          .toUInt()));
 
   QObject::connect(this, &QLineEdit::textChanged, this, &VisualShaderNodeUIntConstantEmbedWidget::on_text_changed);
 }
@@ -2967,7 +3190,12 @@ void VisualShaderNodeUIntConstantEmbedWidget::on_text_changed(const QString& tex
   int row_entry{VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, n_id)};
 
   if (text.isEmpty()) {
-    bool result = visual_shader_model->set_data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kUintConstantFieldNumber), FieldPath::FieldNumber(VisualShaderNodeFloatConstant::kValueFieldNumber)), 0);
+    bool result = visual_shader_model->set_data(
+        FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
+                                    FieldPath::RepeatedAt(row_entry),
+                                    FieldPath::FieldNumber(VisualShader::VisualShaderNode::kUintConstantFieldNumber),
+                                    FieldPath::FieldNumber(VisualShaderNodeFloatConstant::kValueFieldNumber)),
+        0);
     if (!result) {
       ERROR_PRINT("Failed to set data");
     }
@@ -2975,12 +3203,22 @@ void VisualShaderNodeUIntConstantEmbedWidget::on_text_changed(const QString& tex
     bool ok;
     text.toFloat(&ok);
     if (ok) {
-      bool result = visual_shader_model->set_data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kUintConstantFieldNumber), FieldPath::FieldNumber(VisualShaderNodeFloatConstant::kValueFieldNumber)), text.toUInt());
+      bool result = visual_shader_model->set_data(
+          FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
+                                      FieldPath::RepeatedAt(row_entry),
+                                      FieldPath::FieldNumber(VisualShader::VisualShaderNode::kUintConstantFieldNumber),
+                                      FieldPath::FieldNumber(VisualShaderNodeFloatConstant::kValueFieldNumber)),
+          text.toUInt());
       if (!result) {
         ERROR_PRINT("Failed to set data");
       }
     } else {
-      bool result = visual_shader_model->set_data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kUintConstantFieldNumber), FieldPath::FieldNumber(VisualShaderNodeFloatConstant::kValueFieldNumber)), 0);
+      bool result = visual_shader_model->set_data(
+          FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
+                                      FieldPath::RepeatedAt(row_entry),
+                                      FieldPath::FieldNumber(VisualShader::VisualShaderNode::kUintConstantFieldNumber),
+                                      FieldPath::FieldNumber(VisualShaderNodeFloatConstant::kValueFieldNumber)),
+          0);
       if (!result) {
         ERROR_PRINT("Failed to set data");
       }
@@ -2989,19 +3227,39 @@ void VisualShaderNodeUIntConstantEmbedWidget::on_text_changed(const QString& tex
   }
 }
 
-VisualShaderNodeColorConstantEmbedWidget::VisualShaderNodeColorConstantEmbedWidget(ProtoModel* visual_shader_model, 
-                                                                   ProtoModel* nodes_model, 
-                                                                   const int& n_id, const std::shared_ptr<IGraphNode>& graph_node)
+VisualShaderNodeColorConstantEmbedWidget::VisualShaderNodeColorConstantEmbedWidget(
+    ProtoModel* visual_shader_model, ProtoModel* nodes_model, const int& n_id,
+    const std::shared_ptr<IGraphNode>& graph_node)
     : QPushButton(), graph_node(graph_node) {
   setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
   setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
 
   {
     int row_entry{VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, n_id)};
-    float r = visual_shader_model->data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kColorConstantFieldNumber), FieldPath::FieldNumber(VisualShaderNodeColorConstant::kRFieldNumber))).toFloat();
-    float g = visual_shader_model->data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kColorConstantFieldNumber), FieldPath::FieldNumber(VisualShaderNodeColorConstant::kGFieldNumber))).toFloat();
-    float b = visual_shader_model->data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kColorConstantFieldNumber), FieldPath::FieldNumber(VisualShaderNodeColorConstant::kBFieldNumber))).toFloat();
-    float a = visual_shader_model->data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kColorConstantFieldNumber), FieldPath::FieldNumber(VisualShaderNodeColorConstant::kAFieldNumber))).toFloat();
+    float r = visual_shader_model
+                  ->data(FieldPath::Of<VisualShader>(
+                      FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry),
+                      FieldPath::FieldNumber(VisualShader::VisualShaderNode::kColorConstantFieldNumber),
+                      FieldPath::FieldNumber(VisualShaderNodeColorConstant::kRFieldNumber)))
+                  .toFloat();
+    float g = visual_shader_model
+                  ->data(FieldPath::Of<VisualShader>(
+                      FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry),
+                      FieldPath::FieldNumber(VisualShader::VisualShaderNode::kColorConstantFieldNumber),
+                      FieldPath::FieldNumber(VisualShaderNodeColorConstant::kGFieldNumber)))
+                  .toFloat();
+    float b = visual_shader_model
+                  ->data(FieldPath::Of<VisualShader>(
+                      FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry),
+                      FieldPath::FieldNumber(VisualShader::VisualShaderNode::kColorConstantFieldNumber),
+                      FieldPath::FieldNumber(VisualShaderNodeColorConstant::kBFieldNumber)))
+                  .toFloat();
+    float a = visual_shader_model
+                  ->data(FieldPath::Of<VisualShader>(
+                      FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry),
+                      FieldPath::FieldNumber(VisualShader::VisualShaderNode::kColorConstantFieldNumber),
+                      FieldPath::FieldNumber(VisualShaderNodeColorConstant::kAFieldNumber)))
+                  .toFloat();
 
     QPalette palette{this->palette()};
     palette.setColor(QPalette::Button, QColor(r, g, b, a));
@@ -3013,19 +3271,59 @@ VisualShaderNodeColorConstantEmbedWidget::VisualShaderNodeColorConstantEmbedWidg
 
 void VisualShaderNodeColorConstantEmbedWidget::on_pressed() {
   int row_entry{VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, n_id)};
-  float r = visual_shader_model->data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kColorConstantFieldNumber), FieldPath::FieldNumber(VisualShaderNodeColorConstant::kRFieldNumber))).toFloat();
-  float g = visual_shader_model->data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kColorConstantFieldNumber), FieldPath::FieldNumber(VisualShaderNodeColorConstant::kGFieldNumber))).toFloat();
-  float b = visual_shader_model->data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kColorConstantFieldNumber), FieldPath::FieldNumber(VisualShaderNodeColorConstant::kBFieldNumber))).toFloat();
-  float a = visual_shader_model->data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kColorConstantFieldNumber), FieldPath::FieldNumber(VisualShaderNodeColorConstant::kAFieldNumber))).toFloat();
+  float r = visual_shader_model
+                ->data(FieldPath::Of<VisualShader>(
+                    FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry),
+                    FieldPath::FieldNumber(VisualShader::VisualShaderNode::kColorConstantFieldNumber),
+                    FieldPath::FieldNumber(VisualShaderNodeColorConstant::kRFieldNumber)))
+                .toFloat();
+  float g = visual_shader_model
+                ->data(FieldPath::Of<VisualShader>(
+                    FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry),
+                    FieldPath::FieldNumber(VisualShader::VisualShaderNode::kColorConstantFieldNumber),
+                    FieldPath::FieldNumber(VisualShaderNodeColorConstant::kGFieldNumber)))
+                .toFloat();
+  float b = visual_shader_model
+                ->data(FieldPath::Of<VisualShader>(
+                    FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry),
+                    FieldPath::FieldNumber(VisualShader::VisualShaderNode::kColorConstantFieldNumber),
+                    FieldPath::FieldNumber(VisualShaderNodeColorConstant::kBFieldNumber)))
+                .toFloat();
+  float a = visual_shader_model
+                ->data(FieldPath::Of<VisualShader>(
+                    FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry),
+                    FieldPath::FieldNumber(VisualShader::VisualShaderNode::kColorConstantFieldNumber),
+                    FieldPath::FieldNumber(VisualShaderNodeColorConstant::kAFieldNumber)))
+                .toFloat();
 
   QColor color{QColorDialog::getColor(QColor(r, g, b, a), this, "Select Color")};
 
   // If a valid color is picked, update the button and store the color
   if (color.isValid()) {
-    visual_shader_model->set_data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kColorConstantFieldNumber), FieldPath::FieldNumber(VisualShaderNodeColorConstant::kRFieldNumber)), color.red());
-    visual_shader_model->set_data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kColorConstantFieldNumber), FieldPath::FieldNumber(VisualShaderNodeColorConstant::kGFieldNumber)), color.green());
-    visual_shader_model->set_data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kColorConstantFieldNumber), FieldPath::FieldNumber(VisualShaderNodeColorConstant::kBFieldNumber)), color.blue());
-    visual_shader_model->set_data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kColorConstantFieldNumber), FieldPath::FieldNumber(VisualShaderNodeColorConstant::kAFieldNumber)), color.alpha());
+    visual_shader_model->set_data(
+        FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
+                                    FieldPath::RepeatedAt(row_entry),
+                                    FieldPath::FieldNumber(VisualShader::VisualShaderNode::kColorConstantFieldNumber),
+                                    FieldPath::FieldNumber(VisualShaderNodeColorConstant::kRFieldNumber)),
+        color.red());
+    visual_shader_model->set_data(
+        FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
+                                    FieldPath::RepeatedAt(row_entry),
+                                    FieldPath::FieldNumber(VisualShader::VisualShaderNode::kColorConstantFieldNumber),
+                                    FieldPath::FieldNumber(VisualShaderNodeColorConstant::kGFieldNumber)),
+        color.green());
+    visual_shader_model->set_data(
+        FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
+                                    FieldPath::RepeatedAt(row_entry),
+                                    FieldPath::FieldNumber(VisualShader::VisualShaderNode::kColorConstantFieldNumber),
+                                    FieldPath::FieldNumber(VisualShaderNodeColorConstant::kBFieldNumber)),
+        color.blue());
+    visual_shader_model->set_data(
+        FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
+                                    FieldPath::RepeatedAt(row_entry),
+                                    FieldPath::FieldNumber(VisualShader::VisualShaderNode::kColorConstantFieldNumber),
+                                    FieldPath::FieldNumber(VisualShaderNodeColorConstant::kAFieldNumber)),
+        color.alpha());
 
     QPalette palette{this->palette()};
     palette.setColor(QPalette::Button, color);
@@ -3042,30 +3340,40 @@ void VisualShaderNodeColorConstantEmbedWidget::on_pressed() {
   }
 }
 
-VisualShaderNodeBooleanConstantEmbedWidget::VisualShaderNodeBooleanConstantEmbedWidget(ProtoModel* visual_shader_model, 
-                                                                   ProtoModel* nodes_model, 
-                                                                   const int& n_id, const std::shared_ptr<IGraphNode>& graph_node)
+VisualShaderNodeBooleanConstantEmbedWidget::VisualShaderNodeBooleanConstantEmbedWidget(
+    ProtoModel* visual_shader_model, ProtoModel* nodes_model, const int& n_id,
+    const std::shared_ptr<IGraphNode>& graph_node)
     : QCheckBox(), graph_node(graph_node) {
   setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
   setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
 
   int row_entry{VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, n_id)};
-  setChecked(visual_shader_model->data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kBooleanConstantFieldNumber), FieldPath::FieldNumber(VisualShaderNodeBooleanConstant::kValueFieldNumber))).toBool());
+  setChecked(visual_shader_model
+                 ->data(FieldPath::Of<VisualShader>(
+                     FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry),
+                     FieldPath::FieldNumber(VisualShader::VisualShaderNode::kBooleanConstantFieldNumber),
+                     FieldPath::FieldNumber(VisualShaderNodeBooleanConstant::kValueFieldNumber)))
+                 .toBool());
 
   QObject::connect(this, &QCheckBox::stateChanged, this, &VisualShaderNodeBooleanConstantEmbedWidget::on_state_changed);
 }
 
 void VisualShaderNodeBooleanConstantEmbedWidget::on_state_changed(const int& state) {
   int row_entry{VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, n_id)};
-  bool result = visual_shader_model->set_data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kBooleanConstantFieldNumber), FieldPath::FieldNumber(VisualShaderNodeBooleanConstant::kValueFieldNumber)), state);
+  bool result = visual_shader_model->set_data(
+      FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
+                                  FieldPath::RepeatedAt(row_entry),
+                                  FieldPath::FieldNumber(VisualShader::VisualShaderNode::kBooleanConstantFieldNumber),
+                                  FieldPath::FieldNumber(VisualShaderNodeBooleanConstant::kValueFieldNumber)),
+      state);
   if (!result) {
     ERROR_PRINT("Failed to set data");
   }
 }
 
-VisualShaderNodeVec2ConstantEmbedWidget::VisualShaderNodeVec2ConstantEmbedWidget(ProtoModel* visual_shader_model, 
-                                                                   ProtoModel* nodes_model, 
-                                                                   const int& n_id, const std::shared_ptr<IGraphNode>& graph_node)
+VisualShaderNodeVec2ConstantEmbedWidget::VisualShaderNodeVec2ConstantEmbedWidget(
+    ProtoModel* visual_shader_model, ProtoModel* nodes_model, const int& n_id,
+    const std::shared_ptr<IGraphNode>& graph_node)
     : QVBoxLayout(), graph_node(graph_node) {
   setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
   setSizeConstraint(QLayout::SetNoConstraint);
@@ -3079,8 +3387,20 @@ VisualShaderNodeVec2ConstantEmbedWidget::VisualShaderNodeVec2ConstantEmbedWidget
   y_edit_widget->setPlaceholderText("Y");
 
   int row_entry{VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, n_id)};
-  x_edit_widget->setText(QString::number(visual_shader_model->data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec2ConstantFieldNumber), FieldPath::FieldNumber(VisualShaderNodeVec2Constant::kXFieldNumber))).toFloat()));
-  y_edit_widget->setText(QString::number(visual_shader_model->data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec2ConstantFieldNumber), FieldPath::FieldNumber(VisualShaderNodeVec2Constant::kYFieldNumber))).toFloat()));
+  x_edit_widget->setText(
+      QString::number(visual_shader_model
+                          ->data(FieldPath::Of<VisualShader>(
+                              FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry),
+                              FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec2ConstantFieldNumber),
+                              FieldPath::FieldNumber(VisualShaderNodeVec2Constant::kXFieldNumber)))
+                          .toFloat()));
+  y_edit_widget->setText(
+      QString::number(visual_shader_model
+                          ->data(FieldPath::Of<VisualShader>(
+                              FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry),
+                              FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec2ConstantFieldNumber),
+                              FieldPath::FieldNumber(VisualShaderNodeVec2Constant::kYFieldNumber)))
+                          .toFloat()));
 
   QObject::connect(x_edit_widget, &QLineEdit::textChanged, this,
                    &VisualShaderNodeVec2ConstantEmbedWidget::on_x_text_changed);
@@ -3094,7 +3414,12 @@ VisualShaderNodeVec2ConstantEmbedWidget::VisualShaderNodeVec2ConstantEmbedWidget
 void VisualShaderNodeVec2ConstantEmbedWidget::on_x_text_changed(const QString& text) {
   int row_entry{VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, n_id)};
   if (text.isEmpty()) {
-    bool result = visual_shader_model->set_data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec2ConstantFieldNumber), FieldPath::FieldNumber(VisualShaderNodeVec2Constant::kXFieldNumber)), 0.0f);
+    bool result = visual_shader_model->set_data(
+        FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
+                                    FieldPath::RepeatedAt(row_entry),
+                                    FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec2ConstantFieldNumber),
+                                    FieldPath::FieldNumber(VisualShaderNodeVec2Constant::kXFieldNumber)),
+        0.0f);
     if (!result) {
       ERROR_PRINT("Failed to set data");
     }
@@ -3102,12 +3427,22 @@ void VisualShaderNodeVec2ConstantEmbedWidget::on_x_text_changed(const QString& t
     bool ok;
     text.toFloat(&ok);
     if (ok) {
-      bool result = visual_shader_model->set_data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec2ConstantFieldNumber), FieldPath::FieldNumber(VisualShaderNodeVec2Constant::kXFieldNumber)), text.toFloat());
+      bool result = visual_shader_model->set_data(
+          FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
+                                      FieldPath::RepeatedAt(row_entry),
+                                      FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec2ConstantFieldNumber),
+                                      FieldPath::FieldNumber(VisualShaderNodeVec2Constant::kXFieldNumber)),
+          text.toFloat());
       if (!result) {
         ERROR_PRINT("Failed to set data");
       }
     } else {
-      bool result = visual_shader_model->set_data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec2ConstantFieldNumber), FieldPath::FieldNumber(VisualShaderNodeVec2Constant::kXFieldNumber)), 0.0f);
+      bool result = visual_shader_model->set_data(
+          FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
+                                      FieldPath::RepeatedAt(row_entry),
+                                      FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec2ConstantFieldNumber),
+                                      FieldPath::FieldNumber(VisualShaderNodeVec2Constant::kXFieldNumber)),
+          0.0f);
       if (!result) {
         ERROR_PRINT("Failed to set data");
       }
@@ -3119,7 +3454,12 @@ void VisualShaderNodeVec2ConstantEmbedWidget::on_x_text_changed(const QString& t
 void VisualShaderNodeVec2ConstantEmbedWidget::on_y_text_changed(const QString& text) {
   int row_entry{VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, n_id)};
   if (text.isEmpty()) {
-    bool result = visual_shader_model->set_data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec2ConstantFieldNumber), FieldPath::FieldNumber(VisualShaderNodeVec2Constant::kYFieldNumber)), 0.0f);
+    bool result = visual_shader_model->set_data(
+        FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
+                                    FieldPath::RepeatedAt(row_entry),
+                                    FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec2ConstantFieldNumber),
+                                    FieldPath::FieldNumber(VisualShaderNodeVec2Constant::kYFieldNumber)),
+        0.0f);
     if (!result) {
       ERROR_PRINT("Failed to set data");
     }
@@ -3127,12 +3467,22 @@ void VisualShaderNodeVec2ConstantEmbedWidget::on_y_text_changed(const QString& t
     bool ok;
     text.toFloat(&ok);
     if (ok) {
-      bool result = visual_shader_model->set_data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec2ConstantFieldNumber), FieldPath::FieldNumber(VisualShaderNodeVec2Constant::kYFieldNumber)), text.toFloat());
+      bool result = visual_shader_model->set_data(
+          FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
+                                      FieldPath::RepeatedAt(row_entry),
+                                      FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec2ConstantFieldNumber),
+                                      FieldPath::FieldNumber(VisualShaderNodeVec2Constant::kYFieldNumber)),
+          text.toFloat());
       if (!result) {
         ERROR_PRINT("Failed to set data");
       }
     } else {
-      bool result = visual_shader_model->set_data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec2ConstantFieldNumber), FieldPath::FieldNumber(VisualShaderNodeVec2Constant::kYFieldNumber)), 0.0f);
+      bool result = visual_shader_model->set_data(
+          FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
+                                      FieldPath::RepeatedAt(row_entry),
+                                      FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec2ConstantFieldNumber),
+                                      FieldPath::FieldNumber(VisualShaderNodeVec2Constant::kYFieldNumber)),
+          0.0f);
       if (!result) {
         ERROR_PRINT("Failed to set data");
       }
@@ -3141,9 +3491,9 @@ void VisualShaderNodeVec2ConstantEmbedWidget::on_y_text_changed(const QString& t
   }
 }
 
-VisualShaderNodeVec3ConstantEmbedWidget::VisualShaderNodeVec3ConstantEmbedWidget(ProtoModel* visual_shader_model, 
-                                                                   ProtoModel* nodes_model, 
-                                                                   const int& n_id, const std::shared_ptr<IGraphNode>& graph_node)
+VisualShaderNodeVec3ConstantEmbedWidget::VisualShaderNodeVec3ConstantEmbedWidget(
+    ProtoModel* visual_shader_model, ProtoModel* nodes_model, const int& n_id,
+    const std::shared_ptr<IGraphNode>& graph_node)
     : QVBoxLayout(), graph_node(graph_node) {
   setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
   setSizeConstraint(QLayout::SetNoConstraint);
@@ -3159,9 +3509,27 @@ VisualShaderNodeVec3ConstantEmbedWidget::VisualShaderNodeVec3ConstantEmbedWidget
   z_edit_widget->setPlaceholderText("Z");
 
   int row_entry{VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, n_id)};
-  x_edit_widget->setText(QString::number(visual_shader_model->data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec3ConstantFieldNumber), FieldPath::FieldNumber(VisualShaderNodeVec3Constant::kXFieldNumber))).toFloat()));
-  y_edit_widget->setText(QString::number(visual_shader_model->data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec3ConstantFieldNumber), FieldPath::FieldNumber(VisualShaderNodeVec3Constant::kYFieldNumber))).toFloat()));
-  z_edit_widget->setText(QString::number(visual_shader_model->data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec3ConstantFieldNumber), FieldPath::FieldNumber(VisualShaderNodeVec3Constant::kZFieldNumber))).toFloat()));
+  x_edit_widget->setText(
+      QString::number(visual_shader_model
+                          ->data(FieldPath::Of<VisualShader>(
+                              FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry),
+                              FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec3ConstantFieldNumber),
+                              FieldPath::FieldNumber(VisualShaderNodeVec3Constant::kXFieldNumber)))
+                          .toFloat()));
+  y_edit_widget->setText(
+      QString::number(visual_shader_model
+                          ->data(FieldPath::Of<VisualShader>(
+                              FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry),
+                              FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec3ConstantFieldNumber),
+                              FieldPath::FieldNumber(VisualShaderNodeVec3Constant::kYFieldNumber)))
+                          .toFloat()));
+  z_edit_widget->setText(
+      QString::number(visual_shader_model
+                          ->data(FieldPath::Of<VisualShader>(
+                              FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry),
+                              FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec3ConstantFieldNumber),
+                              FieldPath::FieldNumber(VisualShaderNodeVec3Constant::kZFieldNumber)))
+                          .toFloat()));
 
   QObject::connect(x_edit_widget, &QLineEdit::textChanged, this,
                    &VisualShaderNodeVec3ConstantEmbedWidget::on_x_text_changed);
@@ -3178,7 +3546,12 @@ VisualShaderNodeVec3ConstantEmbedWidget::VisualShaderNodeVec3ConstantEmbedWidget
 void VisualShaderNodeVec3ConstantEmbedWidget::on_x_text_changed(const QString& text) {
   int row_entry{VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, n_id)};
   if (text.isEmpty()) {
-    bool result = visual_shader_model->set_data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec3ConstantFieldNumber), FieldPath::FieldNumber(VisualShaderNodeVec3Constant::kXFieldNumber)), 0.0f);
+    bool result = visual_shader_model->set_data(
+        FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
+                                    FieldPath::RepeatedAt(row_entry),
+                                    FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec3ConstantFieldNumber),
+                                    FieldPath::FieldNumber(VisualShaderNodeVec3Constant::kXFieldNumber)),
+        0.0f);
     if (!result) {
       ERROR_PRINT("Failed to set data");
     }
@@ -3186,12 +3559,22 @@ void VisualShaderNodeVec3ConstantEmbedWidget::on_x_text_changed(const QString& t
     bool ok;
     text.toFloat(&ok);
     if (ok) {
-      bool result = visual_shader_model->set_data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec3ConstantFieldNumber), FieldPath::FieldNumber(VisualShaderNodeVec3Constant::kXFieldNumber)), text.toFloat());
+      bool result = visual_shader_model->set_data(
+          FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
+                                      FieldPath::RepeatedAt(row_entry),
+                                      FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec3ConstantFieldNumber),
+                                      FieldPath::FieldNumber(VisualShaderNodeVec3Constant::kXFieldNumber)),
+          text.toFloat());
       if (!result) {
         ERROR_PRINT("Failed to set data");
       }
     } else {
-      bool result = visual_shader_model->set_data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec3ConstantFieldNumber), FieldPath::FieldNumber(VisualShaderNodeVec3Constant::kXFieldNumber)), 0.0f);
+      bool result = visual_shader_model->set_data(
+          FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
+                                      FieldPath::RepeatedAt(row_entry),
+                                      FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec3ConstantFieldNumber),
+                                      FieldPath::FieldNumber(VisualShaderNodeVec3Constant::kXFieldNumber)),
+          0.0f);
       if (!result) {
         ERROR_PRINT("Failed to set data");
       }
@@ -3203,7 +3586,12 @@ void VisualShaderNodeVec3ConstantEmbedWidget::on_x_text_changed(const QString& t
 void VisualShaderNodeVec3ConstantEmbedWidget::on_y_text_changed(const QString& text) {
   int row_entry{VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, n_id)};
   if (text.isEmpty()) {
-    bool result = visual_shader_model->set_data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec3ConstantFieldNumber), FieldPath::FieldNumber(VisualShaderNodeVec3Constant::kYFieldNumber)), 0.0f);
+    bool result = visual_shader_model->set_data(
+        FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
+                                    FieldPath::RepeatedAt(row_entry),
+                                    FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec3ConstantFieldNumber),
+                                    FieldPath::FieldNumber(VisualShaderNodeVec3Constant::kYFieldNumber)),
+        0.0f);
     if (!result) {
       ERROR_PRINT("Failed to set data");
     }
@@ -3211,12 +3599,22 @@ void VisualShaderNodeVec3ConstantEmbedWidget::on_y_text_changed(const QString& t
     bool ok;
     text.toFloat(&ok);
     if (ok) {
-      bool result = visual_shader_model->set_data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec3ConstantFieldNumber), FieldPath::FieldNumber(VisualShaderNodeVec3Constant::kYFieldNumber)), text.toFloat());
+      bool result = visual_shader_model->set_data(
+          FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
+                                      FieldPath::RepeatedAt(row_entry),
+                                      FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec3ConstantFieldNumber),
+                                      FieldPath::FieldNumber(VisualShaderNodeVec3Constant::kYFieldNumber)),
+          text.toFloat());
       if (!result) {
         ERROR_PRINT("Failed to set data");
       }
     } else {
-      bool result = visual_shader_model->set_data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec3ConstantFieldNumber), FieldPath::FieldNumber(VisualShaderNodeVec3Constant::kYFieldNumber)), 0.0f);
+      bool result = visual_shader_model->set_data(
+          FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
+                                      FieldPath::RepeatedAt(row_entry),
+                                      FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec3ConstantFieldNumber),
+                                      FieldPath::FieldNumber(VisualShaderNodeVec3Constant::kYFieldNumber)),
+          0.0f);
       if (!result) {
         ERROR_PRINT("Failed to set data");
       }
@@ -3228,7 +3626,12 @@ void VisualShaderNodeVec3ConstantEmbedWidget::on_y_text_changed(const QString& t
 void VisualShaderNodeVec3ConstantEmbedWidget::on_z_text_changed(const QString& text) {
   int row_entry{VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, n_id)};
   if (text.isEmpty()) {
-    bool result = visual_shader_model->set_data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec3ConstantFieldNumber), FieldPath::FieldNumber(VisualShaderNodeVec3Constant::kZFieldNumber)), 0.0f);
+    bool result = visual_shader_model->set_data(
+        FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
+                                    FieldPath::RepeatedAt(row_entry),
+                                    FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec3ConstantFieldNumber),
+                                    FieldPath::FieldNumber(VisualShaderNodeVec3Constant::kZFieldNumber)),
+        0.0f);
     if (!result) {
       ERROR_PRINT("Failed to set data");
     }
@@ -3236,12 +3639,22 @@ void VisualShaderNodeVec3ConstantEmbedWidget::on_z_text_changed(const QString& t
     bool ok;
     text.toFloat(&ok);
     if (ok) {
-      bool result = visual_shader_model->set_data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec3ConstantFieldNumber), FieldPath::FieldNumber(VisualShaderNodeVec3Constant::kZFieldNumber)), text.toFloat());
+      bool result = visual_shader_model->set_data(
+          FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
+                                      FieldPath::RepeatedAt(row_entry),
+                                      FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec3ConstantFieldNumber),
+                                      FieldPath::FieldNumber(VisualShaderNodeVec3Constant::kZFieldNumber)),
+          text.toFloat());
       if (!result) {
         ERROR_PRINT("Failed to set data");
       }
     } else {
-      bool result = visual_shader_model->set_data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec3ConstantFieldNumber), FieldPath::FieldNumber(VisualShaderNodeVec3Constant::kZFieldNumber)), 0.0f);
+      bool result = visual_shader_model->set_data(
+          FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
+                                      FieldPath::RepeatedAt(row_entry),
+                                      FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec3ConstantFieldNumber),
+                                      FieldPath::FieldNumber(VisualShaderNodeVec3Constant::kZFieldNumber)),
+          0.0f);
       if (!result) {
         ERROR_PRINT("Failed to set data");
       }
@@ -3250,9 +3663,9 @@ void VisualShaderNodeVec3ConstantEmbedWidget::on_z_text_changed(const QString& t
   }
 }
 
-VisualShaderNodeVec4ConstantEmbedWidget::VisualShaderNodeVec4ConstantEmbedWidget(ProtoModel* visual_shader_model, 
-                                                                   ProtoModel* nodes_model, 
-                                                                   const int& n_id, const std::shared_ptr<IGraphNode>& graph_node)
+VisualShaderNodeVec4ConstantEmbedWidget::VisualShaderNodeVec4ConstantEmbedWidget(
+    ProtoModel* visual_shader_model, ProtoModel* nodes_model, const int& n_id,
+    const std::shared_ptr<IGraphNode>& graph_node)
     : QVBoxLayout(), graph_node(graph_node) {
   setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
   setSizeConstraint(QLayout::SetNoConstraint);
@@ -3270,10 +3683,34 @@ VisualShaderNodeVec4ConstantEmbedWidget::VisualShaderNodeVec4ConstantEmbedWidget
   w_edit_widget->setPlaceholderText("W");
 
   int row_entry{VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, n_id)};
-  x_edit_widget->setText(QString::number(visual_shader_model->data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec4ConstantFieldNumber), FieldPath::FieldNumber(VisualShaderNodeVec4Constant::kXFieldNumber))).toFloat()));
-  y_edit_widget->setText(QString::number(visual_shader_model->data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec4ConstantFieldNumber), FieldPath::FieldNumber(VisualShaderNodeVec4Constant::kYFieldNumber))).toFloat()));
-  z_edit_widget->setText(QString::number(visual_shader_model->data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec4ConstantFieldNumber), FieldPath::FieldNumber(VisualShaderNodeVec4Constant::kZFieldNumber))).toFloat()));
-  w_edit_widget->setText(QString::number(visual_shader_model->data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec4ConstantFieldNumber), FieldPath::FieldNumber(VisualShaderNodeVec4Constant::kWFieldNumber))).toFloat()));
+  x_edit_widget->setText(
+      QString::number(visual_shader_model
+                          ->data(FieldPath::Of<VisualShader>(
+                              FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry),
+                              FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec4ConstantFieldNumber),
+                              FieldPath::FieldNumber(VisualShaderNodeVec4Constant::kXFieldNumber)))
+                          .toFloat()));
+  y_edit_widget->setText(
+      QString::number(visual_shader_model
+                          ->data(FieldPath::Of<VisualShader>(
+                              FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry),
+                              FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec4ConstantFieldNumber),
+                              FieldPath::FieldNumber(VisualShaderNodeVec4Constant::kYFieldNumber)))
+                          .toFloat()));
+  z_edit_widget->setText(
+      QString::number(visual_shader_model
+                          ->data(FieldPath::Of<VisualShader>(
+                              FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry),
+                              FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec4ConstantFieldNumber),
+                              FieldPath::FieldNumber(VisualShaderNodeVec4Constant::kZFieldNumber)))
+                          .toFloat()));
+  w_edit_widget->setText(
+      QString::number(visual_shader_model
+                          ->data(FieldPath::Of<VisualShader>(
+                              FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry),
+                              FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec4ConstantFieldNumber),
+                              FieldPath::FieldNumber(VisualShaderNodeVec4Constant::kWFieldNumber)))
+                          .toFloat()));
 
   QObject::connect(x_edit_widget, &QLineEdit::textChanged, this,
                    &VisualShaderNodeVec4ConstantEmbedWidget::on_x_text_changed);
@@ -3293,7 +3730,12 @@ VisualShaderNodeVec4ConstantEmbedWidget::VisualShaderNodeVec4ConstantEmbedWidget
 void VisualShaderNodeVec4ConstantEmbedWidget::on_x_text_changed(const QString& text) {
   int row_entry{VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, n_id)};
   if (text.isEmpty()) {
-    bool result = visual_shader_model->set_data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec4ConstantFieldNumber), FieldPath::FieldNumber(VisualShaderNodeVec4Constant::kXFieldNumber)), 0.0f);
+    bool result = visual_shader_model->set_data(
+        FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
+                                    FieldPath::RepeatedAt(row_entry),
+                                    FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec4ConstantFieldNumber),
+                                    FieldPath::FieldNumber(VisualShaderNodeVec4Constant::kXFieldNumber)),
+        0.0f);
     if (!result) {
       ERROR_PRINT("Failed to set data");
     }
@@ -3301,12 +3743,22 @@ void VisualShaderNodeVec4ConstantEmbedWidget::on_x_text_changed(const QString& t
     bool ok;
     text.toFloat(&ok);
     if (ok) {
-      bool result = visual_shader_model->set_data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec4ConstantFieldNumber), FieldPath::FieldNumber(VisualShaderNodeVec4Constant::kXFieldNumber)), text.toFloat());
+      bool result = visual_shader_model->set_data(
+          FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
+                                      FieldPath::RepeatedAt(row_entry),
+                                      FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec4ConstantFieldNumber),
+                                      FieldPath::FieldNumber(VisualShaderNodeVec4Constant::kXFieldNumber)),
+          text.toFloat());
       if (!result) {
         ERROR_PRINT("Failed to set data");
       }
     } else {
-      bool result = visual_shader_model->set_data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec4ConstantFieldNumber), FieldPath::FieldNumber(VisualShaderNodeVec4Constant::kXFieldNumber)), 0.0f);
+      bool result = visual_shader_model->set_data(
+          FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
+                                      FieldPath::RepeatedAt(row_entry),
+                                      FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec4ConstantFieldNumber),
+                                      FieldPath::FieldNumber(VisualShaderNodeVec4Constant::kXFieldNumber)),
+          0.0f);
       if (!result) {
         ERROR_PRINT("Failed to set data");
       }
@@ -3318,7 +3770,12 @@ void VisualShaderNodeVec4ConstantEmbedWidget::on_x_text_changed(const QString& t
 void VisualShaderNodeVec4ConstantEmbedWidget::on_y_text_changed(const QString& text) {
   int row_entry{VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, n_id)};
   if (text.isEmpty()) {
-    bool result = visual_shader_model->set_data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec4ConstantFieldNumber), FieldPath::FieldNumber(VisualShaderNodeVec4Constant::kYFieldNumber)), 0.0f);
+    bool result = visual_shader_model->set_data(
+        FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
+                                    FieldPath::RepeatedAt(row_entry),
+                                    FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec4ConstantFieldNumber),
+                                    FieldPath::FieldNumber(VisualShaderNodeVec4Constant::kYFieldNumber)),
+        0.0f);
     if (!result) {
       ERROR_PRINT("Failed to set data");
     }
@@ -3326,12 +3783,22 @@ void VisualShaderNodeVec4ConstantEmbedWidget::on_y_text_changed(const QString& t
     bool ok;
     text.toFloat(&ok);
     if (ok) {
-      bool result = visual_shader_model->set_data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec4ConstantFieldNumber), FieldPath::FieldNumber(VisualShaderNodeVec4Constant::kYFieldNumber)), text.toFloat());
+      bool result = visual_shader_model->set_data(
+          FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
+                                      FieldPath::RepeatedAt(row_entry),
+                                      FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec4ConstantFieldNumber),
+                                      FieldPath::FieldNumber(VisualShaderNodeVec4Constant::kYFieldNumber)),
+          text.toFloat());
       if (!result) {
         ERROR_PRINT("Failed to set data");
       }
     } else {
-      bool result = visual_shader_model->set_data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec4ConstantFieldNumber), FieldPath::FieldNumber(VisualShaderNodeVec4Constant::kYFieldNumber)), 0.0f);
+      bool result = visual_shader_model->set_data(
+          FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
+                                      FieldPath::RepeatedAt(row_entry),
+                                      FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec4ConstantFieldNumber),
+                                      FieldPath::FieldNumber(VisualShaderNodeVec4Constant::kYFieldNumber)),
+          0.0f);
       if (!result) {
         ERROR_PRINT("Failed to set data");
       }
@@ -3343,7 +3810,12 @@ void VisualShaderNodeVec4ConstantEmbedWidget::on_y_text_changed(const QString& t
 void VisualShaderNodeVec4ConstantEmbedWidget::on_z_text_changed(const QString& text) {
   int row_entry{VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, n_id)};
   if (text.isEmpty()) {
-    bool result = visual_shader_model->set_data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec4ConstantFieldNumber), FieldPath::FieldNumber(VisualShaderNodeVec4Constant::kZFieldNumber)), 0.0f);
+    bool result = visual_shader_model->set_data(
+        FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
+                                    FieldPath::RepeatedAt(row_entry),
+                                    FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec4ConstantFieldNumber),
+                                    FieldPath::FieldNumber(VisualShaderNodeVec4Constant::kZFieldNumber)),
+        0.0f);
     if (!result) {
       ERROR_PRINT("Failed to set data");
     }
@@ -3351,12 +3823,22 @@ void VisualShaderNodeVec4ConstantEmbedWidget::on_z_text_changed(const QString& t
     bool ok;
     text.toFloat(&ok);
     if (ok) {
-      bool result = visual_shader_model->set_data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec4ConstantFieldNumber), FieldPath::FieldNumber(VisualShaderNodeVec4Constant::kZFieldNumber)), text.toFloat());
+      bool result = visual_shader_model->set_data(
+          FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
+                                      FieldPath::RepeatedAt(row_entry),
+                                      FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec4ConstantFieldNumber),
+                                      FieldPath::FieldNumber(VisualShaderNodeVec4Constant::kZFieldNumber)),
+          text.toFloat());
       if (!result) {
         ERROR_PRINT("Failed to set data");
       }
     } else {
-      bool result = visual_shader_model->set_data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec4ConstantFieldNumber), FieldPath::FieldNumber(VisualShaderNodeVec4Constant::kZFieldNumber)), 0.0f);
+      bool result = visual_shader_model->set_data(
+          FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
+                                      FieldPath::RepeatedAt(row_entry),
+                                      FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec4ConstantFieldNumber),
+                                      FieldPath::FieldNumber(VisualShaderNodeVec4Constant::kZFieldNumber)),
+          0.0f);
       if (!result) {
         ERROR_PRINT("Failed to set data");
       }
@@ -3368,7 +3850,12 @@ void VisualShaderNodeVec4ConstantEmbedWidget::on_z_text_changed(const QString& t
 void VisualShaderNodeVec4ConstantEmbedWidget::on_w_text_changed(const QString& text) {
   int row_entry{VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, n_id)};
   if (text.isEmpty()) {
-    bool result = visual_shader_model->set_data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec4ConstantFieldNumber), FieldPath::FieldNumber(VisualShaderNodeVec4Constant::kWFieldNumber)), 0.0f);
+    bool result = visual_shader_model->set_data(
+        FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
+                                    FieldPath::RepeatedAt(row_entry),
+                                    FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec4ConstantFieldNumber),
+                                    FieldPath::FieldNumber(VisualShaderNodeVec4Constant::kWFieldNumber)),
+        0.0f);
     if (!result) {
       ERROR_PRINT("Failed to set data");
     }
@@ -3376,12 +3863,22 @@ void VisualShaderNodeVec4ConstantEmbedWidget::on_w_text_changed(const QString& t
     bool ok;
     text.toFloat(&ok);
     if (ok) {
-      bool result = visual_shader_model->set_data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec4ConstantFieldNumber), FieldPath::FieldNumber(VisualShaderNodeVec4Constant::kWFieldNumber)), text.toFloat());
+      bool result = visual_shader_model->set_data(
+          FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
+                                      FieldPath::RepeatedAt(row_entry),
+                                      FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec4ConstantFieldNumber),
+                                      FieldPath::FieldNumber(VisualShaderNodeVec4Constant::kWFieldNumber)),
+          text.toFloat());
       if (!result) {
         ERROR_PRINT("Failed to set data");
       }
     } else {
-      bool result = visual_shader_model->set_data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec4ConstantFieldNumber), FieldPath::FieldNumber(VisualShaderNodeVec4Constant::kWFieldNumber)), 0.0f);
+      bool result = visual_shader_model->set_data(
+          FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
+                                      FieldPath::RepeatedAt(row_entry),
+                                      FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec4ConstantFieldNumber),
+                                      FieldPath::FieldNumber(VisualShaderNodeVec4Constant::kWFieldNumber)),
+          0.0f);
       if (!result) {
         ERROR_PRINT("Failed to set data");
       }
@@ -3394,21 +3891,28 @@ void VisualShaderNodeVec4ConstantEmbedWidget::on_w_text_changed(const QString& t
 /* OPERATORS                         */
 /*************************************/
 
-VisualShaderNodeFloatOpEmbedWidget::VisualShaderNodeFloatOpEmbedWidget(ProtoModel* visual_shader_model, 
-                                                                   ProtoModel* nodes_model, 
-                                                                   const int& n_id, const std::shared_ptr<IGraphNode>& graph_node)
+VisualShaderNodeFloatOpEmbedWidget::VisualShaderNodeFloatOpEmbedWidget(ProtoModel* visual_shader_model,
+                                                                       ProtoModel* nodes_model, const int& n_id,
+                                                                       const std::shared_ptr<IGraphNode>& graph_node)
     : QComboBox(), graph_node(graph_node) {
   setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
   setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
 
   int size{VisualShaderNodeFloatOp::VisualShaderNodeFloatOpType_descriptor()->value_count()};
   for (int i{0}; i < size; ++i) {
-    int input_type{shadergen_utils::get_enum_value_by_index(VisualShaderNodeFloatOp::VisualShaderNodeFloatOpType_descriptor(), i)};
-    addItem(QString::fromStdString(shadergen_utils::get_enum_value_caption(VisualShaderNodeFloatOp::VisualShaderNodeFloatOpType_descriptor(), input_type)));
+    int input_type{
+        shadergen_utils::get_enum_value_by_index(VisualShaderNodeFloatOp::VisualShaderNodeFloatOpType_descriptor(), i)};
+    addItem(QString::fromStdString(shadergen_utils::get_enum_value_caption(
+        VisualShaderNodeFloatOp::VisualShaderNodeFloatOpType_descriptor(), input_type)));
   }
 
   int row_entry{VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, n_id)};
-  setCurrentIndex(visual_shader_model->data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kFloatConstantFieldNumber), FieldPath::FieldNumber(VisualShaderNodeFloatConstant::kValueFieldNumber))).toInt());
+  setCurrentIndex(visual_shader_model
+                      ->data(FieldPath::Of<VisualShader>(
+                          FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry),
+                          FieldPath::FieldNumber(VisualShader::VisualShaderNode::kFloatConstantFieldNumber),
+                          FieldPath::FieldNumber(VisualShaderNodeFloatConstant::kValueFieldNumber)))
+                      .toInt());
 
   QObject::connect(this, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
                    &VisualShaderNodeFloatOpEmbedWidget::on_current_index_changed);
@@ -3416,27 +3920,39 @@ VisualShaderNodeFloatOpEmbedWidget::VisualShaderNodeFloatOpEmbedWidget(ProtoMode
 
 void VisualShaderNodeFloatOpEmbedWidget::on_current_index_changed(const int& index) {
   int row_entry{VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, n_id)};
-  bool result = visual_shader_model->set_data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kFloatConstantFieldNumber), FieldPath::FieldNumber(VisualShaderNodeFloatConstant::kValueFieldNumber)), index);
+  bool result = visual_shader_model->set_data(
+      FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
+                                  FieldPath::RepeatedAt(row_entry),
+                                  FieldPath::FieldNumber(VisualShader::VisualShaderNode::kFloatConstantFieldNumber),
+                                  FieldPath::FieldNumber(VisualShaderNodeFloatConstant::kValueFieldNumber)),
+      index);
   if (!result) {
     ERROR_PRINT("Failed to set data");
   }
 }
 
-VisualShaderNodeIntOpEmbedWidget::VisualShaderNodeIntOpEmbedWidget(ProtoModel* visual_shader_model, 
-                                                                   ProtoModel* nodes_model, 
-                                                                   const int& n_id, const std::shared_ptr<IGraphNode>& graph_node)
+VisualShaderNodeIntOpEmbedWidget::VisualShaderNodeIntOpEmbedWidget(ProtoModel* visual_shader_model,
+                                                                   ProtoModel* nodes_model, const int& n_id,
+                                                                   const std::shared_ptr<IGraphNode>& graph_node)
     : QComboBox(), graph_node(graph_node) {
   setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
   setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
 
   int size{VisualShaderNodeIntOp::VisualShaderNodeIntOpType_descriptor()->value_count()};
   for (int i{0}; i < size; ++i) {
-    int input_type{shadergen_utils::get_enum_value_by_index(VisualShaderNodeIntOp::VisualShaderNodeIntOpType_descriptor(), i)};
-    addItem(QString::fromStdString(shadergen_utils::get_enum_value_caption(VisualShaderNodeIntOp::VisualShaderNodeIntOpType_descriptor(), input_type)));
+    int input_type{
+        shadergen_utils::get_enum_value_by_index(VisualShaderNodeIntOp::VisualShaderNodeIntOpType_descriptor(), i)};
+    addItem(QString::fromStdString(shadergen_utils::get_enum_value_caption(
+        VisualShaderNodeIntOp::VisualShaderNodeIntOpType_descriptor(), input_type)));
   }
 
   int row_entry{VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, n_id)};
-  setCurrentIndex(visual_shader_model->data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kIntConstantFieldNumber), FieldPath::FieldNumber(VisualShaderNodeIntConstant::kValueFieldNumber))).toInt());
+  setCurrentIndex(visual_shader_model
+                      ->data(FieldPath::Of<VisualShader>(
+                          FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry),
+                          FieldPath::FieldNumber(VisualShader::VisualShaderNode::kIntConstantFieldNumber),
+                          FieldPath::FieldNumber(VisualShaderNodeIntConstant::kValueFieldNumber)))
+                      .toInt());
 
   QObject::connect(this, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
                    &VisualShaderNodeIntOpEmbedWidget::on_current_index_changed);
@@ -3444,27 +3960,39 @@ VisualShaderNodeIntOpEmbedWidget::VisualShaderNodeIntOpEmbedWidget(ProtoModel* v
 
 void VisualShaderNodeIntOpEmbedWidget::on_current_index_changed(const int& index) {
   int row_entry{VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, n_id)};
-  bool result = visual_shader_model->set_data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kIntConstantFieldNumber), FieldPath::FieldNumber(VisualShaderNodeIntConstant::kValueFieldNumber)), index);
+  bool result = visual_shader_model->set_data(
+      FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
+                                  FieldPath::RepeatedAt(row_entry),
+                                  FieldPath::FieldNumber(VisualShader::VisualShaderNode::kIntConstantFieldNumber),
+                                  FieldPath::FieldNumber(VisualShaderNodeIntConstant::kValueFieldNumber)),
+      index);
   if (!result) {
     ERROR_PRINT("Failed to set data");
   }
 }
 
-VisualShaderNodeUIntOpEmbedWidget::VisualShaderNodeUIntOpEmbedWidget(ProtoModel* visual_shader_model, 
-                                                                   ProtoModel* nodes_model, 
-                                                                   const int& n_id, const std::shared_ptr<IGraphNode>& graph_node)
+VisualShaderNodeUIntOpEmbedWidget::VisualShaderNodeUIntOpEmbedWidget(ProtoModel* visual_shader_model,
+                                                                     ProtoModel* nodes_model, const int& n_id,
+                                                                     const std::shared_ptr<IGraphNode>& graph_node)
     : QComboBox(), graph_node(graph_node) {
   setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
   setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
 
   int size{VisualShaderNodeUIntOp::VisualShaderNodeUIntOpType_descriptor()->value_count()};
   for (int i{0}; i < size; ++i) {
-    int input_type{shadergen_utils::get_enum_value_by_index(VisualShaderNodeUIntOp::VisualShaderNodeUIntOpType_descriptor(), i)};
-    addItem(QString::fromStdString(shadergen_utils::get_enum_value_caption(VisualShaderNodeUIntOp::VisualShaderNodeUIntOpType_descriptor(), input_type)));
+    int input_type{
+        shadergen_utils::get_enum_value_by_index(VisualShaderNodeUIntOp::VisualShaderNodeUIntOpType_descriptor(), i)};
+    addItem(QString::fromStdString(shadergen_utils::get_enum_value_caption(
+        VisualShaderNodeUIntOp::VisualShaderNodeUIntOpType_descriptor(), input_type)));
   }
 
   int row_entry{VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, n_id)};
-  setCurrentIndex(visual_shader_model->data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kUintConstantFieldNumber), FieldPath::FieldNumber(VisualShaderNodeUIntConstant::kValueFieldNumber))).toInt());
+  setCurrentIndex(visual_shader_model
+                      ->data(FieldPath::Of<VisualShader>(
+                          FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry),
+                          FieldPath::FieldNumber(VisualShader::VisualShaderNode::kUintConstantFieldNumber),
+                          FieldPath::FieldNumber(VisualShaderNodeUIntConstant::kValueFieldNumber)))
+                      .toInt());
 
   QObject::connect(this, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
                    &VisualShaderNodeUIntOpEmbedWidget::on_current_index_changed);
@@ -3472,15 +4000,20 @@ VisualShaderNodeUIntOpEmbedWidget::VisualShaderNodeUIntOpEmbedWidget(ProtoModel*
 
 void VisualShaderNodeUIntOpEmbedWidget::on_current_index_changed(const int& index) {
   int row_entry{VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, n_id)};
-  bool result = visual_shader_model->set_data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kUintConstantFieldNumber), FieldPath::FieldNumber(VisualShaderNodeUIntConstant::kValueFieldNumber)), index);
+  bool result = visual_shader_model->set_data(
+      FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
+                                  FieldPath::RepeatedAt(row_entry),
+                                  FieldPath::FieldNumber(VisualShader::VisualShaderNode::kUintConstantFieldNumber),
+                                  FieldPath::FieldNumber(VisualShaderNodeUIntConstant::kValueFieldNumber)),
+      index);
   if (!result) {
     ERROR_PRINT("Failed to set data");
   }
 }
 
-VisualShaderNodeVectorBaseEmbedWidget::VisualShaderNodeVectorBaseEmbedWidget(ProtoModel* visual_shader_model, 
-                                                                   ProtoModel* nodes_model, 
-                                                                   const int& n_id, const std::shared_ptr<IGraphNode>& graph_node)
+VisualShaderNodeVectorBaseEmbedWidget::VisualShaderNodeVectorBaseEmbedWidget(
+    ProtoModel* visual_shader_model, ProtoModel* nodes_model, const int& n_id,
+    const std::shared_ptr<IGraphNode>& graph_node)
     : QComboBox(), graph_node(graph_node) {
   setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
   setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
@@ -3488,32 +4021,38 @@ VisualShaderNodeVectorBaseEmbedWidget::VisualShaderNodeVectorBaseEmbedWidget(Pro
   int size{VisualShaderNodeVectorType_descriptor()->value_count()};
   for (int i{0}; i < size; ++i) {
     int input_type{shadergen_utils::get_enum_value_by_index(VisualShaderNodeVectorType_descriptor(), i)};
-    addItem(QString::fromStdString(shadergen_utils::get_enum_value_caption(VisualShaderNodeVectorType_descriptor(), input_type)));
+    addItem(QString::fromStdString(
+        shadergen_utils::get_enum_value_caption(VisualShaderNodeVectorType_descriptor(), input_type)));
   }
 
   QObject::connect(this, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
                    &VisualShaderNodeVectorBaseEmbedWidget::on_current_index_changed);
 }
 
-void VisualShaderNodeVectorBaseEmbedWidget::on_current_index_changed(const int& index) {
-  
-}
+void VisualShaderNodeVectorBaseEmbedWidget::on_current_index_changed(const int& index) {}
 
-VisualShaderNodeVectorOpEmbedWidget::VisualShaderNodeVectorOpEmbedWidget(ProtoModel* visual_shader_model, 
-                                                                   ProtoModel* nodes_model, 
-                                                                   const int& n_id, const std::shared_ptr<IGraphNode>& graph_node)
+VisualShaderNodeVectorOpEmbedWidget::VisualShaderNodeVectorOpEmbedWidget(ProtoModel* visual_shader_model,
+                                                                         ProtoModel* nodes_model, const int& n_id,
+                                                                         const std::shared_ptr<IGraphNode>& graph_node)
     : QComboBox(), graph_node(graph_node) {
   setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
   setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
 
   int size{VisualShaderNodeVectorOp::VisualShaderNodeVectorOpType_descriptor()->value_count()};
   for (int i{0}; i < size; ++i) {
-    int input_type{shadergen_utils::get_enum_value_by_index(VisualShaderNodeVectorOp::VisualShaderNodeVectorOpType_descriptor(), i)};
-    addItem(QString::fromStdString(shadergen_utils::get_enum_value_caption(VisualShaderNodeVectorOp::VisualShaderNodeVectorOpType_descriptor(), input_type)));
+    int input_type{shadergen_utils::get_enum_value_by_index(
+        VisualShaderNodeVectorOp::VisualShaderNodeVectorOpType_descriptor(), i)};
+    addItem(QString::fromStdString(shadergen_utils::get_enum_value_caption(
+        VisualShaderNodeVectorOp::VisualShaderNodeVectorOpType_descriptor(), input_type)));
   }
 
   int row_entry{VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, n_id)};
-  setCurrentIndex(visual_shader_model->data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVectorOpFieldNumber), FieldPath::FieldNumber(VisualShaderNodeVectorOp::kOpFieldNumber))).toInt());
+  setCurrentIndex(visual_shader_model
+                      ->data(FieldPath::Of<VisualShader>(
+                          FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry),
+                          FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVectorOpFieldNumber),
+                          FieldPath::FieldNumber(VisualShaderNodeVectorOp::kOpFieldNumber)))
+                      .toInt());
 
   QObject::connect(this, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
                    &VisualShaderNodeVectorOpEmbedWidget::on_current_index_changed);
@@ -3521,7 +4060,12 @@ VisualShaderNodeVectorOpEmbedWidget::VisualShaderNodeVectorOpEmbedWidget(ProtoMo
 
 void VisualShaderNodeVectorOpEmbedWidget::on_current_index_changed(const int& index) {
   int row_entry{VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, n_id)};
-  bool result = visual_shader_model->set_data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVectorOpFieldNumber), FieldPath::FieldNumber(VisualShaderNodeVectorOp::kOpFieldNumber)), index);
+  bool result = visual_shader_model->set_data(
+      FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
+                                  FieldPath::RepeatedAt(row_entry),
+                                  FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVectorOpFieldNumber),
+                                  FieldPath::FieldNumber(VisualShaderNodeVectorOp::kOpFieldNumber)),
+      index);
   if (!result) {
     ERROR_PRINT("Failed to set data");
   }
@@ -3531,21 +4075,28 @@ void VisualShaderNodeVectorOpEmbedWidget::on_current_index_changed(const int& in
 /* Funcs Node                        */
 /*************************************/
 
-VisualShaderNodeFloatFuncEmbedWidget::VisualShaderNodeFloatFuncEmbedWidget(ProtoModel* visual_shader_model, 
-                                                                   ProtoModel* nodes_model, 
-                                                                   const int& n_id, const std::shared_ptr<IGraphNode>& graph_node)
+VisualShaderNodeFloatFuncEmbedWidget::VisualShaderNodeFloatFuncEmbedWidget(
+    ProtoModel* visual_shader_model, ProtoModel* nodes_model, const int& n_id,
+    const std::shared_ptr<IGraphNode>& graph_node)
     : QComboBox(), graph_node(graph_node) {
   setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
   setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
 
   int size{VisualShaderNodeFloatFunc::VisualShaderNodeFloatFuncType_descriptor()->value_count()};
   for (int i{0}; i < size; ++i) {
-    int input_type{shadergen_utils::get_enum_value_by_index(VisualShaderNodeFloatFunc::VisualShaderNodeFloatFuncType_descriptor(), i)};
-    addItem(QString::fromStdString(shadergen_utils::get_enum_value_caption(VisualShaderNodeFloatFunc::VisualShaderNodeFloatFuncType_descriptor(), input_type)));
+    int input_type{shadergen_utils::get_enum_value_by_index(
+        VisualShaderNodeFloatFunc::VisualShaderNodeFloatFuncType_descriptor(), i)};
+    addItem(QString::fromStdString(shadergen_utils::get_enum_value_caption(
+        VisualShaderNodeFloatFunc::VisualShaderNodeFloatFuncType_descriptor(), input_type)));
   }
 
   int row_entry{VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, n_id)};
-  setCurrentIndex(visual_shader_model->data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kFloatConstantFieldNumber), FieldPath::FieldNumber(VisualShaderNodeFloatConstant::kValueFieldNumber))).toInt());
+  setCurrentIndex(visual_shader_model
+                      ->data(FieldPath::Of<VisualShader>(
+                          FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry),
+                          FieldPath::FieldNumber(VisualShader::VisualShaderNode::kFloatConstantFieldNumber),
+                          FieldPath::FieldNumber(VisualShaderNodeFloatConstant::kValueFieldNumber)))
+                      .toInt());
 
   QObject::connect(this, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
                    &VisualShaderNodeFloatFuncEmbedWidget::on_current_index_changed);
@@ -3553,27 +4104,39 @@ VisualShaderNodeFloatFuncEmbedWidget::VisualShaderNodeFloatFuncEmbedWidget(Proto
 
 void VisualShaderNodeFloatFuncEmbedWidget::on_current_index_changed(const int& index) {
   int row_entry{VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, n_id)};
-  bool result = visual_shader_model->set_data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kFloatConstantFieldNumber), FieldPath::FieldNumber(VisualShaderNodeFloatConstant::kValueFieldNumber)), index);
+  bool result = visual_shader_model->set_data(
+      FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
+                                  FieldPath::RepeatedAt(row_entry),
+                                  FieldPath::FieldNumber(VisualShader::VisualShaderNode::kFloatConstantFieldNumber),
+                                  FieldPath::FieldNumber(VisualShaderNodeFloatConstant::kValueFieldNumber)),
+      index);
   if (!result) {
     ERROR_PRINT("Failed to set data");
   }
 }
 
-VisualShaderNodeIntFuncEmbedWidget::VisualShaderNodeIntFuncEmbedWidget(ProtoModel* visual_shader_model, 
-                                                                   ProtoModel* nodes_model, 
-                                                                   const int& n_id, const std::shared_ptr<IGraphNode>& graph_node)
+VisualShaderNodeIntFuncEmbedWidget::VisualShaderNodeIntFuncEmbedWidget(ProtoModel* visual_shader_model,
+                                                                       ProtoModel* nodes_model, const int& n_id,
+                                                                       const std::shared_ptr<IGraphNode>& graph_node)
     : QComboBox(), graph_node(graph_node) {
   setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
   setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
 
   int size{VisualShaderNodeIntFunc::VisualShaderNodeIntFuncType_descriptor()->value_count()};
   for (int i{0}; i < size; ++i) {
-    int input_type{shadergen_utils::get_enum_value_by_index(VisualShaderNodeIntFunc::VisualShaderNodeIntFuncType_descriptor(), i)};
-    addItem(QString::fromStdString(shadergen_utils::get_enum_value_caption(VisualShaderNodeIntFunc::VisualShaderNodeIntFuncType_descriptor(), input_type)));
+    int input_type{
+        shadergen_utils::get_enum_value_by_index(VisualShaderNodeIntFunc::VisualShaderNodeIntFuncType_descriptor(), i)};
+    addItem(QString::fromStdString(shadergen_utils::get_enum_value_caption(
+        VisualShaderNodeIntFunc::VisualShaderNodeIntFuncType_descriptor(), input_type)));
   }
 
   int row_entry{VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, n_id)};
-  setCurrentIndex(visual_shader_model->data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kIntConstantFieldNumber), FieldPath::FieldNumber(VisualShaderNodeIntConstant::kValueFieldNumber))).toInt());
+  setCurrentIndex(visual_shader_model
+                      ->data(FieldPath::Of<VisualShader>(
+                          FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry),
+                          FieldPath::FieldNumber(VisualShader::VisualShaderNode::kIntConstantFieldNumber),
+                          FieldPath::FieldNumber(VisualShaderNodeIntConstant::kValueFieldNumber)))
+                      .toInt());
 
   QObject::connect(this, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
                    &VisualShaderNodeIntFuncEmbedWidget::on_current_index_changed);
@@ -3581,27 +4144,39 @@ VisualShaderNodeIntFuncEmbedWidget::VisualShaderNodeIntFuncEmbedWidget(ProtoMode
 
 void VisualShaderNodeIntFuncEmbedWidget::on_current_index_changed(const int& index) {
   int row_entry{VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, n_id)};
-  bool result = visual_shader_model->set_data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kIntConstantFieldNumber), FieldPath::FieldNumber(VisualShaderNodeIntConstant::kValueFieldNumber)), index);
+  bool result = visual_shader_model->set_data(
+      FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
+                                  FieldPath::RepeatedAt(row_entry),
+                                  FieldPath::FieldNumber(VisualShader::VisualShaderNode::kIntConstantFieldNumber),
+                                  FieldPath::FieldNumber(VisualShaderNodeIntConstant::kValueFieldNumber)),
+      index);
   if (!result) {
     ERROR_PRINT("Failed to set data");
   }
 }
 
-VisualShaderNodeUIntFuncEmbedWidget::VisualShaderNodeUIntFuncEmbedWidget(ProtoModel* visual_shader_model, 
-                                                                   ProtoModel* nodes_model, 
-                                                                   const int& n_id, const std::shared_ptr<IGraphNode>& graph_node)
+VisualShaderNodeUIntFuncEmbedWidget::VisualShaderNodeUIntFuncEmbedWidget(ProtoModel* visual_shader_model,
+                                                                         ProtoModel* nodes_model, const int& n_id,
+                                                                         const std::shared_ptr<IGraphNode>& graph_node)
     : QComboBox(), graph_node(graph_node) {
   setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
   setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
 
   int size{VisualShaderNodeUIntFunc::VisualShaderNodeUIntFuncType_descriptor()->value_count()};
   for (int i{0}; i < size; ++i) {
-    int input_type{shadergen_utils::get_enum_value_by_index(VisualShaderNodeUIntFunc::VisualShaderNodeUIntFuncType_descriptor(), i)};
-    addItem(QString::fromStdString(shadergen_utils::get_enum_value_caption(VisualShaderNodeUIntFunc::VisualShaderNodeUIntFuncType_descriptor(), input_type)));
+    int input_type{shadergen_utils::get_enum_value_by_index(
+        VisualShaderNodeUIntFunc::VisualShaderNodeUIntFuncType_descriptor(), i)};
+    addItem(QString::fromStdString(shadergen_utils::get_enum_value_caption(
+        VisualShaderNodeUIntFunc::VisualShaderNodeUIntFuncType_descriptor(), input_type)));
   }
 
   int row_entry{VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, n_id)};
-  setCurrentIndex(visual_shader_model->data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kUintConstantFieldNumber), FieldPath::FieldNumber(VisualShaderNodeUIntConstant::kValueFieldNumber))).toInt());
+  setCurrentIndex(visual_shader_model
+                      ->data(FieldPath::Of<VisualShader>(
+                          FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry),
+                          FieldPath::FieldNumber(VisualShader::VisualShaderNode::kUintConstantFieldNumber),
+                          FieldPath::FieldNumber(VisualShaderNodeUIntConstant::kValueFieldNumber)))
+                      .toInt());
 
   QObject::connect(this, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
                    &VisualShaderNodeUIntFuncEmbedWidget::on_current_index_changed);
@@ -3609,27 +4184,39 @@ VisualShaderNodeUIntFuncEmbedWidget::VisualShaderNodeUIntFuncEmbedWidget(ProtoMo
 
 void VisualShaderNodeUIntFuncEmbedWidget::on_current_index_changed(const int& index) {
   int row_entry{VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, n_id)};
-  bool result = visual_shader_model->set_data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kUintConstantFieldNumber), FieldPath::FieldNumber(VisualShaderNodeUIntConstant::kValueFieldNumber)), index);
+  bool result = visual_shader_model->set_data(
+      FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
+                                  FieldPath::RepeatedAt(row_entry),
+                                  FieldPath::FieldNumber(VisualShader::VisualShaderNode::kUintConstantFieldNumber),
+                                  FieldPath::FieldNumber(VisualShaderNodeUIntConstant::kValueFieldNumber)),
+      index);
   if (!result) {
     ERROR_PRINT("Failed to set data");
   }
 }
 
-VisualShaderNodeVectorFuncEmbedWidget::VisualShaderNodeVectorFuncEmbedWidget(ProtoModel* visual_shader_model, 
-                                                                   ProtoModel* nodes_model, 
-                                                                   const int& n_id, const std::shared_ptr<IGraphNode>& graph_node)
+VisualShaderNodeVectorFuncEmbedWidget::VisualShaderNodeVectorFuncEmbedWidget(
+    ProtoModel* visual_shader_model, ProtoModel* nodes_model, const int& n_id,
+    const std::shared_ptr<IGraphNode>& graph_node)
     : QComboBox(), graph_node(graph_node) {
   setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
   setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
 
   int size{VisualShaderNodeVectorFunc::VisualShaderNodeVectorFuncType_descriptor()->value_count()};
   for (int i{0}; i < size; ++i) {
-    int input_type{shadergen_utils::get_enum_value_by_index(VisualShaderNodeVectorFunc::VisualShaderNodeVectorFuncType_descriptor(), i)};
-    addItem(QString::fromStdString(shadergen_utils::get_enum_value_caption(VisualShaderNodeVectorFunc::VisualShaderNodeVectorFuncType_descriptor(), input_type)));
+    int input_type{shadergen_utils::get_enum_value_by_index(
+        VisualShaderNodeVectorFunc::VisualShaderNodeVectorFuncType_descriptor(), i)};
+    addItem(QString::fromStdString(shadergen_utils::get_enum_value_caption(
+        VisualShaderNodeVectorFunc::VisualShaderNodeVectorFuncType_descriptor(), input_type)));
   }
 
   int row_entry{VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, n_id)};
-  setCurrentIndex(visual_shader_model->data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVectorFuncFieldNumber), FieldPath::FieldNumber(VisualShaderNodeVectorFunc::kFuncFieldNumber))).toInt());
+  setCurrentIndex(visual_shader_model
+                      ->data(FieldPath::Of<VisualShader>(
+                          FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry),
+                          FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVectorFuncFieldNumber),
+                          FieldPath::FieldNumber(VisualShaderNodeVectorFunc::kFuncFieldNumber)))
+                      .toInt());
 
   QObject::connect(this, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
                    &VisualShaderNodeVectorFuncEmbedWidget::on_current_index_changed);
@@ -3637,7 +4224,12 @@ VisualShaderNodeVectorFuncEmbedWidget::VisualShaderNodeVectorFuncEmbedWidget(Pro
 
 void VisualShaderNodeVectorFuncEmbedWidget::on_current_index_changed(const int& index) {
   int row_entry{VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, n_id)};
-  bool result = visual_shader_model->set_data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVectorFuncFieldNumber), FieldPath::FieldNumber(VisualShaderNodeVectorFunc::kFuncFieldNumber)), index);
+  bool result = visual_shader_model->set_data(
+      FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
+                                  FieldPath::RepeatedAt(row_entry),
+                                  FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVectorFuncFieldNumber),
+                                  FieldPath::FieldNumber(VisualShaderNodeVectorFunc::kFuncFieldNumber)),
+      index);
   if (!result) {
     ERROR_PRINT("Failed to set data");
   }
@@ -3647,9 +4239,9 @@ void VisualShaderNodeVectorFuncEmbedWidget::on_current_index_changed(const int& 
 /* Value Noise Node                  */
 /*************************************/
 
-VisualShaderNodeValueNoiseEmbedWidget::VisualShaderNodeValueNoiseEmbedWidget(ProtoModel* visual_shader_model, 
-                                                                   ProtoModel* nodes_model, 
-                                                                   const int& n_id, const std::shared_ptr<IGraphNode>& graph_node)
+VisualShaderNodeValueNoiseEmbedWidget::VisualShaderNodeValueNoiseEmbedWidget(
+    ProtoModel* visual_shader_model, ProtoModel* nodes_model, const int& n_id,
+    const std::shared_ptr<IGraphNode>& graph_node)
     : QLineEdit(), graph_node(graph_node) {
   setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
   setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
@@ -3657,7 +4249,13 @@ VisualShaderNodeValueNoiseEmbedWidget::VisualShaderNodeValueNoiseEmbedWidget(Pro
   setPlaceholderText("Scale");
 
   int row_entry{VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, n_id)};
-  setText(QString::number(visual_shader_model->data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kValueNoiseFieldNumber), FieldPath::FieldNumber(VisualShaderNodeValueNoise::kScaleFieldNumber))).toFloat()));
+  setText(
+      QString::number(visual_shader_model
+                          ->data(FieldPath::Of<VisualShader>(
+                              FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry),
+                              FieldPath::FieldNumber(VisualShader::VisualShaderNode::kValueNoiseFieldNumber),
+                              FieldPath::FieldNumber(VisualShaderNodeValueNoise::kScaleFieldNumber)))
+                          .toFloat()));
 
   QObject::connect(this, &QLineEdit::textChanged, this, &VisualShaderNodeValueNoiseEmbedWidget::on_text_changed);
 }
@@ -3665,7 +4263,12 @@ VisualShaderNodeValueNoiseEmbedWidget::VisualShaderNodeValueNoiseEmbedWidget(Pro
 void VisualShaderNodeValueNoiseEmbedWidget::on_text_changed(const QString& text) {
   int row_entry{VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, n_id)};
   if (text.isEmpty()) {
-    bool result = visual_shader_model->set_data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kValueNoiseFieldNumber), FieldPath::FieldNumber(VisualShaderNodeValueNoise::kScaleFieldNumber)), 10.0f);
+    bool result = visual_shader_model->set_data(
+        FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
+                                    FieldPath::RepeatedAt(row_entry),
+                                    FieldPath::FieldNumber(VisualShader::VisualShaderNode::kValueNoiseFieldNumber),
+                                    FieldPath::FieldNumber(VisualShaderNodeValueNoise::kScaleFieldNumber)),
+        10.0f);
     if (!result) {
       ERROR_PRINT("Failed to set data");
     }
@@ -3673,12 +4276,22 @@ void VisualShaderNodeValueNoiseEmbedWidget::on_text_changed(const QString& text)
     bool ok;
     text.toFloat(&ok);
     if (ok) {
-      bool result = visual_shader_model->set_data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kValueNoiseFieldNumber), FieldPath::FieldNumber(VisualShaderNodeValueNoise::kScaleFieldNumber)), text.toFloat());
+      bool result = visual_shader_model->set_data(
+          FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
+                                      FieldPath::RepeatedAt(row_entry),
+                                      FieldPath::FieldNumber(VisualShader::VisualShaderNode::kValueNoiseFieldNumber),
+                                      FieldPath::FieldNumber(VisualShaderNodeValueNoise::kScaleFieldNumber)),
+          text.toFloat());
       if (!result) {
         ERROR_PRINT("Failed to set data");
       }
     } else {
-      bool result = visual_shader_model->set_data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kValueNoiseFieldNumber), FieldPath::FieldNumber(VisualShaderNodeValueNoise::kScaleFieldNumber)), 0.0f);
+      bool result = visual_shader_model->set_data(
+          FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
+                                      FieldPath::RepeatedAt(row_entry),
+                                      FieldPath::FieldNumber(VisualShader::VisualShaderNode::kValueNoiseFieldNumber),
+                                      FieldPath::FieldNumber(VisualShaderNodeValueNoise::kScaleFieldNumber)),
+          0.0f);
       if (!result) {
         ERROR_PRINT("Failed to set data");
       }
@@ -3691,9 +4304,9 @@ void VisualShaderNodeValueNoiseEmbedWidget::on_text_changed(const QString& text)
 /* Perlin Noise Node                 */
 /*************************************/
 
-VisualShaderNodePerlinNoiseEmbedWidget::VisualShaderNodePerlinNoiseEmbedWidget(ProtoModel* visual_shader_model, 
-                                                                   ProtoModel* nodes_model, 
-                                                                   const int& n_id, const std::shared_ptr<IGraphNode>& graph_node)
+VisualShaderNodePerlinNoiseEmbedWidget::VisualShaderNodePerlinNoiseEmbedWidget(
+    ProtoModel* visual_shader_model, ProtoModel* nodes_model, const int& n_id,
+    const std::shared_ptr<IGraphNode>& graph_node)
     : QLineEdit(), graph_node(graph_node) {
   setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
   setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
@@ -3701,7 +4314,13 @@ VisualShaderNodePerlinNoiseEmbedWidget::VisualShaderNodePerlinNoiseEmbedWidget(P
   setPlaceholderText("Scale");
 
   int row_entry{VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, n_id)};
-  setText(QString::number(visual_shader_model->data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kPerlinNoiseFieldNumber), FieldPath::FieldNumber(VisualShaderNodePerlinNoise::kScaleFieldNumber))).toFloat()));
+  setText(
+      QString::number(visual_shader_model
+                          ->data(FieldPath::Of<VisualShader>(
+                              FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry),
+                              FieldPath::FieldNumber(VisualShader::VisualShaderNode::kPerlinNoiseFieldNumber),
+                              FieldPath::FieldNumber(VisualShaderNodePerlinNoise::kScaleFieldNumber)))
+                          .toFloat()));
 
   QObject::connect(this, &QLineEdit::textChanged, this, &VisualShaderNodePerlinNoiseEmbedWidget::on_text_changed);
 }
@@ -3709,7 +4328,12 @@ VisualShaderNodePerlinNoiseEmbedWidget::VisualShaderNodePerlinNoiseEmbedWidget(P
 void VisualShaderNodePerlinNoiseEmbedWidget::on_text_changed(const QString& text) {
   int row_entry{VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, n_id)};
   if (text.isEmpty()) {
-    bool result = visual_shader_model->set_data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kPerlinNoiseFieldNumber), FieldPath::FieldNumber(VisualShaderNodePerlinNoise::kScaleFieldNumber)), 10.0f);
+    bool result = visual_shader_model->set_data(
+        FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
+                                    FieldPath::RepeatedAt(row_entry),
+                                    FieldPath::FieldNumber(VisualShader::VisualShaderNode::kPerlinNoiseFieldNumber),
+                                    FieldPath::FieldNumber(VisualShaderNodePerlinNoise::kScaleFieldNumber)),
+        10.0f);
     if (!result) {
       ERROR_PRINT("Failed to set data");
     }
@@ -3717,12 +4341,22 @@ void VisualShaderNodePerlinNoiseEmbedWidget::on_text_changed(const QString& text
     bool ok;
     text.toFloat(&ok);
     if (ok) {
-      bool result = visual_shader_model->set_data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kPerlinNoiseFieldNumber), FieldPath::FieldNumber(VisualShaderNodePerlinNoise::kScaleFieldNumber)), text.toFloat());
+      bool result = visual_shader_model->set_data(
+          FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
+                                      FieldPath::RepeatedAt(row_entry),
+                                      FieldPath::FieldNumber(VisualShader::VisualShaderNode::kPerlinNoiseFieldNumber),
+                                      FieldPath::FieldNumber(VisualShaderNodePerlinNoise::kScaleFieldNumber)),
+          text.toFloat());
       if (!result) {
         ERROR_PRINT("Failed to set data");
       }
     } else {
-      bool result = visual_shader_model->set_data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kPerlinNoiseFieldNumber), FieldPath::FieldNumber(VisualShaderNodePerlinNoise::kScaleFieldNumber)), 0.0f);
+      bool result = visual_shader_model->set_data(
+          FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
+                                      FieldPath::RepeatedAt(row_entry),
+                                      FieldPath::FieldNumber(VisualShader::VisualShaderNode::kPerlinNoiseFieldNumber),
+                                      FieldPath::FieldNumber(VisualShaderNodePerlinNoise::kScaleFieldNumber)),
+          0.0f);
       if (!result) {
         ERROR_PRINT("Failed to set data");
       }
@@ -3735,9 +4369,9 @@ void VisualShaderNodePerlinNoiseEmbedWidget::on_text_changed(const QString& text
 /* Voronoi Noise Node                */
 /*************************************/
 
-VisualShaderNodeVoronoiNoiseAngleOffsetEmbedWidget::VisualShaderNodeVoronoiNoiseAngleOffsetEmbedWidget(ProtoModel* visual_shader_model, 
-                                                                   ProtoModel* nodes_model, 
-                                                                   const int& n_id, const std::shared_ptr<IGraphNode>& graph_node)
+VisualShaderNodeVoronoiNoiseAngleOffsetEmbedWidget::VisualShaderNodeVoronoiNoiseAngleOffsetEmbedWidget(
+    ProtoModel* visual_shader_model, ProtoModel* nodes_model, const int& n_id,
+    const std::shared_ptr<IGraphNode>& graph_node)
     : QLineEdit(), graph_node(graph_node) {
   setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
   setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
@@ -3745,7 +4379,13 @@ VisualShaderNodeVoronoiNoiseAngleOffsetEmbedWidget::VisualShaderNodeVoronoiNoise
   setPlaceholderText("Angle Offset");
 
   int row_entry{VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, n_id)};
-  setText(QString::number(visual_shader_model->data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVoronoiNoiseFieldNumber), FieldPath::FieldNumber(VisualShaderNodeVoronoiNoise::kAngleOffsetFieldNumber))).toFloat()));
+  setText(
+      QString::number(visual_shader_model
+                          ->data(FieldPath::Of<VisualShader>(
+                              FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry),
+                              FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVoronoiNoiseFieldNumber),
+                              FieldPath::FieldNumber(VisualShaderNodeVoronoiNoise::kAngleOffsetFieldNumber)))
+                          .toFloat()));
 
   QObject::connect(this, &QLineEdit::textChanged, this,
                    &VisualShaderNodeVoronoiNoiseAngleOffsetEmbedWidget::on_text_changed);
@@ -3754,7 +4394,12 @@ VisualShaderNodeVoronoiNoiseAngleOffsetEmbedWidget::VisualShaderNodeVoronoiNoise
 void VisualShaderNodeVoronoiNoiseAngleOffsetEmbedWidget::on_text_changed(const QString& text) {
   int row_entry{VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, n_id)};
   if (text.isEmpty()) {
-    bool result = visual_shader_model->set_data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVoronoiNoiseFieldNumber), FieldPath::FieldNumber(VisualShaderNodeVoronoiNoise::kAngleOffsetFieldNumber)), 0.0f);
+    bool result = visual_shader_model->set_data(
+        FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
+                                    FieldPath::RepeatedAt(row_entry),
+                                    FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVoronoiNoiseFieldNumber),
+                                    FieldPath::FieldNumber(VisualShaderNodeVoronoiNoise::kAngleOffsetFieldNumber)),
+        0.0f);
     if (!result) {
       ERROR_PRINT("Failed to set data");
     }
@@ -3762,12 +4407,22 @@ void VisualShaderNodeVoronoiNoiseAngleOffsetEmbedWidget::on_text_changed(const Q
     bool ok;
     text.toFloat(&ok);
     if (ok) {
-      bool result = visual_shader_model->set_data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVoronoiNoiseFieldNumber), FieldPath::FieldNumber(VisualShaderNodeVoronoiNoise::kAngleOffsetFieldNumber)), text.toFloat());
+      bool result = visual_shader_model->set_data(
+          FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
+                                      FieldPath::RepeatedAt(row_entry),
+                                      FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVoronoiNoiseFieldNumber),
+                                      FieldPath::FieldNumber(VisualShaderNodeVoronoiNoise::kAngleOffsetFieldNumber)),
+          text.toFloat());
       if (!result) {
         ERROR_PRINT("Failed to set data");
       }
     } else {
-      bool result = visual_shader_model->set_data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVoronoiNoiseFieldNumber), FieldPath::FieldNumber(VisualShaderNodeVoronoiNoise::kAngleOffsetFieldNumber)), 0.0f);
+      bool result = visual_shader_model->set_data(
+          FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
+                                      FieldPath::RepeatedAt(row_entry),
+                                      FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVoronoiNoiseFieldNumber),
+                                      FieldPath::FieldNumber(VisualShaderNodeVoronoiNoise::kAngleOffsetFieldNumber)),
+          0.0f);
       if (!result) {
         ERROR_PRINT("Failed to set data");
       }
@@ -3776,9 +4431,9 @@ void VisualShaderNodeVoronoiNoiseAngleOffsetEmbedWidget::on_text_changed(const Q
   }
 }
 
-VisualShaderNodeVoronoiNoiseCellDensityEmbedWidget::VisualShaderNodeVoronoiNoiseCellDensityEmbedWidget(ProtoModel* visual_shader_model, 
-                                                                   ProtoModel* nodes_model, 
-                                                                   const int& n_id, const std::shared_ptr<IGraphNode>& graph_node)
+VisualShaderNodeVoronoiNoiseCellDensityEmbedWidget::VisualShaderNodeVoronoiNoiseCellDensityEmbedWidget(
+    ProtoModel* visual_shader_model, ProtoModel* nodes_model, const int& n_id,
+    const std::shared_ptr<IGraphNode>& graph_node)
     : QLineEdit(), graph_node(graph_node) {
   setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
   setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
@@ -3786,7 +4441,13 @@ VisualShaderNodeVoronoiNoiseCellDensityEmbedWidget::VisualShaderNodeVoronoiNoise
   setPlaceholderText("Cell Density");
 
   int row_entry{VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, n_id)};
-  setText(QString::number(visual_shader_model->data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVoronoiNoiseFieldNumber), FieldPath::FieldNumber(VisualShaderNodeVoronoiNoise::kCellDensityFieldNumber))).toFloat()));
+  setText(
+      QString::number(visual_shader_model
+                          ->data(FieldPath::Of<VisualShader>(
+                              FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry),
+                              FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVoronoiNoiseFieldNumber),
+                              FieldPath::FieldNumber(VisualShaderNodeVoronoiNoise::kCellDensityFieldNumber)))
+                          .toFloat()));
 
   QObject::connect(this, &QLineEdit::textChanged, this,
                    &VisualShaderNodeVoronoiNoiseCellDensityEmbedWidget::on_text_changed);
@@ -3795,7 +4456,12 @@ VisualShaderNodeVoronoiNoiseCellDensityEmbedWidget::VisualShaderNodeVoronoiNoise
 void VisualShaderNodeVoronoiNoiseCellDensityEmbedWidget::on_text_changed(const QString& text) {
   int row_entry{VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, n_id)};
   if (text.isEmpty()) {
-    bool result = visual_shader_model->set_data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVoronoiNoiseFieldNumber), FieldPath::FieldNumber(VisualShaderNodeVoronoiNoise::kCellDensityFieldNumber)), 0.0f);
+    bool result = visual_shader_model->set_data(
+        FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
+                                    FieldPath::RepeatedAt(row_entry),
+                                    FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVoronoiNoiseFieldNumber),
+                                    FieldPath::FieldNumber(VisualShaderNodeVoronoiNoise::kCellDensityFieldNumber)),
+        0.0f);
     if (!result) {
       ERROR_PRINT("Failed to set data");
     }
@@ -3803,12 +4469,22 @@ void VisualShaderNodeVoronoiNoiseCellDensityEmbedWidget::on_text_changed(const Q
     bool ok;
     text.toFloat(&ok);
     if (ok) {
-      bool result = visual_shader_model->set_data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVoronoiNoiseFieldNumber), FieldPath::FieldNumber(VisualShaderNodeVoronoiNoise::kCellDensityFieldNumber)), text.toFloat());
+      bool result = visual_shader_model->set_data(
+          FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
+                                      FieldPath::RepeatedAt(row_entry),
+                                      FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVoronoiNoiseFieldNumber),
+                                      FieldPath::FieldNumber(VisualShaderNodeVoronoiNoise::kCellDensityFieldNumber)),
+          text.toFloat());
       if (!result) {
         ERROR_PRINT("Failed to set data");
       }
     } else {
-      bool result = visual_shader_model->set_data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVoronoiNoiseFieldNumber), FieldPath::FieldNumber(VisualShaderNodeVoronoiNoise::kCellDensityFieldNumber)), 0.0f);
+      bool result = visual_shader_model->set_data(
+          FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
+                                      FieldPath::RepeatedAt(row_entry),
+                                      FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVoronoiNoiseFieldNumber),
+                                      FieldPath::FieldNumber(VisualShaderNodeVoronoiNoise::kCellDensityFieldNumber)),
+          0.0f);
       if (!result) {
         ERROR_PRINT("Failed to set data");
       }
@@ -3821,9 +4497,9 @@ void VisualShaderNodeVoronoiNoiseCellDensityEmbedWidget::on_text_changed(const Q
 /* MISC                              */
 /*************************************/
 
-VisualShaderNodeCompareEmbedWidget::VisualShaderNodeCompareEmbedWidget(ProtoModel* visual_shader_model, 
-                                                                   ProtoModel* nodes_model, 
-                                                                   const int& n_id, const std::shared_ptr<IGraphNode>& graph_node)
+VisualShaderNodeCompareEmbedWidget::VisualShaderNodeCompareEmbedWidget(ProtoModel* visual_shader_model,
+                                                                       ProtoModel* nodes_model, const int& n_id,
+                                                                       const std::shared_ptr<IGraphNode>& graph_node)
     : QVBoxLayout(), graph_node(graph_node) {
   setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
   setSizeConstraint(QLayout::SetNoConstraint);
@@ -3837,29 +4513,50 @@ VisualShaderNodeCompareEmbedWidget::VisualShaderNodeCompareEmbedWidget(ProtoMode
   int size{VisualShaderNodeCompare::ComparisonType_descriptor()->value_count()};
   for (int i = 0; i < size; i++) {
     int comp_type{shadergen_utils::get_enum_value_by_index(VisualShaderNodeCompare::ComparisonType_descriptor(), i)};
-    comparison_type_combo_box->addItem(QString::fromStdString(shadergen_utils::get_enum_value_caption(VisualShaderNodeCompare::ComparisonType_descriptor(), comp_type)));
+    comparison_type_combo_box->addItem(QString::fromStdString(
+        shadergen_utils::get_enum_value_caption(VisualShaderNodeCompare::ComparisonType_descriptor(), comp_type)));
   }
 
   int row_entry{VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, n_id)};
-  comparison_type_combo_box->setCurrentIndex(visual_shader_model->data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kCompareFieldNumber), FieldPath::FieldNumber(VisualShaderNodeCompare::kTypeFieldNumber))).toInt());
+  comparison_type_combo_box->setCurrentIndex(
+      visual_shader_model
+          ->data(FieldPath::Of<VisualShader>(
+              FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry),
+              FieldPath::FieldNumber(VisualShader::VisualShaderNode::kCompareFieldNumber),
+              FieldPath::FieldNumber(VisualShaderNodeCompare::kTypeFieldNumber)))
+          .toInt());
 
   size = VisualShaderNodeCompare::Function_descriptor()->value_count();
   for (int i = 0; i < size; i++) {
     int func{shadergen_utils::get_enum_value_by_index(VisualShaderNodeCompare::Function_descriptor(), i)};
-    func_combo_box->addItem(QString::fromStdString(shadergen_utils::get_enum_value_caption(VisualShaderNodeCompare::Function_descriptor(), func)));
+    func_combo_box->addItem(QString::fromStdString(
+        shadergen_utils::get_enum_value_caption(VisualShaderNodeCompare::Function_descriptor(), func)));
   }
 
   row_entry = VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, n_id);
-  func_combo_box->setCurrentIndex(visual_shader_model->data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kCompareFieldNumber), FieldPath::FieldNumber(VisualShaderNodeCompare::kFuncFieldNumber))).toInt());
+  func_combo_box->setCurrentIndex(
+      visual_shader_model
+          ->data(FieldPath::Of<VisualShader>(
+              FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry),
+              FieldPath::FieldNumber(VisualShader::VisualShaderNode::kCompareFieldNumber),
+              FieldPath::FieldNumber(VisualShaderNodeCompare::kFuncFieldNumber)))
+          .toInt());
 
   size = VisualShaderNodeCompare::Condition_descriptor()->value_count();
   for (int i = 0; i < size; i++) {
     int cond{shadergen_utils::get_enum_value_by_index(VisualShaderNodeCompare::Condition_descriptor(), i)};
-    condition_combo_box->addItem(QString::fromStdString(shadergen_utils::get_enum_value_caption(VisualShaderNodeCompare::Condition_descriptor(), cond)));
+    condition_combo_box->addItem(QString::fromStdString(
+        shadergen_utils::get_enum_value_caption(VisualShaderNodeCompare::Condition_descriptor(), cond)));
   }
 
   row_entry = VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, n_id);
-  condition_combo_box->setCurrentIndex(visual_shader_model->data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kCompareFieldNumber), FieldPath::FieldNumber(VisualShaderNodeCompare::kCondFieldNumber))).toInt());
+  condition_combo_box->setCurrentIndex(
+      visual_shader_model
+          ->data(FieldPath::Of<VisualShader>(
+              FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry),
+              FieldPath::FieldNumber(VisualShader::VisualShaderNode::kCompareFieldNumber),
+              FieldPath::FieldNumber(VisualShaderNodeCompare::kCondFieldNumber)))
+          .toInt());
 
   addWidget(comparison_type_combo_box);
   addWidget(func_combo_box);
@@ -3868,21 +4565,36 @@ VisualShaderNodeCompareEmbedWidget::VisualShaderNodeCompareEmbedWidget(ProtoMode
 
 void VisualShaderNodeCompareEmbedWidget::on_comparison_type_current_index_changed(const int& index) {
   int row_entry{VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, n_id)};
-  bool result = visual_shader_model->set_data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kCompareFieldNumber), FieldPath::FieldNumber(VisualShaderNodeCompare::kTypeFieldNumber)), index);
+  bool result = visual_shader_model->set_data(
+      FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
+                                  FieldPath::RepeatedAt(row_entry),
+                                  FieldPath::FieldNumber(VisualShader::VisualShaderNode::kCompareFieldNumber),
+                                  FieldPath::FieldNumber(VisualShaderNodeCompare::kTypeFieldNumber)),
+      index);
   if (!result) {
     ERROR_PRINT("Failed to set data");
   }
 }
 void VisualShaderNodeCompareEmbedWidget::on_func_current_index_changed(const int& index) {
   int row_entry{VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, n_id)};
-  bool result = visual_shader_model->set_data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kCompareFieldNumber), FieldPath::FieldNumber(VisualShaderNodeCompare::kFuncFieldNumber)), index);
+  bool result = visual_shader_model->set_data(
+      FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
+                                  FieldPath::RepeatedAt(row_entry),
+                                  FieldPath::FieldNumber(VisualShader::VisualShaderNode::kCompareFieldNumber),
+                                  FieldPath::FieldNumber(VisualShaderNodeCompare::kFuncFieldNumber)),
+      index);
   if (!result) {
     ERROR_PRINT("Failed to set data");
   }
 }
 void VisualShaderNodeCompareEmbedWidget::on_condition_current_index_changed(const int& index) {
   int row_entry{VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, n_id)};
-  bool result = visual_shader_model->set_data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kCompareFieldNumber), FieldPath::FieldNumber(VisualShaderNodeCompare::kCondFieldNumber)), index);
+  bool result = visual_shader_model->set_data(
+      FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
+                                  FieldPath::RepeatedAt(row_entry),
+                                  FieldPath::FieldNumber(VisualShader::VisualShaderNode::kCompareFieldNumber),
+                                  FieldPath::FieldNumber(VisualShaderNodeCompare::kCondFieldNumber)),
+      index);
   if (!result) {
     ERROR_PRINT("Failed to set data");
   }
@@ -3892,9 +4604,9 @@ void VisualShaderNodeCompareEmbedWidget::on_condition_current_index_changed(cons
 /* Switch Node                       */
 /*************************************/
 
-VisualShaderNodeSwitchEmbedWidget::VisualShaderNodeSwitchEmbedWidget(ProtoModel* visual_shader_model, 
-                                                                   ProtoModel* nodes_model, 
-                                                                   const int& n_id, const std::shared_ptr<IGraphNode>& graph_node)
+VisualShaderNodeSwitchEmbedWidget::VisualShaderNodeSwitchEmbedWidget(ProtoModel* visual_shader_model,
+                                                                     ProtoModel* nodes_model, const int& n_id,
+                                                                     const std::shared_ptr<IGraphNode>& graph_node)
     : QComboBox(), graph_node(graph_node) {
   setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
   setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
@@ -3903,17 +4615,15 @@ VisualShaderNodeSwitchEmbedWidget::VisualShaderNodeSwitchEmbedWidget(ProtoModel*
                    &VisualShaderNodeSwitchEmbedWidget::on_current_index_changed);
 }
 
-void VisualShaderNodeSwitchEmbedWidget::on_current_index_changed(const int& index) {
-  
-}
+void VisualShaderNodeSwitchEmbedWidget::on_current_index_changed(const int& index) {}
 
 /*************************************/
 /* Is Node                           */
 /*************************************/
 
-VisualShaderNodeIsEmbedWidget::VisualShaderNodeIsEmbedWidget(ProtoModel* visual_shader_model, 
-                                                                   ProtoModel* nodes_model, 
-                                                                   const int& n_id, const std::shared_ptr<IGraphNode>& graph_node)
+VisualShaderNodeIsEmbedWidget::VisualShaderNodeIsEmbedWidget(ProtoModel* visual_shader_model, ProtoModel* nodes_model,
+                                                             const int& n_id,
+                                                             const std::shared_ptr<IGraphNode>& graph_node)
     : QComboBox(), graph_node(graph_node) {
   setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
   setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
@@ -3921,11 +4631,18 @@ VisualShaderNodeIsEmbedWidget::VisualShaderNodeIsEmbedWidget(ProtoModel* visual_
   int size{VisualShaderNodeIs::Function_descriptor()->value_count()};
   for (int i = 0; i < size; i++) {
     int func{shadergen_utils::get_enum_value_by_index(VisualShaderNodeIs::Function_descriptor(), i)};
-    addItem(QString::fromStdString(shadergen_utils::get_enum_value_caption(VisualShaderNodeIs::Function_descriptor(), func)), func);
+    addItem(QString::fromStdString(
+                shadergen_utils::get_enum_value_caption(VisualShaderNodeIs::Function_descriptor(), func)),
+            func);
   }
 
   int row_entry{VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, n_id)};
-  setCurrentIndex(visual_shader_model->data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kIsFieldNumber), FieldPath::FieldNumber(VisualShaderNodeIs::kFuncFieldNumber))).toInt());
+  setCurrentIndex(visual_shader_model
+                      ->data(FieldPath::Of<VisualShader>(
+                          FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry),
+                          FieldPath::FieldNumber(VisualShader::VisualShaderNode::kIsFieldNumber),
+                          FieldPath::FieldNumber(VisualShaderNodeIs::kFuncFieldNumber)))
+                      .toInt());
 
   QObject::connect(this, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
                    &VisualShaderNodeIsEmbedWidget::on_current_index_changed);
@@ -3933,7 +4650,12 @@ VisualShaderNodeIsEmbedWidget::VisualShaderNodeIsEmbedWidget(ProtoModel* visual_
 
 void VisualShaderNodeIsEmbedWidget::on_current_index_changed(const int& index) {
   int row_entry{VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, n_id)};
-  bool result = visual_shader_model->set_data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry), FieldPath::FieldNumber(VisualShader::VisualShaderNode::kIsFieldNumber), FieldPath::FieldNumber(VisualShaderNodeIs::kFuncFieldNumber)), index);
+  bool result = visual_shader_model->set_data(
+      FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
+                                  FieldPath::RepeatedAt(row_entry),
+                                  FieldPath::FieldNumber(VisualShader::VisualShaderNode::kIsFieldNumber),
+                                  FieldPath::FieldNumber(VisualShaderNodeIs::kFuncFieldNumber)),
+      index);
   if (!result) {
     ERROR_PRINT("Failed to set data");
   }

@@ -33,40 +33,42 @@
 std::string VisualShaderNodeGeneratorInput::generate_global([[maybe_unused]] const int& id) const {
   std::string code;
 
-  std::string input_type_caption{shadergen_utils::get_enum_value_caption(VisualShaderNodeInputType_descriptor(), input_type)};
+  std::string input_type_caption{
+      shadergen_utils::get_enum_value_caption(VisualShaderNodeInputType_descriptor(), input_type)};
 
   switch (input_type) {
     case VisualShaderNodeInputType::INPUT_TYPE_UV: {
-        code += "in vec2 " + input_type_caption + ";" + std::string("\n");
+      code += "in vec2 " + input_type_caption + ";" + std::string("\n");
     } break;
     case VisualShaderNodeInputType::INPUT_TYPE_TIME: {
-        code += "uniform float " + input_type_caption + ";" + std::string("\n");
+      code += "uniform float " + input_type_caption + ";" + std::string("\n");
     } break;
     default:
-        break;
+      break;
   }
 
   return code;
 }
 
-std::string VisualShaderNodeGeneratorInput::generate_code([[maybe_unused]] const int& id,
-                                                          [[maybe_unused]] const std::vector<std::string>& input_vars,
-                                                          [[maybe_unused]] const std::vector<std::string>& output_vars) const {
-    std::string code;
+std::string VisualShaderNodeGeneratorInput::generate_code(
+    [[maybe_unused]] const int& id, [[maybe_unused]] const std::vector<std::string>& input_vars,
+    [[maybe_unused]] const std::vector<std::string>& output_vars) const {
+  std::string code;
 
-    std::string input_type_caption{shadergen_utils::get_enum_value_caption(VisualShaderNodeInputType_descriptor(), input_type)};
-    
-    switch (input_type) {
-        case VisualShaderNodeInputType::INPUT_TYPE_UV: {
-            return std::string("\t") + output_vars.at(0) + " = " + input_type_caption + ";" + std::string("\n");
-        } break;
-        case VisualShaderNodeInputType::INPUT_TYPE_TIME: {
-            return std::string("\t") + output_vars.at(0) + " = " + input_type_caption + ";" + std::string("\n");
-        } break;
-        default:
-            code = std::string("\t") + output_vars.at(0) + " = 0.0;" + std::string("\n");
-            break;
-    }
+  std::string input_type_caption{
+      shadergen_utils::get_enum_value_caption(VisualShaderNodeInputType_descriptor(), input_type)};
+
+  switch (input_type) {
+    case VisualShaderNodeInputType::INPUT_TYPE_UV: {
+      return std::string("\t") + output_vars.at(0) + " = " + input_type_caption + ";" + std::string("\n");
+    } break;
+    case VisualShaderNodeInputType::INPUT_TYPE_TIME: {
+      return std::string("\t") + output_vars.at(0) + " = " + input_type_caption + ";" + std::string("\n");
+    } break;
+    default:
+      code = std::string("\t") + output_vars.at(0) + " = 0.0;" + std::string("\n");
+      break;
+  }
 
   return code;
 }

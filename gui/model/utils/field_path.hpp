@@ -28,10 +28,10 @@
 #ifndef FIELD_PATH_HPP
 #define FIELD_PATH_HPP
 
-#include <queue>
-#include <variant>
-#include <type_traits>
 #include <google/protobuf/message.h>
+#include <queue>
+#include <type_traits>
+#include <variant>
 #include "error_macros.hpp"
 
 /**
@@ -70,8 +70,8 @@
  * 
  */
 class FieldPath {
-public:
-    /**
+ public:
+  /**
      * @brief Can be:
      *        - Message
      *        - Enum
@@ -81,29 +81,29 @@ public:
      *        - Repeated Primitive
      * 
      */
-    struct FieldNumber {
-        int field_number;
-        explicit FieldNumber(const int& f) : field_number(f) {}
-    };
+  struct FieldNumber {
+    int field_number;
+    explicit FieldNumber(const int& f) : field_number(f) {}
+  };
 
-    struct RepeatedAt {
-        int index;
-        explicit RepeatedAt(const int& i) : index(i) {}
-    };
+  struct RepeatedAt {
+    int index;
+    explicit RepeatedAt(const int& i) : index(i) {}
+  };
 
-    // Variant to hold any path component
-    using PathComponent = std::variant<FieldNumber, RepeatedAt>;
+  // Variant to hold any path component
+  using PathComponent = std::variant<FieldNumber, RepeatedAt>;
 
-private:
-    bool m_is_valid;
-    const google::protobuf::Descriptor* m_root_buffer_descriptor;
-    mutable std::queue<PathComponent> m_components;
+ private:
+  bool m_is_valid;
+  const google::protobuf::Descriptor* m_root_buffer_descriptor;
+  mutable std::queue<PathComponent> m_components;
 
-    FieldPath() : m_is_valid(false), m_root_buffer_descriptor(nullptr) {}
-    bool is_upcoming_field() const;
-    bool is_upcoming_repeated_index() const;
+  FieldPath() : m_is_valid(false), m_root_buffer_descriptor(nullptr) {}
+  bool is_upcoming_field() const;
+  bool is_upcoming_repeated_index() const;
 
-    /**
+  /**
      * @brief Check if the path is valid
      * 
      * @note @c private because it should be called only on a full path. This
@@ -113,35 +113,34 @@ private:
      * @return true 
      * @return false 
      */
-    bool is_valid_path() const;
+  bool is_valid_path() const;
 
-public:
-    // Construct a FieldPath using variadic templates
-    template <typename T, typename... Components>
-    static FieldPath Of(Components... components) {
-        static_assert(((std::is_same_v<Components, FieldNumber> || 
-                       std::is_same_v<Components, RepeatedAt>) && ...),
-                       "All Components must be FieldNumber or RepeatedAt.");
-        FieldPath path;
-        path.m_root_buffer_descriptor = T::GetDescriptor();
-        (path.m_components.push(components), ...); // Add all components
-        CHECK_CONDITION_TRUE_NON_VOID(!path.is_valid_path(), FieldPath(), "Invalid path: " + path.to_string());
-        path.m_is_valid = true;
-        return path;
-    }
+ public:
+  // Construct a FieldPath using variadic templates
+  template <typename T, typename... Components>
+  static FieldPath Of(Components... components) {
+    static_assert(((std::is_same_v<Components, FieldNumber> || std::is_same_v<Components, RepeatedAt>) && ...),
+                  "All Components must be FieldNumber or RepeatedAt.");
+    FieldPath path;
+    path.m_root_buffer_descriptor = T::GetDescriptor();
+    (path.m_components.push(components), ...);  // Add all components
+    CHECK_CONDITION_TRUE_NON_VOID(!path.is_valid_path(), FieldPath(), "Invalid path: " + path.to_string());
+    path.m_is_valid = true;
+    return path;
+  }
 
-    bool is_empty() const { return m_components.empty(); }
-    bool is_valid() const { return m_is_valid; }
+  bool is_empty() const { return m_components.empty(); }
+  bool is_valid() const { return m_is_valid; }
 
-    bool get_upcoming_field_num(int& num_buffer) const;
-    bool get_upcoming_repeated_index(int& index_buffer) const;
+  bool get_upcoming_field_num(int& num_buffer) const;
+  bool get_upcoming_repeated_index(int& index_buffer) const;
 
-    bool skip_component() const;
+  bool skip_component() const;
 
-    std::string to_string() const;
+  std::string to_string() const;
 
-    // Access the components
-    const std::queue<PathComponent>& get_components() const { return m_components; }
+  // Access the components
+  const std::queue<PathComponent>& get_components() const { return m_components; }
 };
 
-#endif // FIELD_PATH_HPP
+#endif  // FIELD_PATH_HPP

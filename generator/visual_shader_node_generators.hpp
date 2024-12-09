@@ -51,14 +51,15 @@ class VisualShaderNodeGenerator {
 
 class VisualShaderNodeGeneratorInput : public VisualShaderNodeGenerator {
  public:
-  VisualShaderNodeGeneratorInput(const VisualShaderNodeInputType& input_type = VisualShaderNodeInputType::INPUT_TYPE_UNSPECIFIED) : VisualShaderNodeGenerator(), 
-                                                                                                                                    input_type(input_type) {}
+  VisualShaderNodeGeneratorInput(
+      const VisualShaderNodeInputType& input_type = VisualShaderNodeInputType::INPUT_TYPE_UNSPECIFIED)
+      : VisualShaderNodeGenerator(), input_type(input_type) {}
 
   virtual std::string generate_global([[maybe_unused]] const int& id) const override;
 
   virtual std::string generate_code([[maybe_unused]] const int& id,
-                                          [[maybe_unused]] const std::vector<std::string>& input_vars,
-                                          [[maybe_unused]] const std::vector<std::string>& output_vars) const;
+                                    [[maybe_unused]] const std::vector<std::string>& input_vars,
+                                    [[maybe_unused]] const std::vector<std::string>& output_vars) const;
 
  private:
   const VisualShaderNodeInputType input_type;
