@@ -78,8 +78,11 @@ message VisualShaderNodeInput {
     option (node_input_port_count) = 0;
     
     option (node_output_port_count) = 1;
+    option (node_output_port_caption) = "";
+    option (node_output_port_type) = PORT_TYPE_UNSPECIFIED;
 
     option (node_category_path) = "Input/Basic";
+    option (node_category) = CATEGORY_INPUT;
 
     option (node_description) = "Input node that can be used to pass a value into the shader.";
 
@@ -98,8 +101,13 @@ enum VisualShaderNodeOutputType {
 message VisualShaderNodeOutput {
     option (node_caption) = "Output";
     option (node_input_port_count) = 1;
+    option (node_input_port_caption) = "";
+    option (node_input_port_type) = PORT_TYPE_UNSPECIFIED;
     
     option (node_output_port_count) = 0;
+
+    option (node_category_path) = "";
+    option (node_category) = CATEGORY_UNSPECIFIED;
 
     option (node_description) = "Output node can not be added/removed, it is always present in the shader graph.";
 
@@ -115,6 +123,7 @@ message VisualShaderNodeFloatConstant {
     option (node_input_port_count) = 0;
     
     option (node_output_port_count) = 1;
+    option (node_output_port_caption) = "";
     option (node_output_port_type) = PORT_TYPE_SCALAR;
 
     option (node_category) = CATEGORY_INPUT;
@@ -130,6 +139,7 @@ message VisualShaderNodeIntConstant {
     option (node_input_port_count) = 0;
     
     option (node_output_port_count) = 1;
+    option (node_output_port_caption) = "";
     option (node_output_port_type) = PORT_TYPE_SCALAR_INT;
 
     option (node_category) = CATEGORY_INPUT;
@@ -145,6 +155,7 @@ message VisualShaderNodeUIntConstant {
     option (node_input_port_count) = 0;
     
     option (node_output_port_count) = 1;
+    option (node_output_port_caption) = "";
     option (node_output_port_type) = PORT_TYPE_SCALAR_UINT;
 
     option (node_category) = CATEGORY_INPUT;
@@ -160,6 +171,7 @@ message VisualShaderNodeBooleanConstant {
     option (node_input_port_count) = 0;
     
     option (node_output_port_count) = 1;
+    option (node_output_port_caption) = "";
     option (node_output_port_type) = PORT_TYPE_BOOLEAN;
 
     option (node_category) = CATEGORY_INPUT;
@@ -175,6 +187,7 @@ message VisualShaderNodeColorConstant {
     option (node_input_port_count) = 0;
     
     option (node_output_port_count) = 1;
+    option (node_output_port_caption) = "";
     option (node_output_port_type) = PORT_TYPE_VECTOR_4D;
 
     option (node_category) = CATEGORY_INPUT;
@@ -193,6 +206,7 @@ message VisualShaderNodeVec2Constant {
     option (node_input_port_count) = 0;
     
     option (node_output_port_count) = 1;
+    option (node_output_port_caption) = "";
     option (node_output_port_type) = PORT_TYPE_VECTOR_2D;
 
     option (node_category) = CATEGORY_INPUT;
@@ -209,6 +223,7 @@ message VisualShaderNodeVec3Constant {
     option (node_input_port_count) = 0;
     
     option (node_output_port_count) = 1;
+    option (node_output_port_caption) = "";
     option (node_output_port_type) = PORT_TYPE_VECTOR_3D;
 
     option (node_category) = CATEGORY_INPUT;
@@ -226,6 +241,7 @@ message VisualShaderNodeVec4Constant {
     option (node_input_port_count) = 0;
     
     option (node_output_port_count) = 1;
+    option (node_output_port_caption) = "";
     option (node_output_port_type) = PORT_TYPE_VECTOR_4D;
 
     option (node_category) = CATEGORY_INPUT;
@@ -248,15 +264,15 @@ message VisualShaderNodeFloatOp {
 
     option (node_input_port_count) = 2;
 
-    option (node_input_port_type) = PORT_TYPE_SCALAR;
     option (node_input_port_caption) = "p1";
-
     option (node_input_port_type) = PORT_TYPE_SCALAR;
+
     option (node_input_port_caption) = "p2";
+    option (node_input_port_type) = PORT_TYPE_SCALAR;
     
     option (node_output_port_count) = 1;
-    option (node_output_port_type) = PORT_TYPE_SCALAR;
     option (node_output_port_caption) = "op";
+    option (node_output_port_type) = PORT_TYPE_SCALAR;
 
     option (node_category) = CATEGORY_SCALAR;
     option (node_category_path) = "Operators/Scalar";
@@ -285,15 +301,15 @@ message VisualShaderNodeIntOp {
 
     option (node_input_port_count) = 2;
 
-    option (node_input_port_type) = PORT_TYPE_SCALAR_INT;
     option (node_input_port_caption) = "p1";
-
     option (node_input_port_type) = PORT_TYPE_SCALAR_INT;
+
     option (node_input_port_caption) = "p2";
+    option (node_input_port_type) = PORT_TYPE_SCALAR_INT;
     
     option (node_output_port_count) = 1;
-    option (node_output_port_type) = PORT_TYPE_SCALAR_INT;
     option (node_output_port_caption) = "op";
+    option (node_output_port_type) = PORT_TYPE_SCALAR_INT;
 
     option (node_category) = CATEGORY_SCALAR;
     option (node_category_path) = "Operators/Scalar";
@@ -324,15 +340,15 @@ message VisualShaderNodeUIntOp {
 
     option (node_input_port_count) = 2;
 
-    option (node_input_port_type) = PORT_TYPE_SCALAR_UINT;
     option (node_input_port_caption) = "p1";
-
     option (node_input_port_type) = PORT_TYPE_SCALAR_UINT;
+
     option (node_input_port_caption) = "p2";
+    option (node_input_port_type) = PORT_TYPE_SCALAR_UINT;
     
     option (node_output_port_count) = 1;
-    option (node_output_port_type) = PORT_TYPE_SCALAR_UINT;
     option (node_output_port_caption) = "op";
+    option (node_output_port_type) = PORT_TYPE_SCALAR_UINT;
 
     option (node_category) = CATEGORY_SCALAR;
     option (node_category_path) = "Operators/Scalar";
@@ -364,12 +380,15 @@ message VisualShaderNodeVectorOp {
     option (node_input_port_count) = 2;
 
     option (node_input_port_caption) = "p1";
+    option (node_input_port_type) = PORT_TYPE_UNSPECIFIED;
 
     option (node_input_port_caption) = "p2";
+    option (node_input_port_type) = PORT_TYPE_UNSPECIFIED;
     
     option (node_output_port_count) = 1;
 
     option (node_output_port_caption) = "op";
+    option (node_output_port_type) = PORT_TYPE_UNSPECIFIED;
 
     option (node_category) = CATEGORY_VECTOR;
     option (node_category_path) = "Operators/Vector";
@@ -405,12 +424,12 @@ message VisualShaderNodeFloatFunc {
 
     option (node_input_port_count) = 1;
 
-    option (node_input_port_type) = PORT_TYPE_SCALAR;
     option (node_input_port_caption) = "p";
+    option (node_input_port_type) = PORT_TYPE_SCALAR;
     
     option (node_output_port_count) = 1;
-    option (node_output_port_type) = PORT_TYPE_SCALAR;
     option (node_output_port_caption) = "func";
+    option (node_output_port_type) = PORT_TYPE_SCALAR;
 
     option (node_category) = CATEGORY_SCALAR;
     option (node_category_path) = "Functions/Scalar";
@@ -461,12 +480,12 @@ message VisualShaderNodeIntFunc {
 
     option (node_input_port_count) = 1;
 
-    option (node_input_port_type) = PORT_TYPE_SCALAR_INT;
     option (node_input_port_caption) = "p";
+    option (node_input_port_type) = PORT_TYPE_SCALAR_INT;
     
     option (node_output_port_count) = 1;
-    option (node_output_port_type) = PORT_TYPE_SCALAR_INT;
     option (node_output_port_caption) = "func";
+    option (node_output_port_type) = PORT_TYPE_SCALAR_INT;
 
     option (node_category) = CATEGORY_SCALAR;
     option (node_category_path) = "Functions/Scalar";
@@ -489,12 +508,12 @@ message VisualShaderNodeUIntFunc {
 
     option (node_input_port_count) = 1;
 
-    option (node_input_port_type) = PORT_TYPE_SCALAR_UINT;
     option (node_input_port_caption) = "p";
+    option (node_input_port_type) = PORT_TYPE_SCALAR_UINT;
     
     option (node_output_port_count) = 1;
-    option (node_output_port_type) = PORT_TYPE_SCALAR_UINT;
     option (node_output_port_caption) = "func";
+    option (node_output_port_type) = PORT_TYPE_SCALAR_UINT;
 
     option (node_category) = CATEGORY_SCALAR;
     option (node_category_path) = "Functions/Scalar";
@@ -516,9 +535,11 @@ message VisualShaderNodeVectorFunc {
     option (node_input_port_count) = 1;
 
     option (node_input_port_caption) = "p";
+    option (node_input_port_type) = PORT_TYPE_UNSPECIFIED;
     
     option (node_output_port_count) = 1;
     option (node_output_port_caption) = "func";
+    option (node_output_port_type) = PORT_TYPE_UNSPECIFIED;
 
     option (node_category) = CATEGORY_VECTOR;
     option (node_category_path) = "Functions/Vector";
@@ -571,14 +592,14 @@ message VisualShaderNodeVectorFunc {
 /*************************************/
 
 message VisualShaderNodeValueNoise {
-    option (node_caption) = "Value Noise";
+    option (node_caption) = "ValueNoise";
     option (node_input_port_count) = 1;
-    option (node_input_port_type) = PORT_TYPE_VECTOR_2D;
     option (node_input_port_caption) = "uv";
+    option (node_input_port_type) = PORT_TYPE_VECTOR_2D;
     
     option (node_output_port_count) = 1;
-    option (node_output_port_type) = PORT_TYPE_VECTOR_4D;
     option (node_output_port_caption) = "noise";
+    option (node_output_port_type) = PORT_TYPE_VECTOR_4D;
 
     option (node_category) = CATEGORY_UNSPECIFIED;
     option (node_category_path) = "Procedural/Noise";
@@ -590,14 +611,14 @@ message VisualShaderNodeValueNoise {
 }
 
 message VisualShaderNodePerlinNoise {
-    option (node_caption) = "Perlin Noise";
+    option (node_caption) = "PerlinNoise";
     option (node_input_port_count) = 1;
-    option (node_input_port_type) = PORT_TYPE_VECTOR_2D;
     option (node_input_port_caption) = "uv";
+    option (node_input_port_type) = PORT_TYPE_VECTOR_2D;
     
     option (node_output_port_count) = 1;
-    option (node_output_port_type) = PORT_TYPE_VECTOR_4D;
     option (node_output_port_caption) = "noise";
+    option (node_output_port_type) = PORT_TYPE_VECTOR_4D;
 
     option (node_category) = CATEGORY_UNSPECIFIED;
     option (node_category_path) = "Procedural/Noise";
@@ -609,14 +630,14 @@ message VisualShaderNodePerlinNoise {
 }
 
 message VisualShaderNodeVoronoiNoise {
-    option (node_caption) = "Voronoi Noise";
+    option (node_caption) = "VoronoiNoise";
     option (node_input_port_count) = 1;
-    option (node_input_port_type) = PORT_TYPE_VECTOR_2D;
     option (node_input_port_caption) = "uv";
+    option (node_input_port_type) = PORT_TYPE_VECTOR_2D;
     
     option (node_output_port_count) = 1;
-    option (node_output_port_type) = PORT_TYPE_VECTOR_4D;
     option (node_output_port_caption) = "noise";
+    option (node_output_port_type) = PORT_TYPE_VECTOR_4D;
 
     option (node_category) = CATEGORY_UNSPECIFIED;
     option (node_category_path) = "Procedural/Noise";
@@ -628,6 +649,392 @@ message VisualShaderNodeVoronoiNoise {
 
     optional float cell_density = 1;
     optional float angle_offset = 2;
+}
+
+/*************************************/
+/* MISC                              */
+/*************************************/
+
+message VisualShaderNodeDotProduct {
+    option (node_caption) = "DotProduct";
+    option (node_input_port_count) = 2;
+    option (node_input_port_caption) = "p1";
+    option (node_input_port_type) = PORT_TYPE_VECTOR_3D;
+    option (node_input_port_caption) = "p2";
+    option (node_input_port_type) = PORT_TYPE_VECTOR_3D;
+    
+    option (node_output_port_count) = 1;
+    option (node_output_port_caption) = "dot";
+    option (node_output_port_type) = PORT_TYPE_SCALAR;
+
+    option (node_category) = CATEGORY_VECTOR;
+    option (node_category_path) = "Math/Vector";
+
+    option (node_description) = "Calculates the dot product of two 3d vectors.";
+}
+
+message VisualShaderNodeVectorLen {
+    option (node_caption) = "VectorLen";
+    option (node_input_port_count) = 1;
+    option (node_input_port_caption) = "";
+    option (node_input_port_type) = PORT_TYPE_VECTOR_3D;
+    
+    option (node_output_port_count) = 1;
+    option (node_output_port_caption) = "len";
+    option (node_output_port_type) = PORT_TYPE_SCALAR;
+
+    option (node_category) = CATEGORY_UNSPECIFIED;
+    option (node_category_path) = "Math/Vector";
+
+    option (node_description) = "Calculates the length of a vector.";
+
+    optional VisualShaderNodeVectorType type = 1;
+}
+
+message VisualShaderNodeClamp {
+    option (node_caption) = "Clamp";
+    option (node_input_port_count) = 3;
+    option (node_input_port_caption) = "x";
+    option (node_input_port_type) = PORT_TYPE_UNSPECIFIED;
+    option (node_input_port_caption) = "min";
+    option (node_input_port_type) = PORT_TYPE_UNSPECIFIED;
+    option (node_input_port_caption) = "max";
+    option (node_input_port_type) = PORT_TYPE_UNSPECIFIED;
+    
+    option (node_output_port_count) = 1;
+    option (node_output_port_caption) = "";
+    option (node_output_port_type) = PORT_TYPE_UNSPECIFIED;
+
+    option (node_category) = CATEGORY_UNSPECIFIED;
+    option (node_category_path) = "Math/Scalar";
+
+    option (node_description) = "Clamps a value between a minimum and a maximum value.";
+
+    optional VisualShaderNodePortType type = 1;
+}
+
+message VisualShaderNodeStep {
+    option (node_caption) = "Step";
+    option (node_input_port_count) = 2;
+    option (node_input_port_caption) = "edge";
+    option (node_input_port_type) = PORT_TYPE_UNSPECIFIED;
+    option (node_input_port_caption) = "x";
+    option (node_input_port_type) = PORT_TYPE_UNSPECIFIED;
+    
+    option (node_output_port_count) = 1;
+    option (node_output_port_caption) = "";
+    option (node_output_port_type) = PORT_TYPE_UNSPECIFIED;
+
+    option (node_category) = CATEGORY_UNSPECIFIED;
+    option (node_category_path) = "Math/Scalar";
+
+    option (node_description) = "Returns 0.0 if x is less than edge, and 1.0 otherwise.";
+
+    optional VisualShaderNodePortType type = 1;
+}
+
+message VisualShaderNodeSmoothStep {
+    option (node_caption) = "SmoothStep";
+    option (node_input_port_count) = 3;
+    option (node_input_port_caption) = "edge0";
+    option (node_input_port_type) = PORT_TYPE_UNSPECIFIED;
+    option (node_input_port_caption) = "edge1";
+    option (node_input_port_type) = PORT_TYPE_UNSPECIFIED;
+    option (node_input_port_caption) = "x";
+    option (node_input_port_type) = PORT_TYPE_UNSPECIFIED;
+    
+    option (node_output_port_count) = 1;
+    option (node_output_port_caption) = "";
+    option (node_output_port_type) = PORT_TYPE_UNSPECIFIED;
+
+    option (node_category) = CATEGORY_UNSPECIFIED;
+    option (node_category_path) = "Math/Scalar";
+
+    option (node_description) = "Returns 0.0 if x is less than edge0, and 1.0 if x is greater than edge1. Otherwise, it interpolates between "
+     "0.0 and 1.0 using Hermite polynomials.";
+
+    optional VisualShaderNodePortType type = 1;
+}
+
+message VisualShaderNodeVectorDistance {
+    option (node_caption) = "VectorDistance";
+    option (node_input_port_count) = 2;
+    option (node_input_port_caption) = "p1";
+    option (node_input_port_type) = PORT_TYPE_VECTOR_3D;
+    option (node_input_port_caption) = "p2";
+    option (node_input_port_type) = PORT_TYPE_VECTOR_3D;
+    
+    option (node_output_port_count) = 1;
+    option (node_output_port_caption) = "";
+    option (node_output_port_type) = PORT_TYPE_SCALAR;
+
+    option (node_category) = CATEGORY_VECTOR;
+    option (node_category_path) = "Math/Vector";
+
+    option (node_description) = "Calculates the distance between two 3d vectors.";
+}
+
+message VisualShaderNodeMix {
+    option (node_caption) = "Mix";
+    option (node_input_port_count) = 3;
+    option (node_input_port_caption) = "p1";
+    option (node_input_port_type) = PORT_TYPE_UNSPECIFIED;
+    option (node_input_port_caption) = "p2";
+    option (node_input_port_type) = PORT_TYPE_UNSPECIFIED;
+    option (node_input_port_caption) = "weight";
+    option (node_input_port_type) = PORT_TYPE_UNSPECIFIED;
+    
+    option (node_output_port_count) = 1;
+    option (node_output_port_caption) = "mix";
+    option (node_output_port_type) = PORT_TYPE_UNSPECIFIED;
+
+    option (node_category) = CATEGORY_UNSPECIFIED;
+    option (node_category_path) = "Math/Scalar";
+
+    option (node_description) = "Linearly interpolates between two values based on a third value.";
+
+    optional VisualShaderNodePortType type = 1;
+}
+
+message VisualShaderNode2dVectorCompose {
+    option (node_caption) = "2DVectorCompose";
+    option (node_input_port_count) = 2;
+    option (node_input_port_caption) = "x";
+    option (node_input_port_type) = PORT_TYPE_SCALAR;
+    option (node_input_port_caption) = "y";
+    option (node_input_port_type) = PORT_TYPE_SCALAR;
+    
+    option (node_output_port_count) = 1;
+    option (node_output_port_caption) = "v";
+    option (node_output_port_type) = PORT_TYPE_VECTOR_2D;
+
+    option (node_category) = CATEGORY_VECTOR;
+    option (node_category_path) = "Math/Vector";
+
+    option (node_description) = "Composes a 2D vector from two scalar values.";
+}
+
+message VisualShaderNode3dVectorCompose {
+    option (node_caption) = "3DVectorCompose";
+    option (node_input_port_count) = 3;
+    option (node_input_port_caption) = "x";
+    option (node_input_port_type) = PORT_TYPE_SCALAR;
+    option (node_input_port_caption) = "y";
+    option (node_input_port_type) = PORT_TYPE_SCALAR;
+    option (node_input_port_caption) = "z";
+    option (node_input_port_type) = PORT_TYPE_SCALAR;
+    
+    option (node_output_port_count) = 1;
+    option (node_output_port_caption) = "v";
+    option (node_output_port_type) = PORT_TYPE_VECTOR_3D;
+
+    option (node_category) = CATEGORY_VECTOR;
+    option (node_category_path) = "Math/Vector";
+
+    option (node_description) = "Composes a 3D vector from three scalar values.";
+}
+
+message VisualShaderNode4dVectorCompose {
+    option (node_caption) = "4DVectorCompose";
+    option (node_input_port_count) = 4;
+    option (node_input_port_caption) = "x";
+    option (node_input_port_type) = PORT_TYPE_SCALAR;
+    option (node_input_port_caption) = "y";
+    option (node_input_port_type) = PORT_TYPE_SCALAR;
+    option (node_input_port_caption) = "z";
+    option (node_input_port_type) = PORT_TYPE_SCALAR;
+    option (node_input_port_caption) = "w";
+    option (node_input_port_type) = PORT_TYPE_SCALAR;
+    
+    option (node_output_port_count) = 1;
+    option (node_output_port_caption) = "v";
+    option (node_output_port_type) = PORT_TYPE_VECTOR_4D;
+
+    option (node_category) = CATEGORY_VECTOR;
+    option (node_category_path) = "Math/Vector";
+
+    option (node_description) = "Composes a 4D vector from four scalar values.";
+}
+
+message VisualShaderNode2dVectorDecompose {
+    option (node_caption) = "2DVectorDecompose";
+    option (node_input_port_count) = 1;
+    option (node_input_port_caption) = "v";
+    option (node_input_port_type) = PORT_TYPE_VECTOR_2D;
+    
+    option (node_output_port_count) = 2;
+    option (node_output_port_caption) = "x";
+    option (node_output_port_type) = PORT_TYPE_SCALAR;
+    option (node_output_port_caption) = "y";
+    option (node_output_port_type) = PORT_TYPE_SCALAR;
+
+    option (node_category) = CATEGORY_VECTOR;
+    option (node_category_path) = "Math/Vector";
+
+    option (node_description) = "Decomposes a 2D vector into two scalar values.";
+}
+
+message VisualShaderNode3dVectorDecompose {
+    option (node_caption) = "3DVectorDecompose";
+    option (node_input_port_count) = 1;
+    option (node_input_port_caption) = "v";
+    option (node_input_port_type) = PORT_TYPE_VECTOR_3D;
+    
+    option (node_output_port_count) = 3;
+    option (node_output_port_caption) = "x";
+    option (node_output_port_type) = PORT_TYPE_SCALAR;
+    option (node_output_port_caption) = "y";
+    option (node_output_port_type) = PORT_TYPE_SCALAR;
+    option (node_output_port_caption) = "z";
+    option (node_output_port_type) = PORT_TYPE_SCALAR;
+
+    option (node_category) = CATEGORY_VECTOR;
+    option (node_category_path) = "Math/Vector";
+
+    option (node_description) = "Decomposes a 3D vector into three scalar values.";
+}
+
+message VisualShaderNode4dVectorDecompose {
+    option (node_caption) = "4DVectorDecompose";
+    option (node_input_port_count) = 1;
+    option (node_input_port_caption) = "v";
+    option (node_input_port_type) = PORT_TYPE_VECTOR_4D;
+    
+    option (node_output_port_count) = 4;
+    option (node_output_port_caption) = "x";
+    option (node_output_port_type) = PORT_TYPE_SCALAR;
+    option (node_output_port_caption) = "y";
+    option (node_output_port_type) = PORT_TYPE_SCALAR;
+    option (node_output_port_caption) = "z";
+    option (node_output_port_type) = PORT_TYPE_SCALAR;
+    option (node_output_port_caption) = "w";
+    option (node_output_port_type) = PORT_TYPE_SCALAR;
+
+    option (node_category) = CATEGORY_VECTOR;
+    option (node_category_path) = "Math/Vector";
+
+    option (node_description) = "Decomposes a 4D vector into four scalar values.";
+}
+
+message VisualShaderNodeIf {
+    option (node_caption) = "If";
+    option (node_input_port_count) = 6;
+    option (node_input_port_caption) = "p1";
+    option (node_input_port_type) = PORT_TYPE_SCALAR;
+    option (node_input_port_caption) = "p2";
+    option (node_input_port_type) = PORT_TYPE_SCALAR;
+    option (node_input_port_caption) = "tolerance";
+    option (node_input_port_type) = PORT_TYPE_SCALAR;
+    option (node_input_port_caption) = "p1 == p2";
+    option (node_input_port_type) = PORT_TYPE_VECTOR_3D;
+    option (node_input_port_caption) = "p1 > p2";
+    option (node_input_port_type) = PORT_TYPE_VECTOR_3D;
+    option (node_input_port_caption) = "p1 < p2";
+    option (node_input_port_type) = PORT_TYPE_VECTOR_3D;
+
+    option (node_output_port_count) = 1;
+    option (node_output_port_caption) = "result";
+    option (node_output_port_type) = PORT_TYPE_VECTOR_3D;
+
+    option (node_category) = CATEGORY_CONDITIONAL;
+    option (node_category_path) = "Math/Scalar";
+
+    option (node_description) = "Compares two scalar values and returns a vector based on the comparison.";
+}
+
+message VisualShaderNodeSwitch {
+    option (node_caption) = "Switch";
+    option (node_input_port_count) = 3;
+    option (node_input_port_caption) = "condition";
+    option (node_input_port_type) = PORT_TYPE_BOOLEAN;
+    option (node_input_port_caption) = "true";
+    option (node_input_port_type) = PORT_TYPE_UNSPECIFIED;
+    option (node_input_port_caption) = "false";
+    option (node_input_port_type) = PORT_TYPE_UNSPECIFIED;
+
+    option (node_output_port_count) = 1;
+    option (node_output_port_caption) = "result";
+    option (node_output_port_type) = PORT_TYPE_UNSPECIFIED;
+
+    option (node_category) = CATEGORY_CONDITIONAL;
+    option (node_category_path) = "Math/Scalar";
+
+    option (node_description) = "Returns one of two values based on a boolean condition.";
+}
+
+message VisualShaderNodeIs {
+    option (node_caption) = "Is";
+    option (node_input_port_count) = 1;
+    option (node_input_port_caption) = "";
+    option (node_input_port_type) = PORT_TYPE_SCALAR;
+
+    option (node_output_port_count) = 1;
+    option (node_output_port_caption) = "";
+    option (node_output_port_type) = PORT_TYPE_BOOLEAN;
+
+    option (node_category) = CATEGORY_CONDITIONAL;
+    option (node_category_path) = "Math/Scalar";
+
+    option (node_description) = "Compares two values and returns a boolean.";
+
+    enum Function {
+        FUNC_IS_UNSPECIFIED = 0;
+        FUNC_IS_INF = 1;
+        FUNC_IS_NAN = 2;
+    };
+
+    optional Function func = 1;
+}
+
+message VisualShaderNodeCompare {
+    option (node_caption) = "Compare";
+    option (node_input_port_count) = 3;
+    option (node_input_port_caption) = "p1";
+    option (node_input_port_type) = PORT_TYPE_SCALAR;
+    option (node_input_port_caption) = "p2";
+    option (node_input_port_type) = PORT_TYPE_SCALAR;
+    option (node_input_port_caption) = "op";
+    option (node_input_port_type) = PORT_TYPE_SCALAR;
+
+    option (node_output_port_count) = 1;
+    option (node_output_port_caption) = "";
+    option (node_output_port_type) = PORT_TYPE_BOOLEAN;
+
+    option (node_category) = CATEGORY_CONDITIONAL;
+    option (node_category_path) = "Math/Scalar";
+
+    option (node_description) = "Compares two scalar values and returns a boolean.";
+
+    enum ComparisonType {
+        CMP_TYPE_UNSPECIFIED = 0;
+        CMP_TYPE_SCALAR = 1;
+        CMP_TYPE_SCALAR_INT = 2;
+        CMP_TYPE_SCALAR_UINT = 3;
+        CMP_TYPE_VECTOR_2D = 4;
+        CMP_TYPE_VECTOR_3D = 5;
+        CMP_TYPE_VECTOR_4D = 6;
+        CMP_TYPE_BOOLEAN = 7;
+    };
+
+    enum Function {
+        FUNC_UNSPECIFIED = 0;
+        FUNC_EQUAL = 1;
+        FUNC_NOT_EQUAL = 2;
+        FUNC_GREATER_THAN = 3;
+        FUNC_GREATER_THAN_EQUAL = 4;
+        FUNC_LESS_THAN = 5;
+        FUNC_LESS_THAN_EQUAL = 6;
+    };
+
+    enum Condition {
+        COND_UNSPECIFIED = 0;
+        COND_ALL = 1;
+        COND_ANY = 2;
+    };
+
+    optional ComparisonType type = 1;
+    optional Function func = 2;
+    optional Condition cond = 3;
 }
 
 

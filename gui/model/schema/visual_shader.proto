@@ -50,6 +50,27 @@ message VisualShader {
             VisualShaderNodeValueNoise value_noise = 22;
             VisualShaderNodePerlinNoise perlin_noise = 23;
             VisualShaderNodeVoronoiNoise voronoi_noise = 24;
+
+            /*************************************/
+            /* MISC                              */
+            /*************************************/
+            VisualShaderNodeDotProduct dot_product = 25;
+            VisualShaderNodeVectorLen vector_len = 26;
+            VisualShaderNodeClamp clamp = 27;
+            VisualShaderNodeStep step = 28;
+            VisualShaderNodeSmoothStep smooth_step = 29;
+            VisualShaderNodeVectorDistance vector_distance = 30;
+            VisualShaderNodeMix mix = 31;
+            VisualShaderNode2dVectorCompose vector_2d_compose = 32;
+            VisualShaderNode3dVectorCompose vector_3d_compose = 33;
+            VisualShaderNode4dVectorCompose vector_4d_compose = 34;
+            VisualShaderNode2dVectorDecompose vector_2d_decompose = 35;
+            VisualShaderNode3dVectorDecompose vector_3d_decompose = 36;
+            VisualShaderNode4dVectorDecompose vector_4d_decompose = 37;
+            VisualShaderNodeIf if_node = 38;
+            VisualShaderNodeSwitch switch_node = 39;
+            VisualShaderNodeIs is = 40;
+            VisualShaderNodeCompare compare = 41;
         }
     }
     
