@@ -30,6 +30,7 @@
 #include <unordered_map>
 #include <sstream>
 #include "error_macros.hpp"
+#include "gui/model/utils/utils.hpp"
 
 #include "generator/visual_shader_generator.hpp"
 
@@ -2647,10 +2648,10 @@ VisualShaderNodeInputEmbedWidget::VisualShaderNodeInputEmbedWidget(ProtoModel* v
   setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
   setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
 
-  int input_type_count{graph_node->get_input_type_count()};
-  for (int i{0}; i < input_type_count; ++i) {
-    VisualShaderNodeInputType input_type{graph_node->get_input_type(i)};
-    addItem(QString::fromStdString(graph_node->get_input_type_caption(input_type)));
+  int size{VisualShaderNodeInputType_descriptor()->value_count()};
+  for (int i{0}; i < size; ++i) {
+    int input_type{shadergen_utils::get_enum_value_by_index(VisualShaderNodeInputType_descriptor(), i)};
+    addItem(QString::fromStdString(shadergen_utils::get_enum_value_caption(VisualShaderNodeInputType_descriptor(), input_type)));
   }
 
   int row_entry{VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, n_id)};

@@ -4,12 +4,14 @@ Think of it this way: The Editor interacts only with the Qt Model, which in turn
 
 Reflection is a powerful tool that allows us to interact with a protobuf generated class without knowing its structure. This is useful because protobuf is a dynamic structure that can change at any time. For example, assume we have an unknown class with unknown fields. Reflection allows us to interact with this class and its fields without knowing anything about them. Setting, getting, and adding fields is a breeze with Reflection.
 
-When I personally work with the protobuf, I keep 4 tabs open:
+When I personally work with the protobuf, I keep 7 tabs open:
 1. https://protobuf.dev/reference/cpp/api-docs/google.protobuf.descriptor/#Descriptor
 2. https://protobuf.dev/reference/cpp/api-docs/google.protobuf.descriptor/#FieldDescriptor
 3. https://protobuf.dev/reference/cpp/api-docs/google.protobuf.message/#Reflection
 4. https://doc.qt.io/qt-5/qabstractitemmodel.html
 5. https://doc.qt.io/qt-5/qdatawidgetmapper.html
+6. https://protobuf.dev/reference/cpp/api-docs/google.protobuf.descriptor/#EnumDescriptor
+7. https://protobuf.dev/reference/cpp/api-docs/google.protobuf.descriptor/#EnumValueDescriptor
 
 ### Make sure you give this a read: https://protobuf.dev/programming-guides/best-practices/
 

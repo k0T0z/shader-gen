@@ -28,13 +28,12 @@
 #include "generator/visual_shader_node_generators.hpp"
 
 #include "gui/controller/graph_node.hpp"
+#include "gui/model/utils/utils.hpp"
 
 std::string VisualShaderNodeGeneratorInput::generate_global([[maybe_unused]] const int& id) const {
   std::string code;
 
-  GraphNode<VisualShaderNodeInput> input_node;
-
-  std::string input_type_caption{input_node.get_input_type_caption(input_type)};
+  std::string input_type_caption{shadergen_utils::get_enum_value_caption(VisualShaderNodeInputType_descriptor(), input_type)};
 
   switch (input_type) {
     case VisualShaderNodeInputType::INPUT_TYPE_UV: {
@@ -54,9 +53,8 @@ std::string VisualShaderNodeGeneratorInput::generate_code([[maybe_unused]] const
                                                           [[maybe_unused]] const std::vector<std::string>& input_vars,
                                                           [[maybe_unused]] const std::vector<std::string>& output_vars) const {
     std::string code;
-    GraphNode<VisualShaderNodeInput> input_node;
 
-    std::string input_type_caption{input_node.get_input_type_caption(input_type)};
+    std::string input_type_caption{shadergen_utils::get_enum_value_caption(VisualShaderNodeInputType_descriptor(), input_type)};
     
     switch (input_type) {
         case VisualShaderNodeInputType::INPUT_TYPE_UV: {

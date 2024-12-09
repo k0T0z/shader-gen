@@ -55,24 +55,12 @@ extend google.protobuf.MessageOptions {
     VisualShaderNodeCategory node_category = 60009;
 
     string node_description = 60010;
-
-    // Input node specifics
-    optional int32 input_type_count = 60011;
-    repeated VisualShaderNodeInputType input_type = 60012;
-    repeated VisualShaderNodePortType input_node_output_port_type = 60013;
-
-    // Output node specifics
-    optional int32 output_type_count = 60014;
-    repeated VisualShaderNodeOutputType output_type = 60015;
-    repeated VisualShaderNodePortType output_node_input_port_type = 60016;
-
-    // Operators specifics
-    optional int32 operator_type_count = 60017;
 }
 
 extend google.protobuf.EnumValueOptions {
     optional string eo_id_start = 70000;
-    optional string type_caption = 70001;
+    optional string value_caption = 70001;
+    optional VisualShaderNodePortType value_port_type = 70002;
 }
 
 /*************************************/
@@ -80,9 +68,9 @@ extend google.protobuf.EnumValueOptions {
 /*************************************/
 
 enum VisualShaderNodeInputType {
-    INPUT_TYPE_UNSPECIFIED = 0 [(type_caption) = "UNSPECIFIED"];
-    INPUT_TYPE_UV = 1 [(type_caption) = "UV"];
-    INPUT_TYPE_TIME = 2 [(type_caption) = "Time"];
+    INPUT_TYPE_UNSPECIFIED = 0 [(value_caption) = "UNSPECIFIED", (value_port_type) = PORT_TYPE_UNSPECIFIED];
+    INPUT_TYPE_UV = 1 [(value_caption) = "UV", (value_port_type) = PORT_TYPE_VECTOR_2D];
+    INPUT_TYPE_TIME = 2 [(value_caption) = "Time", (value_port_type) = PORT_TYPE_SCALAR];
 };
 
 message VisualShaderNodeInput {
@@ -95,17 +83,6 @@ message VisualShaderNodeInput {
 
     option (node_description) = "Input node that can be used to pass a value into the shader.";
 
-    option (input_type_count) = 3;
-
-    option (input_type) = INPUT_TYPE_UNSPECIFIED;
-    option (input_node_output_port_type) = PORT_TYPE_UNSPECIFIED;
-
-    option (input_type) = INPUT_TYPE_UV;
-    option (input_node_output_port_type) = PORT_TYPE_VECTOR_2D;
-    
-    option (input_type) = INPUT_TYPE_TIME;
-    option (input_node_output_port_type) = PORT_TYPE_SCALAR;
-
     optional VisualShaderNodeInputType type = 1;
 }
 
@@ -114,8 +91,8 @@ message VisualShaderNodeInput {
 /*************************************/
 
 enum VisualShaderNodeOutputType {
-    OUTPUT_TYPE_UNSPECIFIED = 0 [(type_caption) = "UNSPECIFIED"];
-    OUTPUT_TYPE_COLOR = 1 [(type_caption) = "Color"];
+    OUTPUT_TYPE_UNSPECIFIED = 0 [(value_caption) = "UNSPECIFIED", (value_port_type) = PORT_TYPE_UNSPECIFIED];
+    OUTPUT_TYPE_COLOR = 1 [(value_caption) = "Color", (value_port_type) = PORT_TYPE_VECTOR_4D];
 };
 
 message VisualShaderNodeOutput {
@@ -125,14 +102,6 @@ message VisualShaderNodeOutput {
     option (node_output_port_count) = 0;
 
     option (node_description) = "Output node can not be added/removed, it is always present in the shader graph.";
-
-    option (output_type_count) = 2;
-
-    option (output_type) = OUTPUT_TYPE_UNSPECIFIED;
-    option (output_node_input_port_type) = PORT_TYPE_UNSPECIFIED;
-
-    option (output_type) = OUTPUT_TYPE_COLOR;
-    option (output_node_input_port_type) = PORT_TYPE_VECTOR_4D;
 
     optional VisualShaderNodeOutputType type = 1;
 }
@@ -294,20 +263,18 @@ message VisualShaderNodeFloatOp {
 
     option (node_description) = "Scalar floating-point operator.";
 
-    option (operator_type_count) = 10;
-
     enum VisualShaderNodeFloatOpType {
-        OP_UNSPECIFIED = 0 [(type_caption) = "UNSPECIFIED"];
-        OP_ADD = 1 [(type_caption) = "Add"];
-        OP_SUB = 2 [(type_caption) = "Subtract"];
-        OP_MUL = 3 [(type_caption) = "Multiply"];
-        OP_DIV = 4 [(type_caption) = "Divide"];
-        OP_MOD = 5 [(type_caption) = "Modulo"];
-        OP_POW = 6 [(type_caption) = "Power"];
-        OP_MAX = 7 [(type_caption) = "Max"];
-        OP_MIN = 8 [(type_caption) = "Min"];
-        OP_ATAN2 = 9 [(type_caption) = "Atan2"];
-        OP_STEP = 10 [(type_caption) = "Step"];
+        OP_UNSPECIFIED = 0 [(value_caption) = "UNSPECIFIED"];
+        OP_ADD = 1 [(value_caption) = "Add"];
+        OP_SUB = 2 [(value_caption) = "Subtract"];
+        OP_MUL = 3 [(value_caption) = "Multiply"];
+        OP_DIV = 4 [(value_caption) = "Divide"];
+        OP_MOD = 5 [(value_caption) = "Modulo"];
+        OP_POW = 6 [(value_caption) = "Power"];
+        OP_MAX = 7 [(value_caption) = "Max"];
+        OP_MIN = 8 [(value_caption) = "Min"];
+        OP_ATAN2 = 9 [(value_caption) = "Atan2"];
+        OP_STEP = 10 [(value_caption) = "Step"];
     };
 
     optional VisualShaderNodeFloatOpType op = 1;
@@ -333,22 +300,20 @@ message VisualShaderNodeIntOp {
 
     option (node_description) = "Scalar integer operator.";
 
-    option (operator_type_count) = 12;
-
     enum VisualShaderNodeIntOpType {
-        OP_UNSPECIFIED = 0 [(type_caption) = "UNSPECIFIED"];
-        OP_ADD = 1 [(type_caption) = "Add"];
-        OP_SUB = 2 [(type_caption) = "Subtract"];
-        OP_MUL = 3 [(type_caption) = "Multiply"];
-        OP_DIV = 4 [(type_caption) = "Divide"];
-        OP_MOD = 5 [(type_caption) = "Modulo"];
-        OP_MAX = 6 [(type_caption) = "Max"];
-        OP_MIN = 7 [(type_caption) = "Min"];
-        OP_BITWISE_AND = 8 [(type_caption) = "BitwiseAnd"];
-        OP_BITWISE_OR = 9 [(type_caption) = "BitwiseOr"];
-        OP_BITWISE_XOR = 10 [(type_caption) = "BitwiseXor"];
-        OP_BITWISE_LEFT_SHIFT = 11 [(type_caption) = "BitwiseLeftShift"];
-        OP_BITWISE_RIGHT_SHIFT = 12 [(type_caption) = "BitwiseRightShift"];
+        OP_UNSPECIFIED = 0 [(value_caption) = "UNSPECIFIED"];
+        OP_ADD = 1 [(value_caption) = "Add"];
+        OP_SUB = 2 [(value_caption) = "Subtract"];
+        OP_MUL = 3 [(value_caption) = "Multiply"];
+        OP_DIV = 4 [(value_caption) = "Divide"];
+        OP_MOD = 5 [(value_caption) = "Modulo"];
+        OP_MAX = 6 [(value_caption) = "Max"];
+        OP_MIN = 7 [(value_caption) = "Min"];
+        OP_BITWISE_AND = 8 [(value_caption) = "BitwiseAnd"];
+        OP_BITWISE_OR = 9 [(value_caption) = "BitwiseOr"];
+        OP_BITWISE_XOR = 10 [(value_caption) = "BitwiseXor"];
+        OP_BITWISE_LEFT_SHIFT = 11 [(value_caption) = "BitwiseLeftShift"];
+        OP_BITWISE_RIGHT_SHIFT = 12 [(value_caption) = "BitwiseRightShift"];
     };
 
     optional VisualShaderNodeIntOpType op = 1;
@@ -374,22 +339,20 @@ message VisualShaderNodeUIntOp {
 
     option (node_description) = "Scalar unsigned integer operator.";
 
-    option (operator_type_count) = 12;
-
     enum VisualShaderNodeUIntOpType {
-        OP_UNSPECIFIED = 0 [(type_caption) = "UNSPECIFIED"];
-        OP_ADD = 1 [(type_caption) = "Add"];
-        OP_SUB = 2 [(type_caption) = "Subtract"];
-        OP_MUL = 3 [(type_caption) = "Multiply"];
-        OP_DIV = 4 [(type_caption) = "Divide"];
-        OP_MOD = 5 [(type_caption) = "Modulo"];
-        OP_MAX = 6 [(type_caption) = "Max"];
-        OP_MIN = 7 [(type_caption) = "Min"];
-        OP_BITWISE_AND = 8 [(type_caption) = "BitwiseAnd"];
-        OP_BITWISE_OR = 9 [(type_caption) = "BitwiseOr"];
-        OP_BITWISE_XOR = 10 [(type_caption) = "BitwiseXor"];
-        OP_BITWISE_LEFT_SHIFT = 11 [(type_caption) = "BitwiseLeftShift"];
-        OP_BITWISE_RIGHT_SHIFT = 12 [(type_caption) = "BitwiseRightShift"];
+        OP_UNSPECIFIED = 0 [(value_caption) = "UNSPECIFIED"];
+        OP_ADD = 1 [(value_caption) = "Add"];
+        OP_SUB = 2 [(value_caption) = "Subtract"];
+        OP_MUL = 3 [(value_caption) = "Multiply"];
+        OP_DIV = 4 [(value_caption) = "Divide"];
+        OP_MOD = 5 [(value_caption) = "Modulo"];
+        OP_MAX = 6 [(value_caption) = "Max"];
+        OP_MIN = 7 [(value_caption) = "Min"];
+        OP_BITWISE_AND = 8 [(value_caption) = "BitwiseAnd"];
+        OP_BITWISE_OR = 9 [(value_caption) = "BitwiseOr"];
+        OP_BITWISE_XOR = 10 [(value_caption) = "BitwiseXor"];
+        OP_BITWISE_LEFT_SHIFT = 11 [(value_caption) = "BitwiseLeftShift"];
+        OP_BITWISE_RIGHT_SHIFT = 12 [(value_caption) = "BitwiseRightShift"];
     };
 
     optional VisualShaderNodeUIntOpType op = 1;
@@ -413,22 +376,20 @@ message VisualShaderNodeVectorOp {
 
     option (node_description) = "Vector operator.";
 
-    option (operator_type_count) = 12;
-
     enum VisualShaderNodeVectorOpType {
-        OP_UNSPECIFIED = 0 [(type_caption) = "UNSPECIFIED"];
-        OP_ADD = 1 [(type_caption) = "Add"];
-        OP_SUB = 2 [(type_caption) = "Subtract"];
-        OP_MUL = 3 [(type_caption) = "Multiply"];
-        OP_DIV = 4 [(type_caption) = "Divide"];
-        OP_MOD = 5 [(type_caption) = "Modulo"];
-        OP_POW = 6 [(type_caption) = "Power"];
-        OP_MAX = 7 [(type_caption) = "Max"];
-        OP_MIN = 8 [(type_caption) = "Min"];
-        OP_CROSS = 9 [(type_caption) = "Cross"];
-        OP_ATAN2 = 10 [(type_caption) = "Atan2"];
-        OP_REFLECT = 11 [(type_caption) = "Reflect"];
-        OP_STEP = 12 [(type_caption) = "Step"];
+        OP_UNSPECIFIED = 0 [(value_caption) = "UNSPECIFIED"];
+        OP_ADD = 1 [(value_caption) = "Add"];
+        OP_SUB = 2 [(value_caption) = "Subtract"];
+        OP_MUL = 3 [(value_caption) = "Multiply"];
+        OP_DIV = 4 [(value_caption) = "Divide"];
+        OP_MOD = 5 [(value_caption) = "Modulo"];
+        OP_POW = 6 [(value_caption) = "Power"];
+        OP_MAX = 7 [(value_caption) = "Max"];
+        OP_MIN = 8 [(value_caption) = "Min"];
+        OP_CROSS = 9 [(value_caption) = "Cross"];
+        OP_ATAN2 = 10 [(value_caption) = "Atan2"];
+        OP_REFLECT = 11 [(value_caption) = "Reflect"];
+        OP_STEP = 12 [(value_caption) = "Step"];
     };
 
     optional VisualShaderNodeVectorType type = 1;
@@ -456,42 +417,40 @@ message VisualShaderNodeFloatFunc {
 
     option (node_description) = "Scalar floating-point function.";
 
-    option (operator_type_count) = 32;
-
     enum VisualShaderNodeFloatFuncType {
-        FUNC_UNSPECIFIED = 0 [(type_caption) = "UNSPECIFIED"];
-        FUNC_SIN = 1 [(type_caption) = "Sin"];
-        FUNC_COS = 2 [(type_caption) = "Cos"];
-        FUNC_TAN = 3 [(type_caption) = "Tan"];
-        FUNC_ASIN = 4 [(type_caption) = "Asin"];
-        FUNC_ACOS = 5 [(type_caption) = "Acos"];
-        FUNC_ATAN = 6 [(type_caption) = "Atan"];
-        FUNC_SINH = 7 [(type_caption) = "Sinh"];
-        FUNC_COSH = 8 [(type_caption) = "Cosh"];
-        FUNC_TANH = 9 [(type_caption) = "Tanh"];
-        FUNC_LOG = 10 [(type_caption) = "Log"];
-        FUNC_EXP = 11 [(type_caption) = "Exp"];
-        FUNC_SQRT = 12 [(type_caption) = "Sqrt"];
-        FUNC_ABS = 13 [(type_caption) = "Abs"];
-        FUNC_SIGN = 14 [(type_caption) = "Sign"];
-        FUNC_FLOOR = 15 [(type_caption) = "Floor"];
-        FUNC_ROUND = 16 [(type_caption) = "Round"];
-        FUNC_CEIL = 17 [(type_caption) = "Ceil"];
-        FUNC_FRACT = 18 [(type_caption) = "Fract"];
-        FUNC_SATURATE = 19 [(type_caption) = "Saturate"];
-        FUNC_NEGATE = 20 [(type_caption) = "Negate"];
-        FUNC_ACOSH = 21 [(type_caption) = "Acosh"];
-        FUNC_ASINH = 22 [(type_caption) = "Asinh"];
-        FUNC_ATANH = 23 [(type_caption) = "Atanh"];
-        FUNC_DEGREES = 24 [(type_caption) = "Degrees"];
-        FUNC_EXP2 = 25 [(type_caption) = "Exp2"];
-        FUNC_INVERSE_SQRT = 26 [(type_caption) = "InverseSqrt"];
-        FUNC_LOG2 = 27 [(type_caption) = "Log2"];
-        FUNC_RADIANS = 28 [(type_caption) = "Radians"];
-        FUNC_RECIPROCAL = 29 [(type_caption) = "Reciprocal"];
-        FUNC_ROUNDEVEN = 30 [(type_caption) = "RoundEven"];
-        FUNC_TRUNC = 31 [(type_caption) = "Trunc"];
-        FUNC_ONEMINUS = 32 [(type_caption) = "OneMinus"];
+        FUNC_UNSPECIFIED = 0 [(value_caption) = "UNSPECIFIED"];
+        FUNC_SIN = 1 [(value_caption) = "Sin"];
+        FUNC_COS = 2 [(value_caption) = "Cos"];
+        FUNC_TAN = 3 [(value_caption) = "Tan"];
+        FUNC_ASIN = 4 [(value_caption) = "Asin"];
+        FUNC_ACOS = 5 [(value_caption) = "Acos"];
+        FUNC_ATAN = 6 [(value_caption) = "Atan"];
+        FUNC_SINH = 7 [(value_caption) = "Sinh"];
+        FUNC_COSH = 8 [(value_caption) = "Cosh"];
+        FUNC_TANH = 9 [(value_caption) = "Tanh"];
+        FUNC_LOG = 10 [(value_caption) = "Log"];
+        FUNC_EXP = 11 [(value_caption) = "Exp"];
+        FUNC_SQRT = 12 [(value_caption) = "Sqrt"];
+        FUNC_ABS = 13 [(value_caption) = "Abs"];
+        FUNC_SIGN = 14 [(value_caption) = "Sign"];
+        FUNC_FLOOR = 15 [(value_caption) = "Floor"];
+        FUNC_ROUND = 16 [(value_caption) = "Round"];
+        FUNC_CEIL = 17 [(value_caption) = "Ceil"];
+        FUNC_FRACT = 18 [(value_caption) = "Fract"];
+        FUNC_SATURATE = 19 [(value_caption) = "Saturate"];
+        FUNC_NEGATE = 20 [(value_caption) = "Negate"];
+        FUNC_ACOSH = 21 [(value_caption) = "Acosh"];
+        FUNC_ASINH = 22 [(value_caption) = "Asinh"];
+        FUNC_ATANH = 23 [(value_caption) = "Atanh"];
+        FUNC_DEGREES = 24 [(value_caption) = "Degrees"];
+        FUNC_EXP2 = 25 [(value_caption) = "Exp2"];
+        FUNC_INVERSE_SQRT = 26 [(value_caption) = "InverseSqrt"];
+        FUNC_LOG2 = 27 [(value_caption) = "Log2"];
+        FUNC_RADIANS = 28 [(value_caption) = "Radians"];
+        FUNC_RECIPROCAL = 29 [(value_caption) = "Reciprocal"];
+        FUNC_ROUNDEVEN = 30 [(value_caption) = "RoundEven"];
+        FUNC_TRUNC = 31 [(value_caption) = "Trunc"];
+        FUNC_ONEMINUS = 32 [(value_caption) = "OneMinus"];
     };
 
     optional VisualShaderNodeFloatFuncType func = 1;
@@ -514,14 +473,12 @@ message VisualShaderNodeIntFunc {
 
     option (node_description) = "Scalar integer function.";
 
-    option (operator_type_count) = 4;
-
     enum VisualShaderNodeIntFuncType {
-        FUNC_UNSPECIFIED = 0 [(type_caption) = "UNSPECIFIED"];
-        FUNC_ABS = 1 [(type_caption) = "Abs"];
-        FUNC_NEGATE = 2 [(type_caption) = "Negate"];
-        FUNC_SIGN = 3 [(type_caption) = "Sign"];
-        FUNC_BITWISE_NOT = 4 [(type_caption) = "BitwiseNot"];
+        FUNC_UNSPECIFIED = 0 [(value_caption) = "UNSPECIFIED"];
+        FUNC_ABS = 1 [(value_caption) = "Abs"];
+        FUNC_NEGATE = 2 [(value_caption) = "Negate"];
+        FUNC_SIGN = 3 [(value_caption) = "Sign"];
+        FUNC_BITWISE_NOT = 4 [(value_caption) = "BitwiseNot"];
     };
 
     optional VisualShaderNodeIntFuncType func = 1;
@@ -544,12 +501,10 @@ message VisualShaderNodeUIntFunc {
 
     option (node_description) = "Scalar unsigned integer function.";
 
-    option (operator_type_count) = 4;
-
     enum VisualShaderNodeUIntFuncType {
-        FUNC_UNSPECIFIED = 0 [(type_caption) = "UNSPECIFIED"];
-        FUNC_NEGATE = 1 [(type_caption) = "Negate"];
-        FUNC_BITWISE_NOT = 2 [(type_caption) = "BitwiseNot"];
+        FUNC_UNSPECIFIED = 0 [(value_caption) = "UNSPECIFIED"];
+        FUNC_NEGATE = 1 [(value_caption) = "Negate"];
+        FUNC_BITWISE_NOT = 2 [(value_caption) = "BitwiseNot"];
     };
 
     optional VisualShaderNodeUIntFuncType func = 1;
@@ -570,43 +525,41 @@ message VisualShaderNodeVectorFunc {
 
     option (node_description) = "Vector function.";
 
-    option (operator_type_count) = 33;
-
     enum VisualShaderNodeVectorFuncType {
-        FUNC_UNSPECIFIED = 0 [(type_caption) = "UNSPECIFIED"];
-        FUNC_NORMALIZE = 1 [(type_caption) = "Normalize"];
-        FUNC_SATURATE = 2 [(type_caption) = "Saturate"];
-        FUNC_NEGATE = 3 [(type_caption) = "Negate"];
-        FUNC_RECIPROCAL = 4 [(type_caption) = "Reciprocal"];
-        FUNC_ABS = 5 [(type_caption) = "Abs"];
-        FUNC_ACOS = 6 [(type_caption) = "Acos"];
-        FUNC_ACOSH = 7 [(type_caption) = "Acosh"];
-        FUNC_ASIN = 8 [(type_caption) = "Asin"];
-        FUNC_ASINH = 9 [(type_caption) = "Asinh"];
-        FUNC_ATAN = 10 [(type_caption) = "Atan"];
-        FUNC_ATANH = 11 [(type_caption) = "Atanh"];
-        FUNC_CEIL = 12 [(type_caption) = "Ceil"];
-        FUNC_COS = 13 [(type_caption) = "Cos"];
-        FUNC_COSH = 14 [(type_caption) = "Cosh"];
-        FUNC_DEGREES = 15 [(type_caption) = "Degrees"];
-        FUNC_EXP = 16 [(type_caption) = "Exp"];
-        FUNC_EXP2 = 17 [(type_caption) = "Exp2"];
-        FUNC_FLOOR = 18 [(type_caption) = "Floor"];
-        FUNC_FRACT = 19 [(type_caption) = "Fract"];
-        FUNC_INVERSE_SQRT = 20 [(type_caption) = "InverseSqrt"];
-        FUNC_LOG = 21 [(type_caption) = "Log"];
-        FUNC_LOG2 = 22 [(type_caption) = "Log2"];
-        FUNC_RADIANS = 23 [(type_caption) = "Radians"];
-        FUNC_ROUND = 24 [(type_caption) = "Round"];
-        FUNC_ROUNDEVEN = 25 [(type_caption) = "RoundEven"];
-        FUNC_SIGN = 26 [(type_caption) = "Sign"];
-        FUNC_SIN = 27 [(type_caption) = "Sin"];
-        FUNC_SINH = 28 [(type_caption) = "Sinh"];
-        FUNC_SQRT = 29 [(type_caption) = "Sqrt"];
-        FUNC_TAN = 30 [(type_caption) = "Tan"];
-        FUNC_TANH = 31 [(type_caption) = "Tanh"];
-        FUNC_TRUNC = 32 [(type_caption) = "Trunc"];
-        FUNC_ONEMINUS = 33 [(type_caption) = "OneMinus"];
+        FUNC_UNSPECIFIED = 0 [(value_caption) = "UNSPECIFIED"];
+        FUNC_NORMALIZE = 1 [(value_caption) = "Normalize"];
+        FUNC_SATURATE = 2 [(value_caption) = "Saturate"];
+        FUNC_NEGATE = 3 [(value_caption) = "Negate"];
+        FUNC_RECIPROCAL = 4 [(value_caption) = "Reciprocal"];
+        FUNC_ABS = 5 [(value_caption) = "Abs"];
+        FUNC_ACOS = 6 [(value_caption) = "Acos"];
+        FUNC_ACOSH = 7 [(value_caption) = "Acosh"];
+        FUNC_ASIN = 8 [(value_caption) = "Asin"];
+        FUNC_ASINH = 9 [(value_caption) = "Asinh"];
+        FUNC_ATAN = 10 [(value_caption) = "Atan"];
+        FUNC_ATANH = 11 [(value_caption) = "Atanh"];
+        FUNC_CEIL = 12 [(value_caption) = "Ceil"];
+        FUNC_COS = 13 [(value_caption) = "Cos"];
+        FUNC_COSH = 14 [(value_caption) = "Cosh"];
+        FUNC_DEGREES = 15 [(value_caption) = "Degrees"];
+        FUNC_EXP = 16 [(value_caption) = "Exp"];
+        FUNC_EXP2 = 17 [(value_caption) = "Exp2"];
+        FUNC_FLOOR = 18 [(value_caption) = "Floor"];
+        FUNC_FRACT = 19 [(value_caption) = "Fract"];
+        FUNC_INVERSE_SQRT = 20 [(value_caption) = "InverseSqrt"];
+        FUNC_LOG = 21 [(value_caption) = "Log"];
+        FUNC_LOG2 = 22 [(value_caption) = "Log2"];
+        FUNC_RADIANS = 23 [(value_caption) = "Radians"];
+        FUNC_ROUND = 24 [(value_caption) = "Round"];
+        FUNC_ROUNDEVEN = 25 [(value_caption) = "RoundEven"];
+        FUNC_SIGN = 26 [(value_caption) = "Sign"];
+        FUNC_SIN = 27 [(value_caption) = "Sin"];
+        FUNC_SINH = 28 [(value_caption) = "Sinh"];
+        FUNC_SQRT = 29 [(value_caption) = "Sqrt"];
+        FUNC_TAN = 30 [(value_caption) = "Tan"];
+        FUNC_TANH = 31 [(value_caption) = "Tanh"];
+        FUNC_TRUNC = 32 [(value_caption) = "Trunc"];
+        FUNC_ONEMINUS = 33 [(value_caption) = "OneMinus"];
     };
 
     optional VisualShaderNodeVectorType type = 1;
