@@ -32,6 +32,7 @@
 #include "gui/model/message_model.hpp"
 #include "gui/model/oneof_model.hpp"
 #include "gui/model/repeated_primitive_model.hpp"
+#include "gui/model/utils/utils.hpp"
 
 #include "error_macros.hpp"
 
@@ -261,10 +262,8 @@ bool PrimitiveModel::setData([[maybe_unused]] const QModelIndex& index, [[maybe_
         break;
       case FieldDescriptor::CppType::CPPTYPE_ENUM: {
         CHECK_CONDITION_TRUE_NON_VOID(!value.canConvert<int>(), false, "Value is not an Enum int.");
-        const EnumDescriptor* enum_desc{m_field_desc->enum_type()};
-        CHECK_PARAM_NULLPTR_NON_VOID(enum_desc, false, "Enum descriptor is null.");
-        CHECK_CONDITION_TRUE_NON_VOID(value.toInt() >= enum_desc->value_count(), false,
-                                      "Enum value is out of range.");
+        CHECK_CONDITION_TRUE_NON_VOID(!shadergen_utils::is_valid_enum_value(m_field_desc->enum_type(), value.toInt()),
+                                      false, "Enum value is not valid.");
         refl->SetRepeatedEnumValue(m_message_buffer, m_field_desc, index.parent().row(), value.toInt());
         break;
       }
@@ -311,10 +310,8 @@ bool PrimitiveModel::setData([[maybe_unused]] const QModelIndex& index, [[maybe_
         break;
       case FieldDescriptor::CppType::CPPTYPE_ENUM: {
         CHECK_CONDITION_TRUE_NON_VOID(!value.canConvert<int>(), false, "Value is not an Enum int.");
-        const EnumDescriptor* enum_desc{m_field_desc->enum_type()};
-        CHECK_PARAM_NULLPTR_NON_VOID(enum_desc, false, "Enum descriptor is null.");
-        CHECK_CONDITION_TRUE_NON_VOID(value.toInt() >= enum_desc->value_count(), false,
-                                      "Enum value is out of range.");
+        CHECK_CONDITION_TRUE_NON_VOID(!shadergen_utils::is_valid_enum_value(m_field_desc->enum_type(), value.toInt()),
+                                      false, "Enum value is not valid.");
         refl->SetEnumValue(m_message_buffer, m_field_desc, value.toInt());
         break;
       }

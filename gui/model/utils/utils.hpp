@@ -80,6 +80,18 @@ inline static int get_enum_value_by_index(const google::protobuf::EnumDescriptor
   VALIDATE_INDEX_NON_VOID(value_index, enum_descriptor->value_count(), 0, "Invalid enum value index");
   return enum_descriptor->value(value_index)->number();
 }
+
+inline static bool is_valid_enum_value(const google::protobuf::EnumDescriptor* enum_descriptor,
+                                       const int& value_number) noexcept {
+  CHECK_PARAM_NULLPTR_NON_VOID(enum_descriptor, false, "Enum descriptor is null.");
+  int size {enum_descriptor->value_count()};
+  for (int i = 0; i < size; ++i) {
+    if (get_enum_value_by_index(enum_descriptor, i) == value_number) {
+      return true;
+    }
+  }
+  return false;
+}
 }  // namespace shadergen_utils
 
 #endif  // UTILS_HPP
