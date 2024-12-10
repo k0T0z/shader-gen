@@ -36,6 +36,7 @@
 #include "generator/visual_shader_node_generators.hpp"
 #include "gui/controller/graph_node.hpp"
 #include "gui/model/repeated_message_model.hpp"
+#include "generator/vs_node_noise_generators.hpp"
 
 namespace shadergen_visual_shader_generator {
 static inline std::vector<std::unique_ptr<VisualShaderNodeGenerator>> to_generators(const ProtoModel* nodes) noexcept {
@@ -69,186 +70,213 @@ static inline std::vector<std::unique_ptr<VisualShaderNodeGenerator>> to_generat
         generators.at(i) = std::make_unique<VisualShaderNodeGeneratorInput>(input_type);
         break;
       }
-      // case VisualShader::VisualShaderNode::kFloatConstantFieldNumber: {
-      //     const float value {oneof_model->get_sub_model(FieldPath::Of<VisualShader::VisualShaderNode>(FieldPath::FieldNumber(VisualShader::VisualShaderNode::kFloatConstantFieldNumber), FieldPath::FieldNumber(VisualShaderNodeFloatConstant::kValueFieldNumber)))->data().toFloat()};
-      //     generators.at(i) = std::make_unique<VisualShaderNodeGeneratorFloatConstant>(value);
-      //     break;
-      // }
-      // case VisualShader::VisualShaderNode::kIntConstantFieldNumber: {
-      //     const int value {oneof_model->get_sub_model(FieldPath::Of<VisualShader::VisualShaderNode>(FieldPath::FieldNumber(VisualShader::VisualShaderNode::kIntConstantFieldNumber), FieldPath::FieldNumber(VisualShaderNodeIntConstant::kValueFieldNumber)))->data().toInt()};
-      //     generators.at(i) = std::make_unique<VisualShaderNodeGeneratorIntConstant>(value);
-      //     break;
-      // }
-      // case VisualShader::VisualShaderNode::kUintConstantFieldNumber: {
-      //     const unsigned int value {static_cast<unsigned int>(oneof_model->get_sub_model(FieldPath::Of<VisualShader::VisualShaderNode>(FieldPath::FieldNumber(VisualShader::VisualShaderNode::kUintConstantFieldNumber), FieldPath::FieldNumber(VisualShaderNodeUintConstant::kValueFieldNumber)))->data().toUInt())};
-      //     generators.at(i) = std::make_unique<VisualShaderNodeGeneratorUIntConstant>(value);
-      //     break;
-      // }
-      // case VisualShader::VisualShaderNode::kBooleanConstantFieldNumber: {
-      //     const bool value {oneof_model->get_sub_model(FieldPath::Of<VisualShader::VisualShaderNode>(FieldPath::FieldNumber(VisualShader::VisualShaderNode::kBooleanConstantFieldNumber), FieldPath::FieldNumber(VisualShaderNodeBooleanConstant::kValueFieldNumber)))->data().toBool()};
-      //     generators.at(i) = std::make_unique<VisualShaderNodeGeneratorBooleanConstant>(value);
-      //     break;
-      // }
-      // case VisualShader::VisualShaderNode::kColorConstantFieldNumber: {
-      //     const QColor value {QColor(oneof_model->get_sub_model(FieldPath::Of<VisualShader::VisualShaderNode>(FieldPath::FieldNumber(VisualShader::VisualShaderNode::kColorConstantFieldNumber), FieldPath::FieldNumber(VisualShaderNodeColorConstant::kValueFieldNumber)))->data().toString())};
-      //     generators.at(i) = std::make_unique<VisualShaderNodeGeneratorColorConstant>(value);
-      //     break;
-      // }
-      // case VisualShader::VisualShaderNode::kVec2ConstantFieldNumber: {
-      //     const QVector2D value {QVector2D(oneof_model->get_sub_model(FieldPath::Of<VisualShader::VisualShaderNode>(FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec2ConstantFieldNumber), FieldPath::FieldNumber(VisualShaderNodeVec2Constant::kValueFieldNumber)))->data().toString())};
-      //     generators.at(i) = std::make_unique<VisualShaderNodeGeneratorVec2Constant>(value);
-      //     break;
-      // }
-      // case VisualShader::VisualShaderNode::kVec3ConstantFieldNumber: {
-      //     const QVector3D value {QVector3D(oneof_model->get_sub_model(FieldPath::Of<VisualShader::VisualShaderNode>(FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec3ConstantFieldNumber), FieldPath::FieldNumber(VisualShaderNodeVec3Constant::kValueFieldNumber)))->data().toString())};
-      //     generators.at(i) = std::make_unique<VisualShaderNodeGeneratorVec3Constant>(value);
-      //     break;
-      // }
-      // case VisualShader::VisualShaderNode::kVec4ConstantFieldNumber: {
-      //     const QVector4D value {QVector4D(oneof_model->get_sub_model(FieldPath::Of<VisualShader::VisualShaderNode>(FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec4ConstantFieldNumber), FieldPath::FieldNumber(VisualShaderNodeVec4Constant::kValueFieldNumber)))->data().toString())};
-      //     generators.at(i) = std::make_unique<VisualShaderNodeGeneratorVec4Constant>(value);
-      //     break;
-      // }
-      // case VisualShader::VisualShaderNode::kFloatOpFieldNumber: {
-      //     const VisualShaderNodeFloatOpType op_type {(VisualShaderNodeFloatOpType)oneof_model->get_sub_model(FieldPath::Of<VisualShader::VisualShaderNode>(FieldPath::FieldNumber(VisualShader::VisualShaderNode::kFloatOpFieldNumber), FieldPath::FieldNumber(VisualShaderNodeFloatOp::kOpTypeFieldNumber)))->data().toInt()};
-      //     generators.at(i) = std::make_unique<VisualShaderNodeGeneratorFloatOp>(op_type);
-      //     break;
-      // }
-      // case VisualShader::VisualShaderNode::kIntOpFieldNumber: {
-      //     const VisualShaderNodeIntOpType op_type {(VisualShaderNodeIntOpType)oneof_model->get_sub_model(FieldPath::Of<VisualShader::VisualShaderNode>(FieldPath::FieldNumber(VisualShader::VisualShaderNode::kIntOpFieldNumber), FieldPath::FieldNumber(VisualShaderNodeIntOp::kOpTypeFieldNumber)))->data().toInt()};
-      //     generators.at(i) = std::make_unique<VisualShaderNodeGeneratorIntOp>(op_type);
-      //     break;
-      // }
-      // case VisualShader::VisualShaderNode::kUintOpFieldNumber: {
-      //     const VisualShaderNodeUintOpType op_type {(VisualShaderNodeUintOpType)oneof_model->get_sub_model(FieldPath::Of<VisualShader::VisualShaderNode>(FieldPath::FieldNumber(VisualShader::VisualShaderNode::kUintOpFieldNumber), FieldPath::FieldNumber(VisualShaderNodeUintOp::kOpTypeFieldNumber)))->data().toInt()};
-      //     generators.at(i) = std::make_unique<VisualShaderNodeGeneratorUIntOp>(op_type);
-      //     break;
-      // }
-      // case VisualShader::VisualShaderNode::kVectorOpFieldNumber: {
-      //     const VisualShaderNodeVectorOpType op_type {(VisualShaderNodeVectorOpType)oneof_model->get_sub_model(FieldPath::Of<VisualShader::VisualShaderNode>(FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVectorOpFieldNumber), FieldPath::FieldNumber(VisualShaderNodeVectorOp::kOpTypeFieldNumber)))->data().toInt()};
-      //     generators.at(i) = std::make_unique<VisualShaderNodeGeneratorVectorOp>(op_type);
-      //     break;
-      // }
-      // case VisualShader::VisualShaderNode::kFloatFuncFieldNumber: {
-      //     const VisualShaderNodeFloatFuncType func_type {(VisualShaderNodeFloatFuncType)oneof_model->get_sub_model(FieldPath::Of<VisualShader::VisualShaderNode>(FieldPath::FieldNumber(VisualShader::VisualShaderNode::kFloatFuncFieldNumber), FieldPath::FieldNumber(VisualShaderNodeFloatFunc::kFuncTypeFieldNumber)))->data().toInt()};
-      //     generators.at(i) = std::make_unique<VisualShaderNodeGeneratorFloatFunc>(func_type);
-      //     break;
-      // }
-      // case VisualShader::VisualShaderNode::kIntFuncFieldNumber: {
-      //     const VisualShaderNodeIntFuncType func_type {(VisualShaderNodeIntFuncType)oneof_model->get_sub_model(FieldPath::Of<VisualShader::VisualShaderNode>(FieldPath::FieldNumber(VisualShader::VisualShaderNode::kIntFuncFieldNumber), FieldPath::FieldNumber(VisualShaderNodeIntFunc::kFuncTypeFieldNumber)))->data().toInt()};
-      //     generators.at(i) = std::make_unique<VisualShaderNodeGeneratorIntFunc>(func_type);
-      //     break;
-      // }
-      // case VisualShader::VisualShaderNode::kUintFuncFieldNumber: {
-      //     const VisualShaderNodeUintFuncType func_type {(VisualShaderNodeUintFuncType)oneof_model->get_sub_model(FieldPath::Of<VisualShader::VisualShaderNode>(FieldPath::FieldNumber(VisualShader::VisualShaderNode::kUintFuncFieldNumber), FieldPath::FieldNumber(VisualShaderNodeUintFunc::kFuncTypeFieldNumber)))->data().toInt()};
-      //     generators.at(i) = std::make_unique<VisualShaderNodeGeneratorUIntFunc>(func_type);
-      //     break;
-      // }
-      // case VisualShader::VisualShaderNode::kVectorFuncFieldNumber: {
-      //     const VisualShaderNodeVectorFuncType func_type {(VisualShaderNodeVectorFuncType)oneof_model->get_sub_model(FieldPath::Of<VisualShader::VisualShaderNode>(FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVectorFuncFieldNumber), FieldPath::FieldNumber(VisualShaderNodeVectorFunc::kFuncTypeFieldNumber)))->data().toInt()};
-      //     generators.at(i) = std::make_unique<VisualShaderNodeGeneratorVectorFunc>(func_type);
-      //     break;
-      // }
-      // case VisualShader::VisualShaderNode::kValueNoiseFieldNumber: {
-      //     const VisualShaderNodeValueNoiseType noise_type {(VisualShaderNodeValueNoiseType)oneof_model->get_sub_model(FieldPath::Of<VisualShader::VisualShaderNode>(FieldPath::FieldNumber(VisualShader::VisualShaderNode::kValueNoiseFieldNumber), FieldPath::FieldNumber(VisualShaderNodeValueNoise::kNoiseTypeFieldNumber)))->data().toInt()};
-      //     generators.at(i) = std::make_unique<VisualShaderNodeGeneratorValueNoise>(noise_type);
-      //     break;
-      // }
-      // case VisualShader::VisualShaderNode::kPerlinNoiseFieldNumber: {
-      //     const VisualShaderNodePerlinNoiseType noise_type {(VisualShaderNodePerlinNoiseType)oneof_model->get_sub_model(FieldPath::Of<VisualShader::VisualShaderNode>(FieldPath::FieldNumber(VisualShader::VisualShaderNode::kPerlinNoiseFieldNumber), FieldPath::FieldNumber(VisualShaderNodePerlinNoise::kNoiseTypeFieldNumber)))->data().toInt()};
-      //     generators.at(i) = std::make_unique<VisualShaderNodeGeneratorPerlinNoise>(noise_type);
-      //     break;
-      // }
-      // case VisualShader::VisualShaderNode::kVoronoiNoiseFieldNumber: {
-      //     const VisualShaderNodeVoronoiNoiseType noise_type {(VisualShaderNodeVoronoiNoiseType)oneof_model->get_sub_model(FieldPath::Of<VisualShader::VisualShaderNode>(FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVoronoiNoiseFieldNumber), FieldPath::FieldNumber(VisualShaderNodeVoronoiNoise::kNoiseTypeFieldNumber)))->data().toInt()};
-      //     generators.at(i) = std::make_unique<VisualShaderNodeGeneratorVoronoiNoise>(noise_type);
-      //     break;
-      // }
-      // case VisualShader::VisualShaderNode::kDotProductFieldNumber: {
-      //     const VisualShaderNodeDotProductType dot_type {(VisualShaderNodeDotProductType)oneof_model->get_sub_model(FieldPath::Of<VisualShader::VisualShaderNode>(FieldPath::FieldNumber(VisualShader::VisualShaderNode::kDotProductFieldNumber), FieldPath::FieldNumber(VisualShaderNodeDotProduct::kDotTypeFieldNumber)))->data().toInt()};
-      //     generators.at(i) = std::make_unique<VisualShaderNodeGeneratorDotProduct>(dot_type);
-      //     break;
-      // }
-      // case VisualShader::VisualShaderNode::kVectorLenFieldNumber: {
-      //     const VisualShaderNodeVectorLenType len_type {(VisualShaderNodeVectorLenType)oneof_model->get_sub_model(FieldPath::Of<VisualShader::VisualShaderNode>(FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVectorLenFieldNumber), FieldPath::FieldNumber(VisualShaderNodeVectorLen::kLenTypeFieldNumber)))->data().toInt()};
-      //     generators.at(i) = std::make_unique<VisualShaderNodeGeneratorVectorLen>(len_type);
-      //     break;
-      // }
-      // case VisualShader::VisualShaderNode::kClampFieldNumber: {
-      //     const VisualShaderNodeClampType clamp_type {(VisualShaderNodeClampType)oneof_model->get_sub_model(FieldPath::Of<VisualShader::VisualShaderNode>(FieldPath::FieldNumber(VisualShader::VisualShaderNode::kClampFieldNumber), FieldPath::FieldNumber(VisualShaderNodeClamp::kClampTypeFieldNumber)))->data().toInt()};
-      //     generators.at(i) = std::make_unique<VisualShaderNodeGeneratorClamp>(clamp_type);
-      //     break;
-      // }
-      // case VisualShader::VisualShaderNode::kStepFieldNumber: {
-      //     const VisualShaderNodeStepType step_type {(VisualShaderNodeStepType)oneof_model->get_sub_model(FieldPath::Of<VisualShader::VisualShaderNode>(FieldPath::FieldNumber(VisualShader::VisualShaderNode::kStepFieldNumber), FieldPath::FieldNumber(VisualShaderNodeStep::kStepTypeFieldNumber)))->data().toInt()};
-      //     generators.at(i) = std::make_unique<VisualShaderNodeGeneratorStep>(step_type);
-      //     break;
-      // }
-      // case VisualShader::VisualShaderNode::kSmoothStepFieldNumber: {
-      //     const VisualShaderNodeSmoothStepType smooth_step_type {(VisualShaderNodeSmoothStepType)oneof_model->get_sub_model(FieldPath::Of<VisualShader::VisualShaderNode>(FieldPath::FieldNumber(VisualShader::VisualShaderNode::kSmoothStepFieldNumber), FieldPath::FieldNumber(VisualShaderNodeSmoothStep::kSmoothStepTypeFieldNumber)))->data().toInt()};
-      //     generators.at(i) = std::make_unique<VisualShaderNodeGeneratorSmoothStep>(smooth_step_type);
-      //     break;
-      // }
-      // case VisualShader::VisualShaderNode::kVectorDistanceFieldNumber: {
-      //     const VisualShaderNodeVectorDistanceType distance_type {(VisualShaderNodeVectorDistanceType)oneof_model->get_sub_model(FieldPath::Of<VisualShader::VisualShaderNode>(FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVectorDistanceFieldNumber), FieldPath::FieldNumber(VisualShaderNodeVectorDistance::kDistanceTypeFieldNumber)))->data().toInt()};
-      //     generators.at(i) = std::make_unique<VisualShaderNodeGeneratorVectorDistance>(distance_type);
-      //     break;
-      // }
-      // case VisualShader::VisualShaderNode::kMixFieldNumber: {
-      //     const VisualShaderNodeMixType mix_type {(VisualShaderNodeMixType)oneof_model->get_sub_model(FieldPath::Of<VisualShader::VisualShaderNode>(FieldPath::FieldNumber(VisualShader::VisualShaderNode::kMixFieldNumber), FieldPath::FieldNumber(VisualShaderNodeMix::kMixTypeFieldNumber)))->data().toInt()};
-      //     generators.at(i) = std::make_unique<VisualShaderNodeGeneratorMix>(mix_type);
-      //     break;
-      // }
-      // case VisualShader::VisualShaderNode::kVector2DComposeFieldNumber: {
-      //     const VisualShaderNodeVector2DComposeType compose_type {(VisualShaderNodeVector2DComposeType)oneof_model->get_sub_model(FieldPath::Of<VisualShader::VisualShaderNode>(FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVector2DComposeFieldNumber), FieldPath::FieldNumber(VisualShaderNodeVector2DCompose::kComposeTypeFieldNumber)))->data().toInt()};
-      //     generators.at(i) = std::make_unique<VisualShaderNodeGeneratorVector2DCompose>(compose_type);
-      //     break;
-      // }
-      // case VisualShader::VisualShaderNode::kVector3DComposeFieldNumber: {
-      //     const VisualShaderNodeVector3DComposeType compose_type {(VisualShaderNodeVector3DComposeType)oneof_model->get_sub_model(FieldPath::Of<VisualShader::VisualShaderNode>(FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVector3DComposeFieldNumber), FieldPath::FieldNumber(VisualShaderNodeVector3DCompose::kComposeTypeFieldNumber)))->data().toInt()};
-      //     generators.at(i) = std::make_unique<VisualShaderNodeGeneratorVector3DCompose>(compose_type);
-      //     break;
-      // }
-      // case VisualShader::VisualShaderNode::kVector4DComposeFieldNumber: {
-      //     const VisualShaderNodeVector4DComposeType compose_type {(VisualShaderNodeVector4DComposeType)oneof_model->get_sub_model(FieldPath::Of<VisualShader::VisualShaderNode>(FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVector4DComposeFieldNumber), FieldPath::FieldNumber(VisualShaderNodeVector4DCompose::kComposeTypeFieldNumber)))->data().toInt()};
-      //     generators.at(i) = std::make_unique<VisualShaderNodeGeneratorVector4DCompose>(compose_type);
-      //     break;
-      // }
-      // case VisualShader::VisualShaderNode::kVector2DDecomposeFieldNumber: {
-      //     const VisualShaderNodeVector2DDecomposeType decompose_type {(VisualShaderNodeVector2DDecomposeType)oneof_model->get_sub_model(FieldPath::Of<VisualShader::VisualShaderNode>(FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVector2DDecomposeFieldNumber), FieldPath::FieldNumber(VisualShaderNodeVector2DDecompose::kDecomposeTypeFieldNumber)))->data().toInt()};
-      //     generators.at(i) = std::make_unique<VisualShaderNodeGeneratorVector2DDecompose>(decompose_type);
-      //     break;
-      // }
-      // case VisualShader::VisualShaderNode::kVector3DDecomposeFieldNumber: {
-      //     const VisualShaderNodeVector3DDecomposeType decompose_type {(VisualShaderNodeVector3DDecomposeType)oneof_model->get_sub_model(FieldPath::Of<VisualShader::VisualShaderNode>(FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVector3DDecomposeFieldNumber), FieldPath::FieldNumber(VisualShaderNodeVector3DDecompose::kDecomposeTypeFieldNumber)))->data().toInt()};
-      //     generators.at(i) = std::make_unique<VisualShaderNodeGeneratorVector3DDecompose>(decompose_type);
-      //     break;
-      // }
-      // case VisualShader::VisualShaderNode::kVector4DDecomposeFieldNumber: {
-      //     const VisualShaderNodeVector4DDecomposeType decompose_type {(VisualShaderNodeVector4DDecomposeType)oneof_model->get_sub_model(FieldPath::Of<VisualShader::VisualShaderNode>(FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVector4DDecomposeFieldNumber), FieldPath::FieldNumber(VisualShaderNodeVector4DDecompose::kDecomposeTypeFieldNumber)))->data().toInt()};
-      //     generators.at(i) = std::make_unique<VisualShaderNodeGeneratorVector4DDecompose>(decompose_type);
-      //     break;
-      // }
-      // case VisualShader::VisualShaderNode::kIfNodeFieldNumber: {
-      //     const VisualShaderNodeIfType if_type {(VisualShaderNodeIfType)oneof_model->get_sub_model(FieldPath::Of<VisualShader::VisualShaderNode>(FieldPath::FieldNumber(VisualShader::VisualShaderNode::kIfNodeFieldNumber), FieldPath::FieldNumber(VisualShaderNodeIfNode::kIfTypeFieldNumber)))->data().toInt()};
-      //     generators.at(i) = std::make_unique<VisualShaderNodeGeneratorIfNode>(if_type);
-      //     break;
-      // }
-      // case VisualShader::VisualShaderNode::kSwitchNodeFieldNumber: {
-      //     const VisualShaderNodeSwitchType switch_type {(VisualShaderNodeSwitchType)oneof_model->get_sub_model(FieldPath::Of<VisualShader::VisualShaderNode>(FieldPath::FieldNumber(VisualShader::VisualShaderNode::kSwitchNodeFieldNumber), FieldPath::FieldNumber(VisualShaderNodeSwitchNode::kSwitchTypeFieldNumber)))->data().toInt()};
-      //     generators.at(i) = std::make_unique<VisualShaderNodeGeneratorSwitchNode>(switch_type);
-      //     break;
-      // }
-      // case VisualShader::VisualShaderNode::kIsFieldNumber: {
-      //     const VisualShaderNodeIsType is_type {(VisualShaderNodeIsType)oneof_model->get_sub_model(FieldPath::Of<VisualShader::VisualShaderNode>(FieldPath::FieldNumber(VisualShader::VisualShaderNode::kIsFieldNumber), FieldPath::FieldNumber(VisualShaderNodeIs::kIsTypeFieldNumber)))->data().toInt()};
-      //     generators.at(i) = std::make_unique<VisualShaderNodeGeneratorIs>(is_type);
-      //     break;
-      // }
-      // case VisualShader::VisualShaderNode::kCompareFieldNumber: {
-      //     const VisualShaderNodeCompareType compare_type {(VisualShaderNodeCompareType)oneof_model->get_sub_model(FieldPath::Of<VisualShader::VisualShaderNode>(FieldPath::FieldNumber(VisualShader::VisualShaderNode::kCompareFieldNumber), FieldPath::FieldNumber(VisualShaderNodeCompare::kCompareTypeFieldNumber)))->data().toInt()};
-      //     generators.at(i) = std::make_unique<VisualShaderNodeGeneratorCompare>(compare_type);
-      //     break;
-      // }
+      case VisualShader::VisualShaderNode::kFloatConstantFieldNumber: {
+          auto* model = oneof_model->get_sub_model(FieldPath::Of<VisualShader::VisualShaderNode>(FieldPath::FieldNumber(VisualShader::VisualShaderNode::kFloatConstantFieldNumber), FieldPath::FieldNumber(VisualShaderNodeFloatConstant::kValueFieldNumber)));
+          const float value {model->data().toFloat()};
+          generators.at(i) = std::make_unique<VisualShaderNodeGeneratorFloatConstant>(value);
+          break;
+      }
+      case VisualShader::VisualShaderNode::kIntConstantFieldNumber: {
+          auto* model = oneof_model->get_sub_model(FieldPath::Of<VisualShader::VisualShaderNode>(FieldPath::FieldNumber(VisualShader::VisualShaderNode::kIntConstantFieldNumber), FieldPath::FieldNumber(VisualShaderNodeIntConstant::kValueFieldNumber)));
+          const int value {model->data().toInt()};
+          generators.at(i) = std::make_unique<VisualShaderNodeGeneratorIntConstant>(value);
+          break;
+      }
+      case VisualShader::VisualShaderNode::kUintConstantFieldNumber: {
+          auto* model = oneof_model->get_sub_model(FieldPath::Of<VisualShader::VisualShaderNode>(FieldPath::FieldNumber(VisualShader::VisualShaderNode::kUintConstantFieldNumber), FieldPath::FieldNumber(VisualShaderNodeUIntConstant::kValueFieldNumber)));
+          const unsigned int value {model->data().toUInt()};
+          generators.at(i) = std::make_unique<VisualShaderNodeGeneratorUIntConstant>(value);
+          break;
+      }
+      case VisualShader::VisualShaderNode::kBooleanConstantFieldNumber: {
+          auto* model = oneof_model->get_sub_model(FieldPath::Of<VisualShader::VisualShaderNode>(FieldPath::FieldNumber(VisualShader::VisualShaderNode::kBooleanConstantFieldNumber), FieldPath::FieldNumber(VisualShaderNodeBooleanConstant::kValueFieldNumber)));
+          const bool value {model->data().toBool()};
+          generators.at(i) = std::make_unique<VisualShaderNodeGeneratorBoolConstant>(value);
+          break;
+      }
+      case VisualShader::VisualShaderNode::kColorConstantFieldNumber: {
+          auto* model = oneof_model->get_sub_model(FieldPath::Of<VisualShader::VisualShaderNode>(FieldPath::FieldNumber(VisualShader::VisualShaderNode::kColorConstantFieldNumber)), false, true);
+          const float r {model->get_sub_model(FieldPath::Of<VisualShaderNodeColorConstant>(FieldPath::FieldNumber(VisualShaderNodeColorConstant::kRFieldNumber)))->data().toFloat()};
+          const float g {model->get_sub_model(FieldPath::Of<VisualShaderNodeColorConstant>(FieldPath::FieldNumber(VisualShaderNodeColorConstant::kGFieldNumber)))->data().toFloat()};
+          const float b {model->get_sub_model(FieldPath::Of<VisualShaderNodeColorConstant>(FieldPath::FieldNumber(VisualShaderNodeColorConstant::kBFieldNumber)))->data().toFloat()};
+          const float a {model->get_sub_model(FieldPath::Of<VisualShaderNodeColorConstant>(FieldPath::FieldNumber(VisualShaderNodeColorConstant::kAFieldNumber)))->data().toFloat()};
+          generators.at(i) = std::make_unique<VisualShaderNodeGeneratorColorConstant>(r, g, b, a);
+          break;
+      }
+      case VisualShader::VisualShaderNode::kVec2ConstantFieldNumber: {
+          auto* model = oneof_model->get_sub_model(FieldPath::Of<VisualShader::VisualShaderNode>(FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec2ConstantFieldNumber)), false, true);
+          const float x {model->get_sub_model(FieldPath::Of<VisualShaderNodeVec2Constant>(FieldPath::FieldNumber(VisualShaderNodeVec2Constant::kXFieldNumber)))->data().toFloat()};
+          const float y {model->get_sub_model(FieldPath::Of<VisualShaderNodeVec2Constant>(FieldPath::FieldNumber(VisualShaderNodeVec2Constant::kYFieldNumber)))->data().toFloat()};
+          generators.at(i) = std::make_unique<VisualShaderNodeGeneratorVec2Constant>(x, y);
+          break;
+      }
+      case VisualShader::VisualShaderNode::kVec3ConstantFieldNumber: {
+          auto* model = oneof_model->get_sub_model(FieldPath::Of<VisualShader::VisualShaderNode>(FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec3ConstantFieldNumber)), false, true);
+          const float x {model->get_sub_model(FieldPath::Of<VisualShaderNodeVec3Constant>(FieldPath::FieldNumber(VisualShaderNodeVec3Constant::kXFieldNumber)))->data().toFloat()};
+          const float y {model->get_sub_model(FieldPath::Of<VisualShaderNodeVec3Constant>(FieldPath::FieldNumber(VisualShaderNodeVec3Constant::kYFieldNumber)))->data().toFloat()};
+          const float z {model->get_sub_model(FieldPath::Of<VisualShaderNodeVec3Constant>(FieldPath::FieldNumber(VisualShaderNodeVec3Constant::kZFieldNumber)))->data().toFloat()};
+          generators.at(i) = std::make_unique<VisualShaderNodeGeneratorVec3Constant>(x, y, z);
+          break;
+      }
+      case VisualShader::VisualShaderNode::kVec4ConstantFieldNumber: {
+          auto* model = oneof_model->get_sub_model(FieldPath::Of<VisualShader::VisualShaderNode>(FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec4ConstantFieldNumber)), false, true);
+          const float x {model->get_sub_model(FieldPath::Of<VisualShaderNodeVec4Constant>(FieldPath::FieldNumber(VisualShaderNodeVec4Constant::kXFieldNumber)))->data().toFloat()};
+          const float y {model->get_sub_model(FieldPath::Of<VisualShaderNodeVec4Constant>(FieldPath::FieldNumber(VisualShaderNodeVec4Constant::kYFieldNumber)))->data().toFloat()};
+          const float z {model->get_sub_model(FieldPath::Of<VisualShaderNodeVec4Constant>(FieldPath::FieldNumber(VisualShaderNodeVec4Constant::kZFieldNumber)))->data().toFloat()};
+          const float w {model->get_sub_model(FieldPath::Of<VisualShaderNodeVec4Constant>(FieldPath::FieldNumber(VisualShaderNodeVec4Constant::kWFieldNumber)))->data().toFloat()};
+          generators.at(i) = std::make_unique<VisualShaderNodeGeneratorVec4Constant>(x, y, z, w);
+          break;
+      }
+      case VisualShader::VisualShaderNode::kFloatOpFieldNumber: {
+          auto* model = oneof_model->get_sub_model(FieldPath::Of<VisualShader::VisualShaderNode>(FieldPath::FieldNumber(VisualShader::VisualShaderNode::kFloatOpFieldNumber), FieldPath::FieldNumber(VisualShaderNodeFloatOp::kOpFieldNumber)));
+          const int op_type {model->data().toInt()};
+          generators.at(i) = std::make_unique<VisualShaderNodeGeneratorFloatOp>((VisualShaderNodeFloatOp::VisualShaderNodeFloatOpType)op_type);
+          break;
+      }
+      case VisualShader::VisualShaderNode::kIntOpFieldNumber: {
+          auto* model = oneof_model->get_sub_model(FieldPath::Of<VisualShader::VisualShaderNode>(FieldPath::FieldNumber(VisualShader::VisualShaderNode::kIntOpFieldNumber), FieldPath::FieldNumber(VisualShaderNodeIntOp::kOpFieldNumber)));
+          const int op_type {model->data().toInt()};
+          generators.at(i) = std::make_unique<VisualShaderNodeGeneratorIntOp>((VisualShaderNodeIntOp::VisualShaderNodeIntOpType)op_type);
+          break;
+      }
+      case VisualShader::VisualShaderNode::kUintOpFieldNumber: {
+          auto* model = oneof_model->get_sub_model(FieldPath::Of<VisualShader::VisualShaderNode>(FieldPath::FieldNumber(VisualShader::VisualShaderNode::kUintOpFieldNumber), FieldPath::FieldNumber(VisualShaderNodeUIntOp::kOpFieldNumber)));
+          const int op_type {model->data().toInt()};
+          generators.at(i) = std::make_unique<VisualShaderNodeGeneratorUIntOp>((VisualShaderNodeUIntOp::VisualShaderNodeUIntOpType)op_type);
+          break;
+      }
+      case VisualShader::VisualShaderNode::kVectorOpFieldNumber: {
+          auto* model = oneof_model->get_sub_model(FieldPath::Of<VisualShader::VisualShaderNode>(FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVectorOpFieldNumber), FieldPath::FieldNumber(VisualShaderNodeVectorOp::kTypeFieldNumber)));
+          const int type {model->data().toInt()}; 
+          auto* model2 = oneof_model->get_sub_model(FieldPath::Of<VisualShader::VisualShaderNode>(FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVectorOpFieldNumber), FieldPath::FieldNumber(VisualShaderNodeVectorOp::kOpFieldNumber)));
+          const int op_type {model2->data().toInt()};
+          generators.at(i) = std::make_unique<VisualShaderNodeGeneratorVectorOp>((VisualShaderNodeVectorType)type, (VisualShaderNodeVectorOp::VisualShaderNodeVectorOpType)op_type);
+          break;
+      }
+      case VisualShader::VisualShaderNode::kFloatFuncFieldNumber: {
+          auto* model = oneof_model->get_sub_model(FieldPath::Of<VisualShader::VisualShaderNode>(FieldPath::FieldNumber(VisualShader::VisualShaderNode::kFloatFuncFieldNumber), FieldPath::FieldNumber(VisualShaderNodeFloatFunc::kFuncFieldNumber)));
+          const int func_type {model->data().toInt()};
+          generators.at(i) = std::make_unique<VisualShaderNodeGeneratorFloatFunc>((VisualShaderNodeFloatFunc::VisualShaderNodeFloatFuncType)func_type);
+          break;
+      }
+      case VisualShader::VisualShaderNode::kIntFuncFieldNumber: {
+          auto* model = oneof_model->get_sub_model(FieldPath::Of<VisualShader::VisualShaderNode>(FieldPath::FieldNumber(VisualShader::VisualShaderNode::kIntFuncFieldNumber), FieldPath::FieldNumber(VisualShaderNodeIntFunc::kFuncFieldNumber)));
+          const int func_type {model->data().toInt()};
+          generators.at(i) = std::make_unique<VisualShaderNodeGeneratorIntFunc>((VisualShaderNodeIntFunc::VisualShaderNodeIntFuncType)func_type);
+          break;
+      }
+      case VisualShader::VisualShaderNode::kUintFuncFieldNumber: {
+          auto* model = oneof_model->get_sub_model(FieldPath::Of<VisualShader::VisualShaderNode>(FieldPath::FieldNumber(VisualShader::VisualShaderNode::kUintFuncFieldNumber), FieldPath::FieldNumber(VisualShaderNodeUIntFunc::kFuncFieldNumber)));
+          const int func_type {model->data().toInt()};
+          generators.at(i) = std::make_unique<VisualShaderNodeGeneratorUIntFunc>((VisualShaderNodeUIntFunc::VisualShaderNodeUIntFuncType)func_type);
+          break;
+      }
+      case VisualShader::VisualShaderNode::kVectorFuncFieldNumber: {
+          auto* model = oneof_model->get_sub_model(FieldPath::Of<VisualShader::VisualShaderNode>(FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVectorFuncFieldNumber)), false, true);
+          const int type {model->get_sub_model(FieldPath::Of<VisualShaderNodeVectorFunc>(FieldPath::FieldNumber(VisualShaderNodeVectorFunc::kTypeFieldNumber)))->data().toInt()};
+          const int func_type {model->get_sub_model(FieldPath::Of<VisualShaderNodeVectorFunc>(FieldPath::FieldNumber(VisualShaderNodeVectorFunc::kFuncFieldNumber)))->data().toInt()};
+          generators.at(i) = std::make_unique<VisualShaderNodeGeneratorVectorFunc>((VisualShaderNodeVectorType)type, (VisualShaderNodeVectorFunc::VisualShaderNodeVectorFuncType)func_type);
+          break;
+      }
+      case VisualShader::VisualShaderNode::kValueNoiseFieldNumber: {
+          auto* model = oneof_model->get_sub_model(FieldPath::Of<VisualShader::VisualShaderNode>(FieldPath::FieldNumber(VisualShader::VisualShaderNode::kValueNoiseFieldNumber), FieldPath::FieldNumber(VisualShaderNodeValueNoise::kScaleFieldNumber)), false, true);
+          const float scale {model->data().toFloat()};
+          // generators.at(i) = std::make_unique<VisualShaderNodeGeneratorValueNoise>(scale);
+          break;
+      }
+      case VisualShader::VisualShaderNode::kPerlinNoiseFieldNumber: {
+          auto* model = oneof_model->get_sub_model(FieldPath::Of<VisualShader::VisualShaderNode>(FieldPath::FieldNumber(VisualShader::VisualShaderNode::kPerlinNoiseFieldNumber), FieldPath::FieldNumber(VisualShaderNodePerlinNoise::kScaleFieldNumber)), false, true);
+          const float scale {model->data().toFloat()};
+          // generators.at(i) = std::make_unique<VisualShaderNodeGeneratorPerlinNoise>(scale);
+          break;
+      }
+      case VisualShader::VisualShaderNode::kVoronoiNoiseFieldNumber: {
+          auto* model = oneof_model->get_sub_model(FieldPath::Of<VisualShader::VisualShaderNode>(FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVoronoiNoiseFieldNumber)), false, true);
+          const float angle_offset {model->get_sub_model(FieldPath::Of<VisualShaderNodeVoronoiNoise>(FieldPath::FieldNumber(VisualShaderNodeVoronoiNoise::kAngleOffsetFieldNumber)))->data().toFloat()};
+          const float cell_density {model->get_sub_model(FieldPath::Of<VisualShaderNodeVoronoiNoise>(FieldPath::FieldNumber(VisualShaderNodeVoronoiNoise::kCellDensityFieldNumber)))->data().toFloat()};
+          // generators.at(i) = std::make_unique<VisualShaderNodeGeneratorVoronoiNoise>(angle_offset, cell_density);
+          break;
+      }
+      case VisualShader::VisualShaderNode::kDotProductFieldNumber: {
+          generators.at(i) = std::make_unique<VisualShaderNodeGeneratorDotProduct>();
+          break;
+      }
+      case VisualShader::VisualShaderNode::kVectorLenFieldNumber: {
+          generators.at(i) = std::make_unique<VisualShaderNodeGeneratorVectorLen>();
+          break;
+      }
+      case VisualShader::VisualShaderNode::kClampFieldNumber: {
+          generators.at(i) = std::make_unique<VisualShaderNodeGeneratorClamp>();
+          break;
+      }
+      case VisualShader::VisualShaderNode::kStepFieldNumber: {
+          generators.at(i) = std::make_unique<VisualShaderNodeGeneratorStep>();
+          break;
+      }
+      case VisualShader::VisualShaderNode::kSmoothStepFieldNumber: {
+          generators.at(i) = std::make_unique<VisualShaderNodeGeneratorSmoothStep>();
+          break;
+      }
+      case VisualShader::VisualShaderNode::kVectorDistanceFieldNumber: {
+          generators.at(i) = std::make_unique<VisualShaderNodeGeneratorVectorDistance>();
+          break;
+      }
+      case VisualShader::VisualShaderNode::kMixFieldNumber: {
+          generators.at(i) = std::make_unique<VisualShaderNodeGeneratorMix>();
+          break;
+      }
+      case VisualShader::VisualShaderNode::kVector2DComposeFieldNumber: {
+          generators.at(i) = std::make_unique<VisualShaderNodeGeneratorVectorCompose>(VisualShaderNodeVectorType::TYPE_VECTOR_2D);
+          break;
+      }
+      case VisualShader::VisualShaderNode::kVector3DComposeFieldNumber: {
+          generators.at(i) = std::make_unique<VisualShaderNodeGeneratorVectorCompose>(VisualShaderNodeVectorType::TYPE_VECTOR_3D);
+          break;
+      }
+      case VisualShader::VisualShaderNode::kVector4DComposeFieldNumber: {
+          generators.at(i) = std::make_unique<VisualShaderNodeGeneratorVectorCompose>(VisualShaderNodeVectorType::TYPE_VECTOR_4D);
+          break;
+      }
+      case VisualShader::VisualShaderNode::kVector2DDecomposeFieldNumber: {
+          generators.at(i) = std::make_unique<VisualShaderNodeGeneratorVectorDecompose>(VisualShaderNodeVectorType::TYPE_VECTOR_2D);
+          break;
+      }
+      case VisualShader::VisualShaderNode::kVector3DDecomposeFieldNumber: {
+          generators.at(i) = std::make_unique<VisualShaderNodeGeneratorVectorDecompose>(VisualShaderNodeVectorType::TYPE_VECTOR_3D);
+          break;
+      }
+      case VisualShader::VisualShaderNode::kVector4DDecomposeFieldNumber: {
+          generators.at(i) = std::make_unique<VisualShaderNodeGeneratorVectorDecompose>(VisualShaderNodeVectorType::TYPE_VECTOR_4D);
+          break;
+      }
+      case VisualShader::VisualShaderNode::kIfNodeFieldNumber: {
+          generators.at(i) = std::make_unique<VisualShaderNodeGeneratorIf>();
+          break;
+      }
+      case VisualShader::VisualShaderNode::kSwitchNodeFieldNumber: {
+          auto* model = oneof_model->get_sub_model(FieldPath::Of<VisualShader::VisualShaderNode>(FieldPath::FieldNumber(VisualShader::VisualShaderNode::kSwitchNodeFieldNumber), FieldPath::FieldNumber(VisualShaderNodeSwitch::kTypeFieldNumber)));
+          const int type {model->data().toInt()};
+          generators.at(i) = std::make_unique<VisualShaderNodeGeneratorSwitch>((VisualShaderNodeSwitch::VisualShaderNodeSwitchOpType)type);
+          break;
+      }
+      case VisualShader::VisualShaderNode::kIsFieldNumber: {
+          auto* model = oneof_model->get_sub_model(FieldPath::Of<VisualShader::VisualShaderNode>(FieldPath::FieldNumber(VisualShader::VisualShaderNode::kIsFieldNumber), FieldPath::FieldNumber(VisualShaderNodeIs::kFuncFieldNumber)));
+          const int func {model->data().toInt()};
+          generators.at(i) = std::make_unique<VisualShaderNodeGeneratorIs>((VisualShaderNodeIs::Function)func);
+          break;
+      }
+      case VisualShader::VisualShaderNode::kCompareFieldNumber: {
+          auto* model = oneof_model->get_sub_model(FieldPath::Of<VisualShader::VisualShaderNode>(FieldPath::FieldNumber(VisualShader::VisualShaderNode::kCompareFieldNumber), FieldPath::FieldNumber(VisualShaderNodeCompare::kTypeFieldNumber)));
+          const int type {model->data().toInt()};
+          auto* model2 = oneof_model->get_sub_model(FieldPath::Of<VisualShader::VisualShaderNode>(FieldPath::FieldNumber(VisualShader::VisualShaderNode::kCompareFieldNumber), FieldPath::FieldNumber(VisualShaderNodeCompare::kFuncFieldNumber)));
+          const int func {model2->data().toInt()};
+          auto* model3 = oneof_model->get_sub_model(FieldPath::Of<VisualShader::VisualShaderNode>(FieldPath::FieldNumber(VisualShader::VisualShaderNode::kCompareFieldNumber), FieldPath::FieldNumber(VisualShaderNodeCompare::kCondFieldNumber)));
+          const int cond {model3->data().toInt()};
+          generators.at(i) = std::make_unique<VisualShaderNodeGeneratorCompare>((VisualShaderNodeCompare::ComparisonType)type, 
+                (VisualShaderNodeCompare::Function)func, 
+                (VisualShaderNodeCompare::Condition)cond);
+          break;
+      }
       default:
         WARN_PRINT("Unsupported node type: " + std::to_string(oneof_value_field_number));
         break;

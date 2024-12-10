@@ -263,8 +263,6 @@ class VisualShaderNodeGeneratorFloatFunc : public VisualShaderNodeGenerator {
   VisualShaderNodeGeneratorFloatFunc(const VisualShaderNodeFloatFunc::VisualShaderNodeFloatFuncType& func = VisualShaderNodeFloatFunc::FUNC_UNSPECIFIED)
       : VisualShaderNodeGenerator(), func(func) {}
 
-  virtual std::string generate_global_per_func([[maybe_unused]] const int& id) const override;
-
   virtual std::string generate_code([[maybe_unused]] const int& id,
                                     [[maybe_unused]] const std::vector<std::string>& input_vars,
                                     [[maybe_unused]] const std::vector<std::string>& output_vars) const override;
@@ -277,8 +275,6 @@ class VisualShaderNodeGeneratorIntFunc : public VisualShaderNodeGenerator {
  public:
   VisualShaderNodeGeneratorIntFunc(const VisualShaderNodeIntFunc::VisualShaderNodeIntFuncType& func = VisualShaderNodeIntFunc::FUNC_UNSPECIFIED)
       : VisualShaderNodeGenerator(), func(func) {}
-
-  virtual std::string generate_global_per_func([[maybe_unused]] const int& id) const override;
 
   virtual std::string generate_code([[maybe_unused]] const int& id,
                                     [[maybe_unused]] const std::vector<std::string>& input_vars,
@@ -293,8 +289,6 @@ class VisualShaderNodeGeneratorUIntFunc : public VisualShaderNodeGenerator {
   VisualShaderNodeGeneratorUIntFunc(const VisualShaderNodeUIntFunc::VisualShaderNodeUIntFuncType& func = VisualShaderNodeUIntFunc::FUNC_UNSPECIFIED)
       : VisualShaderNodeGenerator(), func(func) {}
 
-  virtual std::string generate_global_per_func([[maybe_unused]] const int& id) const override;
-
   virtual std::string generate_code([[maybe_unused]] const int& id,
                                     [[maybe_unused]] const std::vector<std::string>& input_vars,
                                     [[maybe_unused]] const std::vector<std::string>& output_vars) const override;
@@ -308,8 +302,6 @@ class VisualShaderNodeGeneratorVectorFunc : public VisualShaderNodeGenerator {
   VisualShaderNodeGeneratorVectorFunc(const VisualShaderNodeVectorType& type = VisualShaderNodeVectorType::TYPE_VECTOR_UNSPECIFIED,
     const VisualShaderNodeVectorFunc::VisualShaderNodeVectorFuncType& func = VisualShaderNodeVectorFunc::FUNC_UNSPECIFIED)
       : VisualShaderNodeGenerator(), type(type), func(func) {}
-
-  virtual std::string generate_global_per_func([[maybe_unused]] const int& id) const override;
 
   virtual std::string generate_code([[maybe_unused]] const int& id,
                                     [[maybe_unused]] const std::vector<std::string>& input_vars,
@@ -374,9 +366,9 @@ class VisualShaderNodeGeneratorSmoothStep : public VisualShaderNodeGenerator {
                                     [[maybe_unused]] const std::vector<std::string>& output_vars) const override;
 };
 
-class VisualShaderNodeGeneratorDistance : public VisualShaderNodeGenerator {
+class VisualShaderNodeGeneratorVectorDistance : public VisualShaderNodeGenerator {
  public:
-  VisualShaderNodeGeneratorDistance()
+  VisualShaderNodeGeneratorVectorDistance()
       : VisualShaderNodeGenerator() {}
 
   virtual std::string generate_code([[maybe_unused]] const int& id,

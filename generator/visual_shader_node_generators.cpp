@@ -717,7 +717,7 @@ std::string VisualShaderNodeGeneratorSmoothStep::generate_code(
          input_vars.at(2) + ");" + std::string("\n");
 }
 
-std::string VisualShaderNodeGeneratorDistance::generate_code(
+std::string VisualShaderNodeGeneratorVectorDistance::generate_code(
     [[maybe_unused]] const int& id, [[maybe_unused]] const std::vector<std::string>& input_vars,
     [[maybe_unused]] const std::vector<std::string>& output_vars) const {
   return std::string("\t") + output_vars.at(0) + " = distance(" + input_vars.at(0) + ", " + input_vars.at(1) + ");" +
