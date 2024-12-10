@@ -30,6 +30,9 @@
 #include "gui/controller/graph_node.hpp"
 #include "gui/model/utils/utils.hpp"
 
+#include <iomanip>
+#include <sstream>
+
 std::string VisualShaderNodeGeneratorInput::generate_global([[maybe_unused]] const int& id) const {
   std::string code;
 
@@ -53,22 +56,629 @@ std::string VisualShaderNodeGeneratorInput::generate_global([[maybe_unused]] con
 std::string VisualShaderNodeGeneratorInput::generate_code(
     [[maybe_unused]] const int& id, [[maybe_unused]] const std::vector<std::string>& input_vars,
     [[maybe_unused]] const std::vector<std::string>& output_vars) const {
-  std::string code;
+  std::string code{std::string("\t") + output_vars.at(0) + " = "};
 
   std::string input_type_caption{
       shadergen_utils::get_enum_value_caption(VisualShaderNodeInputType_descriptor(), input_type)};
 
   switch (input_type) {
     case VisualShaderNodeInputType::INPUT_TYPE_UV: {
-      return std::string("\t") + output_vars.at(0) + " = " + input_type_caption + ";" + std::string("\n");
+      return input_type_caption + ";" + std::string("\n");
     } break;
     case VisualShaderNodeInputType::INPUT_TYPE_TIME: {
-      return std::string("\t") + output_vars.at(0) + " = " + input_type_caption + ";" + std::string("\n");
+      return input_type_caption + ";" + std::string("\n");
     } break;
     default:
-      code = std::string("\t") + output_vars.at(0) + " = 0.0;" + std::string("\n");
+      code = "0.0;" + std::string("\n");
       break;
   }
 
   return code;
 }
+
+std::string VisualShaderNodeGeneratorOutput::generate_global([[maybe_unused]] const int& id) const {
+  std::string code;
+
+  std::string output_type_caption{
+      shadergen_utils::get_enum_value_caption(VisualShaderNodeOutputType_descriptor(), output_type)};
+
+  switch (output_type) {
+    case VisualShaderNodeOutputType::OUTPUT_TYPE_COLOR: {
+      code += "out vec4 " + output_type_caption + ";" + std::string("\n");
+    } break;
+    default:
+      break;
+  }
+
+  return code;
+}
+
+std::string VisualShaderNodeGeneratorOutput::generate_code(
+    [[maybe_unused]] const int& id, [[maybe_unused]] const std::vector<std::string>& input_vars,
+    [[maybe_unused]] const std::vector<std::string>& output_vars) const {
+  std::string code{std::string("\t") + output_vars.at(0) + " = "};
+
+  std::string output_type_caption{
+      shadergen_utils::get_enum_value_caption(VisualShaderNodeOutputType_descriptor(), output_type)};
+
+  if (!input_vars.at(0).empty()) {
+    switch (output_type) {
+      case VisualShaderNodeOutputType::OUTPUT_TYPE_COLOR: {
+        code += std::string("\t") + output_type_caption + " = " + input_vars.at(0) + ";" + std::string("\n");
+      } break;
+      default:
+        code = std::string("\t") + output_type_caption + " = vec4(0.0, 0.0, 0.0, 1.0);" + std::string("\n");
+        break;
+    }
+  }
+
+  if (code.empty()) {
+    code = std::string("\t") + output_type_caption + " = vec4(0.0, 0.0, 0.0, 1.0);" + std::string("\n");
+  }
+
+  return code;
+}
+
+/*************************************/
+/* CONSTANTS                         */
+/*************************************/
+
+std::string VisualShaderNodeGeneratorFloatConstant::generate_code(
+    [[maybe_unused]] const int& id, [[maybe_unused]] const std::vector<std::string>& input_vars,
+    [[maybe_unused]] const std::vector<std::string>& output_vars) const {
+  std::ostringstream oss;
+  oss << "\t" << output_vars.at(0) << " = " << std::fixed << std::setprecision(6) << value << ";"
+      << std::string("\n");
+  return oss.str();
+}
+
+std::string VisualShaderNodeGeneratorIntConstant::generate_code(
+    [[maybe_unused]] const int& id, [[maybe_unused]] const std::vector<std::string>& input_vars,
+    [[maybe_unused]] const std::vector<std::string>& output_vars) const {
+  return std::string("\t") + output_vars.at(0) + " = " + std::to_string(value) + ";" + std::string("\n");
+}
+
+std::string VisualShaderNodeGeneratorUIntConstant::generate_code(
+    [[maybe_unused]] const int& id, [[maybe_unused]] const std::vector<std::string>& input_vars,
+    [[maybe_unused]] const std::vector<std::string>& output_vars) const {
+  return std::string("\t") + output_vars.at(0) + " = " + std::to_string(value) + "u;" + std::string("\n");
+}
+
+std::string VisualShaderNodeGeneratorBoolConstant::generate_code(
+    [[maybe_unused]] const int& id, [[maybe_unused]] const std::vector<std::string>& input_vars,
+    [[maybe_unused]] const std::vector<std::string>& output_vars) const {
+  return std::string("\t") + output_vars.at(0) + " = " + (value ? "true" : "false") + ";" + std::string("\n");
+}
+
+std::string VisualShaderNodeGeneratorColorConstant::generate_code(
+    [[maybe_unused]] const int& id, [[maybe_unused]] const std::vector<std::string>& input_vars,
+    [[maybe_unused]] const std::vector<std::string>& output_vars) const {
+  std::ostringstream oss;
+  oss << "\t" << output_vars.at(0) << " = vec4(" << std::fixed << std::setprecision(6) << r << ", "
+      << g << ", " << b << ", " << a << ");" << std::string("\n");
+  return oss.str();
+}
+
+std::string VisualShaderNodeGeneratorVec2Constant::generate_code(
+    [[maybe_unused]] const int& id, [[maybe_unused]] const std::vector<std::string>& input_vars,
+    [[maybe_unused]] const std::vector<std::string>& output_vars) const {
+  std::ostringstream oss;
+  oss << "\t" << output_vars.at(0) << " = vec2(" << std::fixed << std::setprecision(6) << x << ", "
+      << y << ");" << std::string("\n");
+  return oss.str();
+}
+
+std::string VisualShaderNodeGeneratorVec3Constant::generate_code(
+    [[maybe_unused]] const int& id, [[maybe_unused]] const std::vector<std::string>& input_vars,
+    [[maybe_unused]] const std::vector<std::string>& output_vars) const {
+  std::ostringstream oss;
+  oss << "\t" << output_vars.at(0) << " = vec3(" << std::fixed << std::setprecision(6) << x << ", "
+      << y << ", " << z << ");" << std::string("\n");
+  return oss.str();
+}
+
+std::string VisualShaderNodeGeneratorVec4Constant::generate_code(
+    [[maybe_unused]] const int& id, [[maybe_unused]] const std::vector<std::string>& input_vars,
+    [[maybe_unused]] const std::vector<std::string>& output_vars) const {
+  std::ostringstream oss;
+  oss << "\t" << output_vars.at(0) << " = vec4(" << std::fixed << std::setprecision(6) << x << ", "
+      << y << ", " << z << ", " << w << ");" << std::string("\n");
+  return oss.str();
+}
+
+/*************************************/
+/* OPERATORS                         */
+/*************************************/
+
+std::string VisualShaderNodeGeneratorFloatOp::generate_code(
+    [[maybe_unused]] const int& id, [[maybe_unused]] const std::vector<std::string>& input_vars,
+    [[maybe_unused]] const std::vector<std::string>& output_vars) const {
+  std::string code{std::string("\t") + output_vars.at(0) + " = "};
+  switch (op) {
+    case VisualShaderNodeFloatOp::OP_ADD:
+      code += input_vars.at(0) + " + " + input_vars.at(1) + ";" + std::string("\n");
+      break;
+    case VisualShaderNodeFloatOp::OP_SUB:
+      code += input_vars.at(0) + " - " + input_vars.at(1) + ";" + std::string("\n");
+      break;
+    case VisualShaderNodeFloatOp::OP_MUL:
+      code += input_vars.at(0) + " * " + input_vars.at(1) + ";" + std::string("\n");
+      break;
+    case VisualShaderNodeFloatOp::OP_DIV:
+      code += input_vars.at(0) + " / " + input_vars.at(1) + ";" + std::string("\n");
+      break;
+    case VisualShaderNodeFloatOp::OP_MOD:
+      code += "mod(" + input_vars.at(0) + ", " + input_vars.at(1) + ");" + std::string("\n");
+      break;
+    case VisualShaderNodeFloatOp::OP_POW:
+      code += "pow(" + input_vars.at(0) + ", " + input_vars.at(1) + ");" + std::string("\n");
+      break;
+    case VisualShaderNodeFloatOp::OP_MAX:
+      code += "max(" + input_vars.at(0) + ", " + input_vars.at(1) + ");" + std::string("\n");
+      break;
+    case VisualShaderNodeFloatOp::OP_MIN:
+      code += "min(" + input_vars.at(0) + ", " + input_vars.at(1) + ");" + std::string("\n");
+      break;
+    case VisualShaderNodeFloatOp::OP_ATAN2:
+      code += "atan(" + input_vars.at(0) + ", " + input_vars.at(1) + ");" + std::string("\n");
+      break;
+    case VisualShaderNodeFloatOp::OP_STEP:
+      code += "step(" + input_vars.at(0) + ", " + input_vars.at(1) + ");" + std::string("\n");
+      break;
+    default:
+      break;
+  }
+  return code;
+}
+
+std::string VisualShaderNodeGeneratorIntOp::generate_code(
+    [[maybe_unused]] const int& id, [[maybe_unused]] const std::vector<std::string>& input_vars,
+    [[maybe_unused]] const std::vector<std::string>& output_vars) const {
+  std::string code{std::string("\t") + output_vars.at(0) + " = "};
+  switch (op) {
+    case VisualShaderNodeIntOp::OP_ADD:
+      code += input_vars.at(0) + " + " + input_vars.at(1) + ";" + std::string("\n");
+      break;
+    case VisualShaderNodeIntOp::OP_SUB:
+      code += input_vars.at(0) + " - " + input_vars.at(1) + ";" + std::string("\n");
+      break;
+    case VisualShaderNodeIntOp::OP_MUL:
+      code += input_vars.at(0) + " * " + input_vars.at(1) + ";" + std::string("\n");
+      break;
+    case VisualShaderNodeIntOp::OP_DIV:
+      code += input_vars.at(0) + " / " + input_vars.at(1) + ";" + std::string("\n");
+      break;
+    case VisualShaderNodeIntOp::OP_MOD:
+      code += input_vars.at(0) + " % " + input_vars.at(1) + ";" + std::string("\n");
+      break;
+    case VisualShaderNodeIntOp::OP_MAX:
+      code += "max(" + input_vars.at(0) + ", " + input_vars.at(1) + ");" + std::string("\n");
+      break;
+    case VisualShaderNodeIntOp::OP_MIN:
+      code += "min(" + input_vars.at(0) + ", " + input_vars.at(1) + ");" + std::string("\n");
+      break;
+    case VisualShaderNodeIntOp::OP_BITWISE_AND:
+      code += input_vars.at(0) + " & " + input_vars.at(1) + ";" + std::string("\n");
+      break;
+    case VisualShaderNodeIntOp::OP_BITWISE_OR:
+      code += input_vars.at(0) + " | " + input_vars.at(1) + ";" + std::string("\n");
+      break;
+    case VisualShaderNodeIntOp::OP_BITWISE_XOR:
+      code += input_vars.at(0) + " ^ " + input_vars.at(1) + ";" + std::string("\n");
+      break;
+    case VisualShaderNodeIntOp::OP_BITWISE_LEFT_SHIFT:
+      code += input_vars.at(0) + " << " + input_vars.at(1) + ";" + std::string("\n");
+      break;
+    case VisualShaderNodeIntOp::OP_BITWISE_RIGHT_SHIFT:
+      code += input_vars.at(0) + " >> " + input_vars.at(1) + ";" + std::string("\n");
+      break;
+    default:
+      break;
+  }
+
+  return code;
+}
+
+std::string VisualShaderNodeGeneratorUIntOp::generate_code(
+    [[maybe_unused]] const int& id, [[maybe_unused]] const std::vector<std::string>& input_vars,
+    [[maybe_unused]] const std::vector<std::string>& output_vars) const {
+  std::string code{std::string("\t") + output_vars.at(0) + " = "};
+  switch (op) {
+    case VisualShaderNodeUIntOp::OP_ADD:
+      code += input_vars.at(0) + " + " + input_vars.at(1) + ";" + std::string("\n");
+      break;
+    case VisualShaderNodeUIntOp::OP_SUB:
+      code += input_vars.at(0) + " - " + input_vars.at(1) + ";" + std::string("\n");
+      break;
+    case VisualShaderNodeUIntOp::OP_MUL:
+      code += input_vars.at(0) + " * " + input_vars.at(1) + ";" + std::string("\n");
+      break;
+    case VisualShaderNodeUIntOp::OP_DIV:
+      code += input_vars.at(0) + " / " + input_vars.at(1) + ";" + std::string("\n");
+      break;
+    case VisualShaderNodeUIntOp::OP_MOD:
+      code += input_vars.at(0) + " % " + input_vars.at(1) + ";" + std::string("\n");
+      break;
+    case VisualShaderNodeUIntOp::OP_MAX:
+      code += "max(" + input_vars.at(0) + ", " + input_vars.at(1) + ");" + std::string("\n");
+      break;
+    case VisualShaderNodeUIntOp::OP_MIN:
+      code += "min(" + input_vars.at(0) + ", " + input_vars.at(1) + ");" + std::string("\n");
+      break;
+    case VisualShaderNodeUIntOp::OP_BITWISE_AND:
+      code += input_vars.at(0) + " & " + input_vars.at(1) + ";" + std::string("\n");
+      break;
+    case VisualShaderNodeUIntOp::OP_BITWISE_OR:
+      code += input_vars.at(0) + " | " + input_vars.at(1) + ";" + std::string("\n");
+      break;
+    case VisualShaderNodeUIntOp::OP_BITWISE_XOR:
+      code += input_vars.at(0) + " ^ " + input_vars.at(1) + ";" + std::string("\n");
+      break;
+    case VisualShaderNodeUIntOp::OP_BITWISE_LEFT_SHIFT:
+      code += input_vars.at(0) + " << " + input_vars.at(1) + ";" + std::string("\n");
+      break;
+    case VisualShaderNodeUIntOp::OP_BITWISE_RIGHT_SHIFT:
+      code += input_vars.at(0) + " >> " + input_vars.at(1) + ";" + std::string("\n");
+      break;
+    default:
+      break;
+  }
+
+  return code;
+}
+
+std::string VisualShaderNodeGeneratorVectorOp::generate_code(
+    [[maybe_unused]] const int& id, [[maybe_unused]] const std::vector<std::string>& input_vars,
+    [[maybe_unused]] const std::vector<std::string>& output_vars) const {
+  std::string code{std::string("\t") + output_vars.at(0) + " = "};
+  switch (op) {
+    case VisualShaderNodeVectorOp::OP_ADD:
+      code += input_vars.at(0) + " + " + input_vars.at(1) + ";" + std::string("\n");
+      break;
+    case VisualShaderNodeVectorOp::OP_SUB:
+      code += input_vars.at(0) + " - " + input_vars.at(1) + ";" + std::string("\n");
+      break;
+    case VisualShaderNodeVectorOp::OP_MUL:
+      code += input_vars.at(0) + " * " + input_vars.at(1) + ";" + std::string("\n");
+      break;
+    case VisualShaderNodeVectorOp::OP_DIV:
+      code += input_vars.at(0) + " / " + input_vars.at(1) + ";" + std::string("\n");
+      break;
+    case VisualShaderNodeVectorOp::OP_MOD:
+      code += "mod(" + input_vars.at(0) + ", " + input_vars.at(1) + ");" + std::string("\n");
+      break;
+    case VisualShaderNodeVectorOp::OP_POW:
+      code += "pow(" + input_vars.at(0) + ", " + input_vars.at(1) + ");" + std::string("\n");
+      break;
+    case VisualShaderNodeVectorOp::OP_MAX:
+      code += "max(" + input_vars.at(0) + ", " + input_vars.at(1) + ");" + std::string("\n");
+      break;
+    case VisualShaderNodeVectorOp::OP_MIN:
+      code += "min(" + input_vars.at(0) + ", " + input_vars.at(1) + ");" + std::string("\n");
+      break;
+    case VisualShaderNodeVectorOp::OP_CROSS:
+      switch (type) {
+        case VisualShaderNodeVectorType::TYPE_VECTOR_2D:  // Not supported.
+          code += "vec2(0.0);" + std::string("\n");
+          break;
+        case VisualShaderNodeVectorType::TYPE_VECTOR_3D:
+          code += "cross(" + input_vars.at(0) + ", " + input_vars.at(1) + ");" + std::string("\n");
+          break;
+        case VisualShaderNodeVectorType::TYPE_VECTOR_4D:  // Not supported.
+          code += "vec4(0.0);" + std::string("\n");
+          break;
+        default:
+          break;
+      }
+      break;
+    case VisualShaderNodeVectorOp::OP_ATAN2:
+      code += "atan(" + input_vars.at(0) + ", " + input_vars.at(1) + ");" + std::string("\n");
+      break;
+    case VisualShaderNodeVectorOp::OP_REFLECT:
+      code += "reflect(" + input_vars.at(0) + ", " + input_vars.at(1) + ");" + std::string("\n");
+      break;
+    case VisualShaderNodeVectorOp::OP_STEP:
+      code += "step(" + input_vars.at(0) + ", " + input_vars.at(1) + ");" + std::string("\n");
+      break;
+    default:
+      break;
+  }
+
+  return code;
+}
+
+/*************************************/
+/* Funcs Node                        */
+/*************************************/
+
+std::string VisualShaderNodeGeneratorFloatFunc::generate_code(
+    [[maybe_unused]] const int& id, [[maybe_unused]] const std::vector<std::string>& input_vars,
+    [[maybe_unused]] const std::vector<std::string>& output_vars) const {
+  std::string code{std::string("\t") + output_vars.at(0) + " = "};
+  switch (func) {
+    case VisualShaderNodeFloatFunc::FUNC_SIN:
+      code += "sin(" + input_vars.at(0) + ");" + std::string("\n");
+      break;
+    case VisualShaderNodeFloatFunc::FUNC_COS:
+      code += "cos(" + input_vars.at(0) + ");" + std::string("\n");
+      break;
+    case VisualShaderNodeFloatFunc::FUNC_TAN:
+      code += "tan(" + input_vars.at(0) + ");" + std::string("\n");
+      break;
+    case VisualShaderNodeFloatFunc::FUNC_ASIN:
+      code += "asin(" + input_vars.at(0) + ");" + std::string("\n");
+      break;
+    case VisualShaderNodeFloatFunc::FUNC_ACOS:
+      code += "acos(" + input_vars.at(0) + ");" + std::string("\n");
+      break;
+    case VisualShaderNodeFloatFunc::FUNC_ATAN:
+      code += "atan(" + input_vars.at(0) + ");" + std::string("\n");
+      break;
+    case VisualShaderNodeFloatFunc::FUNC_SINH:
+      code += "sinh(" + input_vars.at(0) + ");" + std::string("\n");
+      break;
+    case VisualShaderNodeFloatFunc::FUNC_COSH:
+      code += "cosh(" + input_vars.at(0) + ");" + std::string("\n");
+      break;
+    case VisualShaderNodeFloatFunc::FUNC_TANH:
+      code += "tanh(" + input_vars.at(0) + ");" + std::string("\n");
+      break;
+    case VisualShaderNodeFloatFunc::FUNC_LOG:
+      code += "log(" + input_vars.at(0) + ");" + std::string("\n");
+      break;
+    case VisualShaderNodeFloatFunc::FUNC_EXP:
+      code += "exp(" + input_vars.at(0) + ");" + std::string("\n");
+      break;
+    case VisualShaderNodeFloatFunc::FUNC_SQRT:
+      code += "sqrt(" + input_vars.at(0) + ");" + std::string("\n");
+      break;
+    case VisualShaderNodeFloatFunc::FUNC_ABS:
+      code += "abs(" + input_vars.at(0) + ");" + std::string("\n");
+      break;
+    case VisualShaderNodeFloatFunc::FUNC_SIGN:
+      code += "sign(" + input_vars.at(0) + ");" + std::string("\n");
+      break;
+    case VisualShaderNodeFloatFunc::FUNC_FLOOR:
+      code += "floor(" + input_vars.at(0) + ");" + std::string("\n");
+      break;
+    case VisualShaderNodeFloatFunc::FUNC_ROUND:
+      code += "round(" + input_vars.at(0) + ");" + std::string("\n");
+      break;
+    case VisualShaderNodeFloatFunc::FUNC_CEIL:
+      code += "ceil(" + input_vars.at(0) + ");" + std::string("\n");
+      break;
+    case VisualShaderNodeFloatFunc::FUNC_FRACT:
+      code += "fract(" + input_vars.at(0) + ");" + std::string("\n");
+      break;
+    case VisualShaderNodeFloatFunc::FUNC_SATURATE:
+      code += "min(max(" + input_vars.at(0) + ", 0.0), 1.0);" +
+              std::string("\n");
+      break;
+    case VisualShaderNodeFloatFunc::FUNC_NEGATE:
+      code += "-(" + input_vars.at(0) + ");" + std::string("\n");
+      break;
+    case VisualShaderNodeFloatFunc::FUNC_ACOSH:
+      code += "acosh(" + input_vars.at(0) + ");" + std::string("\n");
+      break;
+    case VisualShaderNodeFloatFunc::FUNC_ASINH:
+      code += "asinh(" + input_vars.at(0) + ");" + std::string("\n");
+      break;
+    case VisualShaderNodeFloatFunc::FUNC_ATANH:
+      code += "atanh(" + input_vars.at(0) + ");" + std::string("\n");
+      break;
+    case VisualShaderNodeFloatFunc::FUNC_DEGREES:
+      code += "degrees(" + input_vars.at(0) + ");" + std::string("\n");
+      break;
+    case VisualShaderNodeFloatFunc::FUNC_EXP2:
+      code += "exp2(" + input_vars.at(0) + ");" + std::string("\n");
+      break;
+    case VisualShaderNodeFloatFunc::FUNC_INVERSE_SQRT:
+      code += "inversesqrt(" + input_vars.at(0) + ");" + std::string("\n");
+      break;
+    case VisualShaderNodeFloatFunc::FUNC_LOG2:
+      code += "log2(" + input_vars.at(0) + ");" + std::string("\n");
+      break;
+    case VisualShaderNodeFloatFunc::FUNC_RADIANS:
+      code += "radians(" + input_vars.at(0) + ");" + std::string("\n");
+      break;
+    case VisualShaderNodeFloatFunc::FUNC_RECIPROCAL:
+      code += "1.0 / (" + input_vars.at(0) + ");" + std::string("\n");
+      break;
+    case VisualShaderNodeFloatFunc::FUNC_ROUNDEVEN:
+      code += "roundEven(" + input_vars.at(0) + ");" + std::string("\n");
+      break;
+    case VisualShaderNodeFloatFunc::FUNC_TRUNC:
+      code += "trunc(" + input_vars.at(0) + ");" + std::string("\n");
+      break;
+    case VisualShaderNodeFloatFunc::FUNC_ONEMINUS:
+      code += "1.0 - " + input_vars.at(0) + ";" + std::string("\n");
+      break;
+    default:
+      break;
+  }
+  return code;
+}
+
+std::string VisualShaderNodeGeneratorIntFunc::generate_code(
+    [[maybe_unused]] const int& id, [[maybe_unused]] const std::vector<std::string>& input_vars,
+    [[maybe_unused]] const std::vector<std::string>& output_vars) const {
+  std::string code{std::string("\t") + output_vars.at(0) + " = "};
+  switch (func) {
+    case VisualShaderNodeIntFunc::FUNC_ABS:
+      code += "abs(" + input_vars.at(0) + ");" + std::string("\n");
+      break;
+    case VisualShaderNodeIntFunc::FUNC_NEGATE:
+      code += "-(" + input_vars.at(0) + ");" + std::string("\n");
+      break;
+    case VisualShaderNodeIntFunc::FUNC_SIGN:
+      code += "sign(" + input_vars.at(0) + ");" + std::string("\n");
+      break;
+    case VisualShaderNodeIntFunc::FUNC_BITWISE_NOT:
+      code += "~(" + input_vars.at(0) + ");" + std::string("\n");
+      break;
+    default:
+      break;
+  }
+  return code;
+}
+
+std::string VisualShaderNodeGeneratorUIntFunc::generate_code(
+    [[maybe_unused]] const int& id, [[maybe_unused]] const std::vector<std::string>& input_vars,
+    [[maybe_unused]] const std::vector<std::string>& output_vars) const {
+  std::string code{std::string("\t") + output_vars.at(0) + " = "};
+  switch (func) {
+    case VisualShaderNodeUIntFunc::FUNC_NEGATE:
+      code += "-(" + input_vars.at(0) + ");" + std::string("\n");
+      break;
+    case VisualShaderNodeUIntFunc::FUNC_BITWISE_NOT:
+      code += "~(" + input_vars.at(0) + ");" + std::string("\n");
+      break;
+    default:
+      break;
+  }
+  return code;
+}
+
+std::string VisualShaderNodeGeneratorVectorFunc::generate_code(
+    [[maybe_unused]] const int& id, [[maybe_unused]] const std::vector<std::string>& input_vars,
+    [[maybe_unused]] const std::vector<std::string>& output_vars) const {
+  std::string code{std::string("\t") + output_vars.at(0) + " = "};
+  switch (func) {
+    case VisualShaderNodeVectorFunc::FUNC_NORMALIZE:
+      code += "normalize(" + input_vars.at(0) + ");" + std::string("\n");
+      break;
+    case VisualShaderNodeVectorFunc::FUNC_SATURATE:
+      switch (type) {
+        case VisualShaderNodeVectorType::TYPE_VECTOR_2D:
+          code += "max(min(" + input_vars.at(0) +
+                  ", vec2(1.0)), vec2(0.0));" + std::string("\n");
+          break;
+        case VisualShaderNodeVectorType::TYPE_VECTOR_3D:
+          code += "max(min(" + input_vars.at(0) +
+                  ", vec3(1.0)), vec3(0.0));" + std::string("\n");
+          break;
+        case VisualShaderNodeVectorType::TYPE_VECTOR_4D:
+          code += "max(min(" + input_vars.at(0) +
+                  ", vec4(1.0)), vec4(0.0));" + std::string("\n");
+          break;
+        default:
+          break;
+      }
+      break;
+    case VisualShaderNodeVectorFunc::FUNC_NEGATE:
+      code += "-(" + input_vars.at(0) + ");" + std::string("\n");
+      break;
+    case VisualShaderNodeVectorFunc::FUNC_RECIPROCAL:
+      code += "1.0 / (" + input_vars.at(0) + ");" + std::string("\n");
+      break;
+    case VisualShaderNodeVectorFunc::FUNC_ABS:
+      code += "abs(" + input_vars.at(0) + ");" + std::string("\n");
+      break;
+    case VisualShaderNodeVectorFunc::FUNC_ACOS:
+      code += "acos(" + input_vars.at(0) + ");" + std::string("\n");
+      break;
+    case VisualShaderNodeVectorFunc::FUNC_ACOSH:
+      code += "acosh(" + input_vars.at(0) + ");" + std::string("\n");
+      break;
+    case VisualShaderNodeVectorFunc::FUNC_ASIN:
+      code += "asin(" + input_vars.at(0) + ");" + std::string("\n");
+      break;
+    case VisualShaderNodeVectorFunc::FUNC_ASINH:
+      code += "asinh(" + input_vars.at(0) + ");" + std::string("\n");
+      break;
+    case VisualShaderNodeVectorFunc::FUNC_ATAN:
+      code += "atan(" + input_vars.at(0) + ");" + std::string("\n");
+      break;
+    case VisualShaderNodeVectorFunc::FUNC_ATANH:
+      code += "atanh(" + input_vars.at(0) + ");" + std::string("\n");
+      break;
+    case VisualShaderNodeVectorFunc::FUNC_CEIL:
+      code += "ceil(" + input_vars.at(0) + ");" + std::string("\n");
+      break;
+    case VisualShaderNodeVectorFunc::FUNC_COS:
+      code += "cos(" + input_vars.at(0) + ");" + std::string("\n");
+      break;
+    case VisualShaderNodeVectorFunc::FUNC_COSH:
+      code += "cosh(" + input_vars.at(0) + ");" + std::string("\n");
+      break;
+    case VisualShaderNodeVectorFunc::FUNC_DEGREES:
+      code += "degrees(" + input_vars.at(0) + ");" + std::string("\n");
+      break;
+    case VisualShaderNodeVectorFunc::FUNC_EXP:
+      code += "exp(" + input_vars.at(0) + ");" + std::string("\n");
+      break;
+    case VisualShaderNodeVectorFunc::FUNC_EXP2:
+      code += "exp2(" + input_vars.at(0) + ");" + std::string("\n");
+      break;
+    case VisualShaderNodeVectorFunc::FUNC_FLOOR:
+      code += "floor(" + input_vars.at(0) + ");" + std::string("\n");
+      break;
+    case VisualShaderNodeVectorFunc::FUNC_FRACT:
+      code += "fract(" + input_vars.at(0) + ");" + std::string("\n");
+      break;
+    case VisualShaderNodeVectorFunc::FUNC_INVERSE_SQRT:
+      code += "inversesqrt(" + input_vars.at(0) + ");" + std::string("\n");
+      break;
+    case VisualShaderNodeVectorFunc::FUNC_LOG:
+      code += "log(" + input_vars.at(0) + ");" + std::string("\n");
+      break;
+    case VisualShaderNodeVectorFunc::FUNC_LOG2:
+      code += "log2(" + input_vars.at(0) + ");" + std::string("\n");
+      break;
+    case VisualShaderNodeVectorFunc::FUNC_RADIANS:
+      code += "radians(" + input_vars.at(0) + ");" + std::string("\n");
+      break;
+    case VisualShaderNodeVectorFunc::FUNC_ROUND:
+      code += "round(" + input_vars.at(0) + ");" + std::string("\n");
+      break;
+    case VisualShaderNodeVectorFunc::FUNC_ROUNDEVEN:
+      code += "roundEven(" + input_vars.at(0) + ");" + std::string("\n");
+      break;
+    case VisualShaderNodeVectorFunc::FUNC_SIGN:
+      code += "sign(" + input_vars.at(0) + ");" + std::string("\n");
+      break;
+    case VisualShaderNodeVectorFunc::FUNC_SIN:
+      code += "sin(" + input_vars.at(0) + ");" + std::string("\n");
+      break;
+    case VisualShaderNodeVectorFunc::FUNC_SINH:
+      code += "sinh(" + input_vars.at(0) + ");" + std::string("\n");
+      break;
+    case VisualShaderNodeVectorFunc::FUNC_SQRT:
+      code += "sqrt(" + input_vars.at(0) + ");" + std::string("\n");
+      break;
+    case VisualShaderNodeVectorFunc::FUNC_TAN:
+      code += "tan(" + input_vars.at(0) + ");" + std::string("\n");
+      break;
+    case VisualShaderNodeVectorFunc::FUNC_TANH:
+      code += "tanh(" + input_vars.at(0) + ");" + std::string("\n");
+      break;
+    case VisualShaderNodeVectorFunc::FUNC_TRUNC:
+      code += "trunc(" + input_vars.at(0) + ");" + std::string("\n");
+      break;
+    case VisualShaderNodeVectorFunc::FUNC_ONEMINUS:
+      switch (type) {
+        case VisualShaderNodeVectorType::TYPE_VECTOR_2D:
+          code +=
+              "vec2(1.0) - " + input_vars.at(0) + ";" + std::string("\n");
+          break;
+        case VisualShaderNodeVectorType::TYPE_VECTOR_3D:
+          code +=
+              "vec3(1.0) - " + input_vars.at(0) + ";" + std::string("\n");
+          break;
+        case VisualShaderNodeVectorType::TYPE_VECTOR_4D:
+          code +=
+              "vec4(1.0) - " + input_vars.at(0) + ";" + std::string("\n");
+          break;
+        default:
+          break;
+      }
+      break;
+    default:
+      break;
+  }
+  return code;
+}
+
+/*************************************/
+/* MISC                              */
+/*************************************/

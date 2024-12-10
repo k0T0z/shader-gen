@@ -125,6 +125,7 @@ file(GLOB SHADER_GEN_MAIN_ENTRY
 file(GLOB SHADER_GEN_HPP_FILES 
     ${CMAKE_CURRENT_SOURCE_DIR}/generator/visual_shader_generator.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/generator/visual_shader_node_generators.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/generator/vs_node_noise_generators.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/gui/model/proto_model.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/gui/model/message_model.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/gui/model/repeated_message_model.hpp
@@ -141,6 +142,7 @@ file(GLOB SHADER_GEN_HPP_FILES
 file(GLOB SHADER_GEN_CPP_FILES 
     ${CMAKE_CURRENT_SOURCE_DIR}/generator/visual_shader_generator.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/generator/visual_shader_node_generators.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/generator/vs_node_noise_generators.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/gui/model/proto_model.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/gui/model/message_model.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/gui/model/repeated_message_model.cpp
