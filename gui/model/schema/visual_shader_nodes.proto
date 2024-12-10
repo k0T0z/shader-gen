@@ -108,7 +108,7 @@ message VisualShaderNodeInput {
     option (node_output_port_caption) = "";
     option (node_output_port_type) = PORT_TYPE_UNSPECIFIED;
 
-    option (node_category_path) = "Input/Basic";
+    option (node_category_path) = "Input";
     option (node_category) = CATEGORY_INPUT;
 
     option (node_description) = "Input node that can be used to pass a value into the shader.";
@@ -154,7 +154,7 @@ message VisualShaderNodeFloatConstant {
     option (node_output_port_type) = PORT_TYPE_SCALAR;
 
     option (node_category) = CATEGORY_INPUT;
-    option (node_category_path) = "Input/Basic";
+    option (node_category_path) = "Input";
 
     option (node_description) = "Scalar floating-point constant.";
 
@@ -170,7 +170,7 @@ message VisualShaderNodeIntConstant {
     option (node_output_port_type) = PORT_TYPE_SCALAR_INT;
 
     option (node_category) = CATEGORY_INPUT;
-    option (node_category_path) = "Input/Basic";
+    option (node_category_path) = "Input";
 
     option (node_description) = "Scalar integer constant.";
 
@@ -186,7 +186,7 @@ message VisualShaderNodeUIntConstant {
     option (node_output_port_type) = PORT_TYPE_SCALAR_UINT;
 
     option (node_category) = CATEGORY_INPUT;
-    option (node_category_path) = "Input/Basic";
+    option (node_category_path) = "Input";
 
     option (node_description) = "Scalar unsigned integer constant.";
 
@@ -202,7 +202,7 @@ message VisualShaderNodeBooleanConstant {
     option (node_output_port_type) = PORT_TYPE_BOOLEAN;
 
     option (node_category) = CATEGORY_INPUT;
-    option (node_category_path) = "Input/Basic";
+    option (node_category_path) = "Input";
 
     option (node_description) = "Scalar boolean constant.";
 
@@ -218,7 +218,7 @@ message VisualShaderNodeColorConstant {
     option (node_output_port_type) = PORT_TYPE_VECTOR_4D;
 
     option (node_category) = CATEGORY_INPUT;
-    option (node_category_path) = "Input/Basic";
+    option (node_category_path) = "Input";
 
     option (node_description) = "Vector color constant.";
 
@@ -237,7 +237,7 @@ message VisualShaderNodeVec2Constant {
     option (node_output_port_type) = PORT_TYPE_VECTOR_2D;
 
     option (node_category) = CATEGORY_INPUT;
-    option (node_category_path) = "Input/Basic";
+    option (node_category_path) = "Input";
 
     option (node_description) = "Vector 2D constant.";
 
@@ -254,7 +254,7 @@ message VisualShaderNodeVec3Constant {
     option (node_output_port_type) = PORT_TYPE_VECTOR_3D;
 
     option (node_category) = CATEGORY_INPUT;
-    option (node_category_path) = "Input/Basic";
+    option (node_category_path) = "Input";
 
     option (node_description) = "Vector 3D constant.";
 
@@ -272,7 +272,7 @@ message VisualShaderNodeVec4Constant {
     option (node_output_port_type) = PORT_TYPE_VECTOR_4D;
 
     option (node_category) = CATEGORY_INPUT;
-    option (node_category_path) = "Input/Basic";
+    option (node_category_path) = "Input";
 
     option (node_description) = "Vector 4D constant.";
 
