@@ -324,4 +324,157 @@ class VisualShaderNodeGeneratorVectorFunc : public VisualShaderNodeGenerator {
 /* MISC                              */
 /*************************************/
 
+class VisualShaderNodeGeneratorDotProduct : public VisualShaderNodeGenerator {
+ public:
+  VisualShaderNodeGeneratorDotProduct()
+      : VisualShaderNodeGenerator() {}
+
+  virtual std::string generate_code([[maybe_unused]] const int& id,
+                                    [[maybe_unused]] const std::vector<std::string>& input_vars,
+                                    [[maybe_unused]] const std::vector<std::string>& output_vars) const override;
+};
+
+class VisualShaderNodeGeneratorVectorLen : public VisualShaderNodeGenerator {
+ public:
+  VisualShaderNodeGeneratorVectorLen()
+      : VisualShaderNodeGenerator() {}
+
+  virtual std::string generate_code([[maybe_unused]] const int& id,
+                                    [[maybe_unused]] const std::vector<std::string>& input_vars,
+                                    [[maybe_unused]] const std::vector<std::string>& output_vars) const override;
+};
+
+class VisualShaderNodeGeneratorClamp : public VisualShaderNodeGenerator {
+ public:
+  VisualShaderNodeGeneratorClamp()
+      : VisualShaderNodeGenerator() {}
+
+  virtual std::string generate_code([[maybe_unused]] const int& id,
+                                    [[maybe_unused]] const std::vector<std::string>& input_vars,
+                                    [[maybe_unused]] const std::vector<std::string>& output_vars) const override;
+};
+
+class VisualShaderNodeGeneratorStep : public VisualShaderNodeGenerator {
+ public:
+  VisualShaderNodeGeneratorStep()
+      : VisualShaderNodeGenerator() {}
+
+  virtual std::string generate_code([[maybe_unused]] const int& id,
+                                    [[maybe_unused]] const std::vector<std::string>& input_vars,
+                                    [[maybe_unused]] const std::vector<std::string>& output_vars) const override;
+};
+
+class VisualShaderNodeGeneratorSmoothStep : public VisualShaderNodeGenerator {
+ public:
+  VisualShaderNodeGeneratorSmoothStep()
+      : VisualShaderNodeGenerator() {}
+
+  virtual std::string generate_code([[maybe_unused]] const int& id,
+                                    [[maybe_unused]] const std::vector<std::string>& input_vars,
+                                    [[maybe_unused]] const std::vector<std::string>& output_vars) const override;
+};
+
+class VisualShaderNodeGeneratorDistance : public VisualShaderNodeGenerator {
+ public:
+  VisualShaderNodeGeneratorDistance()
+      : VisualShaderNodeGenerator() {}
+
+  virtual std::string generate_code([[maybe_unused]] const int& id,
+                                    [[maybe_unused]] const std::vector<std::string>& input_vars,
+                                    [[maybe_unused]] const std::vector<std::string>& output_vars) const override;
+};
+
+class VisualShaderNodeGeneratorMix : public VisualShaderNodeGenerator {
+ public:
+  VisualShaderNodeGeneratorMix()
+      : VisualShaderNodeGenerator() {}
+
+  virtual std::string generate_code([[maybe_unused]] const int& id,
+                                    [[maybe_unused]] const std::vector<std::string>& input_vars,
+                                    [[maybe_unused]] const std::vector<std::string>& output_vars) const override;
+};
+
+class VisualShaderNodeGeneratorVectorCompose : public VisualShaderNodeGenerator {
+ public:
+  VisualShaderNodeGeneratorVectorCompose(const VisualShaderNodeVectorType& type = VisualShaderNodeVectorType::TYPE_VECTOR_UNSPECIFIED)
+      : VisualShaderNodeGenerator(), type(type) {}
+
+  virtual std::string generate_code([[maybe_unused]] const int& id,
+                                    [[maybe_unused]] const std::vector<std::string>& input_vars,
+                                    [[maybe_unused]] const std::vector<std::string>& output_vars) const override;
+
+  private:
+    const VisualShaderNodeVectorType type;
+};
+
+class VisualShaderNodeGeneratorVectorDecompose : public VisualShaderNodeGenerator {
+ public:
+  VisualShaderNodeGeneratorVectorDecompose(const VisualShaderNodeVectorType& type = VisualShaderNodeVectorType::TYPE_VECTOR_UNSPECIFIED)
+      : VisualShaderNodeGenerator(), type(type) {}
+
+  virtual std::string generate_code([[maybe_unused]] const int& id,
+                                    [[maybe_unused]] const std::vector<std::string>& input_vars,
+                                    [[maybe_unused]] const std::vector<std::string>& output_vars) const override;
+
+  private:
+    const VisualShaderNodeVectorType type;
+};
+
+/*************************************/
+/* Logic                             */
+/*************************************/
+
+class VisualShaderNodeGeneratorIf : public VisualShaderNodeGenerator {
+ public:
+  VisualShaderNodeGeneratorIf()
+      : VisualShaderNodeGenerator() {}
+
+  virtual std::string generate_code([[maybe_unused]] const int& id,
+                                    [[maybe_unused]] const std::vector<std::string>& input_vars,
+                                    [[maybe_unused]] const std::vector<std::string>& output_vars) const override;
+};
+
+class VisualShaderNodeGeneratorSwitch : public VisualShaderNodeGenerator {
+ public:
+  VisualShaderNodeGeneratorSwitch(const VisualShaderNodeSwitch::VisualShaderNodeSwitchOpType& op = VisualShaderNodeSwitch::OP_TYPE_UNSPECIFIED)
+      : VisualShaderNodeGenerator(), op(op) {}
+
+  virtual std::string generate_code([[maybe_unused]] const int& id,
+                                    [[maybe_unused]] const std::vector<std::string>& input_vars,
+                                    [[maybe_unused]] const std::vector<std::string>& output_vars) const override;
+
+  private:
+  const VisualShaderNodeSwitch::VisualShaderNodeSwitchOpType op;
+};
+
+class VisualShaderNodeGeneratorIs : public VisualShaderNodeGenerator {
+ public:
+  VisualShaderNodeGeneratorIs(const VisualShaderNodeIs::Function& func = VisualShaderNodeIs::FUNC_UNSPECIFIED)
+      : VisualShaderNodeGenerator(), func(func) {}
+
+  virtual std::string generate_code([[maybe_unused]] const int& id,
+                                    [[maybe_unused]] const std::vector<std::string>& input_vars,
+                                    [[maybe_unused]] const std::vector<std::string>& output_vars) const override;
+
+  private:
+  const VisualShaderNodeIs::Function func;
+};
+
+class VisualShaderNodeGeneratorCompare : public VisualShaderNodeGenerator {
+ public:
+  VisualShaderNodeGeneratorCompare(const VisualShaderNodeCompare::ComparisonType& comp = VisualShaderNodeCompare::CMP_TYPE_UNSPECIFIED, 
+                                   const VisualShaderNodeCompare::Function& func = VisualShaderNodeCompare::FUNC_UNSPECIFIED, 
+                                   const VisualShaderNodeCompare::Condition& cond = VisualShaderNodeCompare::COND_UNSPECIFIED)
+      : VisualShaderNodeGenerator(), comp(comp), func(func), cond(cond) {}
+
+  virtual std::string generate_code([[maybe_unused]] const int& id,
+                                    [[maybe_unused]] const std::vector<std::string>& input_vars,
+                                    [[maybe_unused]] const std::vector<std::string>& output_vars) const override;
+
+  private:
+  const VisualShaderNodeCompare::ComparisonType comp;
+  const VisualShaderNodeCompare::Function func;
+  const VisualShaderNodeCompare::Condition cond;
+};
+
 #endif  // ENIGMA_VISUAL_SHADER_NODE_GENERATORS_HPP

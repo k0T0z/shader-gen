@@ -987,6 +987,19 @@ message VisualShaderNodeSwitch {
     option (node_category_path) = "Math/Scalar";
 
     option (node_description) = "Returns one of two values based on a boolean condition.";
+
+    enum VisualShaderNodeSwitchOpType {
+        OP_TYPE_UNSPECIFIED = 0 [(value_caption) = "UNSPECIFIED"];
+        OP_TYPE_FLOAT = 1 [(value_caption) = "Float"];
+        OP_TYPE_INT = 2 [(value_caption) = "Int"];
+        OP_TYPE_UINT = 3 [(value_caption) = "UInt"];
+        OP_TYPE_VECTOR_2D = 4 [(value_caption) = "Vector2"];
+        OP_TYPE_VECTOR_3D = 5 [(value_caption) = "Vector3"];
+        OP_TYPE_VECTOR_4D = 6 [(value_caption) = "Vector4"];
+        OP_TYPE_BOOLEAN = 7 [(value_caption) = "Boolean"];
+    };
+
+    optional VisualShaderNodeSwitchOpType type = 1;
 }
 
 message VisualShaderNodeIs {
@@ -1005,9 +1018,9 @@ message VisualShaderNodeIs {
     option (node_description) = "Compares two values and returns a boolean.";
 
     enum Function {
-        FUNC_IS_UNSPECIFIED = 0;
-        FUNC_IS_INF = 1;
-        FUNC_IS_NAN = 2;
+        FUNC_UNSPECIFIED = 0 [(value_caption) = "UNSPECIFIED"];
+        FUNC_IS_INF = 1 [(value_caption) = "IsInf"];
+        FUNC_IS_NAN = 2 [(value_caption) = "IsNan"];
     };
 
     optional Function func = 1;
@@ -1033,30 +1046,30 @@ message VisualShaderNodeCompare {
     option (node_description) = "Compares two scalar values and returns a boolean.";
 
     enum ComparisonType {
-        CMP_TYPE_UNSPECIFIED = 0;
-        CMP_TYPE_SCALAR = 1;
-        CMP_TYPE_SCALAR_INT = 2;
-        CMP_TYPE_SCALAR_UINT = 3;
-        CMP_TYPE_VECTOR_2D = 4;
-        CMP_TYPE_VECTOR_3D = 5;
-        CMP_TYPE_VECTOR_4D = 6;
-        CMP_TYPE_BOOLEAN = 7;
+        CMP_TYPE_UNSPECIFIED = 0 [(value_caption) = "UNSPECIFIED"];
+        CMP_TYPE_SCALAR = 1 [(value_caption) = "Scalar"];
+        CMP_TYPE_SCALAR_INT = 2 [(value_caption) = "ScalarInt"];
+        CMP_TYPE_SCALAR_UINT = 3 [(value_caption) = "ScalarUInt"];
+        CMP_TYPE_VECTOR_2D = 4 [(value_caption) = "Vector2"];
+        CMP_TYPE_VECTOR_3D = 5 [(value_caption) = "Vector3"];
+        CMP_TYPE_VECTOR_4D = 6 [(value_caption) = "Vector4"];
+        CMP_TYPE_BOOLEAN = 7 [(value_caption) = "Boolean"];
     };
 
     enum Function {
-        FUNC_UNSPECIFIED = 0;
-        FUNC_EQUAL = 1;
-        FUNC_NOT_EQUAL = 2;
-        FUNC_GREATER_THAN = 3;
-        FUNC_GREATER_THAN_EQUAL = 4;
-        FUNC_LESS_THAN = 5;
-        FUNC_LESS_THAN_EQUAL = 6;
+        FUNC_UNSPECIFIED = 0 [(value_caption) = "UNSPECIFIED"];
+        FUNC_EQUAL = 1 [(value_caption) = "Equal"];
+        FUNC_NOT_EQUAL = 2 [(value_caption) = "NotEqual"];
+        FUNC_GREATER_THAN = 3 [(value_caption) = "GreaterThan"];
+        FUNC_GREATER_THAN_EQUAL = 4 [(value_caption) = "GreaterThanEqual"];
+        FUNC_LESS_THAN = 5 [(value_caption) = "LessThan"];
+        FUNC_LESS_THAN_EQUAL = 6 [(value_caption) = "LessThanEqual"];
     };
 
     enum Condition {
-        COND_UNSPECIFIED = 0;
-        COND_ALL = 1;
-        COND_ANY = 2;
+        COND_UNSPECIFIED = 0 [(value_caption) = "UNSPECIFIED"];
+        COND_ALL = 1 [(value_caption) = "All"];
+        COND_ANY = 2 [(value_caption) = "Any"];
     };
 
     optional ComparisonType type = 1;
