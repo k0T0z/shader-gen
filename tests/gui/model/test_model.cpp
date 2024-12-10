@@ -570,16 +570,6 @@ TEST(MessageModelTest, TestDataChangedSignalPrimitiveModel) {
     QModelIndex actual_top_left = arguments.at(0).value<QModelIndex>();
     QModelIndex actual_bottom_right = arguments.at(1).value<QModelIndex>();
 
-    DEBUG_PRINT("Actual top left: " + std::to_string(actual_top_left.row()) + ", " +
-                std::to_string(actual_top_left.column()));
-    DEBUG_PRINT("Expected top left: " + std::to_string(expected_top_left.row()) + ", " +
-                std::to_string(expected_top_left.column()));
-
-    DEBUG_PRINT("Actual bottom right: " + std::to_string(actual_bottom_right.row()) + ", " +
-                std::to_string(actual_bottom_right.column()));
-    DEBUG_PRINT("Expected bottom right: " + std::to_string(expected_bottom_right.row()) + ", " +
-                std::to_string(expected_bottom_right.column()));
-
     ASSERT_EQ(actual_top_left, expected_top_left);
     ASSERT_EQ(actual_bottom_right, expected_bottom_right);
   };

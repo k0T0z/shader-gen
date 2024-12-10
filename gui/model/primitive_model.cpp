@@ -259,10 +259,15 @@ bool PrimitiveModel::setData([[maybe_unused]] const QModelIndex& index, [[maybe_
         CHECK_CONDITION_TRUE_NON_VOID(!value.canConvert<QString>(), false, "Value is not a string.");
         refl->SetRepeatedString(m_message_buffer, m_field_desc, index.parent().row(), value.toString().toStdString());
         break;
-      case FieldDescriptor::CppType::CPPTYPE_ENUM:
+      case FieldDescriptor::CppType::CPPTYPE_ENUM: {
         CHECK_CONDITION_TRUE_NON_VOID(!value.canConvert<int>(), false, "Value is not an Enum int.");
+        const EnumDescriptor* enum_desc{m_field_desc->enum_type()};
+        CHECK_PARAM_NULLPTR_NON_VOID(enum_desc, false, "Enum descriptor is null.");
+        CHECK_CONDITION_TRUE_NON_VOID(value.toInt() >= enum_desc->value_count(), false,
+                                      "Enum value is out of range.");
         refl->SetRepeatedEnumValue(m_message_buffer, m_field_desc, index.parent().row(), value.toInt());
         break;
+      }
       default:
         WARN_PRINT("Unsupported field type: " + std::to_string(m_field_desc->cpp_type()));
         break;
@@ -304,10 +309,15 @@ bool PrimitiveModel::setData([[maybe_unused]] const QModelIndex& index, [[maybe_
         CHECK_CONDITION_TRUE_NON_VOID(!value.canConvert<QString>(), false, "Value is not a string.");
         refl->SetString(m_message_buffer, m_field_desc, value.toString().toStdString());
         break;
-      case FieldDescriptor::CppType::CPPTYPE_ENUM:
+      case FieldDescriptor::CppType::CPPTYPE_ENUM: {
         CHECK_CONDITION_TRUE_NON_VOID(!value.canConvert<int>(), false, "Value is not an Enum int.");
+        const EnumDescriptor* enum_desc{m_field_desc->enum_type()};
+        CHECK_PARAM_NULLPTR_NON_VOID(enum_desc, false, "Enum descriptor is null.");
+        CHECK_CONDITION_TRUE_NON_VOID(value.toInt() >= enum_desc->value_count(), false,
+                                      "Enum value is out of range.");
         refl->SetEnumValue(m_message_buffer, m_field_desc, value.toInt());
         break;
+      }
       default:
         WARN_PRINT("Unsupported field type: " + std::to_string(m_field_desc->cpp_type()));
         break;
