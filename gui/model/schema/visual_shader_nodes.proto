@@ -755,7 +755,7 @@ message VisualShaderNodeStep {
     option (node_category) = CATEGORY_UNSPECIFIED;
     option (node_category_path) = "Math/Scalar";
 
-    option (node_description) = "Returns 0.0 if x is less than edge, and 1.0 otherwise.";
+    option (node_description) = "Step function( scalar(edge), scalar(x) ).\n\nReturns 0.0 if 'x' is smaller than 'edge' and otherwise 1.0.";
 
     optional VisualShaderNodePortType type = 1;
 }
@@ -777,8 +777,9 @@ message VisualShaderNodeSmoothStep {
     option (node_category) = CATEGORY_UNSPECIFIED;
     option (node_category_path) = "Math/Scalar";
 
-    option (node_description) = "Returns 0.0 if x is less than edge0, and 1.0 if x is greater than edge1. Otherwise, it interpolates between "
-     "0.0 and 1.0 using Hermite polynomials.";
+    option (node_description) = "SmoothStep function( scalar(edge0), scalar(edge1), scalar(x) ).\n\nReturns 0.0 if 'x' is smaller than 'edge0' "
+     "and 1.0 if x is larger than 'edge1'. Otherwise the return value is interpolated between 0.0 and 1.0 using "
+     "Hermite polynomials.";
 
     optional VisualShaderNodePortType type = 1;
 }
@@ -964,9 +965,9 @@ message VisualShaderNodeIf {
     option (node_output_port_type) = PORT_TYPE_VECTOR_3D;
 
     option (node_category) = CATEGORY_CONDITIONAL;
-    option (node_category_path) = "Math/Scalar";
+    option (node_category_path) = "Logic";
 
-    option (node_description) = "Compares two scalar values and returns a vector based on the comparison.";
+    option (node_description) = "Returns the value of the 'True' or 'False' input based on the value of the 'Condition' input.";
 }
 
 message VisualShaderNodeSwitch {
@@ -984,9 +985,9 @@ message VisualShaderNodeSwitch {
     option (node_output_port_type) = PORT_TYPE_UNSPECIFIED;
 
     option (node_category) = CATEGORY_CONDITIONAL;
-    option (node_category_path) = "Math/Scalar";
+    option (node_category_path) = "Logic";
 
-    option (node_description) = "Returns one of two values based on a boolean condition.";
+    option (node_description) = "Returns an associated scalar if the provided boolean value is true or false.";
 
     enum VisualShaderNodeSwitchOpType {
         OP_TYPE_UNSPECIFIED = 0 [(value_caption) = "UNSPECIFIED"];
@@ -1013,9 +1014,9 @@ message VisualShaderNodeIs {
     option (node_output_port_type) = PORT_TYPE_BOOLEAN;
 
     option (node_category) = CATEGORY_CONDITIONAL;
-    option (node_category_path) = "Math/Scalar";
+    option (node_category_path) = "Logic";
 
-    option (node_description) = "Compares two values and returns a boolean.";
+    option (node_description) = "Returns the boolean result of the comparison between INF (or NaN) and a scalar parameter.";
 
     enum Function {
         FUNC_UNSPECIFIED = 0 [(value_caption) = "UNSPECIFIED"];
@@ -1041,9 +1042,9 @@ message VisualShaderNodeCompare {
     option (node_output_port_type) = PORT_TYPE_BOOLEAN;
 
     option (node_category) = CATEGORY_CONDITIONAL;
-    option (node_category_path) = "Math/Scalar";
+    option (node_category_path) = "Logic";
 
-    option (node_description) = "Compares two scalar values and returns a boolean.";
+    option (node_description) = "Returns the boolean result of the comparison between two parameters.";
 
     enum ComparisonType {
         CMP_TYPE_UNSPECIFIED = 0 [(value_caption) = "UNSPECIFIED"];
