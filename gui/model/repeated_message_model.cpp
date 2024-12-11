@@ -214,8 +214,10 @@ bool RepeatedMessageModel::insertRows(int row, int count, const QModelIndex& par
       "Invalid number of rows: " + std::to_string(count) + ". Adding multiple rows at once is not supported yet.");
 
   const Reflection* refl{m_message_buffer->GetReflection()};
-  Message* new_buffer{refl->AddMessage(m_message_buffer, m_field_desc)};
-  MessageModel* new_model{new MessageModel(new_buffer, this, row)};
+  MessageModel* new_model{nullptr};
+  // Create a new model for an existing message or a new message
+  if (row < rowCount()) new_model = new MessageModel(refl->MutableRepeatedMessage(m_message_buffer, m_field_desc, row), this, row);
+  else new_model = new MessageModel(refl->AddMessage(m_message_buffer, m_field_desc), this, row);
   m_sub_models.emplace_back(new_model);
   new_model->build_sub_models();
 
@@ -262,10 +264,6 @@ void RepeatedMessageModel::append_row(const int& row) {
                  "You are allowed to append only a row between 0 and " + std::to_string(rowCount()) + "exclusive.");
 
   QModelIndex parent_index{this->parent(QModelIndex())};
-
-  const Reflection* refl{m_message_buffer->GetReflection()};
-  m_sub_models.emplace_back(
-      new MessageModel(refl->MutableRepeatedMessage(m_message_buffer, m_field_desc, row), this, row));
 
   bool result{insertRows(row, 1, parent_index)};
   CHECK_CONDITION_TRUE(!result, "Failed to insert row.");

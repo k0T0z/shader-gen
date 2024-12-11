@@ -206,40 +206,43 @@ bool RepeatedPrimitiveModel::insertRows(int row, int count, const QModelIndex& p
 
   const Reflection* refl{m_message_buffer->GetReflection()};
 
-  switch (m_field_desc->cpp_type()) {
-    case FieldDescriptor::CppType::CPPTYPE_MESSAGE:
-      FAIL_AND_RETURN_NON_VOID(-1, "Trying to append a message field.");
-      break;
-    case FieldDescriptor::CppType::CPPTYPE_INT32:
-      refl->AddInt32(m_message_buffer, m_field_desc, 0);
-      break;
-    case FieldDescriptor::CppType::CPPTYPE_INT64:
-      refl->AddInt64(m_message_buffer, m_field_desc, 0);
-      break;
-    case FieldDescriptor::CppType::CPPTYPE_UINT32:
-      refl->AddUInt32(m_message_buffer, m_field_desc, 0);
-      break;
-    case FieldDescriptor::CppType::CPPTYPE_UINT64:
-      refl->AddUInt64(m_message_buffer, m_field_desc, 0);
-      break;
-    case FieldDescriptor::CppType::CPPTYPE_DOUBLE:
-      refl->AddDouble(m_message_buffer, m_field_desc, 0.0);
-      break;
-    case FieldDescriptor::CppType::CPPTYPE_FLOAT:
-      refl->AddFloat(m_message_buffer, m_field_desc, 0.0f);
-      break;
-    case FieldDescriptor::CppType::CPPTYPE_BOOL:
-      refl->AddBool(m_message_buffer, m_field_desc, false);
-      break;
-    case FieldDescriptor::CppType::CPPTYPE_STRING:
-      refl->AddString(m_message_buffer, m_field_desc, "");
-      break;
-    case FieldDescriptor::CppType::CPPTYPE_ENUM:
-      refl->AddEnumValue(m_message_buffer, m_field_desc, 0);
-      break;
-    default:
-      WARN_PRINT("Unsupported field type: " + std::to_string(m_field_desc->cpp_type()));
-      break;
+  // Create a new model for an existing primitve or a new primitive
+  if (row >= rowCount()) {
+    switch (m_field_desc->cpp_type()) {
+      case FieldDescriptor::CppType::CPPTYPE_MESSAGE:
+        FAIL_AND_RETURN_NON_VOID(-1, "Trying to append a message field.");
+        break;
+      case FieldDescriptor::CppType::CPPTYPE_INT32:
+        refl->AddInt32(m_message_buffer, m_field_desc, 0);
+        break;
+      case FieldDescriptor::CppType::CPPTYPE_INT64:
+        refl->AddInt64(m_message_buffer, m_field_desc, 0);
+        break;
+      case FieldDescriptor::CppType::CPPTYPE_UINT32:
+        refl->AddUInt32(m_message_buffer, m_field_desc, 0);
+        break;
+      case FieldDescriptor::CppType::CPPTYPE_UINT64:
+        refl->AddUInt64(m_message_buffer, m_field_desc, 0);
+        break;
+      case FieldDescriptor::CppType::CPPTYPE_DOUBLE:
+        refl->AddDouble(m_message_buffer, m_field_desc, 0.0);
+        break;
+      case FieldDescriptor::CppType::CPPTYPE_FLOAT:
+        refl->AddFloat(m_message_buffer, m_field_desc, 0.0f);
+        break;
+      case FieldDescriptor::CppType::CPPTYPE_BOOL:
+        refl->AddBool(m_message_buffer, m_field_desc, false);
+        break;
+      case FieldDescriptor::CppType::CPPTYPE_STRING:
+        refl->AddString(m_message_buffer, m_field_desc, "");
+        break;
+      case FieldDescriptor::CppType::CPPTYPE_ENUM:
+        refl->AddEnumValue(m_message_buffer, m_field_desc, 0);
+        break;
+      default:
+        WARN_PRINT("Unsupported field type: " + std::to_string(m_field_desc->cpp_type()));
+        break;
+    }
   }
 
   m_sub_models.emplace_back(new PrimitiveModel(m_message_buffer, m_field_desc, this, row));
@@ -286,8 +289,6 @@ void RepeatedPrimitiveModel::append_row(const int& row) {
                  "You are allowed to append only a row between 0 and " + std::to_string(rowCount()) + "exclusive.");
 
   QModelIndex parent_index{this->parent(QModelIndex())};
-
-  m_sub_models.emplace_back(new PrimitiveModel(m_message_buffer, m_field_desc, this, row));
 
   bool result{insertRows(row, 1, parent_index)};
   CHECK_CONDITION_TRUE(!result, "Failed to insert row.");

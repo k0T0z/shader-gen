@@ -77,16 +77,6 @@ VisualShaderEditor::VisualShaderEditor(MessageModel* model, QWidget* parent)
       nodes_model(nullptr),
       connections_model(nullptr) {
   VisualShaderEditor::init();
-
-  scene->set_model(visual_shader_model);
-
-  nodes_model = const_cast<ProtoModel*>(visual_shader_model->get_sub_model(
-      FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber))));
-  scene->set_nodes_model(nodes_model);
-
-  connections_model = const_cast<ProtoModel*>(visual_shader_model->get_sub_model(
-      FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kConnectionsFieldNumber))));
-  scene->set_connections_model(connections_model);
 }
 
 VisualShaderEditor::~VisualShaderEditor() {}
@@ -170,6 +160,20 @@ void VisualShaderEditor::init() {
 
   // Set the scene layer layout.
   scene_layer->setLayout(scene_layer_layout);
+
+  // Set the models
+  scene->set_model(visual_shader_model);
+
+  nodes_model = const_cast<ProtoModel*>(visual_shader_model->get_sub_model(
+      FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber))));
+  scene->set_nodes_model(nodes_model);
+
+  connections_model = const_cast<ProtoModel*>(visual_shader_model->get_sub_model(
+      FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kConnectionsFieldNumber))));
+  scene->set_connections_model(connections_model);
+
+  // Init the view
+  init_view();
 
   // Create the menu bar layer on top of the scene layer.
   top_layer = new QWidget(view);
@@ -383,6 +387,14 @@ void VisualShaderEditor::init() {
   this->setWindowTitle("Visual Shader Editor");
   // this->setWindowIcon(QIcon(":/resources/visual_shader.png"));
   this->setLayout(layout);
+}
+
+void VisualShaderEditor::init_view() {
+  int size {nodes_model->rowCount()};
+
+  for (int i = 0; i < size; ++i) {
+    
+  }
 }
 
 void VisualShaderEditor::create_node(const QPointF& coordinate) {

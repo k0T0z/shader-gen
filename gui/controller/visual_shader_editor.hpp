@@ -203,6 +203,8 @@ class VisualShaderEditor : public QWidget {
    */
   void init();
 
+  void init_view();
+
   void create_node(const QPointF& coordinate);
 
   void add_node(QTreeWidgetItem* selected_item, const QPointF& coordinate);
