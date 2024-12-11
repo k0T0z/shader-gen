@@ -203,7 +203,8 @@ class VisualShaderEditor : public QWidget {
    */
   void init();
 
-  void init_view();
+  bool add_output_node();
+  void load_graph();
 
   void create_node(const QPointF& coordinate);
 
@@ -368,9 +369,9 @@ class VisualShaderGraphicsScene : public QGraphicsScene {
  public:
   VisualShaderGraphicsScene(QObject* parent = nullptr);
 
-  ~VisualShaderGraphicsScene();
+  ~VisualShaderGraphicsScene() override = default;
 
-  bool add_node(const std::shared_ptr<IGraphNode>& graph_node, const QPointF& coordinate);
+  bool add_node(const int& n_id, const std::shared_ptr<IGraphNode>& graph_node, const QPointF& coordinate);
 
   bool delete_node(const int& n_id, const int& in_port_count, const int& out_port_count);
 
@@ -1258,18 +1259,15 @@ class VisualShaderNodeUIntOpEmbedWidget : public QComboBox {
   std::shared_ptr<IGraphNode> graph_node;
 };
 
-class VisualShaderNodeVectorBaseEmbedWidget : public QComboBox {
+class VisualShaderNodeVectorTypeEmbedWidget : public QComboBox {
   Q_OBJECT
 
  public:
-  VisualShaderNodeVectorBaseEmbedWidget(ProtoModel* visual_shader_model, ProtoModel* nodes_model, const int& n_id,
+  VisualShaderNodeVectorTypeEmbedWidget(ProtoModel* visual_shader_model, ProtoModel* nodes_model, const int& n_id,
                                         const std::shared_ptr<IGraphNode>& graph_node);
-  ~VisualShaderNodeVectorBaseEmbedWidget() = default;
+  ~VisualShaderNodeVectorTypeEmbedWidget() = default;
 
   void set_current_index(const int& index) { this->setCurrentIndex(index); }
-
- private Q_SLOTS:
-  void on_current_index_changed(const int& index);
 
  private:
   ProtoModel* visual_shader_model;
@@ -1287,6 +1285,9 @@ class VisualShaderNodeVectorOpEmbedWidget : public QComboBox {
   ~VisualShaderNodeVectorOpEmbedWidget() = default;
 
   void set_current_index(const int& index) { this->setCurrentIndex(index); }
+
+ public Q_SLOTS:
+  void on_current_vector_type_changed(const int& index);
 
  private Q_SLOTS:
   void on_current_index_changed(const int& index);
@@ -1371,6 +1372,9 @@ class VisualShaderNodeVectorFuncEmbedWidget : public QComboBox {
   ~VisualShaderNodeVectorFuncEmbedWidget() = default;
 
   void set_current_index(const int& index) { this->setCurrentIndex(index); }
+
+ public Q_SLOTS:
+  void on_current_vector_type_changed(const int& index);
 
  private Q_SLOTS:
   void on_current_index_changed(const int& index);

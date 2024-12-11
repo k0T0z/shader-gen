@@ -168,7 +168,7 @@ QVariant PrimitiveModel::data([[maybe_unused]] const QModelIndex& index, [[maybe
         break;
     }
   } else {
-    CHECK_CONDITION_TRUE_NON_VOID(!refl->HasField(*m_message_buffer, m_field_desc), QVariant(), "Field is not set.");
+    SILENT_CHECK_CONDITION_TRUE_NON_VOID(!refl->HasField(*m_message_buffer, m_field_desc), QVariant());
 
     switch (m_field_desc->cpp_type()) {
       case FieldDescriptor::CppType::CPPTYPE_MESSAGE:

@@ -54,10 +54,10 @@ enum VisualShaderNodeCategory {
 };
 
 enum VisualShaderNodeVectorType {
-    TYPE_VECTOR_UNSPECIFIED = 0;
-    TYPE_VECTOR_2D = 1;
-    TYPE_VECTOR_3D = 2;
-    TYPE_VECTOR_4D = 3;
+    TYPE_VECTOR_UNSPECIFIED = 0 [(value_caption) = "UNSPECIFIED"];
+    TYPE_VECTOR_2D = 1 [(value_caption) = "Vector2D"];
+    TYPE_VECTOR_3D = 2 [(value_caption) = "Vector3D"];
+    TYPE_VECTOR_4D = 3 [(value_caption) = "Vector4D"];
 };
 
 // See:
@@ -128,8 +128,8 @@ enum VisualShaderNodeOutputType {
 message VisualShaderNodeOutput {
     option (node_caption) = "Output";
     option (node_input_port_count) = 1;
-    option (node_input_port_caption) = "";
-    option (node_input_port_type) = PORT_TYPE_UNSPECIFIED;
+    option (node_input_port_caption) = "Color";
+    option (node_input_port_type) = PORT_TYPE_VECTOR_4D;
     
     option (node_output_port_count) = 0;
 

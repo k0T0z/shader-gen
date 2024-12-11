@@ -79,15 +79,19 @@ std::string VisualShaderNodeGeneratorInput::generate_code(
 std::string VisualShaderNodeGeneratorOutput::generate_global([[maybe_unused]] const int& id) const {
   std::string code;
 
-  std::string output_type_caption{
-      shadergen_utils::get_enum_value_caption(VisualShaderNodeOutputType_descriptor(), output_type)};
-
-  switch (output_type) {
-    case VisualShaderNodeOutputType::OUTPUT_TYPE_COLOR: {
-      code += "out vec4 " + output_type_caption + ";" + std::string("\n");
-    } break;
-    default:
-      break;
+  int size{VisualShaderNodeOutputType_descriptor()->value_count()};
+  for (int i{0}; i < size; ++i) {
+    int output_type{shadergen_utils::get_enum_value_by_index(
+        VisualShaderNodeOutputType_descriptor(), i)};
+    std::string output_type_caption{shadergen_utils::get_enum_value_caption(
+        VisualShaderNodeOutputType_descriptor(), output_type)};
+    switch (output_type) {
+      case VisualShaderNodeOutputType::OUTPUT_TYPE_COLOR: {
+        code += "out vec4 " + output_type_caption + ";" + std::string("\n");
+      } break;
+      default:
+        break;
+    }
   }
 
   return code;
@@ -98,22 +102,15 @@ std::string VisualShaderNodeGeneratorOutput::generate_code(
     [[maybe_unused]] const std::vector<std::string>& output_vars) const {
   std::string code{std::string("\t") + output_vars.at(0) + " = "};
 
-  std::string output_type_caption{
-      shadergen_utils::get_enum_value_caption(VisualShaderNodeOutputType_descriptor(), output_type)};
-
-  if (!input_vars.at(0).empty()) {
-    switch (output_type) {
-      case VisualShaderNodeOutputType::OUTPUT_TYPE_COLOR: {
-        code += std::string("\t") + output_type_caption + " = " + input_vars.at(0) + ";" + std::string("\n");
-      } break;
-      default:
-        code = std::string("\t") + output_type_caption + " = vec4(0.0, 0.0, 0.0, 1.0);" + std::string("\n");
-        break;
+  int size{VisualShaderNodeOutputType_descriptor()->value_count()};
+  for (int i{0}; i < size; ++i) {
+    int output_type{shadergen_utils::get_enum_value_by_index(
+        VisualShaderNodeOutputType_descriptor(), i)};
+    std::string output_type_caption{shadergen_utils::get_enum_value_caption(
+        VisualShaderNodeOutputType_descriptor(), output_type)};
+    if (!input_vars.at(i).empty()) {
+      code += std::string("\t") + output_type_caption + " = " + input_vars.at(i) + ";" + std::string("\n");
     }
-  }
-
-  if (code.empty()) {
-    code = std::string("\t") + output_type_caption + " = vec4(0.0, 0.0, 0.0, 1.0);" + std::string("\n");
   }
 
   return code;

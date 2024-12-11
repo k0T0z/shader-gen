@@ -31,6 +31,7 @@
 #include <google/protobuf/reflection.h>
 #include "gui/model/message_model.hpp"
 #include "gui/model/primitive_model.hpp"
+#include "gui/model/utils/utils.hpp"
 
 #include "error_macros.hpp"
 
@@ -237,6 +238,23 @@ QVariant OneofModel::headerData(int section, [[maybe_unused]] Qt::Orientation or
   CHECK_PARAM_NULLPTR_NON_VOID(field_desc, QVariant(), "Field is null.");
 
   return QString::fromStdString(field_desc->full_name());
+}
+
+bool OneofModel::set_oneof(const int& field_number) const {
+  const Descriptor* desc{m_message_buffer->GetDescriptor()};
+  const Reflection* refl{m_message_buffer->GetReflection()};
+
+  const FieldDescriptor* field_desc{desc->FindFieldByNumber(field_number)};
+  SILENT_CHECK_PARAM_NULLPTR_NON_VOID(field_desc, false);
+
+  CHECK_CONDITION_TRUE_NON_VOID(!shadergen_utils::is_inside_real_oneof(field_desc), false, "Field is not inside a oneof.");
+
+  const OneofDescriptor* oneof_desc{field_desc->real_containing_oneof()};
+  SILENT_CHECK_PARAM_NULLPTR_NON_VOID(oneof_desc, false);
+
+  SILENT_CHECK_CONDITION_TRUE_NON_VOID(oneof_desc->name() != m_oneof_desc->name(), false);
+
+  return set_oneof(field_desc);
 }
 
 void OneofModel::clear_sub_model() const {
