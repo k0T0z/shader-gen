@@ -42,7 +42,7 @@ using namespace gui::model::schema;
 
 class VisualShaderNodeGeneratorValueNoise : VisualShaderNodeGenerator {
     public:
-    VisualShaderNodeGeneratorValueNoise(const float& scale = 100.0f) : VisualShaderNodeGenerator(), scale(scale) {}
+    VisualShaderNodeGeneratorValueNoise(const float& scale) : VisualShaderNodeGenerator(), scale(scale) {}
 
     virtual std::string generate_global([[maybe_unused]] const int& id) const override;
 
@@ -60,7 +60,7 @@ class VisualShaderNodeGeneratorValueNoise : VisualShaderNodeGenerator {
 
 class VisualShaderNodeGeneratorPerlinNoise : VisualShaderNodeGenerator {
     public:
-    VisualShaderNodeGeneratorPerlinNoise(const float& scale = 10.0f) : VisualShaderNodeGenerator(), scale(scale) {}
+    VisualShaderNodeGeneratorPerlinNoise(const float& scale) : VisualShaderNodeGenerator(), scale(scale) {}
 
     virtual std::string generate_global([[maybe_unused]] const int& id) const override;
 
@@ -78,7 +78,7 @@ class VisualShaderNodeGeneratorPerlinNoise : VisualShaderNodeGenerator {
 
 class VisualShaderNodeGeneratorVoronoiNoise : VisualShaderNodeGenerator {
     public:
-    VisualShaderNodeGeneratorVoronoiNoise(const float& angle_offset = 10.0f, const float& cell_density = 10.0f)
+    VisualShaderNodeGeneratorVoronoiNoise(const float& angle_offset, const float& cell_density)
         : VisualShaderNodeGenerator(), angle_offset(angle_offset), cell_density(cell_density) {}
 
     virtual std::string generate_global([[maybe_unused]] const int& id) const override;
