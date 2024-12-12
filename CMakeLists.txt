@@ -223,6 +223,7 @@ set(SHADER_GEN_TESTS_EXECUTABLE_NAME "shader-gen-tests" CACHE STRING "The name o
 file(GLOB SHADER_GEN_TESTS_CPP_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/tests/gui/model/test_model.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/tests/gui/model/utils/test_field_path.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/tests/generator/test_vs_node_generators.cpp
 )
 
 file(GLOB SHADER_GEN_TESTS_PROTO_FILES 
