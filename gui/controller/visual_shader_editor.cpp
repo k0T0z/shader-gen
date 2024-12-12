@@ -3029,43 +3029,22 @@ VisualShaderNodeFloatConstantEmbedWidget::VisualShaderNodeFloatConstantEmbedWidg
 }
 
 void VisualShaderNodeFloatConstantEmbedWidget::on_text_changed(const QString& text) {
+  SILENT_CHECK_CONDITION_TRUE(text.isEmpty());
+
+  bool ok;
+  float t {text.toFloat(&ok)};
+
+  SILENT_CHECK_CONDITION_TRUE(!ok);
+
   int row_entry{VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, n_id)};
 
-  if (text.isEmpty()) {
-    bool result = visual_shader_model->set_data(
-        FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
-                                    FieldPath::RepeatedAt(row_entry),
-                                    FieldPath::FieldNumber(VisualShader::VisualShaderNode::kFloatConstantFieldNumber),
-                                    FieldPath::FieldNumber(VisualShaderNodeFloatConstant::kValueFieldNumber)),
-        0.0f);
-    if (!result) {
-      ERROR_PRINT("Failed to set data");
-    }
-  } else {
-    bool ok;
-    text.toFloat(&ok);
-    if (ok) {
-      bool result = visual_shader_model->set_data(
-          FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
-                                      FieldPath::RepeatedAt(row_entry),
-                                      FieldPath::FieldNumber(VisualShader::VisualShaderNode::kFloatConstantFieldNumber),
-                                      FieldPath::FieldNumber(VisualShaderNodeFloatConstant::kValueFieldNumber)),
-          text.toFloat());
-      if (!result) {
-        ERROR_PRINT("Failed to set data");
-      }
-    } else {
-      bool result = visual_shader_model->set_data(
-          FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
-                                      FieldPath::RepeatedAt(row_entry),
-                                      FieldPath::FieldNumber(VisualShader::VisualShaderNode::kFloatConstantFieldNumber),
-                                      FieldPath::FieldNumber(VisualShaderNodeFloatConstant::kValueFieldNumber)),
-          0.0f);
-      if (!result) {
-        ERROR_PRINT("Failed to set data");
-      }
-      setText("");
-    }
+  bool result = visual_shader_model->set_data(
+      FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
+                                  FieldPath::RepeatedAt(row_entry),
+                                  FieldPath::FieldNumber(VisualShader::VisualShaderNode::kFloatConstantFieldNumber),
+                                  FieldPath::FieldNumber(VisualShaderNodeFloatConstant::kValueFieldNumber)), t);
+  if (!result) {
+    ERROR_PRINT("Failed to set data");
   }
 }
 
@@ -3093,43 +3072,22 @@ VisualShaderNodeIntConstantEmbedWidget::VisualShaderNodeIntConstantEmbedWidget(
 }
 
 void VisualShaderNodeIntConstantEmbedWidget::on_text_changed(const QString& text) {
+  SILENT_CHECK_CONDITION_TRUE(text.isEmpty());
+
+  bool ok;
+  int t {text.toInt(&ok)};
+
+  SILENT_CHECK_CONDITION_TRUE(!ok);
+
   int row_entry{VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, n_id)};
 
-  if (text.isEmpty()) {
-    bool result = visual_shader_model->set_data(
-        FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
-                                    FieldPath::RepeatedAt(row_entry),
-                                    FieldPath::FieldNumber(VisualShader::VisualShaderNode::kIntConstantFieldNumber),
-                                    FieldPath::FieldNumber(VisualShaderNodeFloatConstant::kValueFieldNumber)),
-        0);
-    if (!result) {
-      ERROR_PRINT("Failed to set data");
-    }
-  } else {
-    bool ok;
-    text.toFloat(&ok);
-    if (ok) {
-      bool result = visual_shader_model->set_data(
-          FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
-                                      FieldPath::RepeatedAt(row_entry),
-                                      FieldPath::FieldNumber(VisualShader::VisualShaderNode::kIntConstantFieldNumber),
-                                      FieldPath::FieldNumber(VisualShaderNodeFloatConstant::kValueFieldNumber)),
-          text.toInt());
-      if (!result) {
-        ERROR_PRINT("Failed to set data");
-      }
-    } else {
-      bool result = visual_shader_model->set_data(
-          FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
-                                      FieldPath::RepeatedAt(row_entry),
-                                      FieldPath::FieldNumber(VisualShader::VisualShaderNode::kIntConstantFieldNumber),
-                                      FieldPath::FieldNumber(VisualShaderNodeFloatConstant::kValueFieldNumber)),
-          0);
-      if (!result) {
-        ERROR_PRINT("Failed to set data");
-      }
-      setText("");
-    }
+  bool result = visual_shader_model->set_data(
+      FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
+                                  FieldPath::RepeatedAt(row_entry),
+                                  FieldPath::FieldNumber(VisualShader::VisualShaderNode::kIntConstantFieldNumber),
+                                  FieldPath::FieldNumber(VisualShaderNodeIntConstant::kValueFieldNumber)), t);
+  if (!result) {
+    ERROR_PRINT("Failed to set data");
   }
 }
 
@@ -3157,43 +3115,22 @@ VisualShaderNodeUIntConstantEmbedWidget::VisualShaderNodeUIntConstantEmbedWidget
 }
 
 void VisualShaderNodeUIntConstantEmbedWidget::on_text_changed(const QString& text) {
+  SILENT_CHECK_CONDITION_TRUE(text.isEmpty());
+
+  bool ok;
+  unsigned t {text.toUInt(&ok)};
+
+  SILENT_CHECK_CONDITION_TRUE(!ok);
+
   int row_entry{VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, n_id)};
 
-  if (text.isEmpty()) {
-    bool result = visual_shader_model->set_data(
-        FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
-                                    FieldPath::RepeatedAt(row_entry),
-                                    FieldPath::FieldNumber(VisualShader::VisualShaderNode::kUintConstantFieldNumber),
-                                    FieldPath::FieldNumber(VisualShaderNodeFloatConstant::kValueFieldNumber)),
-        0);
-    if (!result) {
-      ERROR_PRINT("Failed to set data");
-    }
-  } else {
-    bool ok;
-    text.toFloat(&ok);
-    if (ok) {
-      bool result = visual_shader_model->set_data(
-          FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
-                                      FieldPath::RepeatedAt(row_entry),
-                                      FieldPath::FieldNumber(VisualShader::VisualShaderNode::kUintConstantFieldNumber),
-                                      FieldPath::FieldNumber(VisualShaderNodeFloatConstant::kValueFieldNumber)),
-          text.toUInt());
-      if (!result) {
-        ERROR_PRINT("Failed to set data");
-      }
-    } else {
-      bool result = visual_shader_model->set_data(
-          FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
-                                      FieldPath::RepeatedAt(row_entry),
-                                      FieldPath::FieldNumber(VisualShader::VisualShaderNode::kUintConstantFieldNumber),
-                                      FieldPath::FieldNumber(VisualShaderNodeFloatConstant::kValueFieldNumber)),
-          0);
-      if (!result) {
-        ERROR_PRINT("Failed to set data");
-      }
-      setText("");
-    }
+  bool result = visual_shader_model->set_data(
+      FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
+                                  FieldPath::RepeatedAt(row_entry),
+                                  FieldPath::FieldNumber(VisualShader::VisualShaderNode::kUintConstantFieldNumber),
+                                  FieldPath::FieldNumber(VisualShaderNodeUIntConstant::kValueFieldNumber)), t);
+  if (!result) {
+    ERROR_PRINT("Failed to set data");
   }
 }
 
@@ -3388,82 +3325,42 @@ VisualShaderNodeVec2ConstantEmbedWidget::VisualShaderNodeVec2ConstantEmbedWidget
 }
 
 void VisualShaderNodeVec2ConstantEmbedWidget::on_x_text_changed(const QString& text) {
+  SILENT_CHECK_CONDITION_TRUE(text.isEmpty());
+
+  bool ok;
+  float t {text.toFloat(&ok)};
+
+  SILENT_CHECK_CONDITION_TRUE(!ok);
+
   int row_entry{VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, n_id)};
-  if (text.isEmpty()) {
-    bool result = visual_shader_model->set_data(
-        FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
-                                    FieldPath::RepeatedAt(row_entry),
-                                    FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec2ConstantFieldNumber),
-                                    FieldPath::FieldNumber(VisualShaderNodeVec2Constant::kXFieldNumber)),
-        0.0f);
-    if (!result) {
-      ERROR_PRINT("Failed to set data");
-    }
-  } else {
-    bool ok;
-    text.toFloat(&ok);
-    if (ok) {
-      bool result = visual_shader_model->set_data(
-          FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
-                                      FieldPath::RepeatedAt(row_entry),
-                                      FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec2ConstantFieldNumber),
-                                      FieldPath::FieldNumber(VisualShaderNodeVec2Constant::kXFieldNumber)),
-          text.toFloat());
-      if (!result) {
-        ERROR_PRINT("Failed to set data");
-      }
-    } else {
-      bool result = visual_shader_model->set_data(
-          FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
-                                      FieldPath::RepeatedAt(row_entry),
-                                      FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec2ConstantFieldNumber),
-                                      FieldPath::FieldNumber(VisualShaderNodeVec2Constant::kXFieldNumber)),
-          0.0f);
-      if (!result) {
-        ERROR_PRINT("Failed to set data");
-      }
-      x_edit_widget->setText("");
-    }
+
+  bool result = visual_shader_model->set_data(
+      FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
+                                  FieldPath::RepeatedAt(row_entry),
+                                  FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec2ConstantFieldNumber),
+                                  FieldPath::FieldNumber(VisualShaderNodeVec2Constant::kXFieldNumber)), t);
+  if (!result) {
+    ERROR_PRINT("Failed to set data");
   }
 }
 
 void VisualShaderNodeVec2ConstantEmbedWidget::on_y_text_changed(const QString& text) {
+  SILENT_CHECK_CONDITION_TRUE(text.isEmpty());
+
+  bool ok;
+  float t {text.toFloat(&ok)};
+
+  SILENT_CHECK_CONDITION_TRUE(!ok);
+
   int row_entry{VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, n_id)};
-  if (text.isEmpty()) {
-    bool result = visual_shader_model->set_data(
-        FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
-                                    FieldPath::RepeatedAt(row_entry),
-                                    FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec2ConstantFieldNumber),
-                                    FieldPath::FieldNumber(VisualShaderNodeVec2Constant::kYFieldNumber)),
-        0.0f);
-    if (!result) {
-      ERROR_PRINT("Failed to set data");
-    }
-  } else {
-    bool ok;
-    text.toFloat(&ok);
-    if (ok) {
-      bool result = visual_shader_model->set_data(
-          FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
-                                      FieldPath::RepeatedAt(row_entry),
-                                      FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec2ConstantFieldNumber),
-                                      FieldPath::FieldNumber(VisualShaderNodeVec2Constant::kYFieldNumber)),
-          text.toFloat());
-      if (!result) {
-        ERROR_PRINT("Failed to set data");
-      }
-    } else {
-      bool result = visual_shader_model->set_data(
-          FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
-                                      FieldPath::RepeatedAt(row_entry),
-                                      FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec2ConstantFieldNumber),
-                                      FieldPath::FieldNumber(VisualShaderNodeVec2Constant::kYFieldNumber)),
-          0.0f);
-      if (!result) {
-        ERROR_PRINT("Failed to set data");
-      }
-      y_edit_widget->setText("");
-    }
+
+  bool result = visual_shader_model->set_data(
+      FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
+                                  FieldPath::RepeatedAt(row_entry),
+                                  FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec2ConstantFieldNumber),
+                                  FieldPath::FieldNumber(VisualShaderNodeVec2Constant::kYFieldNumber)), t);
+  if (!result) {
+    ERROR_PRINT("Failed to set data");
   }
 }
 
@@ -3522,122 +3419,62 @@ VisualShaderNodeVec3ConstantEmbedWidget::VisualShaderNodeVec3ConstantEmbedWidget
 }
 
 void VisualShaderNodeVec3ConstantEmbedWidget::on_x_text_changed(const QString& text) {
+  SILENT_CHECK_CONDITION_TRUE(text.isEmpty());
+
+  bool ok;
+  float t {text.toFloat(&ok)};
+
+  SILENT_CHECK_CONDITION_TRUE(!ok);
+
   int row_entry{VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, n_id)};
-  if (text.isEmpty()) {
-    bool result = visual_shader_model->set_data(
-        FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
-                                    FieldPath::RepeatedAt(row_entry),
-                                    FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec3ConstantFieldNumber),
-                                    FieldPath::FieldNumber(VisualShaderNodeVec3Constant::kXFieldNumber)),
-        0.0f);
-    if (!result) {
-      ERROR_PRINT("Failed to set data");
-    }
-  } else {
-    bool ok;
-    text.toFloat(&ok);
-    if (ok) {
-      bool result = visual_shader_model->set_data(
-          FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
-                                      FieldPath::RepeatedAt(row_entry),
-                                      FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec3ConstantFieldNumber),
-                                      FieldPath::FieldNumber(VisualShaderNodeVec3Constant::kXFieldNumber)),
-          text.toFloat());
-      if (!result) {
-        ERROR_PRINT("Failed to set data");
-      }
-    } else {
-      bool result = visual_shader_model->set_data(
-          FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
-                                      FieldPath::RepeatedAt(row_entry),
-                                      FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec3ConstantFieldNumber),
-                                      FieldPath::FieldNumber(VisualShaderNodeVec3Constant::kXFieldNumber)),
-          0.0f);
-      if (!result) {
-        ERROR_PRINT("Failed to set data");
-      }
-      x_edit_widget->setText("");
-    }
+
+  bool result = visual_shader_model->set_data(
+      FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
+                                  FieldPath::RepeatedAt(row_entry),
+                                  FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec3ConstantFieldNumber),
+                                  FieldPath::FieldNumber(VisualShaderNodeVec3Constant::kXFieldNumber)), t);
+  if (!result) {
+    ERROR_PRINT("Failed to set data");
   }
 }
 
 void VisualShaderNodeVec3ConstantEmbedWidget::on_y_text_changed(const QString& text) {
+  SILENT_CHECK_CONDITION_TRUE(text.isEmpty());
+
+  bool ok;
+  float t {text.toFloat(&ok)};
+
+  SILENT_CHECK_CONDITION_TRUE(!ok);
+
   int row_entry{VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, n_id)};
-  if (text.isEmpty()) {
-    bool result = visual_shader_model->set_data(
-        FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
-                                    FieldPath::RepeatedAt(row_entry),
-                                    FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec3ConstantFieldNumber),
-                                    FieldPath::FieldNumber(VisualShaderNodeVec3Constant::kYFieldNumber)),
-        0.0f);
-    if (!result) {
-      ERROR_PRINT("Failed to set data");
-    }
-  } else {
-    bool ok;
-    text.toFloat(&ok);
-    if (ok) {
-      bool result = visual_shader_model->set_data(
-          FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
-                                      FieldPath::RepeatedAt(row_entry),
-                                      FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec3ConstantFieldNumber),
-                                      FieldPath::FieldNumber(VisualShaderNodeVec3Constant::kYFieldNumber)),
-          text.toFloat());
-      if (!result) {
-        ERROR_PRINT("Failed to set data");
-      }
-    } else {
-      bool result = visual_shader_model->set_data(
-          FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
-                                      FieldPath::RepeatedAt(row_entry),
-                                      FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec3ConstantFieldNumber),
-                                      FieldPath::FieldNumber(VisualShaderNodeVec3Constant::kYFieldNumber)),
-          0.0f);
-      if (!result) {
-        ERROR_PRINT("Failed to set data");
-      }
-      y_edit_widget->setText("");
-    }
+
+  bool result = visual_shader_model->set_data(
+      FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
+                                  FieldPath::RepeatedAt(row_entry),
+                                  FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec3ConstantFieldNumber),
+                                  FieldPath::FieldNumber(VisualShaderNodeVec3Constant::kYFieldNumber)), t);
+  if (!result) {
+    ERROR_PRINT("Failed to set data");
   }
 }
 
 void VisualShaderNodeVec3ConstantEmbedWidget::on_z_text_changed(const QString& text) {
+  SILENT_CHECK_CONDITION_TRUE(text.isEmpty());
+
+  bool ok;
+  float t {text.toFloat(&ok)};
+
+  SILENT_CHECK_CONDITION_TRUE(!ok);
+
   int row_entry{VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, n_id)};
-  if (text.isEmpty()) {
-    bool result = visual_shader_model->set_data(
-        FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
-                                    FieldPath::RepeatedAt(row_entry),
-                                    FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec3ConstantFieldNumber),
-                                    FieldPath::FieldNumber(VisualShaderNodeVec3Constant::kZFieldNumber)),
-        0.0f);
-    if (!result) {
-      ERROR_PRINT("Failed to set data");
-    }
-  } else {
-    bool ok;
-    text.toFloat(&ok);
-    if (ok) {
-      bool result = visual_shader_model->set_data(
-          FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
-                                      FieldPath::RepeatedAt(row_entry),
-                                      FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec3ConstantFieldNumber),
-                                      FieldPath::FieldNumber(VisualShaderNodeVec3Constant::kZFieldNumber)),
-          text.toFloat());
-      if (!result) {
-        ERROR_PRINT("Failed to set data");
-      }
-    } else {
-      bool result = visual_shader_model->set_data(
-          FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
-                                      FieldPath::RepeatedAt(row_entry),
-                                      FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec3ConstantFieldNumber),
-                                      FieldPath::FieldNumber(VisualShaderNodeVec3Constant::kZFieldNumber)),
-          0.0f);
-      if (!result) {
-        ERROR_PRINT("Failed to set data");
-      }
-      z_edit_widget->setText("");
-    }
+
+  bool result = visual_shader_model->set_data(
+      FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
+                                  FieldPath::RepeatedAt(row_entry),
+                                  FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec3ConstantFieldNumber),
+                                  FieldPath::FieldNumber(VisualShaderNodeVec3Constant::kZFieldNumber)), t);
+  if (!result) {
+    ERROR_PRINT("Failed to set data");
   }
 }
 
@@ -3708,162 +3545,82 @@ VisualShaderNodeVec4ConstantEmbedWidget::VisualShaderNodeVec4ConstantEmbedWidget
 }
 
 void VisualShaderNodeVec4ConstantEmbedWidget::on_x_text_changed(const QString& text) {
+  SILENT_CHECK_CONDITION_TRUE(text.isEmpty());
+
+  bool ok;
+  float t {text.toFloat(&ok)};
+
+  SILENT_CHECK_CONDITION_TRUE(!ok);
+
   int row_entry{VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, n_id)};
-  if (text.isEmpty()) {
-    bool result = visual_shader_model->set_data(
-        FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
-                                    FieldPath::RepeatedAt(row_entry),
-                                    FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec4ConstantFieldNumber),
-                                    FieldPath::FieldNumber(VisualShaderNodeVec4Constant::kXFieldNumber)),
-        0.0f);
-    if (!result) {
-      ERROR_PRINT("Failed to set data");
-    }
-  } else {
-    bool ok;
-    text.toFloat(&ok);
-    if (ok) {
-      bool result = visual_shader_model->set_data(
-          FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
-                                      FieldPath::RepeatedAt(row_entry),
-                                      FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec4ConstantFieldNumber),
-                                      FieldPath::FieldNumber(VisualShaderNodeVec4Constant::kXFieldNumber)),
-          text.toFloat());
-      if (!result) {
-        ERROR_PRINT("Failed to set data");
-      }
-    } else {
-      bool result = visual_shader_model->set_data(
-          FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
-                                      FieldPath::RepeatedAt(row_entry),
-                                      FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec4ConstantFieldNumber),
-                                      FieldPath::FieldNumber(VisualShaderNodeVec4Constant::kXFieldNumber)),
-          0.0f);
-      if (!result) {
-        ERROR_PRINT("Failed to set data");
-      }
-      x_edit_widget->setText("");
-    }
+
+  bool result = visual_shader_model->set_data(
+      FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
+                                  FieldPath::RepeatedAt(row_entry),
+                                  FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec4ConstantFieldNumber),
+                                  FieldPath::FieldNumber(VisualShaderNodeVec4Constant::kXFieldNumber)), t);
+  if (!result) {
+    ERROR_PRINT("Failed to set data");
   }
 }
 
 void VisualShaderNodeVec4ConstantEmbedWidget::on_y_text_changed(const QString& text) {
+  SILENT_CHECK_CONDITION_TRUE(text.isEmpty());
+
+  bool ok;
+  float t {text.toFloat(&ok)};
+
+  SILENT_CHECK_CONDITION_TRUE(!ok);
+
   int row_entry{VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, n_id)};
-  if (text.isEmpty()) {
-    bool result = visual_shader_model->set_data(
-        FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
-                                    FieldPath::RepeatedAt(row_entry),
-                                    FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec4ConstantFieldNumber),
-                                    FieldPath::FieldNumber(VisualShaderNodeVec4Constant::kYFieldNumber)),
-        0.0f);
-    if (!result) {
-      ERROR_PRINT("Failed to set data");
-    }
-  } else {
-    bool ok;
-    text.toFloat(&ok);
-    if (ok) {
-      bool result = visual_shader_model->set_data(
-          FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
-                                      FieldPath::RepeatedAt(row_entry),
-                                      FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec4ConstantFieldNumber),
-                                      FieldPath::FieldNumber(VisualShaderNodeVec4Constant::kYFieldNumber)),
-          text.toFloat());
-      if (!result) {
-        ERROR_PRINT("Failed to set data");
-      }
-    } else {
-      bool result = visual_shader_model->set_data(
-          FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
-                                      FieldPath::RepeatedAt(row_entry),
-                                      FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec4ConstantFieldNumber),
-                                      FieldPath::FieldNumber(VisualShaderNodeVec4Constant::kYFieldNumber)),
-          0.0f);
-      if (!result) {
-        ERROR_PRINT("Failed to set data");
-      }
-      y_edit_widget->setText("");
-    }
+
+  bool result = visual_shader_model->set_data(
+      FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
+                                  FieldPath::RepeatedAt(row_entry),
+                                  FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec4ConstantFieldNumber),
+                                  FieldPath::FieldNumber(VisualShaderNodeVec4Constant::kYFieldNumber)), t);
+  if (!result) {
+    ERROR_PRINT("Failed to set data");
   }
 }
 
 void VisualShaderNodeVec4ConstantEmbedWidget::on_z_text_changed(const QString& text) {
+  SILENT_CHECK_CONDITION_TRUE(text.isEmpty());
+
+  bool ok;
+  float t {text.toFloat(&ok)};
+
+  SILENT_CHECK_CONDITION_TRUE(!ok);
+
   int row_entry{VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, n_id)};
-  if (text.isEmpty()) {
-    bool result = visual_shader_model->set_data(
-        FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
-                                    FieldPath::RepeatedAt(row_entry),
-                                    FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec4ConstantFieldNumber),
-                                    FieldPath::FieldNumber(VisualShaderNodeVec4Constant::kZFieldNumber)),
-        0.0f);
-    if (!result) {
-      ERROR_PRINT("Failed to set data");
-    }
-  } else {
-    bool ok;
-    text.toFloat(&ok);
-    if (ok) {
-      bool result = visual_shader_model->set_data(
-          FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
-                                      FieldPath::RepeatedAt(row_entry),
-                                      FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec4ConstantFieldNumber),
-                                      FieldPath::FieldNumber(VisualShaderNodeVec4Constant::kZFieldNumber)),
-          text.toFloat());
-      if (!result) {
-        ERROR_PRINT("Failed to set data");
-      }
-    } else {
-      bool result = visual_shader_model->set_data(
-          FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
-                                      FieldPath::RepeatedAt(row_entry),
-                                      FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec4ConstantFieldNumber),
-                                      FieldPath::FieldNumber(VisualShaderNodeVec4Constant::kZFieldNumber)),
-          0.0f);
-      if (!result) {
-        ERROR_PRINT("Failed to set data");
-      }
-      z_edit_widget->setText("");
-    }
+
+  bool result = visual_shader_model->set_data(
+      FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
+                                  FieldPath::RepeatedAt(row_entry),
+                                  FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec4ConstantFieldNumber),
+                                  FieldPath::FieldNumber(VisualShaderNodeVec4Constant::kZFieldNumber)), t);
+  if (!result) {
+    ERROR_PRINT("Failed to set data");
   }
 }
 
 void VisualShaderNodeVec4ConstantEmbedWidget::on_w_text_changed(const QString& text) {
+  SILENT_CHECK_CONDITION_TRUE(text.isEmpty());
+
+  bool ok;
+  float t {text.toFloat(&ok)};
+
+  SILENT_CHECK_CONDITION_TRUE(!ok);
+
   int row_entry{VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, n_id)};
-  if (text.isEmpty()) {
-    bool result = visual_shader_model->set_data(
-        FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
-                                    FieldPath::RepeatedAt(row_entry),
-                                    FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec4ConstantFieldNumber),
-                                    FieldPath::FieldNumber(VisualShaderNodeVec4Constant::kWFieldNumber)),
-        0.0f);
-    if (!result) {
-      ERROR_PRINT("Failed to set data");
-    }
-  } else {
-    bool ok;
-    text.toFloat(&ok);
-    if (ok) {
-      bool result = visual_shader_model->set_data(
-          FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
-                                      FieldPath::RepeatedAt(row_entry),
-                                      FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec4ConstantFieldNumber),
-                                      FieldPath::FieldNumber(VisualShaderNodeVec4Constant::kWFieldNumber)),
-          text.toFloat());
-      if (!result) {
-        ERROR_PRINT("Failed to set data");
-      }
-    } else {
-      bool result = visual_shader_model->set_data(
-          FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
-                                      FieldPath::RepeatedAt(row_entry),
-                                      FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec4ConstantFieldNumber),
-                                      FieldPath::FieldNumber(VisualShaderNodeVec4Constant::kWFieldNumber)),
-          0.0f);
-      if (!result) {
-        ERROR_PRINT("Failed to set data");
-      }
-      w_edit_widget->setText("");
-    }
+
+  bool result = visual_shader_model->set_data(
+      FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
+                                  FieldPath::RepeatedAt(row_entry),
+                                  FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec4ConstantFieldNumber),
+                                  FieldPath::FieldNumber(VisualShaderNodeVec4Constant::kWFieldNumber)), t);
+  if (!result) {
+    ERROR_PRINT("Failed to set data");
   }
 }
 
@@ -4282,42 +4039,22 @@ VisualShaderNodeValueNoiseEmbedWidget::VisualShaderNodeValueNoiseEmbedWidget(
 }
 
 void VisualShaderNodeValueNoiseEmbedWidget::on_text_changed(const QString& text) {
+  SILENT_CHECK_CONDITION_TRUE(text.isEmpty());
+
+  bool ok;
+  float t {text.toFloat(&ok)};
+
+  SILENT_CHECK_CONDITION_TRUE(!ok);
+
   int row_entry{VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, n_id)};
-  if (text.isEmpty()) {
-    bool result = visual_shader_model->set_data(
-        FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
-                                    FieldPath::RepeatedAt(row_entry),
-                                    FieldPath::FieldNumber(VisualShader::VisualShaderNode::kValueNoiseFieldNumber),
-                                    FieldPath::FieldNumber(VisualShaderNodeValueNoise::kScaleFieldNumber)),
-        10.0f);
-    if (!result) {
-      ERROR_PRINT("Failed to set data");
-    }
-  } else {
-    bool ok;
-    text.toFloat(&ok);
-    if (ok) {
-      bool result = visual_shader_model->set_data(
-          FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
-                                      FieldPath::RepeatedAt(row_entry),
-                                      FieldPath::FieldNumber(VisualShader::VisualShaderNode::kValueNoiseFieldNumber),
-                                      FieldPath::FieldNumber(VisualShaderNodeValueNoise::kScaleFieldNumber)),
-          text.toFloat());
-      if (!result) {
-        ERROR_PRINT("Failed to set data");
-      }
-    } else {
-      bool result = visual_shader_model->set_data(
-          FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
-                                      FieldPath::RepeatedAt(row_entry),
-                                      FieldPath::FieldNumber(VisualShader::VisualShaderNode::kValueNoiseFieldNumber),
-                                      FieldPath::FieldNumber(VisualShaderNodeValueNoise::kScaleFieldNumber)),
-          0.0f);
-      if (!result) {
-        ERROR_PRINT("Failed to set data");
-      }
-      setText("");
-    }
+
+  bool result = visual_shader_model->set_data(
+      FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
+                                  FieldPath::RepeatedAt(row_entry),
+                                  FieldPath::FieldNumber(VisualShader::VisualShaderNode::kValueNoiseFieldNumber),
+                                  FieldPath::FieldNumber(VisualShaderNodeValueNoise::kScaleFieldNumber)), t);
+  if (!result) {
+    ERROR_PRINT("Failed to set data");
   }
 }
 
@@ -4349,42 +4086,22 @@ VisualShaderNodePerlinNoiseEmbedWidget::VisualShaderNodePerlinNoiseEmbedWidget(
 }
 
 void VisualShaderNodePerlinNoiseEmbedWidget::on_text_changed(const QString& text) {
+  SILENT_CHECK_CONDITION_TRUE(text.isEmpty());
+
+  bool ok;
+  float t {text.toFloat(&ok)};
+
+  SILENT_CHECK_CONDITION_TRUE(!ok);
+
   int row_entry{VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, n_id)};
-  if (text.isEmpty()) {
-    bool result = visual_shader_model->set_data(
-        FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
-                                    FieldPath::RepeatedAt(row_entry),
-                                    FieldPath::FieldNumber(VisualShader::VisualShaderNode::kPerlinNoiseFieldNumber),
-                                    FieldPath::FieldNumber(VisualShaderNodePerlinNoise::kScaleFieldNumber)),
-        10.0f);
-    if (!result) {
-      ERROR_PRINT("Failed to set data");
-    }
-  } else {
-    bool ok;
-    text.toFloat(&ok);
-    if (ok) {
-      bool result = visual_shader_model->set_data(
-          FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
-                                      FieldPath::RepeatedAt(row_entry),
-                                      FieldPath::FieldNumber(VisualShader::VisualShaderNode::kPerlinNoiseFieldNumber),
-                                      FieldPath::FieldNumber(VisualShaderNodePerlinNoise::kScaleFieldNumber)),
-          text.toFloat());
-      if (!result) {
-        ERROR_PRINT("Failed to set data");
-      }
-    } else {
-      bool result = visual_shader_model->set_data(
-          FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
-                                      FieldPath::RepeatedAt(row_entry),
-                                      FieldPath::FieldNumber(VisualShader::VisualShaderNode::kPerlinNoiseFieldNumber),
-                                      FieldPath::FieldNumber(VisualShaderNodePerlinNoise::kScaleFieldNumber)),
-          0.0f);
-      if (!result) {
-        ERROR_PRINT("Failed to set data");
-      }
-      setText("");
-    }
+
+  bool result = visual_shader_model->set_data(
+      FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
+                                  FieldPath::RepeatedAt(row_entry),
+                                  FieldPath::FieldNumber(VisualShader::VisualShaderNode::kPerlinNoiseFieldNumber),
+                                  FieldPath::FieldNumber(VisualShaderNodePerlinNoise::kScaleFieldNumber)), t);
+  if (!result) {
+    ERROR_PRINT("Failed to set data");
   }
 }
 
@@ -4417,42 +4134,22 @@ VisualShaderNodeVoronoiNoiseAngleOffsetEmbedWidget::VisualShaderNodeVoronoiNoise
 }
 
 void VisualShaderNodeVoronoiNoiseAngleOffsetEmbedWidget::on_text_changed(const QString& text) {
+  SILENT_CHECK_CONDITION_TRUE(text.isEmpty());
+
+  bool ok;
+  float t {text.toFloat(&ok)};
+
+  SILENT_CHECK_CONDITION_TRUE(!ok);
+
   int row_entry{VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, n_id)};
-  if (text.isEmpty()) {
-    bool result = visual_shader_model->set_data(
-        FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
-                                    FieldPath::RepeatedAt(row_entry),
-                                    FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVoronoiNoiseFieldNumber),
-                                    FieldPath::FieldNumber(VisualShaderNodeVoronoiNoise::kAngleOffsetFieldNumber)),
-        0.0f);
-    if (!result) {
-      ERROR_PRINT("Failed to set data");
-    }
-  } else {
-    bool ok;
-    text.toFloat(&ok);
-    if (ok) {
-      bool result = visual_shader_model->set_data(
-          FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
-                                      FieldPath::RepeatedAt(row_entry),
-                                      FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVoronoiNoiseFieldNumber),
-                                      FieldPath::FieldNumber(VisualShaderNodeVoronoiNoise::kAngleOffsetFieldNumber)),
-          text.toFloat());
-      if (!result) {
-        ERROR_PRINT("Failed to set data");
-      }
-    } else {
-      bool result = visual_shader_model->set_data(
-          FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
-                                      FieldPath::RepeatedAt(row_entry),
-                                      FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVoronoiNoiseFieldNumber),
-                                      FieldPath::FieldNumber(VisualShaderNodeVoronoiNoise::kAngleOffsetFieldNumber)),
-          0.0f);
-      if (!result) {
-        ERROR_PRINT("Failed to set data");
-      }
-      setText("");
-    }
+
+  bool result = visual_shader_model->set_data(
+      FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
+                                  FieldPath::RepeatedAt(row_entry),
+                                  FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVoronoiNoiseFieldNumber),
+                                  FieldPath::FieldNumber(VisualShaderNodeVoronoiNoise::kAngleOffsetFieldNumber)), t);
+  if (!result) {
+    ERROR_PRINT("Failed to set data");
   }
 }
 
@@ -4481,42 +4178,22 @@ VisualShaderNodeVoronoiNoiseCellDensityEmbedWidget::VisualShaderNodeVoronoiNoise
 }
 
 void VisualShaderNodeVoronoiNoiseCellDensityEmbedWidget::on_text_changed(const QString& text) {
+  SILENT_CHECK_CONDITION_TRUE(text.isEmpty());
+
+  bool ok;
+  float t {text.toFloat(&ok)};
+
+  SILENT_CHECK_CONDITION_TRUE(!ok);
+
   int row_entry{VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, n_id)};
-  if (text.isEmpty()) {
-    bool result = visual_shader_model->set_data(
-        FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
-                                    FieldPath::RepeatedAt(row_entry),
-                                    FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVoronoiNoiseFieldNumber),
-                                    FieldPath::FieldNumber(VisualShaderNodeVoronoiNoise::kCellDensityFieldNumber)),
-        0.0f);
-    if (!result) {
-      ERROR_PRINT("Failed to set data");
-    }
-  } else {
-    bool ok;
-    text.toFloat(&ok);
-    if (ok) {
-      bool result = visual_shader_model->set_data(
-          FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
-                                      FieldPath::RepeatedAt(row_entry),
-                                      FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVoronoiNoiseFieldNumber),
-                                      FieldPath::FieldNumber(VisualShaderNodeVoronoiNoise::kCellDensityFieldNumber)),
-          text.toFloat());
-      if (!result) {
-        ERROR_PRINT("Failed to set data");
-      }
-    } else {
-      bool result = visual_shader_model->set_data(
-          FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
-                                      FieldPath::RepeatedAt(row_entry),
-                                      FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVoronoiNoiseFieldNumber),
-                                      FieldPath::FieldNumber(VisualShaderNodeVoronoiNoise::kCellDensityFieldNumber)),
-          0.0f);
-      if (!result) {
-        ERROR_PRINT("Failed to set data");
-      }
-      setText("");
-    }
+
+  bool result = visual_shader_model->set_data(
+      FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
+                                  FieldPath::RepeatedAt(row_entry),
+                                  FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVoronoiNoiseFieldNumber),
+                                  FieldPath::FieldNumber(VisualShaderNodeVoronoiNoise::kCellDensityFieldNumber)), t);
+  if (!result) {
+    ERROR_PRINT("Failed to set data");
   }
 }
 

@@ -240,7 +240,7 @@ QVariant OneofModel::headerData(int section, [[maybe_unused]] Qt::Orientation or
   return QString::fromStdString(field_desc->full_name());
 }
 
-bool OneofModel::set_oneof(const int& field_number) const {
+bool OneofModel::set_oneof(const int& field_number) {
   const Descriptor* desc{m_message_buffer->GetDescriptor()};
   const Reflection* refl{m_message_buffer->GetReflection()};
 
@@ -254,7 +254,15 @@ bool OneofModel::set_oneof(const int& field_number) const {
 
   SILENT_CHECK_CONDITION_TRUE_NON_VOID(oneof_desc->name() != m_oneof_desc->name(), false);
 
-  return set_oneof(field_desc);
+  bool result{set_oneof(field_desc)};
+  CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to set oneof field.");
+
+  QModelIndex index{this->index(0, field_desc->index())};
+
+  Q_EMIT dataChanged(index, index);
+  parent_data_changed();
+
+  return true;
 }
 
 void OneofModel::clear_sub_model() const {

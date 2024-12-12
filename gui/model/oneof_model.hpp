@@ -70,7 +70,7 @@ class OneofModel : public ProtoModel {
   QVariant headerData([[maybe_unused]] int section, [[maybe_unused]] Qt::Orientation orientation,
                       [[maybe_unused]] int role = Qt::DisplayRole) const override;
 
-  bool set_oneof(const int& field_number) const;
+  bool set_oneof(const int& field_number);
 
  private:
   Message* m_message_buffer;
