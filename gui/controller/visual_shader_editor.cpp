@@ -2327,15 +2327,17 @@ void VisualShaderNodeGraphicsObject::paint(QPainter* painter, const QStyleOption
 }
 
 QVariant VisualShaderNodeGraphicsObject::itemChange(GraphicsItemChange change, const QVariant& value) {
-  if (change == ItemScenePositionHasChanged) {
-    Q_EMIT node_moved(n_id, in_port_count, out_port_count, scenePos());
-  }
-
+  // if (change == ItemScenePositionHasChanged) {}
   return QGraphicsObject::itemChange(change, value);
 }
 
 void VisualShaderNodeGraphicsObject::contextMenuEvent(QGraphicsSceneContextMenuEvent* event) {
   context_menu->exec(event->screenPos());
+}
+
+void VisualShaderNodeGraphicsObject::mouseReleaseEvent(QGraphicsSceneMouseEvent* event) {
+  Q_EMIT node_moved(n_id, in_port_count, out_port_count, scenePos());
+  QGraphicsObject::mouseReleaseEvent(event);
 }
 
 VisualShaderInputPortGraphicsObject::VisualShaderInputPortGraphicsObject(const QRectF& rect, const int& n_id,

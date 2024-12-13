@@ -744,6 +744,7 @@ class VisualShaderNodeGraphicsObject : public QGraphicsObject {
   void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget = nullptr) override;
   QVariant itemChange(GraphicsItemChange change, const QVariant& value) override;
   void contextMenuEvent(QGraphicsSceneContextMenuEvent* event) override;
+  void mouseReleaseEvent(QGraphicsSceneMouseEvent* event) override;
 };
 
 class VisualShaderInputPortGraphicsObject : public QGraphicsObject {
