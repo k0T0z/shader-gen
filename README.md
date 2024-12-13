@@ -19,6 +19,6 @@ Or mRGM, which stands for mini-RadialGM, is a simple and lightweight version of 
 ## Steps To Add a New Node
 
 1. Add the node in `gui/model/schema/visual_shader_nodes.proto`.
-2. Add it inside `gui/controller/graph_node.hpp`.
+2. Add it inside `gui/controller/vs_proto_node.hpp`.
 3. Add it inside the `VisualShaderEditor(MessageModel* model, QWidget* parent = nullptr)` in `gui/controller/visual_shader_editor.cpp`.
 4. Create a generator for it.

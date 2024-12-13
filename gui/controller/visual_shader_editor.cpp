@@ -302,51 +302,51 @@ void VisualShaderEditor::init() {
   // CreateNodeDialog Nodes Tree Children
   //////////////////////////////////////////
 
-  std::vector<std::shared_ptr<IGraphNode>> t_nodes;
-  t_nodes.emplace_back(std::make_shared<GraphNode<VisualShaderNodeInput>>());
+  std::vector<std::shared_ptr<IVisualShaderProtoNode>> t_nodes;
+  t_nodes.emplace_back(std::make_shared<VisualShaderProtoNode<VisualShaderNodeInput>>());
 
-  t_nodes.emplace_back(std::make_shared<GraphNode<VisualShaderNodeFloatConstant>>());
-  t_nodes.emplace_back(std::make_shared<GraphNode<VisualShaderNodeIntConstant>>());
-  t_nodes.emplace_back(std::make_shared<GraphNode<VisualShaderNodeUIntConstant>>());
-  t_nodes.emplace_back(std::make_shared<GraphNode<VisualShaderNodeBooleanConstant>>());
-  t_nodes.emplace_back(std::make_shared<GraphNode<VisualShaderNodeColorConstant>>());
-  t_nodes.emplace_back(std::make_shared<GraphNode<VisualShaderNodeVec2Constant>>());
-  t_nodes.emplace_back(std::make_shared<GraphNode<VisualShaderNodeVec3Constant>>());
-  t_nodes.emplace_back(std::make_shared<GraphNode<VisualShaderNodeVec4Constant>>());
+  t_nodes.emplace_back(std::make_shared<VisualShaderProtoNode<VisualShaderNodeFloatConstant>>());
+  t_nodes.emplace_back(std::make_shared<VisualShaderProtoNode<VisualShaderNodeIntConstant>>());
+  t_nodes.emplace_back(std::make_shared<VisualShaderProtoNode<VisualShaderNodeUIntConstant>>());
+  t_nodes.emplace_back(std::make_shared<VisualShaderProtoNode<VisualShaderNodeBooleanConstant>>());
+  t_nodes.emplace_back(std::make_shared<VisualShaderProtoNode<VisualShaderNodeColorConstant>>());
+  t_nodes.emplace_back(std::make_shared<VisualShaderProtoNode<VisualShaderNodeVec2Constant>>());
+  t_nodes.emplace_back(std::make_shared<VisualShaderProtoNode<VisualShaderNodeVec3Constant>>());
+  t_nodes.emplace_back(std::make_shared<VisualShaderProtoNode<VisualShaderNodeVec4Constant>>());
 
-  t_nodes.emplace_back(std::make_shared<GraphNode<VisualShaderNodeFloatOp>>());
-  t_nodes.emplace_back(std::make_shared<GraphNode<VisualShaderNodeIntOp>>());
-  t_nodes.emplace_back(std::make_shared<GraphNode<VisualShaderNodeUIntOp>>());
-  t_nodes.emplace_back(std::make_shared<GraphNode<VisualShaderNodeVectorOp>>());
+  t_nodes.emplace_back(std::make_shared<VisualShaderProtoNode<VisualShaderNodeFloatOp>>());
+  t_nodes.emplace_back(std::make_shared<VisualShaderProtoNode<VisualShaderNodeIntOp>>());
+  t_nodes.emplace_back(std::make_shared<VisualShaderProtoNode<VisualShaderNodeUIntOp>>());
+  t_nodes.emplace_back(std::make_shared<VisualShaderProtoNode<VisualShaderNodeVectorOp>>());
 
-  t_nodes.emplace_back(std::make_shared<GraphNode<VisualShaderNodeFloatFunc>>());
-  t_nodes.emplace_back(std::make_shared<GraphNode<VisualShaderNodeIntFunc>>());
-  t_nodes.emplace_back(std::make_shared<GraphNode<VisualShaderNodeUIntFunc>>());
-  t_nodes.emplace_back(std::make_shared<GraphNode<VisualShaderNodeVectorFunc>>());
+  t_nodes.emplace_back(std::make_shared<VisualShaderProtoNode<VisualShaderNodeFloatFunc>>());
+  t_nodes.emplace_back(std::make_shared<VisualShaderProtoNode<VisualShaderNodeIntFunc>>());
+  t_nodes.emplace_back(std::make_shared<VisualShaderProtoNode<VisualShaderNodeUIntFunc>>());
+  t_nodes.emplace_back(std::make_shared<VisualShaderProtoNode<VisualShaderNodeVectorFunc>>());
 
-  t_nodes.emplace_back(std::make_shared<GraphNode<VisualShaderNodeValueNoise>>());
-  t_nodes.emplace_back(std::make_shared<GraphNode<VisualShaderNodePerlinNoise>>());
-  t_nodes.emplace_back(std::make_shared<GraphNode<VisualShaderNodeVoronoiNoise>>());
+  t_nodes.emplace_back(std::make_shared<VisualShaderProtoNode<VisualShaderNodeValueNoise>>());
+  t_nodes.emplace_back(std::make_shared<VisualShaderProtoNode<VisualShaderNodePerlinNoise>>());
+  t_nodes.emplace_back(std::make_shared<VisualShaderProtoNode<VisualShaderNodeVoronoiNoise>>());
 
-  t_nodes.emplace_back(std::make_shared<GraphNode<VisualShaderNodeDotProduct>>());
-  t_nodes.emplace_back(std::make_shared<GraphNode<VisualShaderNodeVectorLen>>());
-  t_nodes.emplace_back(std::make_shared<GraphNode<VisualShaderNodeClamp>>());
-  t_nodes.emplace_back(std::make_shared<GraphNode<VisualShaderNodeStep>>());
-  t_nodes.emplace_back(std::make_shared<GraphNode<VisualShaderNodeSmoothStep>>());
-  t_nodes.emplace_back(std::make_shared<GraphNode<VisualShaderNodeVectorDistance>>());
-  t_nodes.emplace_back(std::make_shared<GraphNode<VisualShaderNodeMix>>());
-  t_nodes.emplace_back(std::make_shared<GraphNode<VisualShaderNode2dVectorCompose>>());
-  t_nodes.emplace_back(std::make_shared<GraphNode<VisualShaderNode3dVectorCompose>>());
-  t_nodes.emplace_back(std::make_shared<GraphNode<VisualShaderNode4dVectorCompose>>());
-  t_nodes.emplace_back(std::make_shared<GraphNode<VisualShaderNode2dVectorDecompose>>());
-  t_nodes.emplace_back(std::make_shared<GraphNode<VisualShaderNode3dVectorDecompose>>());
-  t_nodes.emplace_back(std::make_shared<GraphNode<VisualShaderNode4dVectorDecompose>>());
-  t_nodes.emplace_back(std::make_shared<GraphNode<VisualShaderNodeIf>>());
-  t_nodes.emplace_back(std::make_shared<GraphNode<VisualShaderNodeSwitch>>());
-  t_nodes.emplace_back(std::make_shared<GraphNode<VisualShaderNodeIs>>());
-  t_nodes.emplace_back(std::make_shared<GraphNode<VisualShaderNodeCompare>>());
+  t_nodes.emplace_back(std::make_shared<VisualShaderProtoNode<VisualShaderNodeDotProduct>>());
+  t_nodes.emplace_back(std::make_shared<VisualShaderProtoNode<VisualShaderNodeVectorLen>>());
+  t_nodes.emplace_back(std::make_shared<VisualShaderProtoNode<VisualShaderNodeClamp>>());
+  t_nodes.emplace_back(std::make_shared<VisualShaderProtoNode<VisualShaderNodeStep>>());
+  t_nodes.emplace_back(std::make_shared<VisualShaderProtoNode<VisualShaderNodeSmoothStep>>());
+  t_nodes.emplace_back(std::make_shared<VisualShaderProtoNode<VisualShaderNodeVectorDistance>>());
+  t_nodes.emplace_back(std::make_shared<VisualShaderProtoNode<VisualShaderNodeMix>>());
+  t_nodes.emplace_back(std::make_shared<VisualShaderProtoNode<VisualShaderNode2dVectorCompose>>());
+  t_nodes.emplace_back(std::make_shared<VisualShaderProtoNode<VisualShaderNode3dVectorCompose>>());
+  t_nodes.emplace_back(std::make_shared<VisualShaderProtoNode<VisualShaderNode4dVectorCompose>>());
+  t_nodes.emplace_back(std::make_shared<VisualShaderProtoNode<VisualShaderNode2dVectorDecompose>>());
+  t_nodes.emplace_back(std::make_shared<VisualShaderProtoNode<VisualShaderNode3dVectorDecompose>>());
+  t_nodes.emplace_back(std::make_shared<VisualShaderProtoNode<VisualShaderNode4dVectorDecompose>>());
+  t_nodes.emplace_back(std::make_shared<VisualShaderProtoNode<VisualShaderNodeIf>>());
+  t_nodes.emplace_back(std::make_shared<VisualShaderProtoNode<VisualShaderNodeSwitch>>());
+  t_nodes.emplace_back(std::make_shared<VisualShaderProtoNode<VisualShaderNodeIs>>());
+  t_nodes.emplace_back(std::make_shared<VisualShaderProtoNode<VisualShaderNodeCompare>>());
 
-  for (const std::shared_ptr<IGraphNode>& node : t_nodes) {
+  for (const std::shared_ptr<IVisualShaderProtoNode>& node : t_nodes) {
     create_node_dialog_nodes_tree_items.emplace_back(
         CreateNodeDialogNodesTreeItem(node->get_caption(), node->get_category_path(), node->get_description(), node));
   }
@@ -376,7 +376,7 @@ void VisualShaderEditor::init() {
     QTreeWidgetItem* node_item = new QTreeWidgetItem(parent);
     node_item->setText(0, QString::fromStdString(item.caption));
     node_item->setData(1, Qt::DisplayRole, QString::fromStdString(item.description));
-    node_item->setData(1, IGRAPHNODE_SHARED_PTR_USER_ROLE, QVariant::fromValue(item.graph_node));
+    node_item->setData(1, VS_PROTO_NODE_SHARED_PTR_USER_ROLE, QVariant::fromValue(item.proto_node));
   }
 
   //////////////// Start of Footer ////////////////
@@ -395,7 +395,7 @@ bool VisualShaderEditor::add_output_node() {
   SILENT_CHECK_CONDITION_TRUE_NON_VOID(node_entry != -1, true);
 
   // Output node has the id 0
-  return scene->add_node(0, std::make_shared<GraphNode<VisualShaderNodeOutput>>(), QPointF(0, 0));
+  return scene->add_node(0, std::make_shared<VisualShaderProtoNode<VisualShaderNodeOutput>>(), QPointF(0, 0));
 }
 
 void VisualShaderEditor::load_graph() {
@@ -413,14 +413,14 @@ void VisualShaderEditor::create_node(const QPointF& coordinate) {
 }
 
 void VisualShaderEditor::add_node(QTreeWidgetItem* selected_item, const QPointF& coordinate) {
-  QVariant graph_node = selected_item->data(1, IGRAPHNODE_SHARED_PTR_USER_ROLE);
+  QVariant proto_node = selected_item->data(1, VS_PROTO_NODE_SHARED_PTR_USER_ROLE);
 
-  CHECK_CONDITION_TRUE(!graph_node.canConvert<std::shared_ptr<IGraphNode>>(), "Node type is empty");
+  CHECK_CONDITION_TRUE(!proto_node.canConvert<std::shared_ptr<IVisualShaderProtoNode>>(), "Node type is empty");
 
   int n_id{VisualShaderGraphicsScene::get_new_node_id(visual_shader_model, nodes_model)};
   CHECK_CONDITION_TRUE(n_id == 0, "The id " + std::to_string(n_id) + " is reserved for the output node");
 
-  bool result {scene->add_node(n_id, graph_node.value<std::shared_ptr<IGraphNode>>(), coordinate)};
+  bool result {scene->add_node(n_id, proto_node.value<std::shared_ptr<IVisualShaderProtoNode>>(), coordinate)};
   if (!result) {
     ERROR_PRINT("Failed to add node");
   }
@@ -452,7 +452,9 @@ void VisualShaderEditor::on_create_node_button_pressed() {
 void VisualShaderEditor::on_preview_shader_button_pressed() {
   std::string code;
 
-  bool result{shadergen_visual_shader_generator::generate_shader(code, nodes_model, connections_model)};
+  bool result{shadergen_visual_shader_generator::generate_shader(
+    shadergen_visual_shader_generator::to_generators(nodes_model), 
+    shadergen_visual_shader_generator::split_connections_to_input_output_by_keys(connections_model), code)};
   CHECK_CONDITION_TRUE(!result, "Failed to generate shader code");
 
   code_previewer->setPlainText(QString::fromStdString(code));
@@ -853,7 +855,7 @@ VisualShaderGraphicsScene::VisualShaderGraphicsScene(QObject* parent)
   setItemIndexMethod(QGraphicsScene::NoIndex);  // https://doc.qt.io/qt-6/qgraphicsscene.html#ItemIndexMethod-enum
 }
 
-bool VisualShaderGraphicsScene::add_node(const int& n_id, const std::shared_ptr<IGraphNode>& graph_node, const QPointF& coordinate) {
+bool VisualShaderGraphicsScene::add_node(const int& n_id, const std::shared_ptr<IVisualShaderProtoNode>& proto_node, const QPointF& coordinate) {
   int row_entry{nodes_model->append_row()};
 
   bool result = visual_shader_model->set_data(
@@ -883,129 +885,129 @@ bool VisualShaderGraphicsScene::add_node(const int& n_id, const std::shared_ptr<
   OneofModel* oneof{dynamic_cast<OneofModel*>(oneof_model)};
   CHECK_PARAM_NULLPTR_NON_VOID(oneof, false, "Failed to get oneof model");
 
-  if (auto input_node = std::dynamic_pointer_cast<GraphNode<VisualShaderNodeInput>>(graph_node)) {
+  if (auto input_node = std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNodeInput>>(proto_node)) {
     result = oneof->set_oneof(VisualShader::VisualShaderNode::kInputFieldNumber);
     CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to set input node");
   } else if (auto output_node =
-                 std::dynamic_pointer_cast<GraphNode<VisualShaderNodeOutput>>(graph_node)) {
+                 std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNodeOutput>>(proto_node)) {
     result = oneof->set_oneof(VisualShader::VisualShaderNode::kOutputFieldNumber);
     CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to set float constant");
   } else if (auto float_constant_node =
-                 std::dynamic_pointer_cast<GraphNode<VisualShaderNodeFloatConstant>>(graph_node)) {
+                 std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNodeFloatConstant>>(proto_node)) {
     result = oneof->set_oneof(VisualShader::VisualShaderNode::kFloatConstantFieldNumber);
     CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to set float constant");
-  } else if (auto int_constant_node = std::dynamic_pointer_cast<GraphNode<VisualShaderNodeIntConstant>>(graph_node)) {
+  } else if (auto int_constant_node = std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNodeIntConstant>>(proto_node)) {
     result = oneof->set_oneof(VisualShader::VisualShaderNode::kIntConstantFieldNumber);
     CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to set int constant");
-  } else if (auto uint_constant_node = std::dynamic_pointer_cast<GraphNode<VisualShaderNodeUIntConstant>>(graph_node)) {
+  } else if (auto uint_constant_node = std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNodeUIntConstant>>(proto_node)) {
     result = oneof->set_oneof(VisualShader::VisualShaderNode::kUintConstantFieldNumber);  
     CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to set uint constant");
   } else if (auto boolean_constant_node =
-                 std::dynamic_pointer_cast<GraphNode<VisualShaderNodeBooleanConstant>>(graph_node)) {
+                 std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNodeBooleanConstant>>(proto_node)) {
     result = oneof->set_oneof(VisualShader::VisualShaderNode::kBooleanConstantFieldNumber);
     CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to set boolean constant");
   } else if (auto color_constant_node =
-                 std::dynamic_pointer_cast<GraphNode<VisualShaderNodeColorConstant>>(graph_node)) {
+                 std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNodeColorConstant>>(proto_node)) {
     result = oneof->set_oneof(VisualShader::VisualShaderNode::kColorConstantFieldNumber); 
     CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to set color constant");
-  } else if (auto vec2_constant_node = std::dynamic_pointer_cast<GraphNode<VisualShaderNodeVec2Constant>>(graph_node)) {
+  } else if (auto vec2_constant_node = std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNodeVec2Constant>>(proto_node)) {
     result = oneof->set_oneof(VisualShader::VisualShaderNode::kVec2ConstantFieldNumber);
     CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to set vec2 constant");
-  } else if (auto vec3_constant_node = std::dynamic_pointer_cast<GraphNode<VisualShaderNodeVec3Constant>>(graph_node)) {
+  } else if (auto vec3_constant_node = std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNodeVec3Constant>>(proto_node)) {
     result = oneof->set_oneof(VisualShader::VisualShaderNode::kVec3ConstantFieldNumber);
     CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to set vec3 constant");
-  } else if (auto vec4_constant_node = std::dynamic_pointer_cast<GraphNode<VisualShaderNodeVec4Constant>>(graph_node)) {
+  } else if (auto vec4_constant_node = std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNodeVec4Constant>>(proto_node)) {
     result = oneof->set_oneof(VisualShader::VisualShaderNode::kVec4ConstantFieldNumber);
     CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to set vec4 constant");
-  } else if (auto float_op_node = std::dynamic_pointer_cast<GraphNode<VisualShaderNodeFloatOp>>(graph_node)) {
+  } else if (auto float_op_node = std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNodeFloatOp>>(proto_node)) {
     result = oneof->set_oneof(VisualShader::VisualShaderNode::kFloatOpFieldNumber);
     CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to set float op");
-  } else if (auto int_op_node = std::dynamic_pointer_cast<GraphNode<VisualShaderNodeIntOp>>(graph_node)) {
+  } else if (auto int_op_node = std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNodeIntOp>>(proto_node)) {
     result = oneof->set_oneof(VisualShader::VisualShaderNode::kIntOpFieldNumber); 
     CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to set int op");
-  } else if (auto uint_op_node = std::dynamic_pointer_cast<GraphNode<VisualShaderNodeUIntOp>>(graph_node)) {
+  } else if (auto uint_op_node = std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNodeUIntOp>>(proto_node)) {
     result = oneof->set_oneof(VisualShader::VisualShaderNode::kUintOpFieldNumber);
     CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to set uint op");
-  } else if (auto vector_op_node = std::dynamic_pointer_cast<GraphNode<VisualShaderNodeVectorOp>>(graph_node)) {
+  } else if (auto vector_op_node = std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNodeVectorOp>>(proto_node)) {
     result = oneof->set_oneof(VisualShader::VisualShaderNode::kVectorOpFieldNumber);  
     CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to set vector op");
-  } else if (auto float_func_node = std::dynamic_pointer_cast<GraphNode<VisualShaderNodeFloatFunc>>(graph_node)) {
+  } else if (auto float_func_node = std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNodeFloatFunc>>(proto_node)) {
     result = oneof->set_oneof(VisualShader::VisualShaderNode::kFloatFuncFieldNumber);
     CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to set float func");
-  } else if (auto int_func_node = std::dynamic_pointer_cast<GraphNode<VisualShaderNodeIntFunc>>(graph_node)) {
+  } else if (auto int_func_node = std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNodeIntFunc>>(proto_node)) {
     result = oneof->set_oneof(VisualShader::VisualShaderNode::kIntFuncFieldNumber);
     CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to set int func");
-  } else if (auto uint_func_node = std::dynamic_pointer_cast<GraphNode<VisualShaderNodeUIntFunc>>(graph_node)) {
+  } else if (auto uint_func_node = std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNodeUIntFunc>>(proto_node)) {
     result = oneof->set_oneof(VisualShader::VisualShaderNode::kUintFuncFieldNumber);
     CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to set uint func");
-  } else if (auto vector_func_node = std::dynamic_pointer_cast<GraphNode<VisualShaderNodeVectorFunc>>(graph_node)) {
+  } else if (auto vector_func_node = std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNodeVectorFunc>>(proto_node)) {
     result = oneof->set_oneof(VisualShader::VisualShaderNode::kVectorFuncFieldNumber);
     CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to set vector func");
-  } else if (auto value_noise_node = std::dynamic_pointer_cast<GraphNode<VisualShaderNodeValueNoise>>(graph_node)) {
+  } else if (auto value_noise_node = std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNodeValueNoise>>(proto_node)) {
     result = oneof->set_oneof(VisualShader::VisualShaderNode::kValueNoiseFieldNumber);
     CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to set value noise");
-  } else if (auto perlin_noise_node = std::dynamic_pointer_cast<GraphNode<VisualShaderNodePerlinNoise>>(graph_node)) {
+  } else if (auto perlin_noise_node = std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNodePerlinNoise>>(proto_node)) {
     result = oneof->set_oneof(VisualShader::VisualShaderNode::kPerlinNoiseFieldNumber);
     CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to set perlin noise");
-  } else if (auto voronoi_noise_node = std::dynamic_pointer_cast<GraphNode<VisualShaderNodeVoronoiNoise>>(graph_node)) {
+  } else if (auto voronoi_noise_node = std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNodeVoronoiNoise>>(proto_node)) {
     result = oneof->set_oneof(VisualShader::VisualShaderNode::kVoronoiNoiseFieldNumber);
     CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to set voronoi noise");
-  } else if (auto dot_product_node = std::dynamic_pointer_cast<GraphNode<VisualShaderNodeDotProduct>>(graph_node)) {
+  } else if (auto dot_product_node = std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNodeDotProduct>>(proto_node)) {
     result = oneof->set_oneof(VisualShader::VisualShaderNode::kDotProductFieldNumber);
     CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to set dot product");
-  } else if (auto vector_len_node = std::dynamic_pointer_cast<GraphNode<VisualShaderNodeVectorLen>>(graph_node)) {
+  } else if (auto vector_len_node = std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNodeVectorLen>>(proto_node)) {
     result = oneof->set_oneof(VisualShader::VisualShaderNode::kVectorLenFieldNumber);
     CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to set vector len");
-  } else if (auto clamp_node = std::dynamic_pointer_cast<GraphNode<VisualShaderNodeClamp>>(graph_node)) {
+  } else if (auto clamp_node = std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNodeClamp>>(proto_node)) {
     result = oneof->set_oneof(VisualShader::VisualShaderNode::kClampFieldNumber);
     CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to set clamp");
-  } else if (auto step_node = std::dynamic_pointer_cast<GraphNode<VisualShaderNodeStep>>(graph_node)) {
+  } else if (auto step_node = std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNodeStep>>(proto_node)) {
     result = oneof->set_oneof(VisualShader::VisualShaderNode::kStepFieldNumber);
     CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to set step");
-  } else if (auto smooth_step_node = std::dynamic_pointer_cast<GraphNode<VisualShaderNodeSmoothStep>>(graph_node)) {
+  } else if (auto smooth_step_node = std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNodeSmoothStep>>(proto_node)) {
     result = oneof->set_oneof(VisualShader::VisualShaderNode::kSmoothStepFieldNumber);
     CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to set smooth step");
   } else if (auto vector_distance_node =
-                 std::dynamic_pointer_cast<GraphNode<VisualShaderNodeVectorDistance>>(graph_node)) {
+                 std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNodeVectorDistance>>(proto_node)) {
     result = oneof->set_oneof(VisualShader::VisualShaderNode::kVectorDistanceFieldNumber);
     CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to set vector distance");
-  } else if (auto mix_node = std::dynamic_pointer_cast<GraphNode<VisualShaderNodeMix>>(graph_node)) {
+  } else if (auto mix_node = std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNodeMix>>(proto_node)) {
     result = oneof->set_oneof(VisualShader::VisualShaderNode::kMixFieldNumber);
     CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to set mix");
   } else if (auto vector_compose_2d_node =
-                 std::dynamic_pointer_cast<GraphNode<VisualShaderNode2dVectorCompose>>(graph_node)) {
+                 std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNode2dVectorCompose>>(proto_node)) {
     result = oneof->set_oneof(VisualShader::VisualShaderNode::kVector2DComposeFieldNumber);
     CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to set vector compose 2d");
   } else if (auto vector_compose_3d_node =
-                 std::dynamic_pointer_cast<GraphNode<VisualShaderNode3dVectorCompose>>(graph_node)) {
+                 std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNode3dVectorCompose>>(proto_node)) {
     result = oneof->set_oneof(VisualShader::VisualShaderNode::kVector3DComposeFieldNumber);
     CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to set vector compose 3d");
   } else if (auto vector_compose_4d_node =
-                 std::dynamic_pointer_cast<GraphNode<VisualShaderNode4dVectorCompose>>(graph_node)) {
+                 std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNode4dVectorCompose>>(proto_node)) {
     result = oneof->set_oneof(VisualShader::VisualShaderNode::kVector4DComposeFieldNumber);
     CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to set vector compose 4d");
   } else if (auto vector_decompose_2d_node =
-                 std::dynamic_pointer_cast<GraphNode<VisualShaderNode2dVectorDecompose>>(graph_node)) {
+                 std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNode2dVectorDecompose>>(proto_node)) {
     result = oneof->set_oneof(VisualShader::VisualShaderNode::kVector2DDecomposeFieldNumber);
     CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to set vector decompose 2d");
   } else if (auto vector_decompose_3d_node =
-                 std::dynamic_pointer_cast<GraphNode<VisualShaderNode3dVectorDecompose>>(graph_node)) {
+                 std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNode3dVectorDecompose>>(proto_node)) {
     result = oneof->set_oneof(VisualShader::VisualShaderNode::kVector3DDecomposeFieldNumber);
     CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to set vector decompose 3d");
   } else if (auto vector_decompose_4d_node =
-                 std::dynamic_pointer_cast<GraphNode<VisualShaderNode4dVectorDecompose>>(graph_node)) {
+                 std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNode4dVectorDecompose>>(proto_node)) {
     result = oneof->set_oneof(VisualShader::VisualShaderNode::kVector4DDecomposeFieldNumber);
     CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to set vector decompose 4d");
-  } else if (auto if_node = std::dynamic_pointer_cast<GraphNode<VisualShaderNodeIf>>(graph_node)) {
+  } else if (auto if_node = std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNodeIf>>(proto_node)) {
     result = oneof->set_oneof(VisualShader::VisualShaderNode::kIfNodeFieldNumber);
     CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to set if");
-  } else if (auto switch_node = std::dynamic_pointer_cast<GraphNode<VisualShaderNodeSwitch>>(graph_node)) {
+  } else if (auto switch_node = std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNodeSwitch>>(proto_node)) {
     result = oneof->set_oneof(VisualShader::VisualShaderNode::kSwitchNodeFieldNumber);
     CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to set switch");
-  } else if (auto is_node = std::dynamic_pointer_cast<GraphNode<VisualShaderNodeIs>>(graph_node)) {
+  } else if (auto is_node = std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNodeIs>>(proto_node)) {
     result = oneof->set_oneof(VisualShader::VisualShaderNode::kIsFieldNumber);
     CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to set is");
-  } else if (auto compare_node = std::dynamic_pointer_cast<GraphNode<VisualShaderNodeCompare>>(graph_node)) {
+  } else if (auto compare_node = std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNodeCompare>>(proto_node)) {
     result = oneof->set_oneof(VisualShader::VisualShaderNode::kCompareFieldNumber);
     CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to set compare");
   } else {
@@ -1027,14 +1029,14 @@ bool VisualShaderGraphicsScene::add_node(const int& n_id, const std::shared_ptr<
 
   std::vector<std::string> in_port_captions;
   std::vector<std::string> out_port_captions;
-  in_port_captions.resize(graph_node->get_input_port_count());
-  out_port_captions.resize(graph_node->get_output_port_count());
+  in_port_captions.resize(proto_node->get_input_port_count());
+  out_port_captions.resize(proto_node->get_output_port_count());
 
-  for (int i{0}; i < (int)in_port_captions.size(); i++) in_port_captions.at(i) = graph_node->get_input_port_caption(i);
+  for (int i{0}; i < (int)in_port_captions.size(); i++) in_port_captions.at(i) = proto_node->get_input_port_caption(i);
   for (int i{0}; i < (int)out_port_captions.size(); i++)
-    out_port_captions.at(i) = graph_node->get_output_port_caption(i);
+    out_port_captions.at(i) = proto_node->get_output_port_caption(i);
 
-  VisualShaderNodeGraphicsObject* n_o{new VisualShaderNodeGraphicsObject(n_id, coordinate, graph_node->get_caption(),
+  VisualShaderNodeGraphicsObject* n_o{new VisualShaderNodeGraphicsObject(n_id, coordinate, proto_node->get_caption(),
                                                                          in_port_captions, out_port_captions)};
 
   QObject::connect(n_o, &VisualShaderNodeGraphicsObject::node_moved, this, &VisualShaderGraphicsScene::on_node_moved);
@@ -1060,7 +1062,7 @@ bool VisualShaderGraphicsScene::add_node(const int& n_id, const std::shared_ptr<
 
   if (n_id != 0) {
     VisualShaderNodeEmbedWidget* embed_widget{
-      new VisualShaderNodeEmbedWidget(visual_shader_model, nodes_model, n_id, graph_node)};
+      new VisualShaderNodeEmbedWidget(visual_shader_model, nodes_model, n_id, proto_node)};
     QGraphicsProxyWidget* embed_widget_proxy{new QGraphicsProxyWidget(n_o)};
     embed_widget_proxy->setWidget(embed_widget);
     n_o->set_embed_widget(embed_widget);
@@ -2736,7 +2738,7 @@ std::pair<QPointF, QPointF> VisualShaderConnectionGraphicsObject::calculate_cont
 /**********************************************************************/
 
 VisualShaderNodeEmbedWidget::VisualShaderNodeEmbedWidget(ProtoModel* visual_shader_model, ProtoModel* nodes_model,
-                                                         const int& n_id, const std::shared_ptr<IGraphNode>& graph_node,
+                                                         const int& n_id, const std::shared_ptr<IVisualShaderProtoNode>& proto_node,
                                                          QWidget* parent)
     : QWidget(parent), layout(nullptr), preview_shader_button(nullptr), shader_previewer_widget(nullptr) {
   layout = new QVBoxLayout(this);
@@ -2745,56 +2747,56 @@ VisualShaderNodeEmbedWidget::VisualShaderNodeEmbedWidget(ProtoModel* visual_shad
   layout->setSpacing(2);
   layout->setAlignment(Qt::AlignVCenter | Qt::AlignHCenter);
 
-  if (auto input_node = std::dynamic_pointer_cast<GraphNode<VisualShaderNodeInput>>(graph_node)) {
+  if (auto input_node = std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNodeInput>>(proto_node)) {
     VisualShaderNodeInputEmbedWidget* embed_widget =
-        new VisualShaderNodeInputEmbedWidget(visual_shader_model, nodes_model, n_id, graph_node);
+        new VisualShaderNodeInputEmbedWidget(visual_shader_model, nodes_model, n_id, proto_node);
     layout->addWidget(embed_widget);
     QObject::connect(embed_widget, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
                      &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
   } else if (auto float_constant_node =
-                 std::dynamic_pointer_cast<GraphNode<VisualShaderNodeFloatConstant>>(graph_node)) {
+                 std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNodeFloatConstant>>(proto_node)) {
     VisualShaderNodeFloatConstantEmbedWidget* embed_widget =
-        new VisualShaderNodeFloatConstantEmbedWidget(visual_shader_model, nodes_model, n_id, graph_node);
+        new VisualShaderNodeFloatConstantEmbedWidget(visual_shader_model, nodes_model, n_id, proto_node);
     layout->addWidget(embed_widget);
     QObject::connect(embed_widget, &QLineEdit::textChanged, this,
                      &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
-  } else if (auto int_constant_node = std::dynamic_pointer_cast<GraphNode<VisualShaderNodeIntConstant>>(graph_node)) {
+  } else if (auto int_constant_node = std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNodeIntConstant>>(proto_node)) {
     VisualShaderNodeIntConstantEmbedWidget* embed_widget =
-        new VisualShaderNodeIntConstantEmbedWidget(visual_shader_model, nodes_model, n_id, graph_node);
+        new VisualShaderNodeIntConstantEmbedWidget(visual_shader_model, nodes_model, n_id, proto_node);
     layout->addWidget(embed_widget);
     QObject::connect(embed_widget, &QLineEdit::textChanged, this,
                      &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
-  } else if (auto uint_constant_node = std::dynamic_pointer_cast<GraphNode<VisualShaderNodeUIntConstant>>(graph_node)) {
+  } else if (auto uint_constant_node = std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNodeUIntConstant>>(proto_node)) {
     VisualShaderNodeUIntConstantEmbedWidget* embed_widget =
-        new VisualShaderNodeUIntConstantEmbedWidget(visual_shader_model, nodes_model, n_id, graph_node);
+        new VisualShaderNodeUIntConstantEmbedWidget(visual_shader_model, nodes_model, n_id, proto_node);
     layout->addWidget(embed_widget);
     QObject::connect(embed_widget, &QLineEdit::textChanged, this,
                      &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
   } else if (auto boolean_constant_node =
-                 std::dynamic_pointer_cast<GraphNode<VisualShaderNodeBooleanConstant>>(graph_node)) {
+                 std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNodeBooleanConstant>>(proto_node)) {
     VisualShaderNodeBooleanConstantEmbedWidget* embed_widget =
-        new VisualShaderNodeBooleanConstantEmbedWidget(visual_shader_model, nodes_model, n_id, graph_node);
+        new VisualShaderNodeBooleanConstantEmbedWidget(visual_shader_model, nodes_model, n_id, proto_node);
     layout->addWidget(embed_widget);
     QObject::connect(embed_widget, &QCheckBox::stateChanged, this,
                      &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
   } else if (auto color_constant_node =
-                 std::dynamic_pointer_cast<GraphNode<VisualShaderNodeColorConstant>>(graph_node)) {
+                 std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNodeColorConstant>>(proto_node)) {
     VisualShaderNodeColorConstantEmbedWidget* embed_widget =
-        new VisualShaderNodeColorConstantEmbedWidget(visual_shader_model, nodes_model, n_id, graph_node);
+        new VisualShaderNodeColorConstantEmbedWidget(visual_shader_model, nodes_model, n_id, proto_node);
     layout->addWidget(embed_widget);
     QObject::connect(embed_widget, &VisualShaderNodeColorConstantEmbedWidget::color_changed, this,
                      &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
-  } else if (auto vec2_constant_node = std::dynamic_pointer_cast<GraphNode<VisualShaderNodeVec2Constant>>(graph_node)) {
+  } else if (auto vec2_constant_node = std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNodeVec2Constant>>(proto_node)) {
     VisualShaderNodeVec2ConstantEmbedWidget* embed_widget =
-        new VisualShaderNodeVec2ConstantEmbedWidget(visual_shader_model, nodes_model, n_id, graph_node);
+        new VisualShaderNodeVec2ConstantEmbedWidget(visual_shader_model, nodes_model, n_id, proto_node);
     layout->addLayout(embed_widget);
     QObject::connect(embed_widget->get_x_edit_widget(), &QLineEdit::textChanged, this,
                      &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
     QObject::connect(embed_widget->get_y_edit_widget(), &QLineEdit::textChanged, this,
                      &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
-  } else if (auto vec3_constant_node = std::dynamic_pointer_cast<GraphNode<VisualShaderNodeVec3Constant>>(graph_node)) {
+  } else if (auto vec3_constant_node = std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNodeVec3Constant>>(proto_node)) {
     VisualShaderNodeVec3ConstantEmbedWidget* embed_widget =
-        new VisualShaderNodeVec3ConstantEmbedWidget(visual_shader_model, nodes_model, n_id, graph_node);
+        new VisualShaderNodeVec3ConstantEmbedWidget(visual_shader_model, nodes_model, n_id, proto_node);
     layout->addLayout(embed_widget);
     QObject::connect(embed_widget->get_x_edit_widget(), &QLineEdit::textChanged, this,
                      &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
@@ -2802,9 +2804,9 @@ VisualShaderNodeEmbedWidget::VisualShaderNodeEmbedWidget(ProtoModel* visual_shad
                      &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
     QObject::connect(embed_widget->get_z_edit_widget(), &QLineEdit::textChanged, this,
                      &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
-  } else if (auto vec4_constant_node = std::dynamic_pointer_cast<GraphNode<VisualShaderNodeVec4Constant>>(graph_node)) {
+  } else if (auto vec4_constant_node = std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNodeVec4Constant>>(proto_node)) {
     VisualShaderNodeVec4ConstantEmbedWidget* embed_widget =
-        new VisualShaderNodeVec4ConstantEmbedWidget(visual_shader_model, nodes_model, n_id, graph_node);
+        new VisualShaderNodeVec4ConstantEmbedWidget(visual_shader_model, nodes_model, n_id, proto_node);
     layout->addLayout(embed_widget);
     QObject::connect(embed_widget->get_x_edit_widget(), &QLineEdit::textChanged, this,
                      &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
@@ -2814,123 +2816,123 @@ VisualShaderNodeEmbedWidget::VisualShaderNodeEmbedWidget(ProtoModel* visual_shad
                      &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
     QObject::connect(embed_widget->get_w_edit_widget(), &QLineEdit::textChanged, this,
                      &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
-  } else if (auto float_op_node = std::dynamic_pointer_cast<GraphNode<VisualShaderNodeFloatOp>>(graph_node)) {
+  } else if (auto float_op_node = std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNodeFloatOp>>(proto_node)) {
     VisualShaderNodeFloatOpEmbedWidget* embed_widget =
-        new VisualShaderNodeFloatOpEmbedWidget(visual_shader_model, nodes_model, n_id, graph_node);
+        new VisualShaderNodeFloatOpEmbedWidget(visual_shader_model, nodes_model, n_id, proto_node);
     layout->addWidget(embed_widget);
     QObject::connect(embed_widget, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
                      &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
-  } else if (auto int_op_node = std::dynamic_pointer_cast<GraphNode<VisualShaderNodeIntOp>>(graph_node)) {
+  } else if (auto int_op_node = std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNodeIntOp>>(proto_node)) {
     VisualShaderNodeIntOpEmbedWidget* embed_widget =
-        new VisualShaderNodeIntOpEmbedWidget(visual_shader_model, nodes_model, n_id, graph_node);
+        new VisualShaderNodeIntOpEmbedWidget(visual_shader_model, nodes_model, n_id, proto_node);
     layout->addWidget(embed_widget);
     QObject::connect(embed_widget, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
                      &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
-  } else if (auto uint_op_node = std::dynamic_pointer_cast<GraphNode<VisualShaderNodeUIntOp>>(graph_node)) {
+  } else if (auto uint_op_node = std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNodeUIntOp>>(proto_node)) {
     VisualShaderNodeUIntOpEmbedWidget* embed_widget =
-        new VisualShaderNodeUIntOpEmbedWidget(visual_shader_model, nodes_model, n_id, graph_node);
+        new VisualShaderNodeUIntOpEmbedWidget(visual_shader_model, nodes_model, n_id, proto_node);
     layout->addWidget(embed_widget);
     QObject::connect(embed_widget, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
                      &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
-  } else if (auto vector_op_node = std::dynamic_pointer_cast<GraphNode<VisualShaderNodeVectorOp>>(graph_node)) {
+  } else if (auto vector_op_node = std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNodeVectorOp>>(proto_node)) {
     VisualShaderNodeVectorTypeEmbedWidget* embed_widget =
-        new VisualShaderNodeVectorTypeEmbedWidget(visual_shader_model, nodes_model, n_id, graph_node);
+        new VisualShaderNodeVectorTypeEmbedWidget(visual_shader_model, nodes_model, n_id, proto_node);
     layout->addWidget(embed_widget);
     VisualShaderNodeVectorOpEmbedWidget* embed_widget2 =
-        new VisualShaderNodeVectorOpEmbedWidget(visual_shader_model, nodes_model, n_id, graph_node);
+        new VisualShaderNodeVectorOpEmbedWidget(visual_shader_model, nodes_model, n_id, proto_node);
     layout->addWidget(embed_widget2);
     QObject::connect(embed_widget, QOverload<int>::of(&QComboBox::currentIndexChanged), embed_widget2,
                    &VisualShaderNodeVectorOpEmbedWidget::on_current_vector_type_changed);
     QObject::connect(embed_widget2, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
                      &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
-  } else if (auto float_func_node = std::dynamic_pointer_cast<GraphNode<VisualShaderNodeFloatFunc>>(graph_node)) {
+  } else if (auto float_func_node = std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNodeFloatFunc>>(proto_node)) {
     VisualShaderNodeFloatFuncEmbedWidget* embed_widget =
-        new VisualShaderNodeFloatFuncEmbedWidget(visual_shader_model, nodes_model, n_id, graph_node);
+        new VisualShaderNodeFloatFuncEmbedWidget(visual_shader_model, nodes_model, n_id, proto_node);
     layout->addWidget(embed_widget);
     QObject::connect(embed_widget, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
                      &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
-  } else if (auto int_func_node = std::dynamic_pointer_cast<GraphNode<VisualShaderNodeIntFunc>>(graph_node)) {
+  } else if (auto int_func_node = std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNodeIntFunc>>(proto_node)) {
     VisualShaderNodeIntFuncEmbedWidget* embed_widget =
-        new VisualShaderNodeIntFuncEmbedWidget(visual_shader_model, nodes_model, n_id, graph_node);
+        new VisualShaderNodeIntFuncEmbedWidget(visual_shader_model, nodes_model, n_id, proto_node);
     layout->addWidget(embed_widget);
     QObject::connect(embed_widget, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
                      &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
-  } else if (auto uint_func_node = std::dynamic_pointer_cast<GraphNode<VisualShaderNodeUIntFunc>>(graph_node)) {
+  } else if (auto uint_func_node = std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNodeUIntFunc>>(proto_node)) {
     VisualShaderNodeUIntFuncEmbedWidget* embed_widget =
-        new VisualShaderNodeUIntFuncEmbedWidget(visual_shader_model, nodes_model, n_id, graph_node);
+        new VisualShaderNodeUIntFuncEmbedWidget(visual_shader_model, nodes_model, n_id, proto_node);
     layout->addWidget(embed_widget);
     QObject::connect(embed_widget, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
                      &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
-  } else if (auto vector_func_node = std::dynamic_pointer_cast<GraphNode<VisualShaderNodeVectorFunc>>(graph_node)) {
+  } else if (auto vector_func_node = std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNodeVectorFunc>>(proto_node)) {
     VisualShaderNodeVectorTypeEmbedWidget* embed_widget =
-        new VisualShaderNodeVectorTypeEmbedWidget(visual_shader_model, nodes_model, n_id, graph_node);
+        new VisualShaderNodeVectorTypeEmbedWidget(visual_shader_model, nodes_model, n_id, proto_node);
     layout->addWidget(embed_widget);
     VisualShaderNodeVectorFuncEmbedWidget* embed_widget2 =
-        new VisualShaderNodeVectorFuncEmbedWidget(visual_shader_model, nodes_model, n_id, graph_node);
+        new VisualShaderNodeVectorFuncEmbedWidget(visual_shader_model, nodes_model, n_id, proto_node);
     layout->addWidget(embed_widget2);
     QObject::connect(embed_widget, QOverload<int>::of(&QComboBox::currentIndexChanged), embed_widget2,
                    &VisualShaderNodeVectorFuncEmbedWidget::on_current_vector_type_changed);
     QObject::connect(embed_widget2, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
                      &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
-  } else if (auto value_noise_node = std::dynamic_pointer_cast<GraphNode<VisualShaderNodeValueNoise>>(graph_node)) {
+  } else if (auto value_noise_node = std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNodeValueNoise>>(proto_node)) {
     VisualShaderNodeValueNoiseEmbedWidget* embed_widget =
-        new VisualShaderNodeValueNoiseEmbedWidget(visual_shader_model, nodes_model, n_id, graph_node);
+        new VisualShaderNodeValueNoiseEmbedWidget(visual_shader_model, nodes_model, n_id, proto_node);
     layout->addWidget(embed_widget);
     QObject::connect(embed_widget, &QLineEdit::textChanged, this,
                      &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
-  } else if (auto perlin_noise_node = std::dynamic_pointer_cast<GraphNode<VisualShaderNodePerlinNoise>>(graph_node)) {
+  } else if (auto perlin_noise_node = std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNodePerlinNoise>>(proto_node)) {
     VisualShaderNodePerlinNoiseEmbedWidget* embed_widget =
-        new VisualShaderNodePerlinNoiseEmbedWidget(visual_shader_model, nodes_model, n_id, graph_node);
+        new VisualShaderNodePerlinNoiseEmbedWidget(visual_shader_model, nodes_model, n_id, proto_node);
     layout->addWidget(embed_widget);
     QObject::connect(embed_widget, &QLineEdit::textChanged, this,
                      &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
-  } else if (auto voronoi_noise_node = std::dynamic_pointer_cast<GraphNode<VisualShaderNodeVoronoiNoise>>(graph_node)) {
+  } else if (auto voronoi_noise_node = std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNodeVoronoiNoise>>(proto_node)) {
     VisualShaderNodeVoronoiNoiseAngleOffsetEmbedWidget* embed_widget =
-        new VisualShaderNodeVoronoiNoiseAngleOffsetEmbedWidget(visual_shader_model, nodes_model, n_id, graph_node);
+        new VisualShaderNodeVoronoiNoiseAngleOffsetEmbedWidget(visual_shader_model, nodes_model, n_id, proto_node);
     VisualShaderNodeVoronoiNoiseCellDensityEmbedWidget* embed_widget2 =
-        new VisualShaderNodeVoronoiNoiseCellDensityEmbedWidget(visual_shader_model, nodes_model, n_id, graph_node);
+        new VisualShaderNodeVoronoiNoiseCellDensityEmbedWidget(visual_shader_model, nodes_model, n_id, proto_node);
     layout->addWidget(embed_widget);
     layout->addWidget(embed_widget2);
     QObject::connect(embed_widget, &QLineEdit::textChanged, this,
                      &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
     QObject::connect(embed_widget2, &QLineEdit::textChanged, this,
                      &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
-  } else if (auto dot_product_node = std::dynamic_pointer_cast<GraphNode<VisualShaderNodeDotProduct>>(graph_node)) {
-  } else if (auto vector_len_node = std::dynamic_pointer_cast<GraphNode<VisualShaderNodeVectorLen>>(graph_node)) {
-  } else if (auto clamp_node = std::dynamic_pointer_cast<GraphNode<VisualShaderNodeClamp>>(graph_node)) {
-  } else if (auto step_node = std::dynamic_pointer_cast<GraphNode<VisualShaderNodeStep>>(graph_node)) {
-  } else if (auto smooth_step_node = std::dynamic_pointer_cast<GraphNode<VisualShaderNodeSmoothStep>>(graph_node)) {
+  } else if (auto dot_product_node = std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNodeDotProduct>>(proto_node)) {
+  } else if (auto vector_len_node = std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNodeVectorLen>>(proto_node)) {
+  } else if (auto clamp_node = std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNodeClamp>>(proto_node)) {
+  } else if (auto step_node = std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNodeStep>>(proto_node)) {
+  } else if (auto smooth_step_node = std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNodeSmoothStep>>(proto_node)) {
   } else if (auto vector_distance_node =
-                 std::dynamic_pointer_cast<GraphNode<VisualShaderNodeVectorDistance>>(graph_node)) {
-  } else if (auto mix_node = std::dynamic_pointer_cast<GraphNode<VisualShaderNodeMix>>(graph_node)) {
+                 std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNodeVectorDistance>>(proto_node)) {
+  } else if (auto mix_node = std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNodeMix>>(proto_node)) {
   } else if (auto vector_compose_2d_node =
-                 std::dynamic_pointer_cast<GraphNode<VisualShaderNode2dVectorCompose>>(graph_node)) {
+                 std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNode2dVectorCompose>>(proto_node)) {
   } else if (auto vector_compose_3d_node =
-                 std::dynamic_pointer_cast<GraphNode<VisualShaderNode3dVectorCompose>>(graph_node)) {
+                 std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNode3dVectorCompose>>(proto_node)) {
   } else if (auto vector_compose_4d_node =
-                 std::dynamic_pointer_cast<GraphNode<VisualShaderNode4dVectorCompose>>(graph_node)) {
+                 std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNode4dVectorCompose>>(proto_node)) {
   } else if (auto vector_decompose_2d_node =
-                 std::dynamic_pointer_cast<GraphNode<VisualShaderNode2dVectorDecompose>>(graph_node)) {
+                 std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNode2dVectorDecompose>>(proto_node)) {
   } else if (auto vector_decompose_3d_node =
-                 std::dynamic_pointer_cast<GraphNode<VisualShaderNode3dVectorDecompose>>(graph_node)) {
+                 std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNode3dVectorDecompose>>(proto_node)) {
   } else if (auto vector_decompose_4d_node =
-                 std::dynamic_pointer_cast<GraphNode<VisualShaderNode4dVectorDecompose>>(graph_node)) {
-  } else if (auto if_node = std::dynamic_pointer_cast<GraphNode<VisualShaderNodeIf>>(graph_node)) {
-  } else if (auto switch_node = std::dynamic_pointer_cast<GraphNode<VisualShaderNodeSwitch>>(graph_node)) {
+                 std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNode4dVectorDecompose>>(proto_node)) {
+  } else if (auto if_node = std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNodeIf>>(proto_node)) {
+  } else if (auto switch_node = std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNodeSwitch>>(proto_node)) {
     VisualShaderNodeSwitchEmbedWidget* embed_widget =
-        new VisualShaderNodeSwitchEmbedWidget(visual_shader_model, nodes_model, n_id, graph_node);
+        new VisualShaderNodeSwitchEmbedWidget(visual_shader_model, nodes_model, n_id, proto_node);
     layout->addWidget(embed_widget);
     QObject::connect(embed_widget, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
                      &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
-  } else if (auto is_node = std::dynamic_pointer_cast<GraphNode<VisualShaderNodeIs>>(graph_node)) {
+  } else if (auto is_node = std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNodeIs>>(proto_node)) {
     VisualShaderNodeIsEmbedWidget* embed_widget =
-        new VisualShaderNodeIsEmbedWidget(visual_shader_model, nodes_model, n_id, graph_node);
+        new VisualShaderNodeIsEmbedWidget(visual_shader_model, nodes_model, n_id, proto_node);
     layout->addWidget(embed_widget);
     QObject::connect(embed_widget, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
                      &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
-  } else if (auto compare_node = std::dynamic_pointer_cast<GraphNode<VisualShaderNodeCompare>>(graph_node)) {
+  } else if (auto compare_node = std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNodeCompare>>(proto_node)) {
     VisualShaderNodeCompareEmbedWidget* embed_widget =
-        new VisualShaderNodeCompareEmbedWidget(visual_shader_model, nodes_model, n_id, graph_node);
+        new VisualShaderNodeCompareEmbedWidget(visual_shader_model, nodes_model, n_id, proto_node);
     layout->addLayout(embed_widget);
     QObject::connect(embed_widget->get_comparison_type_combo_box(), QOverload<int>::of(&QComboBox::currentIndexChanged),
                      this, &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
@@ -2962,12 +2964,12 @@ VisualShaderNodeEmbedWidget::VisualShaderNodeEmbedWidget(ProtoModel* visual_shad
 
 VisualShaderNodeInputEmbedWidget::VisualShaderNodeInputEmbedWidget(ProtoModel* visual_shader_model,
                                                                    ProtoModel* nodes_model, const int& n_id,
-                                                                   const std::shared_ptr<IGraphNode>& graph_node)
+                                                                   const std::shared_ptr<IVisualShaderProtoNode>& proto_node)
     : QComboBox(),
       visual_shader_model(visual_shader_model),
       nodes_model(nodes_model),
       n_id(n_id),
-      graph_node(graph_node) {
+      proto_node(proto_node) {
   setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
   setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
 
@@ -3009,10 +3011,10 @@ void VisualShaderNodeInputEmbedWidget::on_current_index_changed(const int& index
 
 VisualShaderNodeFloatConstantEmbedWidget::VisualShaderNodeFloatConstantEmbedWidget(
     ProtoModel* visual_shader_model, ProtoModel* nodes_model, const int& n_id,
-    const std::shared_ptr<IGraphNode>& graph_node)
+    const std::shared_ptr<IVisualShaderProtoNode>& proto_node)
     : QLineEdit(), visual_shader_model(visual_shader_model),
       nodes_model(nodes_model),
-      n_id(n_id), graph_node(graph_node) {
+      n_id(n_id), proto_node(proto_node) {
   setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
   setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
 
@@ -3052,10 +3054,10 @@ void VisualShaderNodeFloatConstantEmbedWidget::on_text_changed(const QString& te
 
 VisualShaderNodeIntConstantEmbedWidget::VisualShaderNodeIntConstantEmbedWidget(
     ProtoModel* visual_shader_model, ProtoModel* nodes_model, const int& n_id,
-    const std::shared_ptr<IGraphNode>& graph_node)
+    const std::shared_ptr<IVisualShaderProtoNode>& proto_node)
     : QLineEdit(), visual_shader_model(visual_shader_model),
       nodes_model(nodes_model),
-      n_id(n_id), graph_node(graph_node) {
+      n_id(n_id), proto_node(proto_node) {
   setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
   setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
 
@@ -3095,10 +3097,10 @@ void VisualShaderNodeIntConstantEmbedWidget::on_text_changed(const QString& text
 
 VisualShaderNodeUIntConstantEmbedWidget::VisualShaderNodeUIntConstantEmbedWidget(
     ProtoModel* visual_shader_model, ProtoModel* nodes_model, const int& n_id,
-    const std::shared_ptr<IGraphNode>& graph_node)
+    const std::shared_ptr<IVisualShaderProtoNode>& proto_node)
     : QLineEdit(), visual_shader_model(visual_shader_model),
       nodes_model(nodes_model),
-      n_id(n_id), graph_node(graph_node) {
+      n_id(n_id), proto_node(proto_node) {
   setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
   setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
 
@@ -3138,10 +3140,10 @@ void VisualShaderNodeUIntConstantEmbedWidget::on_text_changed(const QString& tex
 
 VisualShaderNodeColorConstantEmbedWidget::VisualShaderNodeColorConstantEmbedWidget(
     ProtoModel* visual_shader_model, ProtoModel* nodes_model, const int& n_id,
-    const std::shared_ptr<IGraphNode>& graph_node)
+    const std::shared_ptr<IVisualShaderProtoNode>& proto_node)
     : QPushButton(), visual_shader_model(visual_shader_model),
       nodes_model(nodes_model),
-      n_id(n_id), graph_node(graph_node) {
+      n_id(n_id), proto_node(proto_node) {
   setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
   setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
 
@@ -3253,10 +3255,10 @@ void VisualShaderNodeColorConstantEmbedWidget::on_pressed() {
 
 VisualShaderNodeBooleanConstantEmbedWidget::VisualShaderNodeBooleanConstantEmbedWidget(
     ProtoModel* visual_shader_model, ProtoModel* nodes_model, const int& n_id,
-    const std::shared_ptr<IGraphNode>& graph_node)
+    const std::shared_ptr<IVisualShaderProtoNode>& proto_node)
     : QCheckBox(), visual_shader_model(visual_shader_model),
       nodes_model(nodes_model),
-      n_id(n_id), graph_node(graph_node) {
+      n_id(n_id), proto_node(proto_node) {
   setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
   setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
 
@@ -3286,10 +3288,10 @@ void VisualShaderNodeBooleanConstantEmbedWidget::on_state_changed(const int& sta
 
 VisualShaderNodeVec2ConstantEmbedWidget::VisualShaderNodeVec2ConstantEmbedWidget(
     ProtoModel* visual_shader_model, ProtoModel* nodes_model, const int& n_id,
-    const std::shared_ptr<IGraphNode>& graph_node)
+    const std::shared_ptr<IVisualShaderProtoNode>& proto_node)
     : QVBoxLayout(), visual_shader_model(visual_shader_model),
       nodes_model(nodes_model),
-      n_id(n_id), graph_node(graph_node) {
+      n_id(n_id), proto_node(proto_node) {
   setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
   setSizeConstraint(QLayout::SetNoConstraint);
   setSpacing(2);
@@ -3368,10 +3370,10 @@ void VisualShaderNodeVec2ConstantEmbedWidget::on_y_text_changed(const QString& t
 
 VisualShaderNodeVec3ConstantEmbedWidget::VisualShaderNodeVec3ConstantEmbedWidget(
     ProtoModel* visual_shader_model, ProtoModel* nodes_model, const int& n_id,
-    const std::shared_ptr<IGraphNode>& graph_node)
+    const std::shared_ptr<IVisualShaderProtoNode>& proto_node)
     : QVBoxLayout(), visual_shader_model(visual_shader_model),
       nodes_model(nodes_model),
-      n_id(n_id), graph_node(graph_node) {
+      n_id(n_id), proto_node(proto_node) {
   setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
   setSizeConstraint(QLayout::SetNoConstraint);
   setSpacing(2);
@@ -3482,10 +3484,10 @@ void VisualShaderNodeVec3ConstantEmbedWidget::on_z_text_changed(const QString& t
 
 VisualShaderNodeVec4ConstantEmbedWidget::VisualShaderNodeVec4ConstantEmbedWidget(
     ProtoModel* visual_shader_model, ProtoModel* nodes_model, const int& n_id,
-    const std::shared_ptr<IGraphNode>& graph_node)
+    const std::shared_ptr<IVisualShaderProtoNode>& proto_node)
     : QVBoxLayout(), visual_shader_model(visual_shader_model),
       nodes_model(nodes_model),
-      n_id(n_id), graph_node(graph_node) {
+      n_id(n_id), proto_node(proto_node) {
   setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
   setSizeConstraint(QLayout::SetNoConstraint);
   setSpacing(2);
@@ -3632,10 +3634,10 @@ void VisualShaderNodeVec4ConstantEmbedWidget::on_w_text_changed(const QString& t
 
 VisualShaderNodeFloatOpEmbedWidget::VisualShaderNodeFloatOpEmbedWidget(ProtoModel* visual_shader_model,
                                                                        ProtoModel* nodes_model, const int& n_id,
-                                                                       const std::shared_ptr<IGraphNode>& graph_node)
+                                                                       const std::shared_ptr<IVisualShaderProtoNode>& proto_node)
     : QComboBox(), visual_shader_model(visual_shader_model),
       nodes_model(nodes_model),
-      n_id(n_id), graph_node(graph_node) {
+      n_id(n_id), proto_node(proto_node) {
   setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
   setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
 
@@ -3674,10 +3676,10 @@ void VisualShaderNodeFloatOpEmbedWidget::on_current_index_changed(const int& ind
 
 VisualShaderNodeIntOpEmbedWidget::VisualShaderNodeIntOpEmbedWidget(ProtoModel* visual_shader_model,
                                                                    ProtoModel* nodes_model, const int& n_id,
-                                                                   const std::shared_ptr<IGraphNode>& graph_node)
+                                                                   const std::shared_ptr<IVisualShaderProtoNode>& proto_node)
     : QComboBox(), visual_shader_model(visual_shader_model),
       nodes_model(nodes_model),
-      n_id(n_id), graph_node(graph_node) {
+      n_id(n_id), proto_node(proto_node) {
   setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
   setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
 
@@ -3716,10 +3718,10 @@ void VisualShaderNodeIntOpEmbedWidget::on_current_index_changed(const int& index
 
 VisualShaderNodeUIntOpEmbedWidget::VisualShaderNodeUIntOpEmbedWidget(ProtoModel* visual_shader_model,
                                                                      ProtoModel* nodes_model, const int& n_id,
-                                                                     const std::shared_ptr<IGraphNode>& graph_node)
+                                                                     const std::shared_ptr<IVisualShaderProtoNode>& proto_node)
     : QComboBox(), visual_shader_model(visual_shader_model),
       nodes_model(nodes_model),
-      n_id(n_id), graph_node(graph_node) {
+      n_id(n_id), proto_node(proto_node) {
   setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
   setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
 
@@ -3758,10 +3760,10 @@ void VisualShaderNodeUIntOpEmbedWidget::on_current_index_changed(const int& inde
 
 VisualShaderNodeVectorTypeEmbedWidget::VisualShaderNodeVectorTypeEmbedWidget(
     ProtoModel* visual_shader_model, ProtoModel* nodes_model, const int& n_id,
-    const std::shared_ptr<IGraphNode>& graph_node)
+    const std::shared_ptr<IVisualShaderProtoNode>& proto_node)
     : QComboBox(), visual_shader_model(visual_shader_model),
       nodes_model(nodes_model),
-      n_id(n_id), graph_node(graph_node) {
+      n_id(n_id), proto_node(proto_node) {
   setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
   setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
 
@@ -3775,10 +3777,10 @@ VisualShaderNodeVectorTypeEmbedWidget::VisualShaderNodeVectorTypeEmbedWidget(
 
 VisualShaderNodeVectorOpEmbedWidget::VisualShaderNodeVectorOpEmbedWidget(ProtoModel* visual_shader_model,
                                                                          ProtoModel* nodes_model, const int& n_id,
-                                                                         const std::shared_ptr<IGraphNode>& graph_node)
+                                                                         const std::shared_ptr<IVisualShaderProtoNode>& proto_node)
     : QComboBox(), visual_shader_model(visual_shader_model),
       nodes_model(nodes_model),
-      n_id(n_id), graph_node(graph_node) {
+      n_id(n_id), proto_node(proto_node) {
   setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
   setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
 
@@ -3834,10 +3836,10 @@ void VisualShaderNodeVectorOpEmbedWidget::on_current_index_changed(const int& in
 
 VisualShaderNodeFloatFuncEmbedWidget::VisualShaderNodeFloatFuncEmbedWidget(
     ProtoModel* visual_shader_model, ProtoModel* nodes_model, const int& n_id,
-    const std::shared_ptr<IGraphNode>& graph_node)
+    const std::shared_ptr<IVisualShaderProtoNode>& proto_node)
     : QComboBox(), visual_shader_model(visual_shader_model),
       nodes_model(nodes_model),
-      n_id(n_id), graph_node(graph_node) {
+      n_id(n_id), proto_node(proto_node) {
   setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
   setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
 
@@ -3876,10 +3878,10 @@ void VisualShaderNodeFloatFuncEmbedWidget::on_current_index_changed(const int& i
 
 VisualShaderNodeIntFuncEmbedWidget::VisualShaderNodeIntFuncEmbedWidget(ProtoModel* visual_shader_model,
                                                                        ProtoModel* nodes_model, const int& n_id,
-                                                                       const std::shared_ptr<IGraphNode>& graph_node)
+                                                                       const std::shared_ptr<IVisualShaderProtoNode>& proto_node)
     : QComboBox(), visual_shader_model(visual_shader_model),
       nodes_model(nodes_model),
-      n_id(n_id), graph_node(graph_node) {
+      n_id(n_id), proto_node(proto_node) {
   setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
   setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
 
@@ -3918,10 +3920,10 @@ void VisualShaderNodeIntFuncEmbedWidget::on_current_index_changed(const int& ind
 
 VisualShaderNodeUIntFuncEmbedWidget::VisualShaderNodeUIntFuncEmbedWidget(ProtoModel* visual_shader_model,
                                                                          ProtoModel* nodes_model, const int& n_id,
-                                                                         const std::shared_ptr<IGraphNode>& graph_node)
+                                                                         const std::shared_ptr<IVisualShaderProtoNode>& proto_node)
     : QComboBox(), visual_shader_model(visual_shader_model),
       nodes_model(nodes_model),
-      n_id(n_id), graph_node(graph_node) {
+      n_id(n_id), proto_node(proto_node) {
   setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
   setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
 
@@ -3960,10 +3962,10 @@ void VisualShaderNodeUIntFuncEmbedWidget::on_current_index_changed(const int& in
 
 VisualShaderNodeVectorFuncEmbedWidget::VisualShaderNodeVectorFuncEmbedWidget(
     ProtoModel* visual_shader_model, ProtoModel* nodes_model, const int& n_id,
-    const std::shared_ptr<IGraphNode>& graph_node)
+    const std::shared_ptr<IVisualShaderProtoNode>& proto_node)
     : QComboBox(), visual_shader_model(visual_shader_model),
       nodes_model(nodes_model),
-      n_id(n_id), graph_node(graph_node) {
+      n_id(n_id), proto_node(proto_node) {
   setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
   setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
 
@@ -4019,10 +4021,10 @@ void VisualShaderNodeVectorFuncEmbedWidget::on_current_index_changed(const int& 
 
 VisualShaderNodeValueNoiseEmbedWidget::VisualShaderNodeValueNoiseEmbedWidget(
     ProtoModel* visual_shader_model, ProtoModel* nodes_model, const int& n_id,
-    const std::shared_ptr<IGraphNode>& graph_node)
+    const std::shared_ptr<IVisualShaderProtoNode>& proto_node)
     : QLineEdit(), visual_shader_model(visual_shader_model),
       nodes_model(nodes_model),
-      n_id(n_id), graph_node(graph_node) {
+      n_id(n_id), proto_node(proto_node) {
   setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
   setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
 
@@ -4066,10 +4068,10 @@ void VisualShaderNodeValueNoiseEmbedWidget::on_text_changed(const QString& text)
 
 VisualShaderNodePerlinNoiseEmbedWidget::VisualShaderNodePerlinNoiseEmbedWidget(
     ProtoModel* visual_shader_model, ProtoModel* nodes_model, const int& n_id,
-    const std::shared_ptr<IGraphNode>& graph_node)
+    const std::shared_ptr<IVisualShaderProtoNode>& proto_node)
     : QLineEdit(), visual_shader_model(visual_shader_model),
       nodes_model(nodes_model),
-      n_id(n_id), graph_node(graph_node) {
+      n_id(n_id), proto_node(proto_node) {
   setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
   setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
 
@@ -4113,10 +4115,10 @@ void VisualShaderNodePerlinNoiseEmbedWidget::on_text_changed(const QString& text
 
 VisualShaderNodeVoronoiNoiseAngleOffsetEmbedWidget::VisualShaderNodeVoronoiNoiseAngleOffsetEmbedWidget(
     ProtoModel* visual_shader_model, ProtoModel* nodes_model, const int& n_id,
-    const std::shared_ptr<IGraphNode>& graph_node)
+    const std::shared_ptr<IVisualShaderProtoNode>& proto_node)
     : QLineEdit(), visual_shader_model(visual_shader_model),
       nodes_model(nodes_model),
-      n_id(n_id), graph_node(graph_node) {
+      n_id(n_id), proto_node(proto_node) {
   setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
   setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
 
@@ -4157,10 +4159,10 @@ void VisualShaderNodeVoronoiNoiseAngleOffsetEmbedWidget::on_text_changed(const Q
 
 VisualShaderNodeVoronoiNoiseCellDensityEmbedWidget::VisualShaderNodeVoronoiNoiseCellDensityEmbedWidget(
     ProtoModel* visual_shader_model, ProtoModel* nodes_model, const int& n_id,
-    const std::shared_ptr<IGraphNode>& graph_node)
+    const std::shared_ptr<IVisualShaderProtoNode>& proto_node)
     : QLineEdit(), visual_shader_model(visual_shader_model),
       nodes_model(nodes_model),
-      n_id(n_id), graph_node(graph_node) {
+      n_id(n_id), proto_node(proto_node) {
   setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
   setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
 
@@ -4205,10 +4207,10 @@ void VisualShaderNodeVoronoiNoiseCellDensityEmbedWidget::on_text_changed(const Q
 
 VisualShaderNodeCompareEmbedWidget::VisualShaderNodeCompareEmbedWidget(ProtoModel* visual_shader_model,
                                                                        ProtoModel* nodes_model, const int& n_id,
-                                                                       const std::shared_ptr<IGraphNode>& graph_node)
+                                                                       const std::shared_ptr<IVisualShaderProtoNode>& proto_node)
     : QVBoxLayout(), visual_shader_model(visual_shader_model),
       nodes_model(nodes_model),
-      n_id(n_id), graph_node(graph_node) {
+      n_id(n_id), proto_node(proto_node) {
   setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
   setSizeConstraint(QLayout::SetNoConstraint);
   setSpacing(2);
@@ -4314,10 +4316,10 @@ void VisualShaderNodeCompareEmbedWidget::on_condition_current_index_changed(cons
 
 VisualShaderNodeSwitchEmbedWidget::VisualShaderNodeSwitchEmbedWidget(ProtoModel* visual_shader_model,
                                                                      ProtoModel* nodes_model, const int& n_id,
-                                                                     const std::shared_ptr<IGraphNode>& graph_node)
+                                                                     const std::shared_ptr<IVisualShaderProtoNode>& proto_node)
     : QComboBox(), visual_shader_model(visual_shader_model),
       nodes_model(nodes_model),
-      n_id(n_id), graph_node(graph_node) {
+      n_id(n_id), proto_node(proto_node) {
   setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
   setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
 
@@ -4333,10 +4335,10 @@ void VisualShaderNodeSwitchEmbedWidget::on_current_index_changed(const int& inde
 
 VisualShaderNodeIsEmbedWidget::VisualShaderNodeIsEmbedWidget(ProtoModel* visual_shader_model, ProtoModel* nodes_model,
                                                              const int& n_id,
-                                                             const std::shared_ptr<IGraphNode>& graph_node)
+                                                             const std::shared_ptr<IVisualShaderProtoNode>& proto_node)
     : QComboBox(), visual_shader_model(visual_shader_model),
       nodes_model(nodes_model),
-      n_id(n_id), graph_node(graph_node) {
+      n_id(n_id), proto_node(proto_node) {
   setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
   setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
 

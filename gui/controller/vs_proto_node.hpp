@@ -25,8 +25,8 @@
 /*                                                                               */
 /*********************************************************************************/
 
-#ifndef GRAPH_NODE_HPP
-#define GRAPH_NODE_HPP
+#ifndef VISUAL_SHADER_PROTO_NODE_HPP
+#define VISUAL_SHADER_PROTO_NODE_HPP
 
 #include <google/protobuf/descriptor.h>
 #include <QMetaType>
@@ -39,9 +39,9 @@
 
 using namespace gui::model::schema;
 
-class IGraphNode {
+class IVisualShaderProtoNode {
  public:
-  virtual ~IGraphNode() = default;
+  virtual ~IVisualShaderProtoNode() = default;
 
   virtual std::string get_caption() const = 0;
 
@@ -60,7 +60,7 @@ class IGraphNode {
 };
 
 template <typename Proto>
-class GraphNode : public IGraphNode {
+class VisualShaderProtoNode : public IVisualShaderProtoNode {
  public:
   std::string get_caption() const override {
     CHECK_CONDITION_TRUE_NON_VOID(!Proto::descriptor()->options().HasExtension(gui::model::schema::node_caption), "",
@@ -135,6 +135,6 @@ class GraphNode : public IGraphNode {
   }
 };
 
-Q_DECLARE_METATYPE(std::shared_ptr<IGraphNode>)  // Required for QVariant
+Q_DECLARE_METATYPE(std::shared_ptr<IVisualShaderProtoNode>)  // Required for QVariant
 
-#endif  // GRAPH_NODE_HPP
+#endif  // VISUAL_SHADER_PROTO_NODE_HPP
