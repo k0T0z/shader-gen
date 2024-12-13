@@ -25,8 +25,8 @@
 /*                                                                               */
 /*********************************************************************************/
 
-#ifndef UTILS_HPP
-#define UTILS_HPP
+#ifndef MODEL_UTILS_HPP
+#define MODEL_UTILS_HPP
 
 #include <google/protobuf/descriptor.h>
 #include "error_macros.hpp"
@@ -94,4 +94,4 @@ inline static bool is_valid_enum_value(const google::protobuf::EnumDescriptor* e
 }
 }  // namespace shadergen_utils
 
-#endif  // UTILS_HPP
+#endif  // MODEL_UTILS_HPP
