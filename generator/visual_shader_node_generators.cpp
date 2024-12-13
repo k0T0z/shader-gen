@@ -851,6 +851,27 @@ std::string VisualShaderNodeGeneratorIs::generate_code(
   return code;
 }
 
+VisualShaderNodeGeneratorCompare::VisualShaderNodeGeneratorCompare(const VisualShaderNodeCompare::ComparisonType& comp, 
+                                   const VisualShaderNodeCompare::Function& func, 
+                                   const VisualShaderNodeCompare::Condition& cond)
+      : VisualShaderNodeGenerator(), comp(comp), func(func), cond(cond) {
+  switch (comp) {
+    case VisualShaderNodeCompare::CMP_TYPE_SCALAR:
+    case VisualShaderNodeCompare::CMP_TYPE_SCALAR_UINT:
+    case VisualShaderNodeCompare::CMP_TYPE_SCALAR_INT:
+    case VisualShaderNodeCompare::CMP_TYPE_BOOLEAN:
+      simple_decl = true;
+      break;
+    case VisualShaderNodeCompare::CMP_TYPE_VECTOR_2D:
+    case VisualShaderNodeCompare::CMP_TYPE_VECTOR_3D:
+    case VisualShaderNodeCompare::CMP_TYPE_VECTOR_4D:
+      simple_decl = false;
+      break;
+    default:
+      break;
+  }
+}
+
 std::string VisualShaderNodeGeneratorCompare::generate_code(
     [[maybe_unused]] const int& id, [[maybe_unused]] const std::vector<std::string>& input_vars,
     const std::vector<std::string>& output_vars) const {

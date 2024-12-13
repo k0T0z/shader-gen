@@ -37,8 +37,10 @@ using namespace gui::model::schema;
 
 class VisualShaderNodeGenerator {
  public:
-  VisualShaderNodeGenerator() = default;
+  VisualShaderNodeGenerator() : simple_decl(true) {}
   virtual ~VisualShaderNodeGenerator() = default;
+
+  bool is_simple_decl() const { return simple_decl; }
 
   virtual std::string generate_global([[maybe_unused]] const int& id) const { return ""; }
   virtual std::string generate_global_per_node([[maybe_unused]] const int& id) const { return ""; }
@@ -47,6 +49,9 @@ class VisualShaderNodeGenerator {
   virtual std::string generate_code([[maybe_unused]] const int& id,
                                     [[maybe_unused]] const std::vector<std::string>& input_vars,
                                     [[maybe_unused]] const std::vector<std::string>& output_vars) const = 0;
+
+  protected:
+  bool simple_decl;
 };
 
 class VisualShaderNodeGeneratorInput : public VisualShaderNodeGenerator {
@@ -413,7 +418,7 @@ class VisualShaderNodeGeneratorVectorDecompose : public VisualShaderNodeGenerato
 class VisualShaderNodeGeneratorIf : public VisualShaderNodeGenerator {
  public:
   VisualShaderNodeGeneratorIf()
-      : VisualShaderNodeGenerator() {}
+      : VisualShaderNodeGenerator() { simple_decl = false; }
 
   virtual std::string generate_code([[maybe_unused]] const int& id,
                                     [[maybe_unused]] const std::vector<std::string>& input_vars,
@@ -423,7 +428,7 @@ class VisualShaderNodeGeneratorIf : public VisualShaderNodeGenerator {
 class VisualShaderNodeGeneratorSwitch : public VisualShaderNodeGenerator {
  public:
   VisualShaderNodeGeneratorSwitch(const VisualShaderNodeSwitch::VisualShaderNodeSwitchOpType& op)
-      : VisualShaderNodeGenerator(), op(op) {}
+      : VisualShaderNodeGenerator(), op(op) { simple_decl = false; }
 
   virtual std::string generate_code([[maybe_unused]] const int& id,
                                     [[maybe_unused]] const std::vector<std::string>& input_vars,
@@ -450,8 +455,7 @@ class VisualShaderNodeGeneratorCompare : public VisualShaderNodeGenerator {
  public:
   VisualShaderNodeGeneratorCompare(const VisualShaderNodeCompare::ComparisonType& comp, 
                                    const VisualShaderNodeCompare::Function& func, 
-                                   const VisualShaderNodeCompare::Condition& cond)
-      : VisualShaderNodeGenerator(), comp(comp), func(func), cond(cond) {}
+                                   const VisualShaderNodeCompare::Condition& cond);
 
   virtual std::string generate_code([[maybe_unused]] const int& id,
                                     [[maybe_unused]] const std::vector<std::string>& input_vars,

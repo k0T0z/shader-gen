@@ -43,6 +43,15 @@ class IVisualShaderProtoNode {
  public:
   virtual ~IVisualShaderProtoNode() = default;
 
+  /**
+   * @brief Get the name object
+   * 
+   * @note This function is used in the generate_shader function.
+   * 
+   * @return std::string 
+   */
+  virtual std::string get_name() const = 0;
+
   virtual std::string get_caption() const = 0;
 
   virtual int get_input_port_count() const = 0;
@@ -62,6 +71,10 @@ class IVisualShaderProtoNode {
 template <typename Proto>
 class VisualShaderProtoNode : public IVisualShaderProtoNode {
  public:
+  std::string get_name() const override {
+    return Proto::descriptor()->name();
+  }
+
   std::string get_caption() const override {
     CHECK_CONDITION_TRUE_NON_VOID(!Proto::descriptor()->options().HasExtension(gui::model::schema::node_caption), "",
                                   "Node caption not set");

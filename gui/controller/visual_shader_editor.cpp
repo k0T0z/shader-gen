@@ -453,8 +453,9 @@ void VisualShaderEditor::on_preview_shader_button_pressed() {
   std::string code;
 
   bool result{shadergen_visual_shader_generator::generate_shader(
+    shadergen_visual_shader_generator::to_proto_nodes(nodes_model),
     shadergen_visual_shader_generator::to_generators(nodes_model), 
-    shadergen_visual_shader_generator::split_connections_to_input_output_by_keys(connections_model), code)};
+    shadergen_visual_shader_generator::to_input_output_connections_by_key(connections_model), code)};
   CHECK_CONDITION_TRUE(!result, "Failed to generate shader code");
 
   code_previewer->setPlainText(QString::fromStdString(code));
@@ -1148,7 +1149,9 @@ void VisualShaderGraphicsScene::on_update_shader_previewer_widgets_requested() {
       continue;
     }
 
-    spw->set_code(shadergen_visual_shader_generator::generate_preview_shader(n_id, 0));  // 0 is the output port index
+    spw->set_code(shadergen_visual_shader_generator::generate_preview_shader(shadergen_visual_shader_generator::to_proto_nodes(nodes_model),
+                                    shadergen_visual_shader_generator::to_generators(nodes_model), 
+                                    shadergen_visual_shader_generator::to_input_output_connections_by_key(connections_model), n_id, 0));  // 0 is the output port index
   }
 
   on_scene_update_requested();

@@ -89,12 +89,12 @@ if(CMAKE_BUILD_TYPE MATCHES Debug)
     # Define a macro for Debug builds
     set(SHADER_GEN_DEBUG_MACRO_NAME "SHADER_GEN_DEBUG")
 
-    if(CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
-        add_compile_options(-fsanitize=address -g -O1)
-        add_link_options(-fsanitize=address)
-    else()
-        message(WARNING "ASan is not supported by this compiler.")
-    endif()
+    # if(CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
+    #     add_compile_options(-fsanitize=address -g -O1)
+    #     add_link_options(-fsanitize=address)
+    # else()
+    #     message(WARNING "ASan is not supported by this compiler.")
+    # endif()
 endif()
 
 if(MSVC)
@@ -223,6 +223,7 @@ set(SHADER_GEN_TESTS_EXECUTABLE_NAME "shader-gen-tests" CACHE STRING "The name o
 file(GLOB SHADER_GEN_TESTS_CPP_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/tests/gui/model/test_model.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/tests/gui/model/utils/test_field_path.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/tests/generator/test_vs_generator.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/tests/generator/test_vs_node_generators.cpp
 )
 

@@ -34,13 +34,11 @@
 #include "gui/model/schema/visual_shader_nodes.pb.h"
 #include "generator/visual_shader_node_generators.hpp"
 
-using namespace gui::model::schema;
-
 /*************************************/
 /* Value (Simple) Noise              */
 /*************************************/
 
-class VisualShaderNodeGeneratorValueNoise : VisualShaderNodeGenerator {
+class VisualShaderNodeGeneratorValueNoise : public VisualShaderNodeGenerator {
     public:
     VisualShaderNodeGeneratorValueNoise(const float& scale) : VisualShaderNodeGenerator(), scale(scale) {}
 
@@ -58,7 +56,7 @@ class VisualShaderNodeGeneratorValueNoise : VisualShaderNodeGenerator {
 /* Perlin (Gradient) Noise           */
 /*************************************/
 
-class VisualShaderNodeGeneratorPerlinNoise : VisualShaderNodeGenerator {
+class VisualShaderNodeGeneratorPerlinNoise : public VisualShaderNodeGenerator {
     public:
     VisualShaderNodeGeneratorPerlinNoise(const float& scale) : VisualShaderNodeGenerator(), scale(scale) {}
 
@@ -76,7 +74,7 @@ class VisualShaderNodeGeneratorPerlinNoise : VisualShaderNodeGenerator {
 /* Voronoi (Worley) Noise            */
 /*************************************/
 
-class VisualShaderNodeGeneratorVoronoiNoise : VisualShaderNodeGenerator {
+class VisualShaderNodeGeneratorVoronoiNoise : public VisualShaderNodeGenerator {
     public:
     VisualShaderNodeGeneratorVoronoiNoise(const float& angle_offset, const float& cell_density)
         : VisualShaderNodeGenerator(), angle_offset(angle_offset), cell_density(cell_density) {}
