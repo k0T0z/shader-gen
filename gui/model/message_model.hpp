@@ -58,6 +58,7 @@ class MessageModel : public ProtoModel {
 
  public:
   MessageModel(Message* message_buffer, ProtoModel* parent_model = nullptr, const int& index_in_parent = -1);
+  MessageModel(const Descriptor* desc, ProtoModel* parent_model = nullptr, const int& index_in_parent = -1);
   virtual ~MessageModel() override { clear_sub_models(); }
 
   virtual void build_sub_models() override;
@@ -85,6 +86,7 @@ class MessageModel : public ProtoModel {
 
  private:
   Message* m_message_buffer;
+  const Descriptor* m_desc; // https://protobuf.dev/reference/cpp/api-docs/google.protobuf.descriptor/#Descriptor
   std::unordered_map<int, ProtoModel*> m_sub_models_by_field_number;
   std::unordered_map<std::string, ProtoModel*> m_sub_models_by_oneof_name;
 

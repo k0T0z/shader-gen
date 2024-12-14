@@ -40,7 +40,10 @@
 using OneofDescriptor = google::protobuf::OneofDescriptor;
 
 MessageModel::MessageModel(Message* message_buffer, ProtoModel* parent_model, const int& index_in_parent)
-    : ProtoModel(parent_model, index_in_parent), m_message_buffer(message_buffer), last_accessed_field_index(-1) {}
+    : ProtoModel(parent_model, index_in_parent), m_message_buffer(message_buffer), m_desc(message_buffer->GetDescriptor()), last_accessed_field_index(-1) {}
+
+MessageModel::MessageModel(const Descriptor* desc, ProtoModel* parent_model, const int& index_in_parent) 
+    : ProtoModel(parent_model, index_in_parent), m_message_buffer(nullptr), m_desc(desc), last_accessed_field_index(-1) {}
 
 void MessageModel::build_sub_models() {
   SILENT_CHECK_PARAM_NULLPTR(m_message_buffer);
@@ -155,8 +158,8 @@ bool MessageModel::set_data([[maybe_unused]] const QVariant& value) {
 }
 
 const ProtoModel* MessageModel::get_sub_model(const int& field_number) const {
-  const Descriptor* desc{m_message_buffer->GetDescriptor()};
-  const FieldDescriptor* field_desc{desc->FindFieldByNumber(field_number)};
+  CHECK_PARAM_NULLPTR_NON_VOID(m_desc, nullptr, "Message descriptor is null.");
+  const FieldDescriptor* field_desc{m_desc->FindFieldByNumber(field_number)};
   if (shadergen_utils::is_inside_real_oneof(field_desc)) {
     const OneofDescriptor* oneof_desc{field_desc->real_containing_oneof()};
     auto it{m_sub_models_by_oneof_name.find(oneof_desc->name())};
@@ -172,15 +175,15 @@ const ProtoModel* MessageModel::get_sub_model(const int& field_number) const {
 const ProtoModel* MessageModel::get_sub_model(const FieldPath& path, const bool& for_set_data,
                                               const bool& for_get_oneof) const {
   SILENT_CHECK_PARAM_NULLPTR_NON_VOID(m_message_buffer, nullptr);
-  const Descriptor* desc{m_message_buffer->GetDescriptor()};
-  CHECK_CONDITION_TRUE_NON_VOID(!path.is_valid(), nullptr, "Invalid path for " + desc->full_name());
+  CHECK_PARAM_NULLPTR_NON_VOID(m_desc, nullptr, "Message descriptor is null.");
+  CHECK_CONDITION_TRUE_NON_VOID(!path.is_valid(), nullptr, "Invalid path for " + m_desc->full_name());
   SILENT_CHECK_CONDITION_TRUE_NON_VOID(path.is_empty(), this);
 
   int fn{-1};
 
   CHECK_CONDITION_TRUE_NON_VOID(!path.get_upcoming_field_num(fn), nullptr, "Next component is not a field number.");
 
-  const FieldDescriptor* field_desc{desc->FindFieldByNumber(fn)};
+  const FieldDescriptor* field_desc{m_desc->FindFieldByNumber(fn)};
 
   if (shadergen_utils::is_inside_real_oneof(field_desc)) {
     const OneofDescriptor* oneof_desc{field_desc->real_containing_oneof()};
@@ -192,7 +195,7 @@ const ProtoModel* MessageModel::get_sub_model(const FieldPath& path, const bool&
   auto it{m_sub_models_by_field_number.find(fn)};
   CHECK_CONDITION_TRUE_NON_VOID(
       it == m_sub_models_by_field_number.end(), nullptr,
-      "Sub-model under " + desc->full_name() + " not found for field number " + std::to_string(fn));
+      "Sub-model under " + m_desc->full_name() + " not found for field number " + std::to_string(fn));
 
   CHECK_CONDITION_TRUE_NON_VOID(!path.skip_component(), nullptr, "Failed to skip field number.");
 
@@ -202,12 +205,11 @@ const ProtoModel* MessageModel::get_sub_model(const FieldPath& path, const bool&
 }
 
 const FieldDescriptor* MessageModel::get_column_descriptor(const int& column) const {
-  // https://protobuf.dev/reference/cpp/api-docs/google.protobuf.descriptor/#Descriptor
-  const Descriptor* desc{m_message_buffer->GetDescriptor()};
+  CHECK_PARAM_NULLPTR_NON_VOID(m_desc, nullptr, "Message descriptor is null.");
   VALIDATE_INDEX_NON_VOID(column, columnCount(), nullptr,
                           "Requesting descriptor of invalid column (field index) " + std::to_string(column) +
-                              " of MessageModel " + desc->full_name());
-  return desc->field(column);
+                              " of MessageModel " + m_desc->full_name());
+  return m_desc->field(column);
 }
 
 QModelIndex MessageModel::parent([[maybe_unused]] const QModelIndex& child) const {
@@ -244,8 +246,8 @@ QModelIndex MessageModel::parent([[maybe_unused]] const QModelIndex& child) cons
 }
 
 int MessageModel::columnCount([[maybe_unused]] const QModelIndex& parent) const {
-  const Descriptor* desc{m_message_buffer->GetDescriptor()};
-  return desc->field_count();
+  CHECK_PARAM_NULLPTR_NON_VOID(m_desc, 0, "Message descriptor is null.");
+  return m_desc->field_count();
 }
 
 QVariant MessageModel::data(const QModelIndex& index, [[maybe_unused]] int role) const {

@@ -1434,7 +1434,7 @@ void VisualShaderGraphicsScene::on_port_dragged(QGraphicsObject* port, const QPo
         ERROR_PRINT("Failed to remove connection entry");
       }
       i_port->detach_connection();
-      c_o->detach_end();
+      c_o->detach_end();  
 
       on_update_shader_previewer_widgets_requested();
     } else if (!i_port->is_connected() && temporary_connection_graphics_object) {
@@ -1474,7 +1474,7 @@ void VisualShaderGraphicsScene::on_port_dropped(QGraphicsObject* port, const QPo
   for (QGraphicsItem* item : items_at_coordinate) {
     // Check if the item is an input port
     in_p_o = dynamic_cast<VisualShaderInputPortGraphicsObject*>(item);
-    SILENT_BREAK_IF_TRUE(in_p_o);
+    SILENT_BREAK_IF_TRUE(in_p_o != nullptr);
   }
 
   VisualShaderOutputPortGraphicsObject* o_port{dynamic_cast<VisualShaderOutputPortGraphicsObject*>(port)};
@@ -2136,10 +2136,10 @@ void VisualShaderNodeGraphicsObject::paint(QPainter* painter, const QStyleOption
     matching_image_widget->setGeometry(matching_image_widget_x, matching_image_widget_y, r.height(), r.height());
   } else {
     // Draw Shader Previewer Widget
-    // float shader_previewer_widget_x{(float)r.x()};
-    // float shader_previewer_widget_y{(float)r.y() + (float)r.height() +
-    //                                 spacing_between_current_node_and_shader_previewer};
-    // shader_previewer_widget->setGeometry(shader_previewer_widget_x, shader_previewer_widget_y, r.width(), r.width());
+    float shader_previewer_widget_x{(float)r.x()};
+    float shader_previewer_widget_y{(float)r.y() + (float)r.height() +
+                                    spacing_between_current_node_and_shader_previewer};
+    shader_previewer_widget->setGeometry(shader_previewer_widget_x, shader_previewer_widget_y, r.width(), r.width());
   }
 
   // Add the margin to the rect
@@ -2332,7 +2332,9 @@ void VisualShaderNodeGraphicsObject::paint(QPainter* painter, const QStyleOption
 }
 
 QVariant VisualShaderNodeGraphicsObject::itemChange(GraphicsItemChange change, const QVariant& value) {
-  // if (change == ItemScenePositionHasChanged) {}
+  if (change == ItemScenePositionHasChanged) {
+    Q_EMIT node_moved(n_id, in_port_count, out_port_count, scenePos());
+  }
   return QGraphicsObject::itemChange(change, value);
 }
 
@@ -2341,7 +2343,7 @@ void VisualShaderNodeGraphicsObject::contextMenuEvent(QGraphicsSceneContextMenuE
 }
 
 void VisualShaderNodeGraphicsObject::mouseReleaseEvent(QGraphicsSceneMouseEvent* event) {
-  Q_EMIT node_moved(n_id, in_port_count, out_port_count, scenePos());
+  // Q_EMIT node_moved(n_id, in_port_count, out_port_count, scenePos());
   QGraphicsObject::mouseReleaseEvent(event);
 }
 

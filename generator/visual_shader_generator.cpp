@@ -65,155 +65,155 @@ std::unordered_map<int, std::shared_ptr<IVisualShaderProtoNode>> to_proto_nodes(
 
     switch (oneof_value_field_number) {
       case VisualShader::VisualShaderNode::kInputFieldNumber: {
-        proto_nodes.at(n_id) = std::make_shared<VisualShaderProtoNode<VisualShaderNodeInput>>();
+        proto_nodes[n_id] = std::make_shared<VisualShaderProtoNode<VisualShaderNodeInput>>();
         break;
       }
       case VisualShader::VisualShaderNode::kOutputFieldNumber: {
-        proto_nodes.at(n_id) = std::make_shared<VisualShaderProtoNode<VisualShaderNodeOutput>>();
+        proto_nodes[n_id] = std::make_shared<VisualShaderProtoNode<VisualShaderNodeOutput>>();
         break;
       }
       case VisualShader::VisualShaderNode::kFloatConstantFieldNumber: {
-        proto_nodes.at(n_id) = std::make_shared<VisualShaderProtoNode<VisualShaderNodeFloatConstant>>();
+        proto_nodes[n_id] = std::make_shared<VisualShaderProtoNode<VisualShaderNodeFloatConstant>>();
         break;
       }
       case VisualShader::VisualShaderNode::kIntConstantFieldNumber: {
-        proto_nodes.at(n_id) = std::make_shared<VisualShaderProtoNode<VisualShaderNodeIntConstant>>();
+        proto_nodes[n_id] = std::make_shared<VisualShaderProtoNode<VisualShaderNodeIntConstant>>();
         break;
       }
       case VisualShader::VisualShaderNode::kUintConstantFieldNumber: {
-        proto_nodes.at(n_id) = std::make_shared<VisualShaderProtoNode<VisualShaderNodeUIntConstant>>();
+        proto_nodes[n_id] = std::make_shared<VisualShaderProtoNode<VisualShaderNodeUIntConstant>>();
         break;
       }
       case VisualShader::VisualShaderNode::kBooleanConstantFieldNumber: {
-        proto_nodes.at(n_id) = std::make_shared<VisualShaderProtoNode<VisualShaderNodeBooleanConstant>>();
+        proto_nodes[n_id] = std::make_shared<VisualShaderProtoNode<VisualShaderNodeBooleanConstant>>();
         break;
       }
       case VisualShader::VisualShaderNode::kColorConstantFieldNumber: {
-        proto_nodes.at(n_id) = std::make_shared<VisualShaderProtoNode<VisualShaderNodeColorConstant>>();
+        proto_nodes[n_id] = std::make_shared<VisualShaderProtoNode<VisualShaderNodeColorConstant>>();
         break;
       }
       case VisualShader::VisualShaderNode::kVec2ConstantFieldNumber: {
-        proto_nodes.at(n_id) = std::make_shared<VisualShaderProtoNode<VisualShaderNodeVec2Constant>>();
+        proto_nodes[n_id] = std::make_shared<VisualShaderProtoNode<VisualShaderNodeVec2Constant>>();
         break;
       }
       case VisualShader::VisualShaderNode::kVec3ConstantFieldNumber: {
-        proto_nodes.at(n_id) = std::make_shared<VisualShaderProtoNode<VisualShaderNodeVec3Constant>>();
+        proto_nodes[n_id] = std::make_shared<VisualShaderProtoNode<VisualShaderNodeVec3Constant>>();
         break;
       }
       case VisualShader::VisualShaderNode::kVec4ConstantFieldNumber: {
-        proto_nodes.at(n_id) = std::make_shared<VisualShaderProtoNode<VisualShaderNodeVec4Constant>>();
+        proto_nodes[n_id] = std::make_shared<VisualShaderProtoNode<VisualShaderNodeVec4Constant>>();
         break;
       }
       case VisualShader::VisualShaderNode::kFloatOpFieldNumber: {
-        proto_nodes.at(n_id) = std::make_shared<VisualShaderProtoNode<VisualShaderNodeFloatOp>>();
+        proto_nodes[n_id] = std::make_shared<VisualShaderProtoNode<VisualShaderNodeFloatOp>>();
         break;
       }
       case VisualShader::VisualShaderNode::kIntOpFieldNumber: {
-        proto_nodes.at(n_id) = std::make_shared<VisualShaderProtoNode<VisualShaderNodeIntOp>>();
+        proto_nodes[n_id] = std::make_shared<VisualShaderProtoNode<VisualShaderNodeIntOp>>();
         break;
       }
       case VisualShader::VisualShaderNode::kUintOpFieldNumber: {
-        proto_nodes.at(n_id) = std::make_shared<VisualShaderProtoNode<VisualShaderNodeUIntOp>>();
+        proto_nodes[n_id] = std::make_shared<VisualShaderProtoNode<VisualShaderNodeUIntOp>>();
         break;
       }
       case VisualShader::VisualShaderNode::kVectorOpFieldNumber: {
-        proto_nodes.at(n_id) = std::make_shared<VisualShaderProtoNode<VisualShaderNodeVectorOp>>();
+        proto_nodes[n_id] = std::make_shared<VisualShaderProtoNode<VisualShaderNodeVectorOp>>();
         break;
       }
       case VisualShader::VisualShaderNode::kFloatFuncFieldNumber: {
-        proto_nodes.at(n_id) = std::make_shared<VisualShaderProtoNode<VisualShaderNodeFloatFunc>>();
+        proto_nodes[n_id] = std::make_shared<VisualShaderProtoNode<VisualShaderNodeFloatFunc>>();
         break;
       }
       case VisualShader::VisualShaderNode::kIntFuncFieldNumber: {
-        proto_nodes.at(n_id) = std::make_shared<VisualShaderProtoNode<VisualShaderNodeIntFunc>>();
+        proto_nodes[n_id] = std::make_shared<VisualShaderProtoNode<VisualShaderNodeIntFunc>>();
         break;
       }
       case VisualShader::VisualShaderNode::kUintFuncFieldNumber: {
-        proto_nodes.at(n_id) = std::make_shared<VisualShaderProtoNode<VisualShaderNodeUIntFunc>>();
+        proto_nodes[n_id] = std::make_shared<VisualShaderProtoNode<VisualShaderNodeUIntFunc>>();
         break;
       }
       case VisualShader::VisualShaderNode::kVectorFuncFieldNumber: {
-        proto_nodes.at(n_id) = std::make_shared<VisualShaderProtoNode<VisualShaderNodeVectorFunc>>();
+        proto_nodes[n_id] = std::make_shared<VisualShaderProtoNode<VisualShaderNodeVectorFunc>>();
         break;
       }
       case VisualShader::VisualShaderNode::kValueNoiseFieldNumber: {
-        proto_nodes.at(n_id) = std::make_shared<VisualShaderProtoNode<VisualShaderNodeValueNoise>>();
+        proto_nodes[n_id] = std::make_shared<VisualShaderProtoNode<VisualShaderNodeValueNoise>>();
         break;
       }
       case VisualShader::VisualShaderNode::kPerlinNoiseFieldNumber: {
-        proto_nodes.at(n_id) = std::make_shared<VisualShaderProtoNode<VisualShaderNodePerlinNoise>>();
+        proto_nodes[n_id] = std::make_shared<VisualShaderProtoNode<VisualShaderNodePerlinNoise>>();
         break;
       }
       case VisualShader::VisualShaderNode::kVoronoiNoiseFieldNumber: {
-        proto_nodes.at(n_id) = std::make_shared<VisualShaderProtoNode<VisualShaderNodeVoronoiNoise>>();
+        proto_nodes[n_id] = std::make_shared<VisualShaderProtoNode<VisualShaderNodeVoronoiNoise>>();
         break;
       }
       case VisualShader::VisualShaderNode::kDotProductFieldNumber: {
-        proto_nodes.at(n_id) = std::make_shared<VisualShaderProtoNode<VisualShaderNodeDotProduct>>();
+        proto_nodes[n_id] = std::make_shared<VisualShaderProtoNode<VisualShaderNodeDotProduct>>();
         break;
       }
       case VisualShader::VisualShaderNode::kVectorLenFieldNumber: {
-        proto_nodes.at(n_id) = std::make_shared<VisualShaderProtoNode<VisualShaderNodeVectorLen>>();
+        proto_nodes[n_id] = std::make_shared<VisualShaderProtoNode<VisualShaderNodeVectorLen>>();
         break;
       }
       case VisualShader::VisualShaderNode::kClampFieldNumber: {
-        proto_nodes.at(n_id) = std::make_shared<VisualShaderProtoNode<VisualShaderNodeClamp>>();
+        proto_nodes[n_id] = std::make_shared<VisualShaderProtoNode<VisualShaderNodeClamp>>();
         break;
       }
       case VisualShader::VisualShaderNode::kStepFieldNumber: {
-        proto_nodes.at(n_id) = std::make_shared<VisualShaderProtoNode<VisualShaderNodeStep>>();
+        proto_nodes[n_id] = std::make_shared<VisualShaderProtoNode<VisualShaderNodeStep>>();
         break;
       }
       case VisualShader::VisualShaderNode::kSmoothStepFieldNumber: {
-        proto_nodes.at(n_id) = std::make_shared<VisualShaderProtoNode<VisualShaderNodeSmoothStep>>();
+        proto_nodes[n_id] = std::make_shared<VisualShaderProtoNode<VisualShaderNodeSmoothStep>>();
         break;
       }
       case VisualShader::VisualShaderNode::kVectorDistanceFieldNumber: {
-        proto_nodes.at(n_id) = std::make_shared<VisualShaderProtoNode<VisualShaderNodeVectorDistance>>();
+        proto_nodes[n_id] = std::make_shared<VisualShaderProtoNode<VisualShaderNodeVectorDistance>>();
         break;
       }
       case VisualShader::VisualShaderNode::kMixFieldNumber: {
-        proto_nodes.at(n_id) = std::make_shared<VisualShaderProtoNode<VisualShaderNodeMix>>();
+        proto_nodes[n_id] = std::make_shared<VisualShaderProtoNode<VisualShaderNodeMix>>();
         break;
       }
       case VisualShader::VisualShaderNode::kVector2DComposeFieldNumber: {
-        proto_nodes.at(n_id) = std::make_shared<VisualShaderProtoNode<VisualShaderNode2dVectorCompose>>();
+        proto_nodes[n_id] = std::make_shared<VisualShaderProtoNode<VisualShaderNode2dVectorCompose>>();
         break;
       }
       case VisualShader::VisualShaderNode::kVector3DComposeFieldNumber: {
-        proto_nodes.at(n_id) = std::make_shared<VisualShaderProtoNode<VisualShaderNode3dVectorCompose>>();
+        proto_nodes[n_id] = std::make_shared<VisualShaderProtoNode<VisualShaderNode3dVectorCompose>>();
         break;
       }
       case VisualShader::VisualShaderNode::kVector4DComposeFieldNumber: {
-        proto_nodes.at(n_id) = std::make_shared<VisualShaderProtoNode<VisualShaderNode4dVectorCompose>>();
+        proto_nodes[n_id] = std::make_shared<VisualShaderProtoNode<VisualShaderNode4dVectorCompose>>();
         break;
       }
       case VisualShader::VisualShaderNode::kVector2DDecomposeFieldNumber: {
-        proto_nodes.at(n_id) = std::make_shared<VisualShaderProtoNode<VisualShaderNode2dVectorDecompose>>();
+        proto_nodes[n_id] = std::make_shared<VisualShaderProtoNode<VisualShaderNode2dVectorDecompose>>();
         break;
       }
       case VisualShader::VisualShaderNode::kVector3DDecomposeFieldNumber: {
-        proto_nodes.at(n_id) = std::make_shared<VisualShaderProtoNode<VisualShaderNode3dVectorDecompose>>();
+        proto_nodes[n_id] = std::make_shared<VisualShaderProtoNode<VisualShaderNode3dVectorDecompose>>();
         break;
       }
       case VisualShader::VisualShaderNode::kVector4DDecomposeFieldNumber: {
-        proto_nodes.at(n_id) = std::make_shared<VisualShaderProtoNode<VisualShaderNode4dVectorDecompose>>();
+        proto_nodes[n_id] = std::make_shared<VisualShaderProtoNode<VisualShaderNode4dVectorDecompose>>();
         break;
       }
       case VisualShader::VisualShaderNode::kIfNodeFieldNumber: {
-        proto_nodes.at(n_id) = std::make_shared<VisualShaderProtoNode<VisualShaderNodeIf>>();
+        proto_nodes[n_id] = std::make_shared<VisualShaderProtoNode<VisualShaderNodeIf>>();
         break;
       }
       case VisualShader::VisualShaderNode::kSwitchNodeFieldNumber: {
-        proto_nodes.at(n_id) = std::make_shared<VisualShaderProtoNode<VisualShaderNodeSwitch>>();
+        proto_nodes[n_id] = std::make_shared<VisualShaderProtoNode<VisualShaderNodeSwitch>>();
         break;
       }
       case VisualShader::VisualShaderNode::kIsFieldNumber: {
-        proto_nodes.at(n_id) = std::make_shared<VisualShaderProtoNode<VisualShaderNodeIs>>();
+        proto_nodes[n_id] = std::make_shared<VisualShaderProtoNode<VisualShaderNodeIs>>();
         break;
       }
       case VisualShader::VisualShaderNode::kCompareFieldNumber: {
-        proto_nodes.at(n_id) = std::make_shared<VisualShaderProtoNode<VisualShaderNodeCompare>>();
+        proto_nodes[n_id] = std::make_shared<VisualShaderProtoNode<VisualShaderNodeCompare>>();
         break;
       }
       default:
@@ -257,11 +257,11 @@ std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>> to_generator
 
         const VisualShaderNodeInputType input_type{input_model->get_sub_model(FieldPath::Of<VisualShaderNodeInput>(
             FieldPath::FieldNumber(VisualShaderNodeInput::kTypeFieldNumber)))->data().toInt()};
-        generators.at(n_id) = std::make_shared<VisualShaderNodeGeneratorInput>(input_type);
+        generators[n_id] = std::make_shared<VisualShaderNodeGeneratorInput>(input_type);
         break;
       }
       case VisualShader::VisualShaderNode::kOutputFieldNumber: {
-        generators.at(n_id) = std::make_shared<VisualShaderNodeGeneratorOutput>();
+        generators[n_id] = std::make_shared<VisualShaderNodeGeneratorOutput>();
         break;
       }
       case VisualShader::VisualShaderNode::kFloatConstantFieldNumber: {
@@ -269,7 +269,7 @@ std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>> to_generator
             FieldPath::FieldNumber(VisualShader::VisualShaderNode::kFloatConstantFieldNumber)))};
 
           const float value {float_constant_model->get_sub_model(FieldPath::Of<VisualShaderNodeFloatConstant>(FieldPath::FieldNumber(VisualShaderNodeFloatConstant::kValueFieldNumber)))->data().toFloat()};
-          generators.at(n_id) = std::make_shared<VisualShaderNodeGeneratorFloatConstant>(value);
+          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorFloatConstant>(value);
           break;
       }
       case VisualShader::VisualShaderNode::kIntConstantFieldNumber: {
@@ -277,7 +277,7 @@ std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>> to_generator
             FieldPath::FieldNumber(VisualShader::VisualShaderNode::kIntConstantFieldNumber)))};
 
           const int value {int_model_model->get_sub_model(FieldPath::Of<VisualShaderNodeIntConstant>(FieldPath::FieldNumber(VisualShaderNodeIntConstant::kValueFieldNumber)))->data().toInt()};
-          generators.at(n_id) = std::make_shared<VisualShaderNodeGeneratorIntConstant>(value);
+          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorIntConstant>(value);
           break;
       }
       case VisualShader::VisualShaderNode::kUintConstantFieldNumber: {
@@ -285,7 +285,7 @@ std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>> to_generator
             FieldPath::FieldNumber(VisualShader::VisualShaderNode::kUintConstantFieldNumber)))};
 
           const unsigned int value {uint_constant_model->get_sub_model(FieldPath::Of<VisualShaderNodeUIntConstant>(FieldPath::FieldNumber(VisualShaderNodeUIntConstant::kValueFieldNumber)))->data().toUInt()};
-          generators.at(n_id) = std::make_shared<VisualShaderNodeGeneratorUIntConstant>(value);
+          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorUIntConstant>(value);
           break;
       }
       case VisualShader::VisualShaderNode::kBooleanConstantFieldNumber: {
@@ -293,7 +293,7 @@ std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>> to_generator
             FieldPath::FieldNumber(VisualShader::VisualShaderNode::kBooleanConstantFieldNumber)))};
 
           const bool value {bool_constant_model->get_sub_model(FieldPath::Of<VisualShaderNodeBooleanConstant>(FieldPath::FieldNumber(VisualShaderNodeBooleanConstant::kValueFieldNumber)))->data().toBool()};
-          generators.at(n_id) = std::make_shared<VisualShaderNodeGeneratorBoolConstant>(value);
+          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorBoolConstant>(value);
           break;
       }
       case VisualShader::VisualShaderNode::kColorConstantFieldNumber: {
@@ -304,7 +304,7 @@ std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>> to_generator
           const float g {color_constant_model->get_sub_model(FieldPath::Of<VisualShaderNodeColorConstant>(FieldPath::FieldNumber(VisualShaderNodeColorConstant::kGFieldNumber)))->data().toFloat()};
           const float b {color_constant_model->get_sub_model(FieldPath::Of<VisualShaderNodeColorConstant>(FieldPath::FieldNumber(VisualShaderNodeColorConstant::kBFieldNumber)))->data().toFloat()};
           const float a {color_constant_model->get_sub_model(FieldPath::Of<VisualShaderNodeColorConstant>(FieldPath::FieldNumber(VisualShaderNodeColorConstant::kAFieldNumber)))->data().toFloat()};
-          generators.at(n_id) = std::make_shared<VisualShaderNodeGeneratorColorConstant>(r, g, b, a);
+          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorColorConstant>(r, g, b, a);
           break;
       }
       case VisualShader::VisualShaderNode::kVec2ConstantFieldNumber: {
@@ -313,7 +313,7 @@ std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>> to_generator
 
           const float x {vec2_constant_model->get_sub_model(FieldPath::Of<VisualShaderNodeVec2Constant>(FieldPath::FieldNumber(VisualShaderNodeVec2Constant::kXFieldNumber)))->data().toFloat()};
           const float y {vec2_constant_model->get_sub_model(FieldPath::Of<VisualShaderNodeVec2Constant>(FieldPath::FieldNumber(VisualShaderNodeVec2Constant::kYFieldNumber)))->data().toFloat()};
-          generators.at(n_id) = std::make_shared<VisualShaderNodeGeneratorVec2Constant>(x, y);
+          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorVec2Constant>(x, y);
           break;
       }
       case VisualShader::VisualShaderNode::kVec3ConstantFieldNumber: {
@@ -323,7 +323,7 @@ std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>> to_generator
           const float x {vec3_constant_model->get_sub_model(FieldPath::Of<VisualShaderNodeVec3Constant>(FieldPath::FieldNumber(VisualShaderNodeVec3Constant::kXFieldNumber)))->data().toFloat()};
           const float y {vec3_constant_model->get_sub_model(FieldPath::Of<VisualShaderNodeVec3Constant>(FieldPath::FieldNumber(VisualShaderNodeVec3Constant::kYFieldNumber)))->data().toFloat()};
           const float z {vec3_constant_model->get_sub_model(FieldPath::Of<VisualShaderNodeVec3Constant>(FieldPath::FieldNumber(VisualShaderNodeVec3Constant::kZFieldNumber)))->data().toFloat()};
-          generators.at(n_id) = std::make_shared<VisualShaderNodeGeneratorVec3Constant>(x, y, z);
+          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorVec3Constant>(x, y, z);
           break;
       }
       case VisualShader::VisualShaderNode::kVec4ConstantFieldNumber: {
@@ -334,7 +334,7 @@ std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>> to_generator
           const float y {vec4_constant_model->get_sub_model(FieldPath::Of<VisualShaderNodeVec4Constant>(FieldPath::FieldNumber(VisualShaderNodeVec4Constant::kYFieldNumber)))->data().toFloat()};
           const float z {vec4_constant_model->get_sub_model(FieldPath::Of<VisualShaderNodeVec4Constant>(FieldPath::FieldNumber(VisualShaderNodeVec4Constant::kZFieldNumber)))->data().toFloat()};
           const float w {vec4_constant_model->get_sub_model(FieldPath::Of<VisualShaderNodeVec4Constant>(FieldPath::FieldNumber(VisualShaderNodeVec4Constant::kWFieldNumber)))->data().toFloat()};
-          generators.at(n_id) = std::make_shared<VisualShaderNodeGeneratorVec4Constant>(x, y, z, w);
+          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorVec4Constant>(x, y, z, w);
           break;
       }
       case VisualShader::VisualShaderNode::kFloatOpFieldNumber: {
@@ -342,7 +342,7 @@ std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>> to_generator
             FieldPath::FieldNumber(VisualShader::VisualShaderNode::kFloatOpFieldNumber)))};
 
           const VisualShaderNodeFloatOp::VisualShaderNodeFloatOpType op_type {float_op_model->get_sub_model(FieldPath::Of<VisualShaderNodeFloatOp>(FieldPath::FieldNumber(VisualShaderNodeFloatOp::kOpFieldNumber)))->data().toInt()};
-          generators.at(n_id) = std::make_shared<VisualShaderNodeGeneratorFloatOp>(op_type);
+          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorFloatOp>(op_type);
           break;
       }
       case VisualShader::VisualShaderNode::kIntOpFieldNumber: {
@@ -350,7 +350,7 @@ std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>> to_generator
             FieldPath::FieldNumber(VisualShader::VisualShaderNode::kIntOpFieldNumber)))};
 
           const VisualShaderNodeIntOp::VisualShaderNodeIntOpType op_type {int_op_model->get_sub_model(FieldPath::Of<VisualShaderNodeIntOp>(FieldPath::FieldNumber(VisualShaderNodeIntOp::kOpFieldNumber)))->data().toInt()};
-          generators.at(n_id) = std::make_shared<VisualShaderNodeGeneratorIntOp>(op_type);
+          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorIntOp>(op_type);
           break;
       }
       case VisualShader::VisualShaderNode::kUintOpFieldNumber: {
@@ -358,7 +358,7 @@ std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>> to_generator
             FieldPath::FieldNumber(VisualShader::VisualShaderNode::kUintOpFieldNumber)))};
 
           const VisualShaderNodeUIntOp::VisualShaderNodeUIntOpType op_type {uint_op_model->get_sub_model(FieldPath::Of<VisualShaderNodeUIntOp>(FieldPath::FieldNumber(VisualShaderNodeUIntOp::kOpFieldNumber)))->data().toInt()};
-          generators.at(n_id) = std::make_shared<VisualShaderNodeGeneratorUIntOp>(op_type);
+          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorUIntOp>(op_type);
           break;
       }
       case VisualShader::VisualShaderNode::kVectorOpFieldNumber: {
@@ -368,7 +368,7 @@ std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>> to_generator
           const VisualShaderNodeVectorType type {vector_op_model->get_sub_model(FieldPath::Of<VisualShaderNodeVectorOp>(FieldPath::FieldNumber(VisualShaderNodeVectorOp::kTypeFieldNumber)))->data().toInt()};
           const VisualShaderNodeVectorOp::VisualShaderNodeVectorOpType op_type {vector_op_model->get_sub_model(FieldPath::Of<VisualShaderNodeVectorOp>(FieldPath::FieldNumber(VisualShaderNodeVectorOp::kOpFieldNumber)))->data().toInt()};
 
-          generators.at(n_id) = std::make_shared<VisualShaderNodeGeneratorVectorOp>(type, op_type);
+          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorVectorOp>(type, op_type);
           break;
       }
       case VisualShader::VisualShaderNode::kFloatFuncFieldNumber: {
@@ -376,7 +376,7 @@ std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>> to_generator
             FieldPath::FieldNumber(VisualShader::VisualShaderNode::kFloatFuncFieldNumber)))};
 
           const VisualShaderNodeFloatFunc::VisualShaderNodeFloatFuncType func_type {float_func_model->get_sub_model(FieldPath::Of<VisualShaderNodeFloatFunc>(FieldPath::FieldNumber(VisualShaderNodeFloatFunc::kFuncFieldNumber)))->data().toInt()};
-          generators.at(n_id) = std::make_shared<VisualShaderNodeGeneratorFloatFunc>(func_type);
+          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorFloatFunc>(func_type);
           break;
       }
       case VisualShader::VisualShaderNode::kIntFuncFieldNumber: {
@@ -384,7 +384,7 @@ std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>> to_generator
             FieldPath::FieldNumber(VisualShader::VisualShaderNode::kIntFuncFieldNumber)))};
 
           const VisualShaderNodeIntFunc::VisualShaderNodeIntFuncType func_type {int_func_model->get_sub_model(FieldPath::Of<VisualShaderNodeIntFunc>(FieldPath::FieldNumber(VisualShaderNodeIntFunc::kFuncFieldNumber)))->data().toInt()};
-          generators.at(n_id) = std::make_shared<VisualShaderNodeGeneratorIntFunc>(func_type);
+          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorIntFunc>(func_type);
           break;
       }
       case VisualShader::VisualShaderNode::kUintFuncFieldNumber: {
@@ -392,7 +392,7 @@ std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>> to_generator
             FieldPath::FieldNumber(VisualShader::VisualShaderNode::kUintFuncFieldNumber)))};
 
           const VisualShaderNodeUIntFunc::VisualShaderNodeUIntFuncType func_type {uint_func_model->get_sub_model(FieldPath::Of<VisualShaderNodeUIntFunc>(FieldPath::FieldNumber(VisualShaderNodeUIntFunc::kFuncFieldNumber)))->data().toInt()};
-          generators.at(n_id) = std::make_shared<VisualShaderNodeGeneratorUIntFunc>(func_type);
+          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorUIntFunc>(func_type);
           break;
       }
       case VisualShader::VisualShaderNode::kVectorFuncFieldNumber: {
@@ -402,7 +402,7 @@ std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>> to_generator
           const VisualShaderNodeVectorType type {vector_func_model->get_sub_model(FieldPath::Of<VisualShaderNodeVectorFunc>(FieldPath::FieldNumber(VisualShaderNodeVectorFunc::kTypeFieldNumber)))->data().toInt()};
           const VisualShaderNodeVectorFunc::VisualShaderNodeVectorFuncType func_type {vector_func_model->get_sub_model(FieldPath::Of<VisualShaderNodeVectorFunc>(FieldPath::FieldNumber(VisualShaderNodeVectorFunc::kFuncFieldNumber)))->data().toInt()};
 
-          generators.at(n_id) = std::make_shared<VisualShaderNodeGeneratorVectorFunc>(type, func_type);
+          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorVectorFunc>(type, func_type);
           break;
       }
       case VisualShader::VisualShaderNode::kValueNoiseFieldNumber: {
@@ -410,7 +410,7 @@ std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>> to_generator
             FieldPath::FieldNumber(VisualShader::VisualShaderNode::kValueNoiseFieldNumber)))};
 
           const float scale {value_noise_model->get_sub_model(FieldPath::Of<VisualShaderNodeValueNoise>(FieldPath::FieldNumber(VisualShaderNodeValueNoise::kScaleFieldNumber)))->data().toFloat()};
-          generators.at(n_id) = std::make_shared<VisualShaderNodeGeneratorValueNoise>(scale);
+          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorValueNoise>(scale);
           break;
       }
       case VisualShader::VisualShaderNode::kPerlinNoiseFieldNumber: {
@@ -418,7 +418,7 @@ std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>> to_generator
                 FieldPath::FieldNumber(VisualShader::VisualShaderNode::kPerlinNoiseFieldNumber)))};
 
             const float scale {perlin_noise_model->get_sub_model(FieldPath::Of<VisualShaderNodePerlinNoise>(FieldPath::FieldNumber(VisualShaderNodePerlinNoise::kScaleFieldNumber)))->data().toFloat()};
-          generators.at(n_id) = std::make_shared<VisualShaderNodeGeneratorPerlinNoise>(scale);
+          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorPerlinNoise>(scale);
           break;
       }
       case VisualShader::VisualShaderNode::kVoronoiNoiseFieldNumber: {
@@ -427,63 +427,63 @@ std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>> to_generator
 
           const float angle_offset {voronoi_noise_model->get_sub_model(FieldPath::Of<VisualShaderNodeVoronoiNoise>(FieldPath::FieldNumber(VisualShaderNodeVoronoiNoise::kAngleOffsetFieldNumber)))->data().toFloat()};
           const float cell_density {voronoi_noise_model->get_sub_model(FieldPath::Of<VisualShaderNodeVoronoiNoise>(FieldPath::FieldNumber(VisualShaderNodeVoronoiNoise::kCellDensityFieldNumber)))->data().toFloat()};
-          generators.at(n_id) = std::make_shared<VisualShaderNodeGeneratorVoronoiNoise>(angle_offset, cell_density);
+          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorVoronoiNoise>(angle_offset, cell_density);
           break;
       }
       case VisualShader::VisualShaderNode::kDotProductFieldNumber: {
-          generators.at(n_id) = std::make_shared<VisualShaderNodeGeneratorDotProduct>();
+          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorDotProduct>();
           break;
       }
       case VisualShader::VisualShaderNode::kVectorLenFieldNumber: {
-          generators.at(n_id) = std::make_shared<VisualShaderNodeGeneratorVectorLen>();
+          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorVectorLen>();
           break;
       }
       case VisualShader::VisualShaderNode::kClampFieldNumber: {
-          generators.at(n_id) = std::make_shared<VisualShaderNodeGeneratorClamp>();
+          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorClamp>();
           break;
       }
       case VisualShader::VisualShaderNode::kStepFieldNumber: {
-          generators.at(n_id) = std::make_shared<VisualShaderNodeGeneratorStep>();
+          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorStep>();
           break;
       }
       case VisualShader::VisualShaderNode::kSmoothStepFieldNumber: {
-          generators.at(n_id) = std::make_shared<VisualShaderNodeGeneratorSmoothStep>();
+          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorSmoothStep>();
           break;
       }
       case VisualShader::VisualShaderNode::kVectorDistanceFieldNumber: {
-          generators.at(n_id) = std::make_shared<VisualShaderNodeGeneratorVectorDistance>();
+          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorVectorDistance>();
           break;
       }
       case VisualShader::VisualShaderNode::kMixFieldNumber: {
-          generators.at(n_id) = std::make_shared<VisualShaderNodeGeneratorMix>();
+          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorMix>();
           break;
       }
       case VisualShader::VisualShaderNode::kVector2DComposeFieldNumber: {
-          generators.at(n_id) = std::make_shared<VisualShaderNodeGeneratorVectorCompose>(VisualShaderNodeVectorType::TYPE_VECTOR_2D);
+          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorVectorCompose>(VisualShaderNodeVectorType::TYPE_VECTOR_2D);
           break;
       }
       case VisualShader::VisualShaderNode::kVector3DComposeFieldNumber: {
-          generators.at(n_id) = std::make_shared<VisualShaderNodeGeneratorVectorCompose>(VisualShaderNodeVectorType::TYPE_VECTOR_3D);
+          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorVectorCompose>(VisualShaderNodeVectorType::TYPE_VECTOR_3D);
           break;
       }
       case VisualShader::VisualShaderNode::kVector4DComposeFieldNumber: {
-          generators.at(n_id) = std::make_shared<VisualShaderNodeGeneratorVectorCompose>(VisualShaderNodeVectorType::TYPE_VECTOR_4D);
+          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorVectorCompose>(VisualShaderNodeVectorType::TYPE_VECTOR_4D);
           break;
       }
       case VisualShader::VisualShaderNode::kVector2DDecomposeFieldNumber: {
-          generators.at(n_id) = std::make_shared<VisualShaderNodeGeneratorVectorDecompose>(VisualShaderNodeVectorType::TYPE_VECTOR_2D);
+          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorVectorDecompose>(VisualShaderNodeVectorType::TYPE_VECTOR_2D);
           break;
       }
       case VisualShader::VisualShaderNode::kVector3DDecomposeFieldNumber: {
-          generators.at(n_id) = std::make_shared<VisualShaderNodeGeneratorVectorDecompose>(VisualShaderNodeVectorType::TYPE_VECTOR_3D);
+          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorVectorDecompose>(VisualShaderNodeVectorType::TYPE_VECTOR_3D);
           break;
       }
       case VisualShader::VisualShaderNode::kVector4DDecomposeFieldNumber: {
-          generators.at(n_id) = std::make_shared<VisualShaderNodeGeneratorVectorDecompose>(VisualShaderNodeVectorType::TYPE_VECTOR_4D);
+          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorVectorDecompose>(VisualShaderNodeVectorType::TYPE_VECTOR_4D);
           break;
       }
       case VisualShader::VisualShaderNode::kIfNodeFieldNumber: {
-          generators.at(n_id) = std::make_shared<VisualShaderNodeGeneratorIf>();
+          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorIf>();
           break;
       }
       case VisualShader::VisualShaderNode::kSwitchNodeFieldNumber: {
@@ -491,7 +491,7 @@ std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>> to_generator
             FieldPath::FieldNumber(VisualShader::VisualShaderNode::kSwitchNodeFieldNumber)))};
 
           const VisualShaderNodeSwitch::VisualShaderNodeSwitchOpType type {switch_model->get_sub_model(FieldPath::Of<VisualShaderNodeSwitch>(FieldPath::FieldNumber(VisualShaderNodeSwitch::kTypeFieldNumber)))->data().toInt()};
-          generators.at(n_id) = std::make_shared<VisualShaderNodeGeneratorSwitch>(type);
+          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorSwitch>(type);
           break;
       }
       case VisualShader::VisualShaderNode::kIsFieldNumber: {
@@ -499,7 +499,7 @@ std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>> to_generator
             FieldPath::FieldNumber(VisualShader::VisualShaderNode::kIsFieldNumber)))};
 
           const VisualShaderNodeIs::Function func {is_model->get_sub_model(FieldPath::Of<VisualShaderNodeIs>(FieldPath::FieldNumber(VisualShaderNodeIs::kFuncFieldNumber)))->data().toInt()};
-          generators.at(n_id) = std::make_shared<VisualShaderNodeGeneratorIs>(func);
+          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorIs>(func);
           break;
       }
       case VisualShader::VisualShaderNode::kCompareFieldNumber: {
@@ -509,7 +509,7 @@ std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>> to_generator
           const VisualShaderNodeCompare::ComparisonType type {compare_model->get_sub_model(FieldPath::Of<VisualShaderNodeCompare>(FieldPath::FieldNumber(VisualShaderNodeCompare::kTypeFieldNumber)))->data().toInt()};
             const VisualShaderNodeCompare::Function func {compare_model->get_sub_model(FieldPath::Of<VisualShaderNodeCompare>(FieldPath::FieldNumber(VisualShaderNodeCompare::kFuncFieldNumber)))->data().toInt()};
             const VisualShaderNodeCompare::Condition cond {compare_model->get_sub_model(FieldPath::Of<VisualShaderNodeCompare>(FieldPath::FieldNumber(VisualShaderNodeCompare::kCondFieldNumber)))->data().toInt()};
-          generators.at(n_id) = std::make_shared<VisualShaderNodeGeneratorCompare>(type, func, cond);
+          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorCompare>(type, func, cond);
           break;
       }
       default:

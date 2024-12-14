@@ -35,7 +35,7 @@ using OneofDescriptor = google::protobuf::OneofDescriptor;
 
 RepeatedMessageModel::RepeatedMessageModel(Message* message_buffer, const FieldDescriptor* field_desc,
                                            ProtoModel* parent_model, const int& index_in_parent)
-    : MessageModel(message_buffer, parent_model, index_in_parent),
+    : MessageModel(field_desc->message_type(), parent_model, index_in_parent),
       m_message_buffer(message_buffer),
       m_field_desc(field_desc) {}
 
