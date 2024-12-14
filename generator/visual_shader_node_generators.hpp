@@ -42,6 +42,8 @@ class VisualShaderNodeGenerator {
 
   bool is_simple_decl() const { return simple_decl; }
 
+  virtual VisualShaderNodeInputType get_input_type() const { return VisualShaderNodeInputType::INPUT_TYPE_UNSPECIFIED; }
+
   virtual std::string generate_global([[maybe_unused]] const int& id) const { return ""; }
   virtual std::string generate_global_per_node([[maybe_unused]] const int& id) const { return ""; }
   virtual std::string generate_global_per_func([[maybe_unused]] const int& id) const { return ""; }
@@ -58,6 +60,8 @@ class VisualShaderNodeGeneratorInput : public VisualShaderNodeGenerator {
  public:
   VisualShaderNodeGeneratorInput(
       const VisualShaderNodeInputType& input_type) : VisualShaderNodeGenerator(), input_type(input_type) {}
+
+  VisualShaderNodeInputType get_input_type() const override { return input_type; }
 
   virtual std::string generate_global([[maybe_unused]] const int& id) const override;
 

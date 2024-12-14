@@ -88,6 +88,7 @@ extend google.protobuf.EnumValueOptions {
     optional string eo_id_start = 70000;
     optional string value_caption = 70001;
     optional VisualShaderNodePortType value_port_type = 70002;
+    optional string value_name = 70003;
 }
 
 /*************************************/
@@ -95,9 +96,18 @@ extend google.protobuf.EnumValueOptions {
 /*************************************/
 
 enum VisualShaderNodeInputType {
-    INPUT_TYPE_UNSPECIFIED = 0 [(value_caption) = "UNSPECIFIED", (value_port_type) = PORT_TYPE_UNSPECIFIED];
-    INPUT_TYPE_UV = 1 [(value_caption) = "UV", (value_port_type) = PORT_TYPE_VECTOR_2D];
-    INPUT_TYPE_TIME = 2 [(value_caption) = "Time", (value_port_type) = PORT_TYPE_SCALAR];
+    INPUT_TYPE_UNSPECIFIED = 0 [
+        (value_caption) = "NONE", 
+        (value_name) = "", 
+        (value_port_type) = PORT_TYPE_UNSPECIFIED];
+    INPUT_TYPE_UV = 1 [
+        (value_caption) = "UV", 
+        (value_name) = "FragCoord", 
+        (value_port_type) = PORT_TYPE_VECTOR_2D];
+    INPUT_TYPE_TIME = 2 [
+        (value_caption) = "Time", 
+        (value_name) = "uTime", 
+        (value_port_type) = PORT_TYPE_SCALAR];
 };
 
 message VisualShaderNodeInput {
@@ -121,8 +131,8 @@ message VisualShaderNodeInput {
 /*************************************/
 
 enum VisualShaderNodeOutputType {
-    OUTPUT_TYPE_UNSPECIFIED = 0 [(value_caption) = "UNSPECIFIED", (value_port_type) = PORT_TYPE_UNSPECIFIED];
-    OUTPUT_TYPE_COLOR = 1 [(value_caption) = "Color", (value_port_type) = PORT_TYPE_VECTOR_4D];
+    OUTPUT_TYPE_UNSPECIFIED = 0 [(value_name) = ""];
+    OUTPUT_TYPE_COLOR = 1 [(value_name) = "FragColor"];
 };
 
 message VisualShaderNodeOutput {
@@ -137,8 +147,6 @@ message VisualShaderNodeOutput {
     option (node_category) = CATEGORY_UNSPECIFIED;
 
     option (node_description) = "Output node can not be added/removed, it is always present in the shader graph.";
-
-    optional VisualShaderNodeOutputType type = 1;
 }
 
 /*************************************/

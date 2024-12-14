@@ -2978,9 +2978,9 @@ VisualShaderNodeInputEmbedWidget::VisualShaderNodeInputEmbedWidget(ProtoModel* v
 
   int size{VisualShaderNodeInputType_descriptor()->value_count()};
   for (int i{0}; i < size; ++i) {
-    int input_type{shadergen_utils::get_enum_value_by_index(VisualShaderNodeInputType_descriptor(), i)};
+    int input_type{shadergen_utils::get_enum_value_by_enum_index(VisualShaderNodeInputType_descriptor(), i)};
     addItem(QString::fromStdString(
-        shadergen_utils::get_enum_value_caption(VisualShaderNodeInputType_descriptor(), input_type)));
+        shadergen_utils::get_enum_value_caption_by_value(VisualShaderNodeInputType_descriptor(), input_type)));
   }
 
   int row_entry{VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, n_id)};
@@ -3647,8 +3647,8 @@ VisualShaderNodeFloatOpEmbedWidget::VisualShaderNodeFloatOpEmbedWidget(ProtoMode
   int size{VisualShaderNodeFloatOp::VisualShaderNodeFloatOpType_descriptor()->value_count()};
   for (int i{0}; i < size; ++i) {
     int input_type{
-        shadergen_utils::get_enum_value_by_index(VisualShaderNodeFloatOp::VisualShaderNodeFloatOpType_descriptor(), i)};
-    addItem(QString::fromStdString(shadergen_utils::get_enum_value_caption(
+        shadergen_utils::get_enum_value_by_enum_index(VisualShaderNodeFloatOp::VisualShaderNodeFloatOpType_descriptor(), i)};
+    addItem(QString::fromStdString(shadergen_utils::get_enum_value_caption_by_value(
         VisualShaderNodeFloatOp::VisualShaderNodeFloatOpType_descriptor(), input_type)));
   }
 
@@ -3689,8 +3689,8 @@ VisualShaderNodeIntOpEmbedWidget::VisualShaderNodeIntOpEmbedWidget(ProtoModel* v
   int size{VisualShaderNodeIntOp::VisualShaderNodeIntOpType_descriptor()->value_count()};
   for (int i{0}; i < size; ++i) {
     int input_type{
-        shadergen_utils::get_enum_value_by_index(VisualShaderNodeIntOp::VisualShaderNodeIntOpType_descriptor(), i)};
-    addItem(QString::fromStdString(shadergen_utils::get_enum_value_caption(
+        shadergen_utils::get_enum_value_by_enum_index(VisualShaderNodeIntOp::VisualShaderNodeIntOpType_descriptor(), i)};
+    addItem(QString::fromStdString(shadergen_utils::get_enum_value_caption_by_value(
         VisualShaderNodeIntOp::VisualShaderNodeIntOpType_descriptor(), input_type)));
   }
 
@@ -3731,8 +3731,8 @@ VisualShaderNodeUIntOpEmbedWidget::VisualShaderNodeUIntOpEmbedWidget(ProtoModel*
   int size{VisualShaderNodeUIntOp::VisualShaderNodeUIntOpType_descriptor()->value_count()};
   for (int i{0}; i < size; ++i) {
     int input_type{
-        shadergen_utils::get_enum_value_by_index(VisualShaderNodeUIntOp::VisualShaderNodeUIntOpType_descriptor(), i)};
-    addItem(QString::fromStdString(shadergen_utils::get_enum_value_caption(
+        shadergen_utils::get_enum_value_by_enum_index(VisualShaderNodeUIntOp::VisualShaderNodeUIntOpType_descriptor(), i)};
+    addItem(QString::fromStdString(shadergen_utils::get_enum_value_caption_by_value(
         VisualShaderNodeUIntOp::VisualShaderNodeUIntOpType_descriptor(), input_type)));
   }
 
@@ -3772,9 +3772,9 @@ VisualShaderNodeVectorTypeEmbedWidget::VisualShaderNodeVectorTypeEmbedWidget(
 
   int size{VisualShaderNodeVectorType_descriptor()->value_count()};
   for (int i{0}; i < size; ++i) {
-    int input_type{shadergen_utils::get_enum_value_by_index(VisualShaderNodeVectorType_descriptor(), i)};
+    int input_type{shadergen_utils::get_enum_value_by_enum_index(VisualShaderNodeVectorType_descriptor(), i)};
     addItem(QString::fromStdString(
-        shadergen_utils::get_enum_value_caption(VisualShaderNodeVectorType_descriptor(), input_type)));
+        shadergen_utils::get_enum_value_caption_by_value(VisualShaderNodeVectorType_descriptor(), input_type)));
   } 
 }
 
@@ -3789,9 +3789,9 @@ VisualShaderNodeVectorOpEmbedWidget::VisualShaderNodeVectorOpEmbedWidget(ProtoMo
 
   int size{VisualShaderNodeVectorOp::VisualShaderNodeVectorOpType_descriptor()->value_count()};
   for (int i{0}; i < size; ++i) {
-    int input_type{shadergen_utils::get_enum_value_by_index(
+    int input_type{shadergen_utils::get_enum_value_by_enum_index(
         VisualShaderNodeVectorOp::VisualShaderNodeVectorOpType_descriptor(), i)};
-    addItem(QString::fromStdString(shadergen_utils::get_enum_value_caption(
+    addItem(QString::fromStdString(shadergen_utils::get_enum_value_caption_by_value(
         VisualShaderNodeVectorOp::VisualShaderNodeVectorOpType_descriptor(), input_type)));
   }
 
@@ -3848,9 +3848,9 @@ VisualShaderNodeFloatFuncEmbedWidget::VisualShaderNodeFloatFuncEmbedWidget(
 
   int size{VisualShaderNodeFloatFunc::VisualShaderNodeFloatFuncType_descriptor()->value_count()};
   for (int i{0}; i < size; ++i) {
-    int input_type{shadergen_utils::get_enum_value_by_index(
+    int input_type{shadergen_utils::get_enum_value_by_enum_index(
         VisualShaderNodeFloatFunc::VisualShaderNodeFloatFuncType_descriptor(), i)};
-    addItem(QString::fromStdString(shadergen_utils::get_enum_value_caption(
+    addItem(QString::fromStdString(shadergen_utils::get_enum_value_caption_by_value(
         VisualShaderNodeFloatFunc::VisualShaderNodeFloatFuncType_descriptor(), input_type)));
   }
 
@@ -3891,8 +3891,8 @@ VisualShaderNodeIntFuncEmbedWidget::VisualShaderNodeIntFuncEmbedWidget(ProtoMode
   int size{VisualShaderNodeIntFunc::VisualShaderNodeIntFuncType_descriptor()->value_count()};
   for (int i{0}; i < size; ++i) {
     int input_type{
-        shadergen_utils::get_enum_value_by_index(VisualShaderNodeIntFunc::VisualShaderNodeIntFuncType_descriptor(), i)};
-    addItem(QString::fromStdString(shadergen_utils::get_enum_value_caption(
+        shadergen_utils::get_enum_value_by_enum_index(VisualShaderNodeIntFunc::VisualShaderNodeIntFuncType_descriptor(), i)};
+    addItem(QString::fromStdString(shadergen_utils::get_enum_value_caption_by_value(
         VisualShaderNodeIntFunc::VisualShaderNodeIntFuncType_descriptor(), input_type)));
   }
 
@@ -3932,9 +3932,9 @@ VisualShaderNodeUIntFuncEmbedWidget::VisualShaderNodeUIntFuncEmbedWidget(ProtoMo
 
   int size{VisualShaderNodeUIntFunc::VisualShaderNodeUIntFuncType_descriptor()->value_count()};
   for (int i{0}; i < size; ++i) {
-    int input_type{shadergen_utils::get_enum_value_by_index(
+    int input_type{shadergen_utils::get_enum_value_by_enum_index(
         VisualShaderNodeUIntFunc::VisualShaderNodeUIntFuncType_descriptor(), i)};
-    addItem(QString::fromStdString(shadergen_utils::get_enum_value_caption(
+    addItem(QString::fromStdString(shadergen_utils::get_enum_value_caption_by_value(
         VisualShaderNodeUIntFunc::VisualShaderNodeUIntFuncType_descriptor(), input_type)));
   }
 
@@ -3974,9 +3974,9 @@ VisualShaderNodeVectorFuncEmbedWidget::VisualShaderNodeVectorFuncEmbedWidget(
 
   int size{VisualShaderNodeVectorFunc::VisualShaderNodeVectorFuncType_descriptor()->value_count()};
   for (int i{0}; i < size; ++i) {
-    int input_type{shadergen_utils::get_enum_value_by_index(
+    int input_type{shadergen_utils::get_enum_value_by_enum_index(
         VisualShaderNodeVectorFunc::VisualShaderNodeVectorFuncType_descriptor(), i)};
-    addItem(QString::fromStdString(shadergen_utils::get_enum_value_caption(
+    addItem(QString::fromStdString(shadergen_utils::get_enum_value_caption_by_value(
         VisualShaderNodeVectorFunc::VisualShaderNodeVectorFuncType_descriptor(), input_type)));
   }
 
@@ -4225,9 +4225,9 @@ VisualShaderNodeCompareEmbedWidget::VisualShaderNodeCompareEmbedWidget(ProtoMode
 
   int size{VisualShaderNodeCompare::ComparisonType_descriptor()->value_count()};
   for (int i = 0; i < size; i++) {
-    int comp_type{shadergen_utils::get_enum_value_by_index(VisualShaderNodeCompare::ComparisonType_descriptor(), i)};
+    int comp_type{shadergen_utils::get_enum_value_by_enum_index(VisualShaderNodeCompare::ComparisonType_descriptor(), i)};
     comparison_type_combo_box->addItem(QString::fromStdString(
-        shadergen_utils::get_enum_value_caption(VisualShaderNodeCompare::ComparisonType_descriptor(), comp_type)));
+        shadergen_utils::get_enum_value_caption_by_value(VisualShaderNodeCompare::ComparisonType_descriptor(), comp_type)));
   }
 
   int row_entry{VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, n_id)};
@@ -4241,9 +4241,9 @@ VisualShaderNodeCompareEmbedWidget::VisualShaderNodeCompareEmbedWidget(ProtoMode
 
   size = VisualShaderNodeCompare::Function_descriptor()->value_count();
   for (int i = 0; i < size; i++) {
-    int func{shadergen_utils::get_enum_value_by_index(VisualShaderNodeCompare::Function_descriptor(), i)};
+    int func{shadergen_utils::get_enum_value_by_enum_index(VisualShaderNodeCompare::Function_descriptor(), i)};
     func_combo_box->addItem(QString::fromStdString(
-        shadergen_utils::get_enum_value_caption(VisualShaderNodeCompare::Function_descriptor(), func)));
+        shadergen_utils::get_enum_value_caption_by_value(VisualShaderNodeCompare::Function_descriptor(), func)));
   }
 
   row_entry = VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, n_id);
@@ -4257,9 +4257,9 @@ VisualShaderNodeCompareEmbedWidget::VisualShaderNodeCompareEmbedWidget(ProtoMode
 
   size = VisualShaderNodeCompare::Condition_descriptor()->value_count();
   for (int i = 0; i < size; i++) {
-    int cond{shadergen_utils::get_enum_value_by_index(VisualShaderNodeCompare::Condition_descriptor(), i)};
+    int cond{shadergen_utils::get_enum_value_by_enum_index(VisualShaderNodeCompare::Condition_descriptor(), i)};
     condition_combo_box->addItem(QString::fromStdString(
-        shadergen_utils::get_enum_value_caption(VisualShaderNodeCompare::Condition_descriptor(), cond)));
+        shadergen_utils::get_enum_value_caption_by_value(VisualShaderNodeCompare::Condition_descriptor(), cond)));
   }
 
   row_entry = VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, n_id);
@@ -4347,9 +4347,9 @@ VisualShaderNodeIsEmbedWidget::VisualShaderNodeIsEmbedWidget(ProtoModel* visual_
 
   int size{VisualShaderNodeIs::Function_descriptor()->value_count()};
   for (int i = 0; i < size; i++) {
-    int func{shadergen_utils::get_enum_value_by_index(VisualShaderNodeIs::Function_descriptor(), i)};
+    int func{shadergen_utils::get_enum_value_by_enum_index(VisualShaderNodeIs::Function_descriptor(), i)};
     addItem(QString::fromStdString(
-                shadergen_utils::get_enum_value_caption(VisualShaderNodeIs::Function_descriptor(), func)),
+                shadergen_utils::get_enum_value_caption_by_value(VisualShaderNodeIs::Function_descriptor(), func)),
             func);
   }
 

@@ -56,41 +56,74 @@ inline static bool is_inside_real_oneof(const google::protobuf::FieldDescriptor*
   return field->real_containing_oneof() != nullptr;
 }
 
-inline static std::string get_enum_value_caption(const google::protobuf::EnumDescriptor* enum_descriptor,
-                                                 const int& value_index) noexcept {
-  VALIDATE_INDEX_NON_VOID(value_index, enum_descriptor->value_count(), "", "Invalid enum value index");
-  CHECK_CONDITION_TRUE_NON_VOID(
-      !enum_descriptor->value(value_index)->options().HasExtension(gui::model::schema::value_caption), "",
-      "Enum value caption not set");
-  return enum_descriptor->value(value_index)->options().GetExtension(gui::model::schema::value_caption);
+inline static bool is_valid_enum_index(const google::protobuf::EnumDescriptor* enum_descriptor,
+                                       const int& index) noexcept {
+  CHECK_PARAM_NULLPTR_NON_VOID(enum_descriptor, false, "Enum descriptor is null.");
+  VALIDATE_INDEX_NON_VOID(index, enum_descriptor->value_count(), false, "Invalid enum value index");
+  return true;
 }
 
-inline static VisualShaderNodePortType get_enum_value_port_type(const google::protobuf::EnumDescriptor* enum_descriptor,
-                                                                const int& value_index) noexcept {
-  VALIDATE_INDEX_NON_VOID(value_index, enum_descriptor->value_count(), VisualShaderNodePortType::PORT_TYPE_UNSPECIFIED,
-                          "Invalid enum value index");
-  CHECK_CONDITION_TRUE_NON_VOID(
-      !enum_descriptor->value(value_index)->options().HasExtension(gui::model::schema::value_port_type),
-      VisualShaderNodePortType::PORT_TYPE_UNSPECIFIED, "Enum value port type not set");
-  return enum_descriptor->value(value_index)->options().GetExtension(gui::model::schema::value_port_type);
-}
-
-inline static int get_enum_value_by_index(const google::protobuf::EnumDescriptor* enum_descriptor,
-                                          const int& value_index) noexcept {
-  VALIDATE_INDEX_NON_VOID(value_index, enum_descriptor->value_count(), 0, "Invalid enum value index");
-  return enum_descriptor->value(value_index)->number();
+inline static int get_enum_value_by_enum_index(const google::protobuf::EnumDescriptor* enum_descriptor,
+                                          const int& index) noexcept {
+  CHECK_CONDITION_TRUE_NON_VOID(!is_valid_enum_index(enum_descriptor, index), -1, "Invalid enum value index");
+  return enum_descriptor->value(index)->number();
 }
 
 inline static bool is_valid_enum_value(const google::protobuf::EnumDescriptor* enum_descriptor,
-                                       const int& value_number) noexcept {
+                                       const int& value) noexcept {
   CHECK_PARAM_NULLPTR_NON_VOID(enum_descriptor, false, "Enum descriptor is null.");
   int size {enum_descriptor->value_count()};
-  for (int i = 0; i < size; ++i) {
-    if (get_enum_value_by_index(enum_descriptor, i) == value_number) {
+  for (int i {0}; i < size; ++i) {
+    if (get_enum_value_by_enum_index(enum_descriptor, i) == value) {
       return true;
     }
   }
   return false;
+}
+
+inline static std::string get_enum_value_caption_by_value(const google::protobuf::EnumDescriptor* enum_descriptor,
+                                                                const int& value) noexcept {
+  CHECK_CONDITION_TRUE_NON_VOID(!is_valid_enum_value(enum_descriptor, value), "", "Invalid enum value");
+  CHECK_CONDITION_TRUE_NON_VOID(
+      !enum_descriptor->FindValueByNumber(value)->options().HasExtension(gui::model::schema::value_caption),
+      "", "Enum value caption not set");
+  return enum_descriptor->FindValueByNumber(value)->options().GetExtension(gui::model::schema::value_caption);
+}
+
+inline static std::string get_enum_value_caption_by_index(const google::protobuf::EnumDescriptor* enum_descriptor,
+                                                                const int& index) noexcept {
+  CHECK_CONDITION_TRUE_NON_VOID(!is_valid_enum_index(enum_descriptor, index), "", "Invalid enum value index");
+  CHECK_CONDITION_TRUE_NON_VOID(
+      !enum_descriptor->value(index)->options().HasExtension(gui::model::schema::value_caption),
+      "", "Enum value caption not set");
+  return enum_descriptor->value(index)->options().GetExtension(gui::model::schema::value_caption);
+}
+
+inline static VisualShaderNodePortType get_enum_value_port_type_by_value(const google::protobuf::EnumDescriptor* enum_descriptor,
+                                                                const int& value) noexcept {
+  CHECK_CONDITION_TRUE_NON_VOID(!is_valid_enum_value(enum_descriptor, value), VisualShaderNodePortType::PORT_TYPE_UNSPECIFIED, "Invalid enum value");
+  CHECK_CONDITION_TRUE_NON_VOID(
+      !enum_descriptor->FindValueByNumber(value)->options().HasExtension(gui::model::schema::value_port_type),
+      VisualShaderNodePortType::PORT_TYPE_UNSPECIFIED, "Enum value port type not set");
+  return enum_descriptor->FindValueByNumber(value)->options().GetExtension(gui::model::schema::value_port_type);
+}
+
+inline static VisualShaderNodePortType get_enum_value_port_type_by_index(const google::protobuf::EnumDescriptor* enum_descriptor,
+                                                                const int& index) noexcept {
+  CHECK_CONDITION_TRUE_NON_VOID(!is_valid_enum_index(enum_descriptor, index), VisualShaderNodePortType::PORT_TYPE_UNSPECIFIED, "Invalid enum value index");
+  CHECK_CONDITION_TRUE_NON_VOID(
+      !enum_descriptor->value(index)->options().HasExtension(gui::model::schema::value_port_type),
+      VisualShaderNodePortType::PORT_TYPE_UNSPECIFIED, "Enum value port type not set");
+  return enum_descriptor->value(index)->options().GetExtension(gui::model::schema::value_port_type);
+}
+
+inline static std::string get_enum_value_name_by_index(const google::protobuf::EnumDescriptor* enum_descriptor,
+                                                                const int& index) noexcept {
+  CHECK_CONDITION_TRUE_NON_VOID(!is_valid_enum_index(enum_descriptor, index), "", "Invalid enum value index");
+  CHECK_CONDITION_TRUE_NON_VOID(
+      !enum_descriptor->value(index)->options().HasExtension(gui::model::schema::value_name),
+      "", "Enum value input name not set");
+  return enum_descriptor->value(index)->options().GetExtension(gui::model::schema::value_name);
 }
 }  // namespace shadergen_utils
 
