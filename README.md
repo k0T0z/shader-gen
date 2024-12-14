@@ -1,5 +1,8 @@
 # ShaderGen
 
+![ShaderGen Graph Implementation](./shader-gen-graph-implementation.gif)
+![ShaderGen Dynamic Rendering](./shader-gen-dynamic-rendering.gif)
+
 Or mRGM, which stands for mini-RadialGM, is a simple and lightweight version of [RadialGM](https://github.com/enigma-dev/RadialGM). This is created as part of [my Google Summer of Code 2024 project](https://summerofcode.withgoogle.com/archive/2024/projects/wYTZuQbA) with ENIGMA, see also [absl-proto-grpc-ci](https://github.com/k0T0z/absl-proto-grpc-ci).
 
 - Check my final report: https://docs.google.com/document/d/1ahKWo3m9fgqAfR9a3cqaIA08Sns05O68nhalpMNjDd8/edit?usp=sharing
