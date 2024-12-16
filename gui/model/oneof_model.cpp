@@ -84,6 +84,8 @@ void OneofModel::build_sub_models() {
         WARN_PRINT("Unsupported field type: " + std::to_string(oneof_field->cpp_type()));
         break;
     }
+
+    break;
   }
 }
 
@@ -263,6 +265,12 @@ bool OneofModel::set_oneof(const int& field_number) {
   parent_data_changed();
 
   return true;
+}
+
+int OneofModel::get_oneof_field_number() const {
+  const Reflection* refl{m_message_buffer->GetReflection()};
+  SILENT_CHECK_CONDITION_TRUE_NON_VOID(!is_set() && !refl->HasOneof(*m_message_buffer, m_oneof_desc), -1);
+  return m_current_field_desc->number();
 }
 
 void OneofModel::clear_sub_model() const {

@@ -71,6 +71,7 @@ class OneofModel : public ProtoModel {
                       [[maybe_unused]] int role = Qt::DisplayRole) const override;
 
   bool set_oneof(const int& field_number);
+  int get_oneof_field_number() const;
 
  private:
   Message* m_message_buffer;
