@@ -208,7 +208,7 @@ int RepeatedMessageModel::field_to_column(const int& fn) const {
 
 bool RepeatedMessageModel::insertRows(int row, int count, const QModelIndex& parent) {
   CHECK_CONDITION_TRUE_NON_VOID(!parent.isValid(), false, "Parent is not valid.");
-  CHECK_CONDITION_TRUE_NON_VOID(row != rowCount(), false, "You can only insert a row at the end of the model.");
+  CHECK_CONDITION_TRUE_NON_VOID(row >= (rowCount() + 1), false, "You can only insert a row at the end of the model.");
   CHECK_CONDITION_TRUE_NON_VOID(
       count != 1, false,
       "Invalid number of rows: " + std::to_string(count) + ". Adding multiple rows at once is not supported yet.");
