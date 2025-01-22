@@ -1,0 +1,68 @@
+name: Windows Build
+
+on:
+  push:
+    branches:
+      - master-qt6
+  pull_request:
+    branches:
+      - master-qt6
+  workflow_dispatch: 
+
+concurrency:
+  group: ci-${{github.actor}}-${{github.head_ref || github.run_number}}-${{github.ref}}-windows-msvc
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        ref: 'master-qt6'
+        submodules: recursive
+
+    - name: Install Qt
+      uses: jurplel/install-qt-action@v4
+      with:
+        version: '6'
+        host: 'windows'
+        target: 'desktop'
+        arch: 'win64_msvc2019_64'
+
+    - name: Fetch Abseil and Protobuf latest tags
+      run: |
+        ABSL_LATEST_TAG=$(git ls-remote --tags https://github.com/abseil/abseil-cpp.git | grep -o 'refs/tags/[^{}]*$' | sort -t '/' -k 3 -V | tail -n1 | awk -F/ '{print $3}')
+        PROTOBUF_LATEST_TAG=$(git ls-remote --tags https://github.com/protocolbuffers/protobuf.git | grep -o 'refs/tags/[^{}]*$' | sort -t '/' -k 3 -V | tail -n1 | awk -F/ '{print $3}')
+
+        echo "ABSL_LATEST_TAG=$ABSL_LATEST_TAG" >> $GITHUB_ENV
+        echo "PROTOBUF_LATEST_TAG=$PROTOBUF_LATEST_TAG" >> $GITHUB_ENV
+
+        echo "ABSL_LATEST_TAG: $ABSL_LATEST_TAG"
+        echo "PROTOBUF_LATEST_TAG: $PROTOBUF_LATEST_TAG"
+  
+    - name: Build Protobuf
+      shell: pwsh
+      run: |
+        mkdir -p $env:GITHUB_WORKSPACE/abseil-lib
+        mkdir -p $env:GITHUB_WORKSPACE/protobuf-lib
+        echo "Abseil: $env:GITHUB_WORKSPACE/abseil-lib"
+        echo "Protobuf: $env:GITHUB_WORKSPACE/protobuf-lib"
+        build_protobuf.ps1 `
+          -absl_tag $ABSL_LATEST_TAG `
+          -protobuf_tag $PROTOBUF_LATEST_TAG `
+          -absl_prefix $env:GITHUB_WORKSPACE/abseil-lib `
+          -protobuf_prefix $env:GITHUB_WORKSPACE/protobuf-lib
+
+    - name: Configure CMake
+      run: cmake -B build -G "Visual Studio 17 2022" -A x64 -DCMAKE_PREFIX_PATH=$env:Qt6_DIR;$env:GITHUB_WORKSPACE/abseil-lib/lib/cmake;$env:GITHUB_WORKSPACE/protobuf-lib/lib/cmake
+
+    - name: Build project
+      run: cmake --build build --config Debug # --parallel $(nproc)
+
+    - name: Run tests
+      run: |
+        cd build
+        ctest --parallel $(nproc) --output-on-failure --verbose -C Debug

@@ -22,7 +22,8 @@ cd abseil-cpp
 mkdir build && cd build
 
 # Configure and build
-cmake .. -DABSL_PROPAGATE_CXX_STD=ON \
+cmake .. -G "Unix Makefiles" \
+         -DABSL_PROPAGATE_CXX_STD=ON \
          -DBUILD_TESTING=OFF \
          -DABSL_BUILD_TESTING=OFF \
          -DABSL_USE_GOOGLETEST_HEAD=OFF \
