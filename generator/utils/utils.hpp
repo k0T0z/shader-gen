@@ -30,6 +30,7 @@
 
 #include <cmath>
 #include <limits>
+#include "gui/model/schema/visual_shader_nodes.pb.h"
 
 namespace generator_utils {
 inline static bool are_floats_almost_equal(const float& a, const float& b) {
@@ -45,6 +46,110 @@ inline static bool are_floats_almost_equal(const float& a, const float& b) {
   }
 
   return std::fabs(a - b) < tolerance;
+}
+
+inline static bool is_valid_connection(const VisualShaderNodePortType& from_port_type, const VisualShaderNodePortType& to_port_type) {
+  if (from_port_type == to_port_type) {
+    return true;
+  }
+
+  switch (from_port_type) {
+    case VisualShaderNodePortType::PORT_TYPE_SCALAR:
+      switch (to_port_type) {
+        case VisualShaderNodePortType::PORT_TYPE_SCALAR_INT:
+        case VisualShaderNodePortType::PORT_TYPE_SCALAR_UINT:
+        case VisualShaderNodePortType::PORT_TYPE_VECTOR_2D:
+        case VisualShaderNodePortType::PORT_TYPE_VECTOR_3D:
+        case VisualShaderNodePortType::PORT_TYPE_VECTOR_4D:
+        case VisualShaderNodePortType::PORT_TYPE_BOOLEAN:
+          return true;
+        default:
+          break;
+      }
+      break;
+    case VisualShaderNodePortType::PORT_TYPE_SCALAR_INT:
+      switch (to_port_type) {
+        case VisualShaderNodePortType::PORT_TYPE_SCALAR:
+        case VisualShaderNodePortType::PORT_TYPE_SCALAR_UINT:
+        case VisualShaderNodePortType::PORT_TYPE_VECTOR_2D:
+        case VisualShaderNodePortType::PORT_TYPE_VECTOR_3D:
+        case VisualShaderNodePortType::PORT_TYPE_VECTOR_4D:
+        case VisualShaderNodePortType::PORT_TYPE_BOOLEAN:
+          return true;
+        default:
+          break;
+      }
+      break;
+    case VisualShaderNodePortType::PORT_TYPE_SCALAR_UINT:
+      switch (to_port_type) {
+        case VisualShaderNodePortType::PORT_TYPE_SCALAR:
+        case VisualShaderNodePortType::PORT_TYPE_SCALAR_INT:
+        case VisualShaderNodePortType::PORT_TYPE_VECTOR_2D:
+        case VisualShaderNodePortType::PORT_TYPE_VECTOR_3D:
+        case VisualShaderNodePortType::PORT_TYPE_VECTOR_4D:
+        case VisualShaderNodePortType::PORT_TYPE_BOOLEAN:
+          return true;
+        default:
+          break;
+      }
+      break;
+    case VisualShaderNodePortType::PORT_TYPE_VECTOR_2D:
+      switch (to_port_type) {
+        case VisualShaderNodePortType::PORT_TYPE_SCALAR:
+        case VisualShaderNodePortType::PORT_TYPE_SCALAR_INT:
+        case VisualShaderNodePortType::PORT_TYPE_SCALAR_UINT:
+        case VisualShaderNodePortType::PORT_TYPE_VECTOR_3D:
+        case VisualShaderNodePortType::PORT_TYPE_VECTOR_4D:
+        case VisualShaderNodePortType::PORT_TYPE_BOOLEAN:
+          return true;
+        default:
+          break;
+      }
+      break;
+    case VisualShaderNodePortType::PORT_TYPE_VECTOR_3D:
+      switch (to_port_type) {
+        case VisualShaderNodePortType::PORT_TYPE_SCALAR:
+        case VisualShaderNodePortType::PORT_TYPE_SCALAR_INT:
+        case VisualShaderNodePortType::PORT_TYPE_SCALAR_UINT:
+        case VisualShaderNodePortType::PORT_TYPE_VECTOR_2D:
+        case VisualShaderNodePortType::PORT_TYPE_VECTOR_4D:
+        case VisualShaderNodePortType::PORT_TYPE_BOOLEAN:
+          return true;
+        default:
+          break;
+      }
+      break;
+    case VisualShaderNodePortType::PORT_TYPE_VECTOR_4D:
+      switch (to_port_type) {
+        case VisualShaderNodePortType::PORT_TYPE_SCALAR:
+        case VisualShaderNodePortType::PORT_TYPE_SCALAR_INT:
+        case VisualShaderNodePortType::PORT_TYPE_SCALAR_UINT:
+        case VisualShaderNodePortType::PORT_TYPE_VECTOR_2D:
+        case VisualShaderNodePortType::PORT_TYPE_VECTOR_3D:
+        case VisualShaderNodePortType::PORT_TYPE_BOOLEAN:
+          return true;
+        default:
+          break;
+      }
+      break;
+    case VisualShaderNodePortType::PORT_TYPE_BOOLEAN:
+      switch (to_port_type) {
+        case VisualShaderNodePortType::PORT_TYPE_SCALAR:
+        case VisualShaderNodePortType::PORT_TYPE_SCALAR_INT:
+        case VisualShaderNodePortType::PORT_TYPE_SCALAR_UINT:
+        case VisualShaderNodePortType::PORT_TYPE_VECTOR_2D:
+        case VisualShaderNodePortType::PORT_TYPE_VECTOR_3D:
+        case VisualShaderNodePortType::PORT_TYPE_VECTOR_4D:
+          return true;
+        default:
+          break;
+      }
+      break;
+    default:
+      break;
+  }
+
+  return false;
 }
 }  // namespace generator_utils
 
