@@ -29,29 +29,16 @@ jobs:
       with:
         update: true
         install: >-
+          git
           mingw-w64-x86_64-gcc
           mingw-w64-x86_64-qt5-base
           mingw-w64-x86_64-protobuf
           make
           cmake
 
-    - name: Configure CMake
+    - name: Configure, Build and Test
       shell: msys2 {0}
       run: |
-        ls -a
-        echo "====================="
-        mkdir -p build/gui/model/schema build/tests/gui/model/schema
-        cd build
-        ls -a
-        cd ..
         cmake -B build -G "Unix Makefiles"
-
-    - name: Build project
-      shell: msys2 {0}
-      run: cmake --build build --config Debug # --parallel $(nproc)
-
-    - name: Run tests
-      shell: msys2 {0}
-      run: |
-        cd build
-        ctest --parallel $(nproc) --output-on-failure --verbose -C Debug
+        cmake --build build --config Debug --parallel $(nproc)
+        ctest --test-dir build --parallel $(nproc) --output-on-failure --verbose -C Debug
