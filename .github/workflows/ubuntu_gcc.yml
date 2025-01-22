@@ -51,9 +51,7 @@ jobs:
         bash ./CI/build_shared_protobuf.sh $PROTOBUF_LATEST_TAG
 
     - name: Configure CMake
-      run: |
-        mkdir -p build/gui/model/schema build/tests/gui/model/schema
-        cmake -B build -G "Unix Makefiles"
+      run: cmake -B build -G "Unix Makefiles"
 
     - name: Build project
       run: cmake --build build --config Debug # --parallel $(nproc)
