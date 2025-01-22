@@ -51,7 +51,7 @@ set(SHADER_GEN_EXECUTABLE_NAME "shader-gen")
 
 project(${SHADER_GEN_EXECUTABLE_NAME} VERSION ${SHADER_GEN_PROJECT_VERSION} LANGUAGES CXX)
 
-if (WIN32)
+if (MSVC)
     string(APPEND CMAKE_CXX_FLAGS " /W4")
 else()
     string(APPEND CMAKE_CXX_FLAGS " -Wall -Wextra")
@@ -106,7 +106,7 @@ endif()
 if(MSVC)
     string(REGEX REPLACE "/EHsc" "/EHs-c-" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
     add_definitions(-D_HAS_EXCEPTIONS=0)
-else()
+elseif(NOT MINGW)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-exceptions -fno-unwind-tables -fno-asynchronous-unwind-tables")
 endif()
 
@@ -287,9 +287,7 @@ protobuf_generate(
     OUT_VAR SHADER_GEN_PROTO_GENERATED_TEST_SRCS
     PROTOC_OUT_DIR ${PROTOC_TEST_OUT_DIRECTORY} # Output directory for the generated test files
     PROTOS ${SHADER_GEN_TESTS_PROTO_FILES} # The proto test files
-    IMPORT_DIRS 
-        ${CMAKE_CURRENT_SOURCE_DIR}/tests/gui/model/schema # For the imports in the proto test files
-        ${CMAKE_CURRENT_SOURCE_DIR}/gui/model/schema
+    IMPORT_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/tests/gui/model/schema # For the imports in the proto test files
 )
 
 target_link_libraries(${SHADER_GEN_TESTS_EXECUTABLE_NAME} PRIVATE 
@@ -317,3 +315,18 @@ set_tests_properties(${SHADER_GEN_TESTS_EXECUTABLE_NAME} PROPERTIES
     TIMEOUT 30
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 )
+
+if(WIN32 AND MINGW)
+    # Copy the GTest dlls to the executable directory.
+    file(GLOB SHADER_GEN_GTEST_DLLS 
+        ${CMAKE_BINARY_DIR}/bin/*.dll
+    )
+
+    foreach(SHADER_GEN_GTEST_DLL ${SHADER_GEN_GTEST_DLLS})
+        add_custom_command(
+            TARGET ${SHADER_GEN_TESTS_EXECUTABLE_NAME} POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy ${SHADER_GEN_GTEST_DLL} $<TARGET_FILE_DIR:${SHADER_GEN_TESTS_EXECUTABLE_NAME}>
+            COMMENT "Copying ${SHADER_GEN_GTEST_DLL} to the $<TARGET_FILE_DIR:${SHADER_GEN_TESTS_EXECUTABLE_NAME}> directory"
+        )
+    endforeach()
+endif()

@@ -3,10 +3,10 @@ name: Windows GCC Build
 on:
   push:
     branches:
-      - master
+      - master-qt6
   pull_request:
     branches:
-      - master
+      - master-qt6
   workflow_dispatch: 
 
 concurrency:
@@ -21,30 +21,30 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
       with:
-        ref: 'master'
+        ref: 'master-qt6'
         submodules: recursive
 
-    - name: Setup MSYS2 and MinGW
+    - name: Setup MSYS2
       uses: msys2/setup-msys2@v2
       with:
         update: true
         install: >-
-          mingw-w64-x86_64-toolchain
-          mingw-w64-x86_64-qt5
-          mingw-w64-x86_64-protobuf
-          mingw-w64-x86_64-gtest
           mingw-w64-x86_64-gcc
-          mingw-w64-x86_64-cmake
+          mingw-w64-x86_64-qt6-base
+          mingw-w64-x86_64-protobuf
           make
+          cmake
 
     - name: Configure CMake
       shell: msys2 {0}
-      run: cmake -B build -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release
+      run: cmake -B build -G "Unix Makefiles"
 
     - name: Build project
       shell: msys2 {0}
-      run: cmake --build build --config Release --parallel 2
+      run: cmake --build build --config Debug # --parallel $(nproc)
 
-    - name: Run tests via CTest
+    - name: Run tests
       shell: msys2 {0}
-      run: ctest --test-dir build --output-on-failure
+      run: |
+        cd build
+        ctest --parallel $(nproc) --output-on-failure --verbose -C Debug
