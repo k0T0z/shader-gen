@@ -30,7 +30,7 @@ jobs:
         version: '6'
         host: 'windows'
         target: 'desktop'
-        arch: 'win64_msvc2019_64'
+        arch: 'win64_msvc2022_64'
 
     - name: Fetch Abseil and Protobuf latest tags
       run: |
