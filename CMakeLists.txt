@@ -106,9 +106,7 @@ endif()
 if(MSVC)
     string(REGEX REPLACE "/EHsc" "/EHs-c-" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
     add_definitions(-D_HAS_EXCEPTIONS=0)
-elseif(MINGW)
-    
-else()
+elseif(NOT MINGW)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-exceptions -fno-unwind-tables -fno-asynchronous-unwind-tables")
 endif()
 
