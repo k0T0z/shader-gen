@@ -37,7 +37,14 @@ jobs:
 
     - name: Configure CMake
       shell: msys2 {0}
-      run: cmake -B build -G "Unix Makefiles"
+      run: |
+        ls -a
+        echo "====================="
+        mkdir -p build/gui/model/schema build/tests/gui/model/schema
+        cd build
+        ls -a
+        cd ..
+        cmake -B build -G "Unix Makefiles"
 
     - name: Build project
       shell: msys2 {0}
