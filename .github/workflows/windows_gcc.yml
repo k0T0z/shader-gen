@@ -33,6 +33,7 @@ jobs:
           mingw-w64-x86_64-qt5-base
           mingw-w64-x86_64-protobuf
           make
+          cmake
 
     - name: Configure CMake
       shell: msys2 {0}
