@@ -54,9 +54,9 @@ jobs:
       run: cmake -B build -G "Unix Makefiles"
 
     - name: Build project
-      run: cmake --build build --config Debug --parallel 2
+      run: cmake --build build --config Debug --parallel $(nproc)
 
     - name: Run tests
       run: |
         cd build
-        ctest --output-on-failure --verbose -C Debug
+        ctest --parallel $(nproc) --output-on-failure --verbose --config Debug
