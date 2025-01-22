@@ -10,26 +10,28 @@ if [ -z "$1" ]; then
 fi
 
 # Define the repository URL
-REPO_URL="https://github.com/protocolbuffers/protobuf.git"
+REPO_URL="https://github.com/abseil/abseil-cpp.git"
 LATEST_TAG=$1
 
 # Clone Abseil
 git clone --depth 1 -b $LATEST_TAG $REPO_URL
 
-cd protobuf
-
-# Checkout the latest release
-git submodule update --init --recursive
+cd abseil-cpp
 
 # Create build directory
 mkdir build && cd build
 
 # Configure and build
-cmake .. -Dprotobuf_BUILD_TESTS=OFF \
-         -Dprotobuf_ABSL_PROVIDER=package \
+cmake .. -DABSL_PROPAGATE_CXX_STD=ON \
+         -DBUILD_TESTING=OFF \
+         -DABSL_BUILD_TESTING=OFF \
+         -DABSL_USE_GOOGLETEST_HEAD=OFF \
          -DCMAKE_BUILD_TYPE=Release \
          -DCMAKE_CXX_STANDARD=17 \
-         -Dprotobuf_BUILD_SHARED_LIBS=ON # -DCMAKE_INSTALL_PREFIX=
+         -DABSL_ENABLE_INSTALL=ON \
+         -DBUILD_SHARED_LIBS=ON \
+         -DABSL_BUILD_MONOLITHIC_SHARED_LIBS=ON \
+         -DCMAKE_MODULE_LINKER_FLAGS="-Wl,--no-undefined" # -DCMAKE_INSTALL_PREFIX=
 
 make -j$(nproc)
 

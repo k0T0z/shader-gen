@@ -58,6 +58,10 @@ else()
     string(APPEND CMAKE_C_FLAGS " -Wall -Wextra")
 endif()
 
+if (WIN32)
+    string(APPEND CMAKE_CXX_FLAGS " -static-libgcc")
+endif()
+
 if(${PROJECT_SOURCE_DIR} STREQUAL ${PROJECT_BINARY_DIR})
   message(
     FATAL_ERROR
