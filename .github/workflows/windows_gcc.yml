@@ -39,6 +39,7 @@ jobs:
       shell: msys2 {0}
       run: |
         ls -a
+        mkdir -p build/gui/model/schema build/tests/gui/model/schema
         cd build
         ls -a
         cd ..
