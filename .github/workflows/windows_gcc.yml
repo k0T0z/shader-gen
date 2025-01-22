@@ -24,27 +24,26 @@ jobs:
         ref: 'master'
         submodules: recursive
 
-    - name: Setup MSYS2 and MinGW
+    - name: Setup MSYS2
       uses: msys2/setup-msys2@v2
       with:
         update: true
         install: >-
           mingw-w64-x86_64-toolchain
-          mingw-w64-x86_64-qt5
-          mingw-w64-x86_64-protobuf
-          mingw-w64-x86_64-gtest
-          mingw-w64-x86_64-gcc
           mingw-w64-x86_64-cmake
-          make
+          mingw-w64-x86_64-qt5-base
+          mingw-w64-x86_64-protobuf
 
     - name: Configure CMake
       shell: msys2 {0}
-      run: cmake -B build -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release
+      run: cmake -B build -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Debug
 
     - name: Build project
       shell: msys2 {0}
-      run: cmake --build build --config Release --parallel 2
+      run: cmake --build build --config Debug --parallel 2
 
-    - name: Run tests via CTest
+    - name: Run tests
       shell: msys2 {0}
-      run: ctest --test-dir build --output-on-failure
+      run: |
+        cd build
+        ctest --output-on-failure -C Debug

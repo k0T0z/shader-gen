@@ -27,13 +27,15 @@ jobs:
     - name: Install dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y build-essential cmake mingw-w64-x86_64-qt5
+        sudo apt-get install -y g++ cmake qtbase5-dev libprotobuf-dev protobuf-compiler
 
     - name: Configure CMake
-      run: cmake -B build -DCMAKE_BUILD_TYPE=Release
+      run: cmake -B build -DCMAKE_BUILD_TYPE=Debug
 
     - name: Build project
-      run: cmake --build build --config Release --parallel 2
+      run: cmake --build build --config Debug --parallel 2
 
-    - name: Run tests via CTest
-      run: ctest --test-dir build --output-on-failure
+    - name: Run tests
+      run: |
+        cd build
+        ctest --output-on-failure -C Debug
