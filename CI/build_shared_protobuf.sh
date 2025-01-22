@@ -25,7 +25,8 @@ git submodule update --init --recursive
 mkdir build && cd build
 
 # Configure and build
-cmake .. -Dprotobuf_BUILD_TESTS=OFF \
+cmake .. -G "Unix Makefiles" \
+         -Dprotobuf_BUILD_TESTS=OFF \
          -Dprotobuf_ABSL_PROVIDER=package \
          -DCMAKE_BUILD_TYPE=Release \
          -DCMAKE_CXX_STANDARD=17 \
