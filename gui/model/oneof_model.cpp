@@ -244,7 +244,6 @@ QVariant OneofModel::headerData(int section, [[maybe_unused]] Qt::Orientation or
 
 bool OneofModel::set_oneof(const int& field_number) {
   const Descriptor* desc{m_message_buffer->GetDescriptor()};
-  const Reflection* refl{m_message_buffer->GetReflection()};
 
   const FieldDescriptor* field_desc{desc->FindFieldByNumber(field_number)};
   SILENT_CHECK_PARAM_NULLPTR_NON_VOID(field_desc, false);

@@ -210,7 +210,7 @@ bool RepeatedPrimitiveModel::insertRows(int row, int count, const QModelIndex& p
   if (row >= rowCount()) {
     switch (m_field_desc->cpp_type()) {
       case FieldDescriptor::CppType::CPPTYPE_MESSAGE:
-        FAIL_AND_RETURN_NON_VOID(-1, "Trying to append a message field.");
+        FAIL_AND_RETURN_NON_VOID(false, "Trying to append a message field.");
         break;
       case FieldDescriptor::CppType::CPPTYPE_INT32:
         refl->AddInt32(m_message_buffer, m_field_desc, 0);

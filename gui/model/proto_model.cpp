@@ -56,7 +56,8 @@ QByteArray ProtoModel::serializeToJson() const {
   std::string jsonString;
   JsonOptions options;
   options.add_whitespace = true;  // Makes JSON human-readable
-  MessageToJsonString(*message_buffer, &jsonString, options);
+  absl::Status status = MessageToJsonString(*message_buffer, &jsonString, options);
+  CHECK_CONDITION_TRUE_NON_VOID(!status.ok(), QByteArray(), "Failed to serialize JSON:" + status.ToString());
   return QByteArray::fromStdString(jsonString);
 }
 

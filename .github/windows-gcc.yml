@@ -1,0 +1,50 @@
+name: Windows GCC Build
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+  workflow_dispatch: 
+
+concurrency:
+  group: ci-${{github.actor}}-${{github.head_ref || github.run_number}}-${{github.ref}}-windows-gcc
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        ref: 'master'
+        submodules: recursive
+
+    - name: Setup MSYS2 and MinGW
+      uses: msys2/setup-msys2@v2
+      with:
+        update: true
+        install: >-
+          mingw-w64-x86_64-toolchain
+          mingw-w64-x86_64-qt5
+          mingw-w64-x86_64-protobuf
+          mingw-w64-x86_64-gtest
+          mingw-w64-x86_64-gcc
+          mingw-w64-x86_64-cmake
+          make
+
+    - name: Configure CMake
+      shell: msys2 {0}
+      run: cmake -B build -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release
+
+    - name: Build project
+      shell: msys2 {0}
+      run: cmake --build build --config Release --parallel 2
+
+    - name: Run tests via CTest
+      shell: msys2 {0}
+      run: ctest --test-dir build --output-on-failure

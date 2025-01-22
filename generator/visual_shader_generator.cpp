@@ -732,7 +732,7 @@ static inline bool generate_shader_for_each_node(std::string& global_code, std::
 
     const std::shared_ptr<Connection> c{input_connections.at(key)};
 
-    int from_node{c->from.f_key.node};
+    int from_node{(int)c->from.f_key.node};
 
     if (processed.find(from_node) != processed.end()) {
       continue;
@@ -778,8 +778,8 @@ static inline bool generate_shader_for_each_node(std::string& global_code, std::
     if (input_connections.find(key) != input_connections.end()) {
       const std::shared_ptr<Connection> c{input_connections.at(key)};
 
-      int from_node{c->from.f_key.node};
-      int from_port{c->from.f_key.port};
+      int from_node{(int)c->from.f_key.node};
+      int from_port{(int)c->from.f_key.port};
 
       VisualShaderNodePortType to_port_type{proto_node->get_input_port_type(i)};
       VisualShaderNodePortType from_port_type{VisualShaderNodePortType::PORT_TYPE_UNSPECIFIED};

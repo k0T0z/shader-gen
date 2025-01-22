@@ -77,7 +77,7 @@ set(CMAKE_AUTOMOC ON)
 # Create code from Qt rc files.
 set(CMAKE_AUTORCC ON)
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 17) # Protocol Buffers requires C++17 or newer
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Disable compiler-specific extensions for cross-platform compatibility.
@@ -286,7 +286,9 @@ protobuf_generate(
     OUT_VAR SHADER_GEN_PROTO_GENERATED_TEST_SRCS
     PROTOC_OUT_DIR ${PROTOC_TEST_OUT_DIRECTORY} # Output directory for the generated test files
     PROTOS ${SHADER_GEN_TESTS_PROTO_FILES} # The proto test files
-    IMPORT_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/tests/gui/model/schema # For the imports in the proto test files
+    IMPORT_DIRS 
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/gui/model/schema # For the imports in the proto test files
+        ${CMAKE_CURRENT_SOURCE_DIR}/gui/model/schema
 )
 
 target_link_libraries(${SHADER_GEN_TESTS_EXECUTABLE_NAME} PRIVATE 
@@ -305,4 +307,11 @@ target_include_directories(${SHADER_GEN_TESTS_EXECUTABLE_NAME} PRIVATE
 
 target_compile_definitions(${SHADER_GEN_TESTS_EXECUTABLE_NAME} PRIVATE 
     $<$<CONFIG:Debug>:${SHADER_GEN_DEBUG_MACRO_NAME}> # Define ${SHADER_GEN_DEBUG_MACRO_NAME} for Debug builds
+)
+
+enable_testing()
+add_test(NAME ${SHADER_GEN_TESTS_EXECUTABLE_NAME} COMMAND ${SHADER_GEN_TESTS_EXECUTABLE_NAME})
+set_tests_properties(${SHADER_GEN_TESTS_EXECUTABLE_NAME} PROPERTIES
+    TIMEOUT 30
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 )
