@@ -51,7 +51,7 @@ jobs:
         bash ./CI/build_shared_protobuf.sh $PROTOBUF_LATEST_TAG
 
     - name: Configure CMake
-      run: cmake -B build -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Debug
+      run: cmake -B build -G "Unix Makefiles"
 
     - name: Build project
       run: cmake --build build --config Debug --parallel 2

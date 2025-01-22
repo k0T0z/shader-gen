@@ -37,7 +37,7 @@ jobs:
 
     - name: Configure CMake
       shell: msys2 {0}
-      run: cmake -B build -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Debug
+      run: cmake -B build -G "Unix Makefiles"
 
     - name: Build project
       shell: msys2 {0}
