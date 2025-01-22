@@ -54,7 +54,7 @@ jobs:
       run: cmake -B build -G "Unix Makefiles"
 
     - name: Build project
-      run: cmake --build build --config Debug --parallel $(nproc)
+      run: cmake --build build --config Debug # --parallel $(nproc)
 
     - name: Run tests
       run: |
