@@ -58,10 +58,6 @@ else()
     string(APPEND CMAKE_C_FLAGS " -Wall -Wextra")
 endif()
 
-if (WIN32)
-    string(APPEND CMAKE_CXX_FLAGS " -static-libgcc")
-endif()
-
 if(${PROJECT_SOURCE_DIR} STREQUAL ${PROJECT_BINARY_DIR})
   message(
     FATAL_ERROR
@@ -110,6 +106,8 @@ endif()
 if(MSVC)
     string(REGEX REPLACE "/EHsc" "/EHs-c-" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
     add_definitions(-D_HAS_EXCEPTIONS=0)
+elseif(MINGW)
+    
 else()
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-exceptions -fno-unwind-tables -fno-asynchronous-unwind-tables")
 endif()
