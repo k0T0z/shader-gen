@@ -59,4 +59,4 @@ jobs:
     - name: Run tests
       run: |
         cd build
-        ctest --parallel $(nproc) --output-on-failure --verbose --config Debug
+        ctest --parallel $(nproc) --output-on-failure --verbose -C Debug
