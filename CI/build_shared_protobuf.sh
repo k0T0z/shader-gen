@@ -10,7 +10,7 @@ if [ -z "$1" ]; then
 fi
 
 # Create custom directory
-mkdir -p $GITHUB_WORKSPACE/proto-k0t0z-lib
+mkdir -p $GITHUB_WORKSPACE/proto-lib
 
 # Define the repository URL
 REPO_URL="https://github.com/protocolbuffers/protobuf.git"
@@ -29,7 +29,7 @@ mkdir build && cd build
 
 # Configure and build
 cmake .. -Dprotobuf_BUILD_TESTS=OFF \
-         -Dprotobuf_ABSL_PROVIDER=package \
+         -Dprotobuf_ABSL_PROVIDER=module \
          -DCMAKE_BUILD_TYPE=Release \
          -DCMAKE_CXX_STANDARD=17 \
          -Dprotobuf_BUILD_SHARED_LIBS=ON
