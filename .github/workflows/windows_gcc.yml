@@ -37,7 +37,14 @@ jobs:
 
     - name: Configure CMake
       shell: msys2 {0}
-      run: cmake -B build -G "Unix Makefiles"
+      run: |
+        mkdir build
+        cmake -B build -G "Unix Makefiles"
+
+    - name: Create protoc generated output directories
+      shell: msys2 {0}
+      run: |
+        mkdir -p build/gui/model/schema build/tests/gui/model/schema
 
     - name: Build project
       shell: msys2 {0}

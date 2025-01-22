@@ -185,11 +185,7 @@ find_package(Protobuf CONFIG REQUIRED)
 
 # Create the output directory for the generated protobuf files
 set(PROTOC_OUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/gui/model/schema")
-add_custom_command(
-    OUTPUT ${PROTOC_OUT_DIRECTORY}
-    COMMAND ${CMAKE_COMMAND} -E make_directory ${PROTOC_OUT_DIRECTORY}
-    COMMENT "Creating directory ${PROTOC_OUT_DIRECTORY}"
-)
+file(MAKE_DIRECTORY ${PROTOC_OUT_DIRECTORY})
 
 # https://stackoverflow.com/a/54254098/14629018
 protobuf_generate(
@@ -282,11 +278,7 @@ endif()
 
 # Create the output directory for the generated protobuf test files
 set(PROTOC_TEST_OUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/tests/gui/model/schema")
-add_custom_command(
-    OUTPUT ${PROTOC_TEST_OUT_DIRECTORY}
-    COMMAND ${CMAKE_COMMAND} -E make_directory ${PROTOC_TEST_OUT_DIRECTORY}
-    COMMENT "Creating directory ${PROTOC_TEST_OUT_DIRECTORY}"
-)
+file(MAKE_DIRECTORY ${PROTOC_TEST_OUT_DIRECTORY})
 
 protobuf_generate(
     TARGET ${SHADER_GEN_TESTS_EXECUTABLE_NAME}
