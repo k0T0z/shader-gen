@@ -286,9 +286,7 @@ protobuf_generate(
     OUT_VAR SHADER_GEN_PROTO_GENERATED_TEST_SRCS
     PROTOC_OUT_DIR ${PROTOC_TEST_OUT_DIRECTORY} # Output directory for the generated test files
     PROTOS ${SHADER_GEN_TESTS_PROTO_FILES} # The proto test files
-    IMPORT_DIRS 
-        ${CMAKE_CURRENT_SOURCE_DIR}/tests/gui/model/schema # For the imports in the proto test files
-        ${CMAKE_CURRENT_SOURCE_DIR}/gui/model/schema
+    IMPORT_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/tests/gui/model/schema # For the imports in the proto test files
 )
 
 target_link_libraries(${SHADER_GEN_TESTS_EXECUTABLE_NAME} PRIVATE 
