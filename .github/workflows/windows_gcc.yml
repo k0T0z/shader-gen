@@ -38,7 +38,7 @@ jobs:
     - name: Configure CMake
       shell: msys2 {0}
       run: |
-        mkdir build
+        mkdir -p build/gui/model/schema build/tests/gui/model/schema
         cmake -B build -G "Unix Makefiles"
 
     - name: Build project
