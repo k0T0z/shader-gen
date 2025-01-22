@@ -115,7 +115,7 @@ if(MSVC)
     set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS TRUE)
 endif()
 
-set(SHADER_GEN_QT_VERSION "5")
+set(SHADER_GEN_QT_VERSION "6")
 
 file(GLOB SHADER_GEN_MAIN_ENTRY 
     ${CMAKE_CURRENT_SOURCE_DIR}/main.hpp
@@ -178,7 +178,7 @@ else()
 endif()
 
 # OpenGLWidgets not required for Qt5 LTS
-find_package(Qt${SHADER_GEN_QT_VERSION} CONFIG REQUIRED COMPONENTS Widgets Test)
+find_package(Qt${SHADER_GEN_QT_VERSION} CONFIG REQUIRED COMPONENTS Widgets OpenGLWidgets Test)
 
 # Find Protobuf
 find_package(Protobuf CONFIG REQUIRED)
@@ -199,6 +199,7 @@ protobuf_generate(
 
 target_link_libraries(${SHADER_GEN_EXECUTABLE_NAME} PRIVATE 
     Qt${SHADER_GEN_QT_VERSION}::Widgets 
+    Qt${SHADER_GEN_QT_VERSION}::OpenGLWidgets 
     protobuf::libprotobuf
 )
 
@@ -295,6 +296,7 @@ target_link_libraries(${SHADER_GEN_TESTS_EXECUTABLE_NAME} PRIVATE
     GTest::gtest 
     GTest::gtest_main 
     Qt${SHADER_GEN_QT_VERSION}::Widgets 
+    Qt${SHADER_GEN_QT_VERSION}::OpenGLWidgets 
     Qt${SHADER_GEN_QT_VERSION}::Test
     protobuf::libprotobuf 
 )

@@ -30,7 +30,7 @@
 
 #include <QContextMenuEvent>
 #include <QGraphicsSceneMouseEvent>
-#include <QOpenGLWidget>
+#include <QtOpenGLWidgets/QOpenGLWidget>
 #include <QtCore/QPointF>
 #include <QtCore/QSize>
 #include <QtWidgets/QComboBox>
@@ -52,8 +52,8 @@
 #include <QCheckBox>
 #include <QColorDialog>
 #include <QElapsedTimer>
-#include <QOpenGLFunctions_4_3_Core>  // https://stackoverflow.com/a/64288966/14629018 explains why we need this.
-#include <QOpenGLShaderProgram>
+#include <QtOpenGL/QOpenGLFunctions_4_3_Core>  // https://stackoverflow.com/a/64288966/14629018 explains why we need this.
+#include <QtOpenGL/QOpenGLShaderProgram>
 
 #include <string>
 #include <variant>
@@ -306,7 +306,7 @@ class OriginalMatchingImageWidget : public QWidget {
  * @todo Replace this class with ENIGMA's Graphics System.
  * 
  */
-class ShaderPreviewerWidget : public QOpenGLWidget {
+class ShaderPreviewerWidget : public QOpenGLWidget, protected QOpenGLFunctions_4_3_Core {
   Q_OBJECT
 
  public:
@@ -338,18 +338,6 @@ class ShaderPreviewerWidget : public QOpenGLWidget {
   void init_buffers();
   void update_shader_program();
 
-  /**
-     * @brief Cleans up the OpenGL resources.
-     * 
-     * @note This function is called automatically when the widget is destroyed.
-     *       It is connected @c QOpenGLContext::aboutToBeDestroyed signal.
-     * 
-     * @note DON'T call this function in the destructor as it is 
-     *       called automatically. If you call it from the destructor,
-     *       it will crash as @c makeCurrent() won't be able to make the
-     *       context current.
-     * 
-     */
   void cleanup();
 };
 
