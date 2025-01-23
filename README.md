@@ -1,5 +1,28 @@
 # ShaderGen
 
+<table>
+  <thead>
+    <tr>
+      <th>Architecture</th>
+      <th>Build Status</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Ubuntu GCC 64-bit - Qt6</strong></td>
+      <td><img src="https://github.com/k0T0z/shader-gen/actions/workflows/ubuntu_gcc.yml/badge.svg?branch=master-qt6" alt="Ubuntu GCC Build Status"></td>
+    </tr>
+    <tr>
+      <td><strong>Windows GCC (MinGW64) - Qt6</strong></td>
+      <td><img src="https://github.com/k0T0z/shader-gen/actions/workflows/windows_gcc.yml/badge.svg?branch=master-qt6" alt="Windows GCC Build Status"></td>
+    </tr>
+    <tr>
+      <td><strong>Windows MSVC 64-bit - Qt6</strong></td>
+      <td><img src="https://github.com/k0T0z/shader-gen/actions/workflows/windows.yml/badge.svg?branch=master-qt6" alt="Windows MSVC Build Status"></td>
+    </tr>
+  </tbody>
+</table>
+
 ![ShaderGen Graph Implementation](./shader-gen-graph-implementation.gif)
 ![ShaderGen Dynamic Rendering](./shader-gen-dynamic-rendering.gif)
 
