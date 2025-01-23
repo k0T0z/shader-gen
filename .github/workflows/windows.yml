@@ -31,21 +31,21 @@ jobs:
         host: 'windows'
         target: 'desktop'
         arch: 'win64_msvc2019_64'
+        dir: '${{ github.workspace }}'
+        setup-python: 'false'
 
     - name: Build Protobuf
       shell: pwsh
       run: |
-        mkdir -p $env:GITHUB_WORKSPACE/abseil-lib
-        mkdir -p $env:GITHUB_WORKSPACE/protobuf-lib
-        echo "Abseil: $env:GITHUB_WORKSPACE/abseil-lib"
-        echo "Protobuf: $env:GITHUB_WORKSPACE/protobuf-lib"
+        mkdir -p ${{ github.workspace }}/protobuf-lib
+        echo "Protobuf: ${{ github.workspace }}/protobuf-lib"
+        echo "Qt5: $env:Qt5_DIR"
         .\CI\build_protobuf.ps1 `
-          -absl_prefix $env:GITHUB_WORKSPACE/abseil-lib `
-          -protobuf_prefix $env:GITHUB_WORKSPACE/protobuf-lib
+          -protobuf_prefix ${{ github.workspace }}/protobuf-lib
 
     - name: Configure CMake
       shell: pwsh
-      run: cmake -B build -G "Visual Studio 17 2022" -A x64 -DCMAKE_PREFIX_PATH=$env:Qt5_DIR;$env:GITHUB_WORKSPACE/abseil-lib/lib/cmake;$env:GITHUB_WORKSPACE/protobuf-lib/lib/cmake
+      run: cmake -B build -G "Visual Studio 17 2022" -A x64 -DCMAKE_PREFIX_PATH=$env:Qt5_DIR;${{ github.workspace }}/abseil-lib/lib/cmake;${{ github.workspace }}/protobuf-lib/lib/cmake
 
     - name: Build project
       shell: pwsh
