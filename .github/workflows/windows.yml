@@ -53,7 +53,9 @@ jobs:
 
     - name: Copy DLLs next to the executable
       shell: pwsh
-      run: cp build/bin/Debug/*.dll build/Debug/
+      run: |
+        cp build\bin\Debug\*.dll build\Debug\
+        cp "${{ github.workspace }}\protobuf-lib\bin\*.dll" build\Debug\
 
     - name: Run tests
       shell: pwsh

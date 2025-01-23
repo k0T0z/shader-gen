@@ -44,10 +44,10 @@ jobs:
       run: |
         cmake --build build --config Debug --parallel $(nproc)
         echo "Dependencies for shader-gen.exe"
-        ldd build/Debug/shader-gen
+        ldd build/shader-gen
 
         echo "Dependencies for shader-gen-tests.exe"
-        ldd build/Debug/shader-gen-tests
+        ldd build/shader-gen-tests
 
     - name: Copy DLLs next to the executable
       shell: msys2 {0}
