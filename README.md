@@ -24,7 +24,7 @@
 </table>
 
 > [!NOTE]  
-> The end-of-support for Qt 5.15 is scheduled for May 26, 2025.
+> The end-of-support for Qt 5.15 is scheduled for May 26, 2025. See master-qt6 branch.
 
 ![ShaderGen Graph Implementation](./shader-gen-graph-implementation.gif)
 ![ShaderGen Dynamic Rendering](./shader-gen-dynamic-rendering.gif)
