@@ -313,20 +313,3 @@ set_tests_properties(${SHADER_GEN_TESTS_EXECUTABLE_NAME} PROPERTIES
     TIMEOUT 30
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 )
-
-if(WIN32 AND MINGW)
-    # Copy specific GTest DLLs to executable directory
-    file(GLOB SHADER_GEN_GTEST_DLLS
-        "${CMAKE_BINARY_DIR}/bin/*.dll"
-    )
-    
-    if(SHADER_GEN_GTEST_DLLS)
-        add_custom_command(
-            TARGET ${SHADER_GEN_TESTS_EXECUTABLE_NAME} POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                ${SHADER_GEN_GTEST_DLLS}
-                $<TARGET_FILE_DIR:${SHADER_GEN_TESTS_EXECUTABLE_NAME}>
-            COMMENT "Copying GTest DLLs to output directory"
-        )
-    endif()
-endif()
