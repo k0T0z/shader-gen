@@ -51,8 +51,10 @@ jobs:
       shell: pwsh
       run: cmake --build build --config Debug --parallel $env:NUMBER_OF_PROCESSORS
 
+    - name: Copy DLLs next to the executable
+      shell: pwsh
+      run: cp build/bin/Debug/*.dll build/Debug/
+
     - name: Run tests
       shell: pwsh
-      run: |
-        dumpbin /dependents "build\Debug\shader-gen-tests.exe"
-        ctest --test-dir build --parallel $env:NUMBER_OF_PROCESSORS --output-on-failure --verbose -C Debug
+      run: ctest --test-dir build --parallel $env:NUMBER_OF_PROCESSORS --output-on-failure --verbose -C Debug

@@ -41,7 +41,14 @@ jobs:
 
     - name: Build project
       shell: bash
-      run: cmake --build build --config Debug --parallel $(nproc)
+      run: |
+        cmake --build build --config Debug --parallel $(nproc)
+
+        echo "Dependencies for shader-gen"
+        ldd build/Debug/shader-gen
+
+        echo "Dependencies for shader-gen-tests"
+        ldd build/Debug/shader-gen-tests
 
     - name: Run tests
       shell: bash
