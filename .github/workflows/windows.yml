@@ -39,12 +39,6 @@ jobs:
       run: |
         New-Item -ItemType Directory -Path "${{ github.workspace }}\protobuf-lib"
         Write-Output "Protobuf: '${{ github.workspace }}\protobuf-lib'"
-        ls "${{ github.workspace }}\protobuf-lib"
-        Write-Output "============================================="
-        ls "${{ github.workspace }}\protobuf-lib\lib"
-        Write-Output "============================================="
-        ls "${{ github.workspace }}\protobuf-lib\lib\cmake"
-        Write-Output "============================================="
         Write-Output "Qt5: $env:Qt5_DIR"
         .\CI\build_protobuf.ps1 `
           -protobuf_prefix "${{ github.workspace }}\protobuf-lib"

@@ -33,7 +33,7 @@ jobs:
       shell: bash
       run: |
         chmod +x ./CI/build_protobuf.sh
-        ./CI/build_protobuf.sh
+        sudo ./CI/build_protobuf.sh
 
     - name: Configure CMake
       shell: bash
