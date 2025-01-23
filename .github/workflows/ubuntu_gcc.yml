@@ -29,34 +29,27 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y g++ cmake qt6-base-dev
 
-    - name: Fetch Abseil and Protobuf latest tags
-      run: |
-        ABSL_LATEST_TAG=$(git ls-remote --tags https://github.com/abseil/abseil-cpp.git | grep -o 'refs/tags/[^{}]*$' | sort -t '/' -k 3 -V | tail -n1 | awk -F/ '{print $3}')
-        PROTOBUF_LATEST_TAG=$(git ls-remote --tags https://github.com/protocolbuffers/protobuf.git | grep -o 'refs/tags/[^{}]*$' | sort -t '/' -k 3 -V | tail -n1 | awk -F/ '{print $3}')
-
-        echo "ABSL_LATEST_TAG=$ABSL_LATEST_TAG" >> $GITHUB_ENV
-        echo "PROTOBUF_LATEST_TAG=$PROTOBUF_LATEST_TAG" >> $GITHUB_ENV
-
-        echo "ABSL_LATEST_TAG: $ABSL_LATEST_TAG"
-        echo "PROTOBUF_LATEST_TAG: $PROTOBUF_LATEST_TAG"
-
-    - name: Build Abseil
-      run: |
-        chmod +x CI/build_shared_absl.sh
-        bash ./CI/build_shared_absl.sh $ABSL_LATEST_TAG
-
     - name: Build Protobuf
+      shell: bash
       run: |
-        chmod +x CI/build_shared_protobuf.sh
-        bash ./CI/build_shared_protobuf.sh $PROTOBUF_LATEST_TAG
+        chmod +x ./CI/build_protobuf.sh
+        sudo ./CI/build_protobuf.sh
 
     - name: Configure CMake
+      shell: bash
       run: cmake -B build -G "Unix Makefiles"
 
     - name: Build project
-      run: cmake --build build --config Debug # --parallel $(nproc)
+      shell: bash
+      run: |
+        cmake --build build --config Debug --parallel $(nproc)
+
+        echo "Dependencies for shader-gen"
+        ldd build/shader-gen
+
+        echo "Dependencies for shader-gen-tests"
+        ldd build/shader-gen-tests
 
     - name: Run tests
-      run: |
-        cd build
-        ctest --parallel $(nproc) --output-on-failure --verbose -C Debug
+      shell: bash
+      run: ctest --test-dir build --parallel $(nproc) --output-on-failure --verbose -C Debug
