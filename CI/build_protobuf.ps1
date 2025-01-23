@@ -1,21 +1,29 @@
 param(
-    [string]$absl_tag,
-    [string]$protobuf_tag,
     [string]$absl_prefix,
     [string]$protobuf_prefix
 )
 
+# Fetch latest ABSL tag
+$ABSL_LATEST_TAG = git ls-remote --tags https://github.com/abseil/abseil-cpp.git |
+    ForEach-Object { if ($_ -match 'refs/tags/([^{}]+)') { $matches[1] } } |
+    Sort-Object { [version]($_.Replace('v','').Split('-')[0]) } |
+    Select-Object -Last 1
+
+# Fetch latest Protobuf tag
+$PROTOBUF_LATEST_TAG = git ls-remote --tags https://github.com/protocolbuffers/protobuf.git |
+    ForEach-Object { if ($_ -match 'refs/tags/([^{}]+)') { $matches[1] } } |
+    Sort-Object { [version]($_.Replace('v','').Split('-')[0]) } |
+    Select-Object -Last 1
+
 $ErrorActionPreference = 'Stop'
 
 # Validate parameters
-if (-not $absl_tag) { throw "Abseil tag parameter is required" }
-if (-not $protobuf_tag) { throw "Protobuf tag parameter is required" }
 if (-not $absl_prefix) { throw "Abseil install prefix is required" }
 if (-not $protobuf_prefix) { throw "Protobuf install prefix is required" }
 
 # Build and install Abseil
-Write-Output "Installing Abseil $absl_tag..."
-git clone --depth 1 -b $absl_tag https://github.com/abseil/abseil-cpp.git
+Write-Output "Installing Abseil $ABSL_LATEST_TAG..."
+git clone --depth 1 -b $ABSL_LATEST_TAG https://github.com/abseil/abseil-cpp.git
 cd abseil-cpp
 
 mkdir build
@@ -39,8 +47,8 @@ cmake --install . --config Release
 cd $env:GITHUB_WORKSPACE
 
 # Build and install Protobuf
-Write-Output "Installing Protobuf $protobuf_tag..."
-git clone --depth 1 -b $protobuf_tag https://github.com/protocolbuffers/protobuf.git
+Write-Output "Installing Protobuf $PROTOBUF_LATEST_TAG..."
+git clone --depth 1 -b $PROTOBUF_LATEST_TAG https://github.com/protocolbuffers/protobuf.git
 cd protobuf
 
 git submodule update --init --recursive
