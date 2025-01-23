@@ -29,16 +29,20 @@ jobs:
       with:
         update: true
         install: >-
-          git
           mingw-w64-x86_64-gcc
           mingw-w64-x86_64-qt5-base
           mingw-w64-x86_64-protobuf
-          make
-          cmake
+          mingw-w64-x86_64-make
+          mingw-w64-x86_64-cmake
 
-    - name: Configure, Build and Test
+    - name: Configure CMake
       shell: msys2 {0}
-      run: |
-        cmake -B build -G "Unix Makefiles"
-        cmake --build build --config Debug --parallel $(nproc)
-        ctest --test-dir build --parallel $(nproc) --output-on-failure --verbose -C Debug
+      run: cmake -B build -G "Unix Makefiles" -DCMAKE_MAKE_PROGRAM=mingw32-make
+
+    - name: Build project
+      shell: msys2 {0}
+      run: cmake --build build --config Debug --parallel $(nproc)
+
+    - name: Run tests
+      shell: msys2 {0}
+      run: ctest --test-dir build --parallel $(nproc) --output-on-failure --verbose -C Debug
