@@ -30,15 +30,17 @@ jobs:
         sudo apt-get install -y g++ cmake qtbase5-dev
 
     - name: Build Protobuf
-      run: |
-        chmod +x CI/build_protobuf.sh
-        bash ./CI/build_protobuf.sh
+      shell: bash
+      run: ./CI/build_protobuf.sh
 
     - name: Configure CMake
+      shell: bash
       run: cmake -B build -G "Unix Makefiles"
 
     - name: Build project
+      shell: bash
       run: cmake --build build --config Debug --parallel $(nproc)
 
     - name: Run tests
+      shell: bash
       run: ctest --test-dir build --parallel $(nproc) --output-on-failure --verbose -C Debug

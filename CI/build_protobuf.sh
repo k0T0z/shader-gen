@@ -20,7 +20,8 @@ cmake .. -G "Unix Makefiles" \
          -DCMAKE_CXX_STANDARD=17 \
          -Dprotobuf_BUILD_SHARED_LIBS=ON
 
-cmake --build . --config Release --parallel
-cmake --install . --config Release
+make -j$(nproc)
+
+sudo make install
 
 cd "$GITHUB_WORKSPACE"
