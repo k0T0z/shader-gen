@@ -39,7 +39,7 @@ jobs:
         mkdir -p $env:GITHUB_WORKSPACE/protobuf-lib
         echo "Abseil: $env:GITHUB_WORKSPACE/abseil-lib"
         echo "Protobuf: $env:GITHUB_WORKSPACE/protobuf-lib"
-        build_protobuf.ps1 `
+        .\CI\build_protobuf.ps1 `
           -absl_prefix $env:GITHUB_WORKSPACE/abseil-lib `
           -protobuf_prefix $env:GITHUB_WORKSPACE/protobuf-lib
 
