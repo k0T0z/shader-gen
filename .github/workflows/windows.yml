@@ -27,10 +27,10 @@ jobs:
     - name: Install Qt
       uses: jurplel/install-qt-action@v4
       with:
-        version: '5.15'
+        version: '5.15.2'
         host: 'windows'
         target: 'desktop'
-        arch: 'win64_msvc2022_64'
+        arch: 'win64_msvc2019_64'
 
     - name: Fetch Abseil and Protobuf latest tags
       run: |
@@ -60,7 +60,7 @@ jobs:
       run: cmake -B build -G "Visual Studio 17 2022" -A x64 -DCMAKE_PREFIX_PATH=$env:Qt5_DIR;$env:GITHUB_WORKSPACE/abseil-lib/lib/cmake;$env:GITHUB_WORKSPACE/protobuf-lib/lib/cmake
 
     - name: Build project
-      run: cmake --build build --config Debug # --parallel $(nproc)
+      run: cmake --build build --config Debug --parallel $(nproc)
 
     - name: Run tests
       run: |
