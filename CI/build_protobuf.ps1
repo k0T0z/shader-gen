@@ -34,7 +34,7 @@ ls $protobuf_prefix
 Write-Output "============================================="
 ls $protobuf_prefix\lib
 Write-Output "============================================="
-ls $protobuf_prefix\cmake
+ls $protobuf_prefix\lib\cmake
 Write-Output "============================================="
 
 Set-Location $env:GITHUB_WORKSPACE
