@@ -43,7 +43,8 @@ jobs:
       shell: msys2 {0}
       run: cmake --build build --config Debug --parallel $(nproc)
 
-    - name: Move DLLs
+    - name: Copy DLLs next to the executable
+      shell: msys2 {0}
       run: cp build/bin/*.dll build/
 
     - name: Run tests

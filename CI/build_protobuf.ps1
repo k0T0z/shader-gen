@@ -29,12 +29,4 @@ cmake .. -G "Visual Studio 17 2022" `
 cmake --build . --config Release --parallel
 cmake --install . --config Release
 
-Write-Output "============================================="
-ls $protobuf_prefix
-Write-Output "============================================="
-ls $protobuf_prefix\lib
-Write-Output "============================================="
-ls $protobuf_prefix\lib\cmake
-Write-Output "============================================="
-
 Set-Location $env:GITHUB_WORKSPACE
