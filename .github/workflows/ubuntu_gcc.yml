@@ -31,7 +31,9 @@ jobs:
 
     - name: Build Protobuf
       shell: bash
-      run: ./CI/build_protobuf.sh
+      run: |
+        chmod +x ./CI/build_protobuf.sh
+        ./CI/build_protobuf.sh
 
     - name: Configure CMake
       shell: bash
