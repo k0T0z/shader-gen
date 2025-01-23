@@ -7,7 +7,7 @@ PROTOBUF_LATEST_TAG=$(git ls-remote --tags https://github.com/protocolbuffers/pr
 
 # Build and install Abseil
 echo "Installing Abseil $ABSL_LATEST_TAG..."
-git clone --depth 1 -b "$ABSL_LATEST_TAG" h
+git clone --depth 1 -b "$ABSL_LATEST_TAG" https://github.com/abseil/abseil-cpp.git
 cd abseil-cpp
 
 mkdir build && cd build
