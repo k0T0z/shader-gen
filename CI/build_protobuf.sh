@@ -12,7 +12,7 @@ cd abseil-cpp
 
 mkdir build && cd build
 
-cmake ..  -G "Unix Makefiles" \
+cmake .. -G "Unix Makefiles" \
          -DABSL_PROPAGATE_CXX_STD=ON \
          -DBUILD_TESTING=OFF \
          -DABSL_BUILD_TESTING=OFF \
@@ -40,6 +40,8 @@ mkdir build && cd build
 
 cmake .. -G "Unix Makefiles" \
          -Dprotobuf_BUILD_TESTS=OFF \
+         -Dprotobuf_BUILD_CONFORMANCE=OFF \
+         -Dprotobuf_BUILD_EXAMPLES=OFF \
          -Dprotobuf_ABSL_PROVIDER=package \
          -DCMAKE_BUILD_TYPE=Release \
          -DCMAKE_CXX_STANDARD=17 \

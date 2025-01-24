@@ -18,8 +18,10 @@ git submodule update --init --recursive
 
 New-Item -ItemType Directory -Path build | Set-Location
 
-cmake .. -G "Visual Studio 17 2022" `
+cmake .. -G "Visual Studio 17 2022" -A x64 `
          -Dprotobuf_BUILD_TESTS=OFF `
+         -Dprotobuf_BUILD_CONFORMANCE=OFF `
+         -Dprotobuf_BUILD_EXAMPLES=OFF `
          -Dprotobuf_ABSL_PROVIDER=module `
          -DCMAKE_BUILD_TYPE=Release `
          -DCMAKE_CXX_STANDARD=17 `

@@ -61,6 +61,7 @@ std::unordered_map<int, std::shared_ptr<IVisualShaderProtoNode>> to_proto_nodes(
         node_model->get_sub_model(FieldPath::Of<VisualShader::VisualShaderNode>(
                                       FieldPath::FieldNumber(VisualShader::VisualShaderNode::kInputFieldNumber)),
                                   false, true)};
+    FAIL_AND_RETURN_NON_VOID(proto_nodes, "Oneof Model is nullptr.");
     const int oneof_value_field_number{oneof_model->get_oneof_value_field_number()};
 
     switch (oneof_value_field_number) {
@@ -248,6 +249,7 @@ std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>> to_generator
         node_model->get_sub_model(FieldPath::Of<VisualShader::VisualShaderNode>(
                                       FieldPath::FieldNumber(VisualShader::VisualShaderNode::kInputFieldNumber)),
                                   false, true)};
+    FAIL_AND_RETURN_NON_VOID(generators, "Oneof Model is nullptr.");
     const int oneof_value_field_number{oneof_model->get_oneof_value_field_number()};
 
     switch (oneof_value_field_number) {
@@ -716,6 +718,9 @@ static inline bool generate_shader_for_each_node(std::string& global_code, std::
                                                  const int& node_id, 
                                                  std::unordered_set<int>& processed,
                                                  std::unordered_set<std::string>& global_processed) noexcept {
+  CHECK_CONDITION_TRUE_NON_VOID(proto_nodes.find(node_id) == proto_nodes.end(), false, "Node id not found in proto nodes.");
+  CHECK_CONDITION_TRUE_NON_VOID(generators.find(node_id) == generators.end(), false, "Node id not found in generators.");
+
   const std::shared_ptr<IVisualShaderProtoNode> proto_node{proto_nodes.at(node_id)};
   const std::shared_ptr<VisualShaderNodeGenerator> generator{generators.at(node_id)};
 
