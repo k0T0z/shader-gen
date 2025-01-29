@@ -61,7 +61,7 @@ std::unordered_map<int, std::shared_ptr<IVisualShaderProtoNode>> to_proto_nodes(
         node_model->get_sub_model(FieldPath::Of<VisualShader::VisualShaderNode>(
                                       FieldPath::FieldNumber(VisualShader::VisualShaderNode::kInputFieldNumber)),
                                   false, true)};
-    FAIL_AND_RETURN_NON_VOID(proto_nodes, "Oneof Model is nullptr.");
+    CHECK_PARAM_NULLPTR_NON_VOID(oneof_model, proto_nodes, "Oneof Model is nullptr.");
     const int oneof_value_field_number{oneof_model->get_oneof_value_field_number()};
 
     switch (oneof_value_field_number) {
@@ -249,7 +249,7 @@ std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>> to_generator
         node_model->get_sub_model(FieldPath::Of<VisualShader::VisualShaderNode>(
                                       FieldPath::FieldNumber(VisualShader::VisualShaderNode::kInputFieldNumber)),
                                   false, true)};
-    FAIL_AND_RETURN_NON_VOID(generators, "Oneof Model is nullptr.");
+    CHECK_PARAM_NULLPTR_NON_VOID(oneof_model, generators, "Oneof Model is nullptr.");
     const int oneof_value_field_number{oneof_model->get_oneof_value_field_number()};
 
     switch (oneof_value_field_number) {
@@ -600,10 +600,7 @@ bool generate_shader(const std::unordered_map<int, std::shared_ptr<IVisualShader
                                             processed,
                                             global_processed)};
 
-  if (!status) {
-    std::cout << "Failed to generate shader for node " << 0 << std::endl;
-    return false;
-  }
+  CHECK_CONDITION_TRUE_NON_VOID(!status, false, "Failed to generate shader for node 0.");
 
   func_code += std::string("}") + "\n\n";
   shader_code += func_code;
@@ -622,8 +619,10 @@ std::string generate_preview_shader(const std::unordered_map<int, std::shared_pt
                                     const std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>>& generators, 
                                     const std::pair<std::map<ConnectionKey, std::shared_ptr<Connection>>, std::map<ConnectionKey, std::shared_ptr<Connection>>>& input_output_connections_by_key, 
                                     const int& node_id, const int& port) noexcept { 
-  static const std::string func_name{"main"};
+  static const std::string preview_func_name{"main"};
   static const std::string output_var{"FragColor"};
+
+  CHECK_CONDITION_TRUE_NON_VOID(proto_nodes.find(node_id) == proto_nodes.end(), std::string(), "Node ID not found in proto nodes.");
 
   const std::shared_ptr<IVisualShaderProtoNode> proto_node{proto_nodes.at(node_id)};
   CHECK_PARAM_NULLPTR_NON_VOID(proto_node, std::string(), "Proto node is null.");
@@ -635,7 +634,7 @@ std::string generate_preview_shader(const std::unordered_map<int, std::shared_pt
 
   std::unordered_set<int> processed;
 
-  shader_code += "\nvoid " + func_name + "() {" + std::string("\n");
+  shader_code += "\nvoid " + preview_func_name + "() {" + std::string("\n");
 
   // Generate the code for each node.
   bool status{generate_shader_for_each_node(global_code, 
@@ -648,10 +647,8 @@ std::string generate_preview_shader(const std::unordered_map<int, std::shared_pt
                                             node_id,
                                             processed,
                                             global_processed)};
-  if (!status) {
-    std::cout << "Failed to generate shader for node " << node_id << std::endl;
-    return std::string();
-  }
+
+  CHECK_CONDITION_TRUE_NON_VOID(!status, std::string(), "Failed to generate shader for node " + std::to_string(node_id) + ".");
 
   global_code += "out vec4 " + output_var + ";" + std::string("\n");
 
@@ -753,10 +750,8 @@ static inline bool generate_shader_for_each_node(std::string& global_code, std::
                                               from_node,
                                               processed,
                                               global_processed)};
-    if (!status) {
-      std::cout << "Failed to generate shader for node " << from_node << std::endl;
-      return false;
-    }
+    
+    CHECK_CONDITION_TRUE_NON_VOID(!status, false, "Failed to generate shader for node " + std::to_string(from_node) + ".");
   }
 
   // Make sure not to generate global code for the same node type more than once.
