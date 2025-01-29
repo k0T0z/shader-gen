@@ -623,6 +623,7 @@ std::string generate_preview_shader(const std::unordered_map<int, std::shared_pt
   static const std::string output_var{"FragColor"};
 
   CHECK_CONDITION_TRUE_NON_VOID(proto_nodes.find(node_id) == proto_nodes.end(), std::string(), "Node ID not found in proto nodes.");
+  CHECK_CONDITION_TRUE_NON_VOID(generators.find(node_id) == generators.end(), std::string(), "Node ID not found in generators.");
 
   const std::shared_ptr<IVisualShaderProtoNode> proto_node{proto_nodes.at(node_id)};
   CHECK_PARAM_NULLPTR_NON_VOID(proto_node, std::string(), "Proto node is null.");
