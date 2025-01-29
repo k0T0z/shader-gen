@@ -395,7 +395,7 @@ bool VisualShaderEditor::add_output_node() {
   SILENT_CHECK_CONDITION_TRUE_NON_VOID(node_entry != -1, true);
 
   // Output node has the id 0
-  return scene->add_node(0, std::make_shared<VisualShaderProtoNode<VisualShaderNodeOutput>>(), QPointF(0, 0));
+  return scene->add_node(std::make_shared<VisualShaderProtoNode<VisualShaderNodeOutput>>(), QPointF(0, 0), 0);
 }
 
 void VisualShaderEditor::load_graph() {
@@ -405,9 +405,7 @@ void VisualShaderEditor::load_graph() {
 void VisualShaderEditor::create_node(const QPointF& coordinate) {
   QTreeWidgetItem* selected_item{create_node_dialog->get_selected_item()};
 
-  if (!selected_item) {
-    return;
-  }
+  CHECK_PARAM_NULLPTR(selected_item, "Selected item is null");
 
   VisualShaderEditor::add_node(selected_item, coordinate);
 }
@@ -417,10 +415,7 @@ void VisualShaderEditor::add_node(QTreeWidgetItem* selected_item, const QPointF&
 
   CHECK_CONDITION_TRUE(!proto_node.canConvert<std::shared_ptr<IVisualShaderProtoNode>>(), "Node type is empty");
 
-  int n_id{VisualShaderGraphicsScene::get_new_node_id(visual_shader_model, nodes_model)};
-  CHECK_CONDITION_TRUE(n_id == 0, "The id " + std::to_string(n_id) + " is reserved for the output node");
-
-  bool result {scene->add_node(n_id, proto_node.value<std::shared_ptr<IVisualShaderProtoNode>>(), coordinate)};
+  bool result {scene->add_node(proto_node.value<std::shared_ptr<IVisualShaderProtoNode>>(), coordinate)};
   if (!result) {
     ERROR_PRINT("Failed to add node");
   }
@@ -811,7 +806,7 @@ VisualShaderGraphicsScene::VisualShaderGraphicsScene(QObject* parent)
   setItemIndexMethod(QGraphicsScene::NoIndex);  // https://doc.qt.io/qt-6/qgraphicsscene.html#ItemIndexMethod-enum
 }
 
-bool VisualShaderGraphicsScene::add_node(const int& n_id, const std::shared_ptr<IVisualShaderProtoNode>& proto_node, const QPointF& coordinate) {
+bool VisualShaderGraphicsScene::add_node_to_model(const int& n_id, const std::shared_ptr<IVisualShaderProtoNode>& proto_node, const QPointF& coordinate) {
   int row_entry{nodes_model->append_row()};
 
   bool result = visual_shader_model->set_data(
@@ -970,6 +965,10 @@ bool VisualShaderGraphicsScene::add_node(const int& n_id, const std::shared_ptr<
     FAIL_AND_RETURN_NON_VOID(false, "Unknown node type");
   }
 
+  return true;
+}
+
+bool VisualShaderGraphicsScene::add_node_to_scene(const int& n_id, const std::shared_ptr<IVisualShaderProtoNode>& proto_node, const QPointF& coordinate) {
   CHECK_CONDITION_TRUE_NON_VOID(node_graphics_objects.find(n_id) != node_graphics_objects.end(), false,
                                 "Graphics node object already exists");
 
@@ -1016,6 +1015,7 @@ bool VisualShaderGraphicsScene::add_node(const int& n_id, const std::shared_ptr<
   QObject::connect(n_o, &VisualShaderNodeGraphicsObject::out_port_remove_requested, this,
                    &VisualShaderGraphicsScene::on_out_port_remove_requested);
 
+  // If not the output node
   if (n_id != 0) {
     VisualShaderNodeEmbedWidget* embed_widget{
       new VisualShaderNodeEmbedWidget(visual_shader_model, nodes_model, n_id, proto_node)};
@@ -1047,10 +1047,26 @@ bool VisualShaderGraphicsScene::add_node(const int& n_id, const std::shared_ptr<
   return true;
 }
 
-bool VisualShaderGraphicsScene::delete_node(const int& n_id, const int& in_port_count, const int& out_port_count) {
+bool VisualShaderGraphicsScene::add_node(const std::shared_ptr<IVisualShaderProtoNode>& proto_node, const QPointF& coordinate, const int& n_id) {
+  int temp_n_id{n_id};
+
+  if (temp_n_id == -1)  {
+    temp_n_id = VisualShaderGraphicsScene::get_new_node_id(visual_shader_model, nodes_model);
+    CHECK_CONDITION_TRUE_NON_VOID(temp_n_id == 0, false, "The id " + std::to_string(temp_n_id) + " is reserved for the output node");
+  }
+
+  return add_node_to_model(temp_n_id, proto_node, coordinate) && add_node_to_scene(temp_n_id, proto_node, coordinate);
+}
+
+bool VisualShaderGraphicsScene::delete_node_from_model(const int& n_id) {
   int row_entry{find_node_entry(visual_shader_model, nodes_model, n_id)};
   VALIDATE_INDEX_NON_VOID(row_entry, nodes_model->rowCount(), false, "Node entry not found");
 
+  // Remove the node from the model
+  return nodes_model->remove_row(row_entry);
+}
+
+bool VisualShaderGraphicsScene::delete_node_from_scene(const int& n_id, const int& in_port_count, const int& out_port_count) {
   VisualShaderNodeGraphicsObject* n_o{this->get_node_graphics_object(n_id)};
   CHECK_PARAM_NULLPTR_NON_VOID(n_o, false, "Node graphics object is null");
 
@@ -1063,7 +1079,7 @@ bool VisualShaderGraphicsScene::delete_node(const int& n_id, const int& in_port_
     VisualShaderConnectionGraphicsObject* c_o{i_port->get_connection_graphics_object()};
     SILENT_CONTINUE_IF_TRUE(!c_o);
 
-    bool result{this->delete_connection(c_o->get_from_node_id(), c_o->get_from_port_index(), n_id, i)};
+    bool result{this->delete_connection(c_o->get_id(), c_o->get_from_node_id(), c_o->get_from_port_index(), n_id, i)};
     CONTINUE_IF_TRUE(!result, "Failed to delete connection");
   }
 
@@ -1076,14 +1092,10 @@ bool VisualShaderGraphicsScene::delete_node(const int& n_id, const int& in_port_
     for (VisualShaderConnectionGraphicsObject* c_o : c_os) {
       SILENT_CONTINUE_IF_TRUE(!c_o);
 
-      bool result{this->delete_connection(n_id, i, c_o->get_to_node_id(), c_o->get_to_port_index())};
+      bool result{this->delete_connection(c_o->get_id(), n_id, i, c_o->get_to_node_id(), c_o->get_to_port_index())};
       CONTINUE_IF_TRUE(!result, "Failed to delete connection");
     }
   }
-
-  // Remove the node from the model
-  bool result{nodes_model->remove_row(row_entry)};
-  CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to remove row");
 
   // Remove the node from the scene
   // TODO: Why if we exchange the order of these two lines, the program crashes?
@@ -1093,6 +1105,10 @@ bool VisualShaderGraphicsScene::delete_node(const int& n_id, const int& in_port_
   remove_item(n_o);
 
   return true;
+}
+
+bool VisualShaderGraphicsScene::delete_node(const int& n_id, const int& in_port_count, const int& out_port_count) {
+  return delete_node_from_model(n_id) && delete_node_from_scene(n_id, in_port_count, out_port_count);
 }
 
 void VisualShaderGraphicsScene::on_update_shader_previewer_widgets_requested() {
@@ -1124,7 +1140,7 @@ void VisualShaderGraphicsScene::on_scene_update_requested() { update(); }
 void VisualShaderGraphicsScene::on_in_port_remove_requested(VisualShaderInputPortGraphicsObject* in_port) {
   if (in_port->is_connected()) {
     VisualShaderConnectionGraphicsObject* c_o{in_port->get_connection_graphics_object()};
-    delete_connection(c_o->get_from_node_id(), c_o->get_from_port_index(), c_o->get_to_node_id(),
+    delete_connection(c_o->get_id(), c_o->get_from_node_id(), c_o->get_from_port_index(), c_o->get_to_node_id(),
                       c_o->get_to_port_index());
   }
 
@@ -1135,7 +1151,7 @@ void VisualShaderGraphicsScene::on_out_port_remove_requested(VisualShaderOutputP
   if (out_port->is_connected()) {
     std::vector<VisualShaderConnectionGraphicsObject*> c_os{out_port->get_connection_graphics_objects()};
     for (VisualShaderConnectionGraphicsObject* c_o : c_os) {
-      delete_connection(c_o->get_from_node_id(), c_o->get_from_port_index(), c_o->get_to_node_id(),
+      delete_connection(c_o->get_id(), c_o->get_from_node_id(), c_o->get_from_port_index(), c_o->get_to_node_id(),
                         c_o->get_to_port_index());
     }
   }
@@ -1205,8 +1221,50 @@ int VisualShaderGraphicsScene::find_connection_entry(ProtoModel* visual_shader_m
   return -1;
 }
 
-bool VisualShaderGraphicsScene::add_connection(const int& from_node_id, const int& from_port_index,
-                                               const int& to_node_id, const int& to_port_index) {
+bool VisualShaderGraphicsScene::add_connection_to_model(const int& c_id, const int& from_node_id, const int& from_port_index, const int& to_node_id,
+                              const int& to_port_index) {
+  int row_entry{connections_model->append_row()};
+
+  bool result = visual_shader_model->set_data(
+      FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kConnectionsFieldNumber),
+                                  FieldPath::RepeatedAt(row_entry),
+                                  FieldPath::FieldNumber(VisualShader::VisualShaderConnection::kIdFieldNumber)),
+      c_id);
+  CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to set connection id");
+
+  result = visual_shader_model->set_data(
+      FieldPath::Of<VisualShader>(
+          FieldPath::FieldNumber(VisualShader::kConnectionsFieldNumber), FieldPath::RepeatedAt(row_entry),
+          FieldPath::FieldNumber(VisualShader::VisualShaderConnection::kFromNodeIdFieldNumber)),
+      from_node_id);
+  CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to set connection from node id");
+
+  result = visual_shader_model->set_data(
+      FieldPath::Of<VisualShader>(
+          FieldPath::FieldNumber(VisualShader::kConnectionsFieldNumber), FieldPath::RepeatedAt(row_entry),
+          FieldPath::FieldNumber(VisualShader::VisualShaderConnection::kFromPortIndexFieldNumber)),
+      from_port_index);
+  CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to set connection from port index");
+
+  result = visual_shader_model->set_data(
+      FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kConnectionsFieldNumber),
+                                  FieldPath::RepeatedAt(row_entry),
+                                  FieldPath::FieldNumber(VisualShader::VisualShaderConnection::kToNodeIdFieldNumber)),
+      to_node_id);
+  CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to set connection to node id");
+
+  result = visual_shader_model->set_data(
+      FieldPath::Of<VisualShader>(
+          FieldPath::FieldNumber(VisualShader::kConnectionsFieldNumber), FieldPath::RepeatedAt(row_entry),
+          FieldPath::FieldNumber(VisualShader::VisualShaderConnection::kToPortIndexFieldNumber)),
+      to_port_index);
+  CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to set connection to port index");
+
+  return true;
+}
+                            
+bool VisualShaderGraphicsScene::add_connection_to_scene(const int& from_node_id, const int& from_port_index, const int& to_node_id,
+                              const int& to_port_index) {
   QList<QGraphicsView*> views{this->views()};
   CHECK_CONDITION_TRUE_NON_VOID(views.isEmpty(), false, "No views available");
 
@@ -1217,6 +1275,12 @@ bool VisualShaderGraphicsScene::add_connection(const int& from_node_id, const in
   VisualShaderOutputPortGraphicsObject* from_o_port{from_n_o->get_output_port_graphics_object(from_port_index)};
   CHECK_PARAM_NULLPTR_NON_VOID(from_o_port, false, "Failed to get from output port graphics object");
 
+  VisualShaderNodeGraphicsObject* to_n_o{this->get_node_graphics_object(to_node_id)};
+  CHECK_PARAM_NULLPTR_NON_VOID(to_n_o, false, "Failed to get to node graphics object");
+
+  VisualShaderInputPortGraphicsObject* to_i_port{to_n_o->get_input_port_graphics_object(to_port_index)};
+  CHECK_PARAM_NULLPTR_NON_VOID(to_i_port, false, "Failed to get to input port graphics object");
+
   VisualShaderGraphicsView* view{dynamic_cast<VisualShaderGraphicsView*>(views.first())};
 
   if (from_o_port->get_global_coordinate().x() < view->get_x() ||
@@ -1224,123 +1288,104 @@ bool VisualShaderGraphicsScene::add_connection(const int& from_node_id, const in
     WARN_PRINT("Start of connection is out of view bounds");
   }
 
-  if (!this->temporary_connection_graphics_object) {
-    int c_id{get_new_connection_id(visual_shader_model, connections_model)};
-    this->temporary_connection_graphics_object = new VisualShaderConnectionGraphicsObject(
-        c_id, from_node_id, from_port_index, from_o_port->get_global_coordinate());
-    from_o_port->connect(this->temporary_connection_graphics_object);
-    addItem(this->temporary_connection_graphics_object);
-    return true;
-  }
-
-  if (to_node_id != -1 && to_port_index != -1) {
-    // Set the end of the connection
-    VisualShaderNodeGraphicsObject* to_n_o{this->get_node_graphics_object(to_node_id)};
-    CHECK_PARAM_NULLPTR_NON_VOID(to_n_o, false, "Failed to get to node graphics object");
-
-    VisualShaderInputPortGraphicsObject* to_i_port{to_n_o->get_input_port_graphics_object(to_port_index)};
-    CHECK_PARAM_NULLPTR_NON_VOID(to_i_port, false, "Failed to get to input port graphics object");
-
-    if (to_i_port->get_global_coordinate().y() < view->get_y() ||
+  if (to_i_port->get_global_coordinate().y() < view->get_y() ||
         to_i_port->get_global_coordinate().y() > view->get_y() + view->get_height()) {
-      WARN_PRINT("End of connection is out of view bounds");
-    }
-
-    int c_id{get_new_connection_id(visual_shader_model, connections_model)};
-
-    int row_entry{connections_model->append_row()};
-
-    bool result = visual_shader_model->set_data(
-        FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kConnectionsFieldNumber),
-                                    FieldPath::RepeatedAt(row_entry),
-                                    FieldPath::FieldNumber(VisualShader::VisualShaderConnection::kIdFieldNumber)),
-        c_id);
-    CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to set connection id");
-
-    result = visual_shader_model->set_data(
-        FieldPath::Of<VisualShader>(
-            FieldPath::FieldNumber(VisualShader::kConnectionsFieldNumber), FieldPath::RepeatedAt(row_entry),
-            FieldPath::FieldNumber(VisualShader::VisualShaderConnection::kFromNodeIdFieldNumber)),
-        from_node_id);
-    CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to set connection from node id");
-
-    result = visual_shader_model->set_data(
-        FieldPath::Of<VisualShader>(
-            FieldPath::FieldNumber(VisualShader::kConnectionsFieldNumber), FieldPath::RepeatedAt(row_entry),
-            FieldPath::FieldNumber(VisualShader::VisualShaderConnection::kFromPortIndexFieldNumber)),
-        from_port_index);
-    CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to set connection from port index");
-
-    result = visual_shader_model->set_data(
-        FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kConnectionsFieldNumber),
-                                    FieldPath::RepeatedAt(row_entry),
-                                    FieldPath::FieldNumber(VisualShader::VisualShaderConnection::kToNodeIdFieldNumber)),
-        to_node_id);
-    CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to set connection to node id");
-
-    result = visual_shader_model->set_data(
-        FieldPath::Of<VisualShader>(
-            FieldPath::FieldNumber(VisualShader::kConnectionsFieldNumber), FieldPath::RepeatedAt(row_entry),
-            FieldPath::FieldNumber(VisualShader::VisualShaderConnection::kToPortIndexFieldNumber)),
-        to_port_index);
-    CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to set connection to port index");
-
-    this->temporary_connection_graphics_object->set_end_coordinate(to_i_port->get_global_coordinate());
-    to_i_port->connect(this->temporary_connection_graphics_object);
-    this->temporary_connection_graphics_object->set_to_node_id(to_node_id);
-    this->temporary_connection_graphics_object->set_to_port_index(to_port_index);
-    this->temporary_connection_graphics_object = nullptr;  // Make sure to reset the temporary connection object
-
-    on_update_shader_previewer_widgets_requested();
-
-    return true;
+    WARN_PRINT("End of connection is out of view bounds");
   }
 
-  return false;
+  this->temporary_connection_graphics_object->set_end_coordinate(to_i_port->get_global_coordinate());
+  to_i_port->connect(this->temporary_connection_graphics_object);
+  this->temporary_connection_graphics_object->set_to_node_id(to_node_id);
+  this->temporary_connection_graphics_object->set_to_port_index(to_port_index);
+  this->temporary_connection_graphics_object = nullptr;  // Make sure to reset the temporary connection object
+
+  on_update_shader_previewer_widgets_requested();
+
+  return true;
 }
 
-bool VisualShaderGraphicsScene::delete_connection(const int& c_id, const int& from_node_id, const int& from_port_index,
-                                                  const int& to_node_id, const int& to_port_index) {
+bool VisualShaderGraphicsScene::add_connection(const int& c_id, const int& from_node_id, const int& from_port_index,
+                                               const int& to_node_id, const int& to_port_index) {
+  return add_connection_to_model(c_id, from_node_id, from_port_index, to_node_id, to_port_index) &&
+         add_connection_to_scene(from_node_id, from_port_index, to_node_id, to_port_index);
+}
+
+bool VisualShaderGraphicsScene::delete_connection_from_model(const int& c_id) {
+  int row_entry{find_connection_entry(visual_shader_model, connections_model, c_id)};
+  VALIDATE_INDEX_NON_VOID(row_entry, connections_model->rowCount(), false, "Connection entry not found");
+
+  bool result{connections_model->remove_row(row_entry)};
+  CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to remove connection entry");
+
+  return true;
+}
+
+bool VisualShaderGraphicsScene::delete_connection_from_scene(const int& from_node_id, const int& from_port_index,
+                                  const int& to_node_id, const int& to_port_index) {
   VisualShaderNodeGraphicsObject* from_n_o{this->get_node_graphics_object(from_node_id)};
   CHECK_PARAM_NULLPTR_NON_VOID(from_n_o, false, "Failed to get from node graphics object");
 
   VisualShaderOutputPortGraphicsObject* from_o_port{from_n_o->get_output_port_graphics_object(from_port_index)};
   CHECK_PARAM_NULLPTR_NON_VOID(from_o_port, false, "Failed to get from output port graphics object");
 
-  if (this->temporary_connection_graphics_object) {
-    from_o_port->detach_connection(this->temporary_connection_graphics_object);
-    remove_item(this->temporary_connection_graphics_object);
-    this->temporary_connection_graphics_object = nullptr;
-    return true;
+  VisualShaderNodeGraphicsObject* to_n_o{this->get_node_graphics_object(to_node_id)};
+  CHECK_PARAM_NULLPTR_NON_VOID(to_n_o, false, "Failed to get to node graphics object");
+
+  VisualShaderInputPortGraphicsObject* to_i_port{to_n_o->get_input_port_graphics_object(to_port_index)};
+  CHECK_PARAM_NULLPTR_NON_VOID(to_i_port, false, "Failed to get to input port graphics object");
+
+  VisualShaderConnectionGraphicsObject* c_o{from_o_port->get_connection_graphics_object(to_node_id, to_port_index)};
+  CHECK_PARAM_NULLPTR_NON_VOID(c_o, false, "Failed to get connection graphics object");
+
+  to_i_port->detach_connection();
+  from_o_port->detach_connection(c_o);
+  remove_item(c_o);
+
+  on_update_shader_previewer_widgets_requested();
+
+  return true;
+}
+
+bool VisualShaderGraphicsScene::delete_connection(const int& c_id, const int& from_node_id, const int& from_port_index,
+                                                  const int& to_node_id, const int& to_port_index) {
+  return delete_connection_from_model(c_id) &&
+         delete_connection_from_scene(from_node_id, from_port_index, to_node_id, to_port_index);
+}
+
+bool VisualShaderGraphicsScene::add_temporary_connection(const int& from_node_id, const int& from_port_index) {
+  if  (this->temporary_connection_graphics_object != nullptr)  {
+    return false;
   }
 
-  // If we have a complete connection, then we can disconnect the nodes
-  if (to_node_id != -1 && to_port_index != -1) {
-    VisualShaderConnectionGraphicsObject* c_o{from_o_port->get_connection_graphics_object(to_node_id, to_port_index)};
-    CHECK_PARAM_NULLPTR_NON_VOID(c_o, false, "Failed to get connection graphics object");
+  VisualShaderNodeGraphicsObject* from_n_o{this->get_node_graphics_object(from_node_id)};
+  CHECK_PARAM_NULLPTR_NON_VOID(from_n_o, false, "Failed to get from node graphics object");
 
-    VisualShaderNodeGraphicsObject* to_n_o{this->get_node_graphics_object(to_node_id)};
-    CHECK_PARAM_NULLPTR_NON_VOID(to_n_o, false, "Failed to get to node graphics object");
+  VisualShaderOutputPortGraphicsObject* from_o_port{from_n_o->get_output_port_graphics_object(from_port_index)};
+  CHECK_PARAM_NULLPTR_NON_VOID(from_o_port, false, "Failed to get from output port graphics object");
 
-    VisualShaderInputPortGraphicsObject* to_i_port{to_n_o->get_input_port_graphics_object(to_port_index)};
-    CHECK_PARAM_NULLPTR_NON_VOID(to_i_port, false, "Failed to get to input port graphics object");
-
-    int row_entry{find_connection_entry(visual_shader_model, connections_model, c_id)};
-    VALIDATE_INDEX_NON_VOID(row_entry, connections_model->rowCount(), false, "Connection entry not found");
-
-    bool result{connections_model->remove_row(row_entry)};
-    CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to remove connection entry");
-
-    to_i_port->detach_connection();
-    from_o_port->detach_connection(c_o);
-    remove_item(c_o);
-
-    on_update_shader_previewer_widgets_requested();
-
-    return true;
-  }
+  int c_id{get_new_connection_id(visual_shader_model, connections_model)};
+  this->temporary_connection_graphics_object = new VisualShaderConnectionGraphicsObject(
+      c_id, from_node_id, from_port_index, from_o_port->get_global_coordinate());
+  from_o_port->connect(this->temporary_connection_graphics_object);
+  addItem(this->temporary_connection_graphics_object);
 
   return false;
+}
+
+bool VisualShaderGraphicsScene::delete_temporary_connection(const int& from_node_id, const int& from_port_index) {
+  CHECK_PARAM_NULLPTR_NON_VOID(this->temporary_connection_graphics_object, false, "Temporary connection object is null");
+
+  VisualShaderNodeGraphicsObject* from_n_o{this->get_node_graphics_object(from_node_id)};
+  CHECK_PARAM_NULLPTR_NON_VOID(from_n_o, false, "Failed to get from node graphics object");
+
+  VisualShaderOutputPortGraphicsObject* from_o_port{from_n_o->get_output_port_graphics_object(from_port_index)};
+  CHECK_PARAM_NULLPTR_NON_VOID(from_o_port, false, "Failed to get from output port graphics object");
+
+  from_o_port->detach_connection(this->temporary_connection_graphics_object);
+  remove_item(this->temporary_connection_graphics_object);
+  this->temporary_connection_graphics_object = nullptr;
+
+  return true;
 }
 
 VisualShaderNodeGraphicsObject* VisualShaderGraphicsScene::get_node_graphics_object(const int& n_id) const {
@@ -1407,7 +1452,7 @@ void VisualShaderGraphicsScene::on_port_dragged(QGraphicsObject* port, const QPo
   if (o_port->is_connected() && temporary_connection_graphics_object) {
     c_o = temporary_connection_graphics_object;
   } else if (!temporary_connection_graphics_object) {
-    bool result{this->add_connection(o_port->get_node_id(), o_port->get_port_index())};
+    bool result{this->add_temporary_connection(o_port->get_node_id(), o_port->get_port_index())};
     CHECK_CONDITION_TRUE(!result, "Failed to add connection");
     c_o = temporary_connection_graphics_object;
   } else {
@@ -1420,6 +1465,8 @@ void VisualShaderGraphicsScene::on_port_dragged(QGraphicsObject* port, const QPo
 void VisualShaderGraphicsScene::on_port_dropped(QGraphicsObject* port, const QPointF& coordinate) {
   VisualShaderConnectionGraphicsObject* c_o{temporary_connection_graphics_object};
   SILENT_CHECK_PARAM_NULLPTR(c_o);
+
+  int c_id{c_o->get_id()};
 
   // Find all items under the coordinate
   QList<QGraphicsItem*> items_at_coordinate{this->items(coordinate)};
@@ -1439,8 +1486,7 @@ void VisualShaderGraphicsScene::on_port_dropped(QGraphicsObject* port, const QPo
     SILENT_CHECK_PARAM_NULLPTR(i_port);
 
     if (!in_p_o) {
-      int c_id{c_o->get_id()};
-      bool result{this->delete_connection(c_id, c_o->get_from_node_id(), c_o->get_from_port_index())};
+      bool result{this->delete_temporary_connection(c_o->get_from_node_id(), c_o->get_from_port_index())};
       if (!result) {
         ERROR_PRINT("Failed to delete connection");
       }
@@ -1448,12 +1494,11 @@ void VisualShaderGraphicsScene::on_port_dropped(QGraphicsObject* port, const QPo
       return;  // Return because we dragging an input port and dropped on nothing
     }
 
-    bool result{add_connection(c_o->get_from_node_id(), c_o->get_from_port_index(), in_p_o->get_node_id(),
+    bool result{add_connection(c_id, c_o->get_from_node_id(), c_o->get_from_port_index(), in_p_o->get_node_id(),
                                in_p_o->get_port_index())};
 
     if (!result) {
-      int c_id{c_o->get_id()};
-      bool result{this->delete_connection(c_id, c_o->get_from_node_id(), c_o->get_from_port_index())};
+      bool result{this->delete_temporary_connection(c_o->get_from_node_id(), c_o->get_from_port_index())};
 
       if (!result) {
         ERROR_PRINT("Failed to delete connection");
@@ -1466,8 +1511,7 @@ void VisualShaderGraphicsScene::on_port_dropped(QGraphicsObject* port, const QPo
   }
 
   if (!in_p_o) {
-    int c_id{c_o->get_id()};
-    bool result{this->delete_connection(c_id, c_o->get_from_node_id(), c_o->get_from_port_index())};
+    bool result{this->delete_temporary_connection(c_o->get_from_node_id(), c_o->get_from_port_index())};
 
     if (!result) {
       ERROR_PRINT("Failed to delete connection");
@@ -1477,11 +1521,10 @@ void VisualShaderGraphicsScene::on_port_dropped(QGraphicsObject* port, const QPo
   }
 
   bool result{
-      add_connection(o_port->get_node_id(), o_port->get_port_index(), in_p_o->get_node_id(), in_p_o->get_port_index())};
+      add_connection(c_id, o_port->get_node_id(), o_port->get_port_index(), in_p_o->get_node_id(), in_p_o->get_port_index())};
 
   if (!result) {
-    int c_id{c_o->get_id()};
-    bool result{this->delete_connection(c_id, c_o->get_from_node_id(), c_o->get_from_port_index())};
+    bool result{this->delete_temporary_connection(c_o->get_from_node_id(), c_o->get_from_port_index())};
 
     if (!result) {
       ERROR_PRINT("Failed to delete connection");

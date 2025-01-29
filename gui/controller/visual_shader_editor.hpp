@@ -359,9 +359,19 @@ class VisualShaderGraphicsScene : public QGraphicsScene {
 
   ~VisualShaderGraphicsScene() override = default;
 
-  bool add_node(const int& n_id, const std::shared_ptr<IVisualShaderProtoNode>& proto_node, const QPointF& coordinate);
+  bool add_node_to_model(const int& n_id, const std::shared_ptr<IVisualShaderProtoNode>& proto_node,
+                         const QPointF& coordinate);
+  bool add_node_to_scene(const int& n_id, const std::shared_ptr<IVisualShaderProtoNode>& proto_node,
+                         const QPointF& coordinate);
+  bool add_node(const std::shared_ptr<IVisualShaderProtoNode>& proto_node, const QPointF& coordinate, const int& n_id = -1);
 
+  bool delete_node_from_model(const int& n_id);
+  bool delete_node_from_scene(const int& n_id, const int& in_port_count, const int& out_port_count);
   bool delete_node(const int& n_id, const int& in_port_count, const int& out_port_count);
+
+  bool update_node(const int& n_id) { return false;  }
+  bool update_node_in_model(const int& n_id) { return false; }
+  bool update_node_in_scene(const int& n_id) { return false; }
 
   void set_model(ProtoModel* visual_shader_model) { this->visual_shader_model = visual_shader_model; }
   void set_nodes_model(ProtoModel* nodes_model) { this->nodes_model = nodes_model; }
@@ -370,27 +380,25 @@ class VisualShaderGraphicsScene : public QGraphicsScene {
   VisualShaderEditor* get_editor() const { return editor; }
   void set_editor(VisualShaderEditor* editor) const { this->editor = editor; }
 
-  /**
-     * @brief 
-     * 
-     * @note This function sets the @c temporary_connection_graphics_object if 
-     *       we have a valid @c from_node_id and @c from_port_index only. Then it 
-     *       resets it again if we have a valid @c to_node_id and @c to_port_index and 
-     *       this is important because inside the drag and drop event, we need to know
-     *       if we have a valid temporary connection or not.
-     * 
-     * @param from_node_id 
-     * @param from_port_index 
-     * @param to_node_id 
-     * @param to_port_index 
-     * @return true 
-     * @return false 
-     */
-  bool add_connection(const int& from_node_id, const int& from_port_index, const int& to_node_id = -1,
-                      const int& to_port_index = -1);
+  bool add_connection_to_model(const int& c_id, const int& from_node_id, const int& from_port_index, const int& to_node_id,
+                               const int& to_port_index);
+  bool add_connection_to_scene(const int& from_node_id, const int& from_port_index, const int& to_node_id,
+                               const int& to_port_index);
+  bool add_connection(const int& c_id, const int& from_node_id, const int& from_port_index, const int& to_node_id,
+                      const int& to_port_index);
 
+  bool delete_connection_from_model(const int& c_id);
+  bool delete_connection_from_scene(const int& from_node_id, const int& from_port_index,
+                                    const int& to_node_id, const int& to_port_index);
   bool delete_connection(const int& c_id, const int& from_node_id, const int& from_port_index,
-                         const int& to_node_id = -1, const int& to_port_index = -1);
+                         const int& to_node_id, const int& to_port_index);
+
+  bool add_temporary_connection(const int& from_node_id, const int& from_port_index);
+  bool delete_temporary_connection(const int& from_node_id, const int& from_port_index);
+
+  bool update_connection(const int& c_id) { return false; }
+  bool update_connection_in_model(const int& c_id) { return false; }
+  bool update_connection_in_scene(const int& c_id) { return false; }
 
   VisualShaderNodeGraphicsObject* get_node_graphics_object(const int& n_id) const;
 
