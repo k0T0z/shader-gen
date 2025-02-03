@@ -57,10 +57,10 @@ int main(int argc, char** argv) {
   VisualShader visual_shader;
 
   MessageModel* root_model = new MessageModel(&visual_shader);
-  // bool load_result = dynamic_cast<ProtoModel*>(root_model)->loadFromJson("model.json");
-  // if (!load_result) {
-  // 	ERROR_PRINT("Failed to load model from JSON");
-  // }
+  bool load_result = dynamic_cast<ProtoModel*>(root_model)->loadFromJson("model.json");
+  if (!load_result) {
+  	ERROR_PRINT("Failed to load model from JSON");
+  }
   root_model->build_sub_models();
 
   VisualShaderEditor* w = new VisualShaderEditor(root_model);
