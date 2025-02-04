@@ -1,0 +1,57 @@
+name: Windows GCC Build and Release
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{github.actor}}-${{github.head_ref || github.run_number}}-${{github.ref}}-windows-gcc
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: 'master-qt6'
+          submodules: recursive
+  
+      - name: Setup MSYS2
+        uses: msys2/setup-msys2@v2
+        with:
+          update: true
+          install: >-
+            mingw-w64-x86_64-gcc
+            mingw-w64-x86_64-qt6-base
+            mingw-w64-x86_64-protobuf
+            mingw-w64-x86_64-make
+            mingw-w64-x86_64-cmake
+  
+      - name: Configure CMake
+        shell: msys2 {0}
+        run: cmake -B build -G "Unix Makefiles" -DCMAKE_MAKE_PROGRAM=mingw32-make
+  
+      - name: Build project
+        shell: msys2 {0}
+        run: |
+          cmake --build build --config Debug --parallel $(nproc)
+          echo "Dependencies for shader-gen.exe"
+          ldd build/shader-gen
+  
+          echo "Dependencies for shader-gen-tests.exe"
+          ldd build/shader-gen-tests
+
+      - name: Package executable
+        shell: msys2 {0}
+        run: |
+          cpack --config build/CPackConfig.cmake -G NSIS
+        working-directory: build
+        
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ShaderGen-Package
+          path: build/*.exe
+        

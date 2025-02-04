@@ -315,3 +315,65 @@ set_tests_properties(${SHADER_GEN_TESTS_EXECUTABLE_NAME} PROPERTIES
     TIMEOUT 30
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 )
+
+#####################
+# Packaging (Windows)
+#####################
+if(WIN32)
+    # Deploy Qt dependencies using windeployqt and copy Protobuf DLL
+    find_program(WINDEPLOYQT_EXECUTABLE windeployqt)
+    if(NOT WINDEPLOYQT_EXECUTABLE)
+        message(FATAL_ERROR "windeployqt not found. Ensure Qt is installed and in PATH.")
+    endif()
+
+    # Copy Protobuf DLL to target directory
+    add_custom_command(TARGET ${SHADER_GEN_EXECUTABLE_NAME} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy
+            $<TARGET_FILE:protobuf::libprotobuf>
+            $<TARGET_FILE_DIR:${SHADER_GEN_EXECUTABLE_NAME}>
+        COMMENT "Copying Protobuf DLL..."
+    )
+
+    # Deploy Qt runtime dependencies
+    add_custom_command(TARGET ${SHADER_GEN_EXECUTABLE_NAME} POST_BUILD
+        COMMAND ${WINDEPLOYQT_EXECUTABLE}
+            --verbose 1
+            --no-compiler-runtime
+            --no-system-d3d-compiler
+            --no-opengl-sw
+            --dir "$<TARGET_FILE_DIR:${SHADER_GEN_EXECUTABLE_NAME}>/qt-deploy"
+            "$<TARGET_FILE:${SHADER_GEN_EXECUTABLE_NAME}>"
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+            "$<TARGET_FILE_DIR:${SHADER_GEN_EXECUTABLE_NAME}>/qt-deploy"
+            "$<TARGET_FILE_DIR:${SHADER_GEN_EXECUTABLE_NAME}>"
+        COMMAND ${CMAKE_COMMAND} -E remove_directory
+            "$<TARGET_FILE_DIR:${SHADER_GEN_EXECUTABLE_NAME}>/qt-deploy"
+        COMMENT "Deploying Qt runtime dependencies..."
+    )
+
+    # Install target for creating a portable package
+    install(TARGETS ${SHADER_GEN_EXECUTABLE_NAME}
+        RUNTIME DESTINATION ${SHADER_GEN_EXECUTABLE_NAME}
+    )
+
+    install(DIRECTORY 
+        "$<TARGET_FILE_DIR:${SHADER_GEN_EXECUTABLE_NAME}>/"
+        DESTINATION ${SHADER_GEN_EXECUTABLE_NAME}
+        FILES_MATCHING
+        PATTERN "*.dll"
+        PATTERN "*.pdb"
+        PATTERN "qt*"
+    )
+
+    # Create NSIS installer package
+    set(CPACK_PACKAGE_NAME ${SHADER_GEN_EXECUTABLE_NAME})
+    set(CPACK_PACKAGE_VERSION ${SHADER_GEN_PROJECT_VERSION})
+    set(CPACK_PACKAGE_INSTALL_DIRECTORY ${ENIGMA_ORG_NAME})
+    set(CPACK_NSIS_EXECUTABLES_DIRECTORY .)
+    set(CPACK_NSIS_MUI_ICON "${CMAKE_CURRENT_SOURCE_DIR}/assets/icon.ico")
+    set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/LICENSE")
+    set(CPACK_RESOURCE_FILE_README "${CMAKE_CURRENT_SOURCE_DIR}/README.md")
+    set(CPACK_NSIS_DISPLAY_NAME "${SHADER_GEN_EXECUTABLE_NAME}")
+
+    include(CPack)
+endif()
