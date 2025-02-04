@@ -50,7 +50,6 @@ jobs:
         shell: msys2 {0}
         run: |
           cpack --config build/CPackConfig.cmake -G NSIS
-        working-directory: build
         
       - name: Upload artifact
         uses: actions/upload-artifact@v4
