@@ -1,6 +1,9 @@
 name: Windows GCC Build and Release
 
 on:
+  push:
+    branches:
+      - master-qt6
   workflow_dispatch:
 
 concurrency:
