@@ -173,8 +173,11 @@ void VisualShaderEditor::init() {
       FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kConnectionsFieldNumber))));
   scene->set_connections_model(connections_model);
 
+  scene->blockSignals(true);  // Temporarily block updates
   add_output_node(); // Add the output node
   load_graph();      // Load the graph
+  scene->blockSignals(false);
+  scene->on_scene_update_requested();
 
   // Create the menu bar layer on top of the scene layer.
   top_layer = new QWidget(view);
@@ -879,6 +882,8 @@ VisualShaderGraphicsScene::VisualShaderGraphicsScene(QObject* parent)
 }
 
 bool VisualShaderGraphicsScene::add_node_to_model(const int& n_id, const std::shared_ptr<IVisualShaderProtoNode>& proto_node, const QPointF& coordinate) {
+  CHECK_CONDITION_TRUE_NON_VOID(find_node_entry(visual_shader_model, connections_model, n_id) != -1, false, "Node already exists");
+
   int row_entry{nodes_model->append_row()};
 
   bool result = visual_shader_model->set_data(
@@ -1097,9 +1102,6 @@ bool VisualShaderGraphicsScene::add_node_to_scene(const int& n_id, const std::sh
     QObject::connect(embed_widget, &VisualShaderNodeEmbedWidget::shader_preview_update_requested, this,
                     &VisualShaderGraphicsScene::on_update_shader_previewer_widgets_requested);
 
-    QObject::connect(embed_widget, &VisualShaderNodeEmbedWidget::node_update_requested, n_o,
-                    &VisualShaderNodeGraphicsObject::on_node_update_requested);
-
     // Send the shader previewer widget
     embed_widget->set_shader_previewer_widget(n_o->get_shader_previewer_widget());
 
@@ -1279,8 +1281,6 @@ void VisualShaderGraphicsScene::on_update_shader_previewer_widgets_requested() {
   }
 }
 
-void VisualShaderGraphicsScene::on_scene_update_requested() { update(); }
-
 void VisualShaderGraphicsScene::on_in_port_remove_requested(VisualShaderInputPortGraphicsObject* in_port) {
   if (in_port->is_connected()) {
     VisualShaderConnectionGraphicsObject* c_o{in_port->get_connection_graphics_object()};
@@ -1367,6 +1367,8 @@ int VisualShaderGraphicsScene::find_connection_entry(ProtoModel* visual_shader_m
 
 bool VisualShaderGraphicsScene::add_connection_to_model(const int& c_id, const int& from_node_id, const int& from_port_index, const int& to_node_id,
                               const int& to_port_index) {
+  CHECK_CONDITION_TRUE_NON_VOID(find_connection_entry(visual_shader_model, connections_model, c_id) != -1, false, "Connection already exists");
+
   int row_entry{connections_model->append_row()};
 
   bool result = visual_shader_model->set_data(
@@ -1412,17 +1414,19 @@ bool VisualShaderGraphicsScene::add_connection_to_scene(const int& from_node_id,
   CHECK_PARAM_NULLPTR_NON_VOID(this->temporary_connection_graphics_object, false, "Temporary connection object is null");
 
   // Create the connection and set its start
-  VisualShaderNodeGraphicsObject* from_n_o{this->get_node_graphics_object(from_node_id)};
-  CHECK_PARAM_NULLPTR_NON_VOID(from_n_o, false, "Failed to get from node graphics object");
-
-  VisualShaderOutputPortGraphicsObject* from_o_port{from_n_o->get_output_port_graphics_object(from_port_index)};
-  CHECK_PARAM_NULLPTR_NON_VOID(from_o_port, false, "Failed to get from output port graphics object");
-
   VisualShaderNodeGraphicsObject* to_n_o{this->get_node_graphics_object(to_node_id)};
   CHECK_PARAM_NULLPTR_NON_VOID(to_n_o, false, "Failed to get to node graphics object");
 
   VisualShaderInputPortGraphicsObject* to_i_port{to_n_o->get_input_port_graphics_object(to_port_index)};
   CHECK_PARAM_NULLPTR_NON_VOID(to_i_port, false, "Failed to get to input port graphics object");
+
+  CHECK_CONDITION_TRUE_NON_VOID(to_i_port->is_connected(), false, "Connection is already connected");
+
+  VisualShaderNodeGraphicsObject* from_n_o{this->get_node_graphics_object(from_node_id)};
+  CHECK_PARAM_NULLPTR_NON_VOID(from_n_o, false, "Failed to get from node graphics object");
+
+  VisualShaderOutputPortGraphicsObject* from_o_port{from_n_o->get_output_port_graphics_object(from_port_index)};
+  CHECK_PARAM_NULLPTR_NON_VOID(from_o_port, false, "Failed to get from output port graphics object");
 
   CHECK_CONDITION_TRUE_NON_VOID(!check_if_connection_out_of_bounds(from_o_port, to_i_port), false, "Connection is out of bounds");
 
@@ -1430,7 +1434,7 @@ bool VisualShaderGraphicsScene::add_connection_to_scene(const int& from_node_id,
   to_i_port->connect(this->temporary_connection_graphics_object);
   this->temporary_connection_graphics_object->set_to_node_id(to_node_id);
   this->temporary_connection_graphics_object->set_to_port_index(to_port_index);
-  
+
   this->temporary_connection_graphics_object->update_layout();
 
   this->temporary_connection_graphics_object = nullptr;  // Make sure to reset the temporary connection object
@@ -1443,17 +1447,19 @@ bool VisualShaderGraphicsScene::add_connection_to_scene(const int& from_node_id,
 bool VisualShaderGraphicsScene::add_connection_to_scene(const int& c_id, const int& from_node_id, const int& from_port_index, const int& to_node_id,
                                const int& to_port_index) {
   // Create the connection and set its start
-  VisualShaderNodeGraphicsObject* from_n_o{this->get_node_graphics_object(from_node_id)};
-  CHECK_PARAM_NULLPTR_NON_VOID(from_n_o, false, "Failed to get from node graphics object");
-
-  VisualShaderOutputPortGraphicsObject* from_o_port{from_n_o->get_output_port_graphics_object(from_port_index)};
-  CHECK_PARAM_NULLPTR_NON_VOID(from_o_port, false, "Failed to get from output port graphics object");
-
   VisualShaderNodeGraphicsObject* to_n_o{this->get_node_graphics_object(to_node_id)};
   CHECK_PARAM_NULLPTR_NON_VOID(to_n_o, false, "Failed to get to node graphics object");
 
   VisualShaderInputPortGraphicsObject* to_i_port{to_n_o->get_input_port_graphics_object(to_port_index)};
   CHECK_PARAM_NULLPTR_NON_VOID(to_i_port, false, "Failed to get to input port graphics object");
+
+  CHECK_CONDITION_TRUE_NON_VOID(to_i_port->is_connected(), false, "Connection is already connected");
+
+  VisualShaderNodeGraphicsObject* from_n_o{this->get_node_graphics_object(from_node_id)};
+  CHECK_PARAM_NULLPTR_NON_VOID(from_n_o, false, "Failed to get from node graphics object");
+
+  VisualShaderOutputPortGraphicsObject* from_o_port{from_n_o->get_output_port_graphics_object(from_port_index)};
+  CHECK_PARAM_NULLPTR_NON_VOID(from_o_port, false, "Failed to get from output port graphics object");
 
   CHECK_CONDITION_TRUE_NON_VOID(!check_if_connection_out_of_bounds(from_o_port, to_i_port), false, "Connection is out of bounds");
 
@@ -1493,17 +1499,21 @@ bool VisualShaderGraphicsScene::delete_connection_from_model(const int& c_id) {
 
 bool VisualShaderGraphicsScene::delete_connection_from_scene(const int& from_node_id, const int& from_port_index,
                                   const int& to_node_id, const int& to_port_index) {
+  VisualShaderNodeGraphicsObject* to_n_o{this->get_node_graphics_object(to_node_id)};
+  CHECK_PARAM_NULLPTR_NON_VOID(to_n_o, false, "Failed to get to node graphics object");
+
+  VisualShaderInputPortGraphicsObject* to_i_port{to_n_o->get_input_port_graphics_object(to_port_index)};
+  CHECK_PARAM_NULLPTR_NON_VOID(to_i_port, false, "Failed to get to input port graphics object");
+
+  CHECK_CONDITION_TRUE_NON_VOID(!to_i_port->is_connected(), false, "Output port is not connected");
+
   VisualShaderNodeGraphicsObject* from_n_o{this->get_node_graphics_object(from_node_id)};
   CHECK_PARAM_NULLPTR_NON_VOID(from_n_o, false, "Failed to get from node graphics object");
 
   VisualShaderOutputPortGraphicsObject* from_o_port{from_n_o->get_output_port_graphics_object(from_port_index)};
   CHECK_PARAM_NULLPTR_NON_VOID(from_o_port, false, "Failed to get from output port graphics object");
 
-  VisualShaderNodeGraphicsObject* to_n_o{this->get_node_graphics_object(to_node_id)};
-  CHECK_PARAM_NULLPTR_NON_VOID(to_n_o, false, "Failed to get to node graphics object");
-
-  VisualShaderInputPortGraphicsObject* to_i_port{to_n_o->get_input_port_graphics_object(to_port_index)};
-  CHECK_PARAM_NULLPTR_NON_VOID(to_i_port, false, "Failed to get to input port graphics object");
+  CHECK_CONDITION_TRUE_NON_VOID(!from_o_port->is_connected(), false, "Output port is not connected");
 
   VisualShaderConnectionGraphicsObject* c_o{from_o_port->get_connection_graphics_object(to_node_id, to_port_index)};
   CHECK_PARAM_NULLPTR_NON_VOID(c_o, false, "Failed to get connection graphics object");
@@ -1553,6 +1563,8 @@ bool VisualShaderGraphicsScene::delete_temporary_connection(const int& from_node
   VisualShaderOutputPortGraphicsObject* from_o_port{from_n_o->get_output_port_graphics_object(from_port_index)};
   CHECK_PARAM_NULLPTR_NON_VOID(from_o_port, false, "Failed to get from output port graphics object");
 
+  CHECK_CONDITION_TRUE_NON_VOID(!from_o_port->is_connected(), false, "Output port is not connected");
+
   from_o_port->detach_connection(this->temporary_connection_graphics_object);
   remove_item(this->temporary_connection_graphics_object);
   this->temporary_connection_graphics_object = nullptr;
@@ -1570,6 +1582,8 @@ VisualShaderNodeGraphicsObject* VisualShaderGraphicsScene::get_node_graphics_obj
 
   return n_o;
 }
+
+void VisualShaderGraphicsScene::on_scene_update_requested() { update(); }
 
 void VisualShaderGraphicsScene::on_node_deleted(const int& n_id, const int& in_port_count, const int& out_port_count) {
   CHECK_CONDITION_TRUE(n_id == 0, "Cannot delete the output node");
@@ -2415,34 +2429,8 @@ void VisualShaderNodeGraphicsObject::update_layout() {
       embed_widget->setGeometry(this->embed_widget_coordinate.x(), this->embed_widget_coordinate.y(), embed_widget->width(), embed_widget->height());
     }
   }
-}
 
-void VisualShaderNodeGraphicsObject::on_node_update_requested() {
-  // Here if the number of ports changed, for example, changing the operation type in a decompose node,
-  // we need to remove any extra ports that are not needed anymore. Don't forget to remove the connections
-  // as well.
-  if ((int)in_port_graphics_objects.size() > in_port_count) {
-    int p_index{in_port_count};
-    int size{(int)in_port_graphics_objects.size() - p_index};
-    for (int i{0}; i < size; ++i) {
-      Q_EMIT in_port_remove_requested(in_port_graphics_objects.at(p_index));
-      in_port_graphics_objects.erase(p_index);
-      p_index++;
-    }
-  }
-
-  if ((int)out_port_graphics_objects.size() > out_port_count) {
-    int p_index{out_port_count};
-    int size{(int)out_port_graphics_objects.size() - p_index};
-    for (int i{0}; i < size; ++i) {
-      Q_EMIT out_port_remove_requested(out_port_graphics_objects.at(p_index));
-      out_port_graphics_objects.erase(p_index);
-      p_index++;
-    }
-  }
-
-  update();
-  Q_EMIT scene_update_requested();
+  prepareGeometryChange();
 }
 
 QRectF VisualShaderNodeGraphicsObject::boundingRect() const {
@@ -2587,7 +2575,6 @@ void VisualShaderNodeGraphicsObject::contextMenuEvent(QGraphicsSceneContextMenuE
 }
 
 void VisualShaderNodeGraphicsObject::mouseReleaseEvent(QGraphicsSceneMouseEvent* event) {
-  // Q_EMIT node_moved(n_id, in_port_count, out_port_count, scenePos());
   QGraphicsObject::mouseReleaseEvent(event);
 }
 
@@ -2733,10 +2720,10 @@ void VisualShaderConnectionGraphicsObject::update_layout() {
   // Due to inaccuracy in the calculation of the bounding rect we use the point diameter not the radius
   this->rect_margin = this->point_diameter;
 
-  this->control_points = calculate_control_points(start_coordinate, end_coordinate);
+  this->control_points = calculate_control_points(start_coordinate, end_coordinate, this->rect);
+  this->cubic_path.clear(); // Clear the path
   this->cubic_path.moveTo(start_coordinate);
   this->cubic_path.cubicTo(control_points.first, control_points.second, end_coordinate);
-  this->cubic_path.closeSubpath();
 
   this->start_rect = QRectF(start_coordinate.x(), start_coordinate.y(), this->point_diameter, this->point_diameter);
 
@@ -2749,6 +2736,8 @@ void VisualShaderConnectionGraphicsObject::update_layout() {
   // Adjust the port rect to be centered
   end_rect.adjust(-end_rect.width() * 0.5f, -end_rect.height() * 0.5f, -end_rect.width() * 0.5f,
                   -end_rect.height() * 0.5f);
+
+  prepareGeometryChange();
 }
 
 QRectF VisualShaderConnectionGraphicsObject::boundingRect() const {
@@ -2870,7 +2859,7 @@ QRectF VisualShaderConnectionGraphicsObject::calculate_bounding_rect_from_coordi
 }
 
 std::pair<QPointF, QPointF> VisualShaderConnectionGraphicsObject::calculate_control_points(
-    const QPointF& start_coordinate, [[maybe_unused]] const QPointF& end_coordinated) const {
+    const QPointF& start_coordinate, [[maybe_unused]] const QPointF& end_coordinated, const QRectF& rect) const {
   QPointF cp1;
   QPointF cp2;
 
@@ -2878,8 +2867,6 @@ std::pair<QPointF, QPointF> VisualShaderConnectionGraphicsObject::calculate_cont
   const float y1{(float)start_coordinate.y()};
   const float x2{(float)end_coordinate.x()};
   const float y2{(float)end_coordinate.y()};
-
-  QRectF r{calculate_bounding_rect_from_coordinates(start_coordinate, end_coordinate)};
 
   const bool in_h_abnormal_region{x2 < (x1 + h_abnormal_offset)};
   const bool in_v_abnormal_region{std::abs(y2 - y1) < v_abnormal_offset};
@@ -2894,12 +2881,12 @@ std::pair<QPointF, QPointF> VisualShaderConnectionGraphicsObject::calculate_cont
   const float cp_y_delta_factor{0.25f};
 
   // Normal region control points deltas
-  const float cp_x_delta{(float)r.width() * cp_x_delta_factor};
-  const float cp_y_delta{(float)r.height() * cp_y_delta_factor};
+  const float cp_x_delta{(float)rect.width() * cp_x_delta_factor};
+  const float cp_y_delta{(float)rect.height() * cp_y_delta_factor};
 
   // Abnormal region control points deltas
-  const float a_cp_x_delta{((float)r.width() - a_width_expansion) * cp_x_delta_factor};
-  const float a_cp_y_delta{((float)r.height() - a_height_expansion) * cp_y_delta_factor};
+  const float a_cp_x_delta{((float)rect.width() - a_width_expansion) * cp_x_delta_factor};
+  const float a_cp_y_delta{((float)rect.height() - a_height_expansion) * cp_y_delta_factor};
 
   switch (quadrant) {
     case 1:  // Quadrant I: Normal face to back

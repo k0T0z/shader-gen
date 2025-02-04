@@ -411,6 +411,9 @@ class VisualShaderGraphicsScene : public QGraphicsScene {
   static int find_node_entry(ProtoModel* visual_shader_model, ProtoModel* nodes_model, const int& n_id);
   static int find_connection_entry(ProtoModel* visual_shader_model, ProtoModel* connections_model, const int& c_id);
 
+ public Q_SLOTS:
+  void on_scene_update_requested();
+
  private Q_SLOTS:
   /**
    * @brief Called when an interaction with a port is made.
@@ -452,8 +455,6 @@ class VisualShaderGraphicsScene : public QGraphicsScene {
    * 
    */
   void on_update_shader_previewer_widgets_requested();
-
-  void on_scene_update_requested();
 
   void on_in_port_remove_requested(VisualShaderInputPortGraphicsObject* in_port);
   void on_out_port_remove_requested(VisualShaderOutputPortGraphicsObject* out_port);
@@ -595,9 +596,6 @@ class VisualShaderNodeGraphicsObject : public QGraphicsObject {
   ShaderPreviewerWidget* get_shader_previewer_widget() const { return shader_previewer_widget; }
 
   void update_layout();
-
- public Q_SLOTS:
-  void on_node_update_requested();
 
  Q_SIGNALS:
   /**
@@ -961,7 +959,7 @@ class VisualShaderConnectionGraphicsObject : public QGraphicsObject {
   int detect_quadrant(const QPointF& reference, const QPointF& target) const;
   QRectF calculate_bounding_rect_from_coordinates(const QPointF& start_coordinate, const QPointF& end_coordinate) const;
   std::pair<QPointF, QPointF> calculate_control_points(const QPointF& start_coordinate,
-                                                       const QPointF& end_coordinate) const;
+                                                       const QPointF& end_coordinate, const QRectF& rect) const;
 };
 
 /**********************************************************************/
