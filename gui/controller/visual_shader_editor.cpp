@@ -3027,7 +3027,7 @@ VisualShaderNodeEmbedWidget::VisualShaderNodeEmbedWidget(VisualShaderGraphicsSce
         new VisualShaderNodeEmbedCheckBox(visual_shader_model, nodes_model, n_id, proto_node, 
                                                        VisualShader::VisualShaderNode::kBooleanConstantFieldNumber, VisualShaderNodeBooleanConstant::kValueFieldNumber);
     layout->addWidget(embed_widget);
-    QObject::connect(embed_widget, &QCheckBox::checkStateChanged, this,
+    QObject::connect(embed_widget, &QCheckBox::stateChanged, this,
                      &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
     QObject::connect(embed_widget, &VisualShaderNodeEmbedCheckBox::node_update_requested, scene, &VisualShaderGraphicsScene::update_node_in_model);
     embed_widgets[VisualShaderNodeBooleanConstant::kValueFieldNumber] = embed_widget;
@@ -3511,7 +3511,7 @@ VisualShaderNodeEmbedCheckBox::VisualShaderNodeEmbedCheckBox(
                      FieldPath::FieldNumber(field_number)))
                  .toBool());
 
-  QObject::connect(this, &QCheckBox::checkStateChanged, this, &VisualShaderNodeEmbedCheckBox::on_state_changed);
+  QObject::connect(this, &QCheckBox::stateChanged, this, &VisualShaderNodeEmbedCheckBox::on_state_changed);
 }
 
 void VisualShaderNodeEmbedCheckBox::on_state_changed(const int& state) {
