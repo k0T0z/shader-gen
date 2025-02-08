@@ -305,7 +305,6 @@ if(SHADER_GEN_BUILD_TESTS)
         GTest::gtest 
         GTest::gtest_main 
         Qt${SHADER_GEN_QT_VERSION}::Widgets 
-        Qt${SHADER_GEN_QT_VERSION}::OpenGLWidgets 
         Qt${SHADER_GEN_QT_VERSION}::Test
         protobuf::libprotobuf 
     )
