@@ -1,0 +1,10 @@
+{
+    "cmake.configureArgs": [
+        "-DCMAKE_PREFIX_PATH='path/to/protolib-static/lib/cmake'", // path to protolib-static
+        "-DCMAKE_MAKE_PROGRAM=mingw32-make"
+    ],
+    "cmake.generator": "Unix Makefiles",
+    "cmake.configureOnEdit": false,
+    "cmake.buildDirectory": "${workspaceFolder}/build",
+    "cmake.sourceDirectory": "${workspaceFolder}"
+}

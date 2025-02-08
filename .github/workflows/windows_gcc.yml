@@ -37,7 +37,7 @@ jobs:
 
     - name: Configure CMake
       shell: msys2 {0}
-      run: cmake -B build -G "Unix Makefiles" -DCMAKE_MAKE_PROGRAM=mingw32-make
+      run: cmake -B build -G "Unix Makefiles" -DCMAKE_MAKE_PROGRAM=mingw32-make -DSHADER_GEN_BUILD_TESTS=ON
 
     - name: Build project
       shell: msys2 {0}
@@ -55,4 +55,4 @@ jobs:
 
     - name: Run tests
       shell: msys2 {0}
-      run: ctest --test-dir build --parallel $(nproc) --output-on-failure --verbose -C Debug
+      run: ctest --test-dir build --parallel $(nproc) --output-on-failure --verbose -C Debug -D Experimental

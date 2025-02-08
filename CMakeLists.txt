@@ -49,6 +49,16 @@ set(SHADER_GEN_PROJECT_VERSION "1.0.0")
 set(SHADER_GEN_PROJECT_DESCRIPTION "Shader Gen is a tool to generate shaders using machine learning.")
 set(SHADER_GEN_EXECUTABLE_NAME "shader-gen")
 
+# Use objdump for Windows MinGW to get runtime dependencies (instead of dumpbin for MSVC)
+# https://cmake.org/cmake/help/latest/command/file.html#variable:CMAKE_GET_RUNTIME_DEPENDENCIES_TOOL
+if (WIN32)
+    if (MINGW)
+        set(CMAKE_GET_RUNTIME_DEPENDENCIES_TOOL "objdump")
+    elseif(MSVC)
+        set(CMAKE_GET_RUNTIME_DEPENDENCIES_TOOL "dumpbin")
+    endif()
+endif()
+
 project(${SHADER_GEN_EXECUTABLE_NAME} VERSION ${SHADER_GEN_PROJECT_VERSION} LANGUAGES CXX)
 
 if (MSVC)
@@ -57,6 +67,9 @@ else()
     string(APPEND CMAKE_CXX_FLAGS " -Wall -Wextra")
     string(APPEND CMAKE_C_FLAGS " -Wall -Wextra")
 endif()
+
+option(SHADER_GEN_BUILD_TESTS "Build tests for Shader Gen" OFF)
+# option(SHADER_GEN_LINK_STATIC_LIBS "Link static libraries" OFF)
 
 if(${PROJECT_SOURCE_DIR} STREQUAL ${PROJECT_BINARY_DIR})
   message(
@@ -114,6 +127,14 @@ endif()
 if(MSVC)
     set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS TRUE)
 endif()
+
+# if (SHADER_GEN_LINK_STATIC_LIBS)
+#     if (WIN32 AND MINGW)
+#         # Force linking libraries statically to avoid tons of DLLs in the portable package
+#         set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static -static-libgcc -static-libstdc++")
+#         set(BUILD_SHARED_LIBS OFF CACHE BOOL "Build shared libraries" FORCE)
+#     endif()
+# endif()
 
 set(SHADER_GEN_QT_VERSION "6")
 
@@ -219,161 +240,221 @@ target_compile_definitions(${SHADER_GEN_EXECUTABLE_NAME} PRIVATE
 # Tests
 #####################
 
-set(SHADER_GEN_TESTS_EXECUTABLE_NAME "shader-gen-tests" CACHE STRING "The name of the tests executable.")
+if(SHADER_GEN_BUILD_TESTS)
+    set(SHADER_GEN_TESTS_EXECUTABLE_NAME "shader-gen-tests" CACHE STRING "The name of the tests executable.")
 
-file(GLOB SHADER_GEN_TESTS_CPP_FILES
-    ${CMAKE_CURRENT_SOURCE_DIR}/tests/gui/model/test_model.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/tests/gui/model/utils/test_field_path.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/tests/generator/test_vs_generator.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/tests/generator/test_vs_node_generators.cpp
-)
+    file(GLOB SHADER_GEN_TESTS_CPP_FILES
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/gui/model/test_model.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/gui/model/utils/test_field_path.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/generator/test_vs_generator.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/generator/test_vs_node_generators.cpp
+    )
 
-file(GLOB SHADER_GEN_TESTS_PROTO_FILES 
-    ${CMAKE_CURRENT_SOURCE_DIR}/tests/gui/model/schema/test_schema.proto
-)
+    file(GLOB SHADER_GEN_TESTS_PROTO_FILES 
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/gui/model/schema/test_schema.proto
+    )
 
-# For Windows: Prevent overriding the parent project's compiler/linker settings as mentioned in the official documentation.
-if(WIN32)
-    set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
-endif()
-
-# Check https://cmake.org/cmake/help/latest/module/FindGTest.html for more information.
-find_package(GTest CONFIG)
-if(NOT GTest_FOUND)
-    set(SHADER_GEN_TESTS_GTEST_MAIN_HEADER "${SHADER_GEN_ROOTDIR}/externals/googletest/googletest/include/gtest/gtest.h")
-
-    if (NOT EXISTS "${SHADER_GEN_TESTS_GTEST_MAIN_HEADER}")
-        message(FATAL_ERROR "Cannot find GTest package.")
+    # For Windows: Prevent overriding the parent project's compiler/linker settings as mentioned in the official documentation.
+    if(WIN32)
+        set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
     endif()
 
-    message(STATUS "Found GTest: ${SHADER_GEN_TESTS_GTEST_MAIN_HEADER}")
+    # Check https://cmake.org/cmake/help/latest/module/FindGTest.html for more information.
+    find_package(GTest CONFIG)
+    if(NOT GTest_FOUND)
+        set(SHADER_GEN_TESTS_GTEST_MAIN_HEADER "${SHADER_GEN_ROOTDIR}/externals/googletest/googletest/include/gtest/gtest.h")
 
-    option(BUILD_SHARED_LIBS "Build shared libraries (DLLs)." ON)
-    option(BUILD_GMOCK "Builds the googlemock subproject" OFF)
-    option(INSTALL_GTEST "Enable installation of googletest. (Projects embedding googletest may want to turn this OFF.)" OFF)
-    option(
-        gtest_force_shared_crt
-        "Use shared (DLL) run-time lib even when Google Test is built as static lib."
-        ON)
-    
-    set(SHADER_GEN_TESTS_GTEST_ROOTDIR "${SHADER_GEN_ROOTDIR}/externals/googletest")
-    set(SHADER_GEN_TESTS_GTEST_BUILD_ROOTDIR "${PROJECT_BINARY_DIR}/.googletest-build")
-    add_subdirectory(${SHADER_GEN_TESTS_GTEST_ROOTDIR} ${SHADER_GEN_TESTS_GTEST_BUILD_ROOTDIR})
+        if (NOT EXISTS "${SHADER_GEN_TESTS_GTEST_MAIN_HEADER}")
+            message(FATAL_ERROR "Cannot find GTest package.")
+        endif()
+
+        message(STATUS "Found GTest: ${SHADER_GEN_TESTS_GTEST_MAIN_HEADER}")
+
+        option(BUILD_SHARED_LIBS "Build shared libraries (DLLs)." ON)
+        option(BUILD_GMOCK "Builds the googlemock subproject" OFF)
+        option(INSTALL_GTEST "Enable installation of googletest. (Projects embedding googletest may want to turn this OFF.)" OFF)
+        option(
+            gtest_force_shared_crt
+            "Use shared (DLL) run-time lib even when Google Test is built as static lib."
+            ON)
+        
+        set(SHADER_GEN_TESTS_GTEST_ROOTDIR "${SHADER_GEN_ROOTDIR}/externals/googletest")
+        set(SHADER_GEN_TESTS_GTEST_BUILD_ROOTDIR "${PROJECT_BINARY_DIR}/.googletest-build")
+        add_subdirectory(${SHADER_GEN_TESTS_GTEST_ROOTDIR} ${SHADER_GEN_TESTS_GTEST_BUILD_ROOTDIR})
+    endif()
+
+    if (WIN32)
+        add_executable(${SHADER_GEN_TESTS_EXECUTABLE_NAME} WIN32
+            ${SHADER_GEN_TESTS_CPP_FILES} 
+            ${SHADER_GEN_CPP_FILES} 
+            ${SHADER_GEN_PROTO_GENERATED_SRCS} # Include the generated protobuf files
+            ${SHADER_GEN_PROTO_GENERATED_TEST_SRCS} # Include the generated protobuf test files
+        )
+    else()
+        add_executable(${SHADER_GEN_TESTS_EXECUTABLE_NAME} 
+            ${SHADER_GEN_TESTS_CPP_FILES} 
+            ${SHADER_GEN_CPP_FILES} 
+            ${SHADER_GEN_PROTO_GENERATED_SRCS} # Include the generated protobuf files
+            ${SHADER_GEN_PROTO_GENERATED_TEST_SRCS} # Include the generated protobuf test files
+        )
+    endif()
+
+    # Create the output directory for the generated protobuf test files
+    set(PROTOC_TEST_OUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/tests/gui/model/schema")
+    file(MAKE_DIRECTORY ${PROTOC_TEST_OUT_DIRECTORY})
+
+    protobuf_generate(
+        TARGET ${SHADER_GEN_TESTS_EXECUTABLE_NAME}
+        LANGUAGE cpp
+        OUT_VAR SHADER_GEN_PROTO_GENERATED_TEST_SRCS
+        PROTOC_OUT_DIR ${PROTOC_TEST_OUT_DIRECTORY} # Output directory for the generated test files
+        PROTOS ${SHADER_GEN_TESTS_PROTO_FILES} # The proto test files
+        IMPORT_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/tests/gui/model/schema # For the imports in the proto test files
+    )
+
+    target_link_libraries(${SHADER_GEN_TESTS_EXECUTABLE_NAME} PRIVATE 
+        GTest::gtest 
+        GTest::gtest_main 
+        Qt${SHADER_GEN_QT_VERSION}::Widgets 
+        Qt${SHADER_GEN_QT_VERSION}::OpenGLWidgets 
+        Qt${SHADER_GEN_QT_VERSION}::Test
+        protobuf::libprotobuf 
+    )
+
+    target_include_directories(${SHADER_GEN_TESTS_EXECUTABLE_NAME} PRIVATE 
+        "${CMAKE_CURRENT_SOURCE_DIR}/"
+        "${SHADER_GEN_ROOTDIR}/externals/googletest/googletest/include" 
+        "${CMAKE_CURRENT_BINARY_DIR}/" # For the generated protobuf test files
+    )
+
+    target_compile_definitions(${SHADER_GEN_TESTS_EXECUTABLE_NAME} PRIVATE 
+        $<$<CONFIG:Debug>:${SHADER_GEN_DEBUG_MACRO_NAME}> # Define ${SHADER_GEN_DEBUG_MACRO_NAME} for Debug builds
+    )
+
+    enable_testing()
+    add_test(NAME ${SHADER_GEN_TESTS_EXECUTABLE_NAME} COMMAND ${SHADER_GEN_TESTS_EXECUTABLE_NAME})
+    set_tests_properties(${SHADER_GEN_TESTS_EXECUTABLE_NAME} PROPERTIES
+        TIMEOUT 30
+        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+    )
 endif()
 
-if (WIN32)
-    add_executable(${SHADER_GEN_TESTS_EXECUTABLE_NAME} WIN32
-        ${SHADER_GEN_TESTS_CPP_FILES} 
-        ${SHADER_GEN_CPP_FILES} 
-        ${SHADER_GEN_PROTO_GENERATED_SRCS} # Include the generated protobuf files
-        ${SHADER_GEN_PROTO_GENERATED_TEST_SRCS} # Include the generated protobuf test files
-    )
-else()
-    add_executable(${SHADER_GEN_TESTS_EXECUTABLE_NAME} 
-        ${SHADER_GEN_TESTS_CPP_FILES} 
-        ${SHADER_GEN_CPP_FILES} 
-        ${SHADER_GEN_PROTO_GENERATED_SRCS} # Include the generated protobuf files
-        ${SHADER_GEN_PROTO_GENERATED_TEST_SRCS} # Include the generated protobuf test files
-    )
-endif()
-
-# Create the output directory for the generated protobuf test files
-set(PROTOC_TEST_OUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/tests/gui/model/schema")
-file(MAKE_DIRECTORY ${PROTOC_TEST_OUT_DIRECTORY})
-
-protobuf_generate(
-    TARGET ${SHADER_GEN_TESTS_EXECUTABLE_NAME}
-    LANGUAGE cpp
-    OUT_VAR SHADER_GEN_PROTO_GENERATED_TEST_SRCS
-    PROTOC_OUT_DIR ${PROTOC_TEST_OUT_DIRECTORY} # Output directory for the generated test files
-    PROTOS ${SHADER_GEN_TESTS_PROTO_FILES} # The proto test files
-    IMPORT_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/tests/gui/model/schema # For the imports in the proto test files
-)
-
-target_link_libraries(${SHADER_GEN_TESTS_EXECUTABLE_NAME} PRIVATE 
-    GTest::gtest 
-    GTest::gtest_main 
-    Qt${SHADER_GEN_QT_VERSION}::Widgets 
-    Qt${SHADER_GEN_QT_VERSION}::OpenGLWidgets 
-    Qt${SHADER_GEN_QT_VERSION}::Test
-    protobuf::libprotobuf 
-)
-
-target_include_directories(${SHADER_GEN_TESTS_EXECUTABLE_NAME} PRIVATE 
-    "${CMAKE_CURRENT_SOURCE_DIR}/"
-    "${SHADER_GEN_ROOTDIR}/externals/googletest/googletest/include" 
-    "${CMAKE_CURRENT_BINARY_DIR}/" # For the generated protobuf test files
-)
-
-target_compile_definitions(${SHADER_GEN_TESTS_EXECUTABLE_NAME} PRIVATE 
-    $<$<CONFIG:Debug>:${SHADER_GEN_DEBUG_MACRO_NAME}> # Define ${SHADER_GEN_DEBUG_MACRO_NAME} for Debug builds
-)
-
-enable_testing()
-add_test(NAME ${SHADER_GEN_TESTS_EXECUTABLE_NAME} COMMAND ${SHADER_GEN_TESTS_EXECUTABLE_NAME})
-set_tests_properties(${SHADER_GEN_TESTS_EXECUTABLE_NAME} PROPERTIES
-    TIMEOUT 30
-    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-)
-
 #####################
-# Packaging (Windows)
+# Portable Packaging
 #####################
-if(WIN32)
-    # Deploy Qt dependencies using windeployqt and copy Protobuf DLL
+
+if(WIN32 AND MINGW)
+    set(SHADER_GEN_PORTABLE_DIR "${CMAKE_BINARY_DIR}/portable")
+    file(MAKE_DIRECTORY ${SHADER_GEN_PORTABLE_DIR})
+
+    # Deploy Qt dependencies using windeployqt
     find_program(WINDEPLOYQT_EXECUTABLE windeployqt)
     if(NOT WINDEPLOYQT_EXECUTABLE)
         message(FATAL_ERROR "windeployqt not found. Ensure Qt is installed and in PATH.")
     endif()
 
-    # Copy Protobuf DLL to target directory
     add_custom_command(TARGET ${SHADER_GEN_EXECUTABLE_NAME} POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy
-            $<TARGET_FILE:protobuf::libprotobuf>
-            $<TARGET_FILE_DIR:${SHADER_GEN_EXECUTABLE_NAME}>
-        COMMENT "Copying Protobuf DLL..."
-    )
 
-    # Deploy Qt runtime dependencies
-    add_custom_command(TARGET ${SHADER_GEN_EXECUTABLE_NAME} POST_BUILD
+        # Copy main executable
+        COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:${SHADER_GEN_EXECUTABLE_NAME}> "${SHADER_GEN_PORTABLE_DIR}"
+
+        # Copy Protobuf DLL
+        COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:protobuf::libprotobuf> "${SHADER_GEN_PORTABLE_DIR}"
+
+        # Deploy Qt runtime dependencies
         COMMAND ${WINDEPLOYQT_EXECUTABLE}
-            --verbose 1
-            --no-compiler-runtime
+            --release
+            --no-patchqt
+            --no-quick-import
+            --no-translations
             --no-system-d3d-compiler
+            --no-compiler-runtime
+            # --no-angle # Qt5 LTS only
             --no-opengl-sw
-            --dir "$<TARGET_FILE_DIR:${SHADER_GEN_EXECUTABLE_NAME}>/qt-deploy"
+            --verbose 1
+            --dir "${SHADER_GEN_PORTABLE_DIR}"
             "$<TARGET_FILE:${SHADER_GEN_EXECUTABLE_NAME}>"
-        COMMAND ${CMAKE_COMMAND} -E copy_directory
-            "$<TARGET_FILE_DIR:${SHADER_GEN_EXECUTABLE_NAME}>/qt-deploy"
-            "$<TARGET_FILE_DIR:${SHADER_GEN_EXECUTABLE_NAME}>"
-        COMMAND ${CMAKE_COMMAND} -E remove_directory
-            "$<TARGET_FILE_DIR:${SHADER_GEN_EXECUTABLE_NAME}>/qt-deploy"
-        COMMENT "Deploying Qt runtime dependencies..."
+
+        COMMENT "Copying runtime dependencies..."
     )
 
-    # Install target for creating a portable package
+    # https://doc.qt.io/qt-6/windows-deployment.html#additional-libraries
+    add_custom_command(TARGET ${SHADER_GEN_EXECUTABLE_NAME} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} 
+            -DTEMP_SHADER_GEN_EXECUTABLE_NAME="$<TARGET_FILE:${SHADER_GEN_EXECUTABLE_NAME}>" 
+            -DTEMP_SHADER_GEN_EXECUTABLE_OUTPUT_DIR="${SHADER_GEN_PORTABLE_DIR}"
+            -DTEMP_SHADER_GEN_PROTOBUF_DLL="$<TARGET_FILE:protobuf::libprotobuf>"
+            -P ${CMAKE_CURRENT_BINARY_DIR}/CopyDependencies.cmake
+        COMMENT "Copying runtime dependencies..."
+    )
+
+    # Create CopyDependencies.cmake
+    file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/CopyDependencies.cmake
+    [[
+# https://cmake.org/cmake/help/latest/command/file.html#get-runtime-dependencies
+cmake_minimum_required(VERSION 3.16)
+
+file(GET_RUNTIME_DEPENDENCIES
+    EXECUTABLES 
+        "${TEMP_SHADER_GEN_EXECUTABLE_NAME}"
+        "${TEMP_SHADER_GEN_PROTOBUF_DLL}"
+    BUNDLE_EXECUTABLE FALSE
+    RESOLVED_DEPENDENCIES_VAR SHADER_GEN_RESOLVED_DEPS
+    UNRESOLVED_DEPENDENCIES_VAR SHADER_GEN_UNRESOLVED_DEPS
+    DIRECTORIES 
+        "$ENV{PATH}"
+    PRE_EXCLUDE_REGEXES
+        "api-ms-win-.*"        # Windows API DLLs
+        "ext-ms-win-.*"        # More Windows internals
+        "kernel32.dll"         # System DLLs
+        "advapi32.dll"
+        "user32.dll"
+        "shell32.dll"
+        "ole32.dll"
+        "dbghelp.dll"
+        "msvcrt.dll"
+    POST_EXCLUDE_REGEXES
+        ".*/Windows/.*"        # Exclude system paths
+        ".*/WinSxS/.*"
+)
+
+if(SHADER_GEN_RESOLVED_DEPS)
+    file(COPY ${SHADER_GEN_RESOLVED_DEPS} DESTINATION "${TEMP_SHADER_GEN_EXECUTABLE_OUTPUT_DIR}")
+    message(STATUS "Copied dependencies: ${SHADER_GEN_RESOLVED_DEPS}")
+endif()
+
+if(SHADER_GEN_UNRESOLVED_DEPS)
+    message(WARNING "Unresolved dependencies: ${SHADER_GEN_UNRESOLVED_DEPS}")
+endif()
+
+    ]])
+
+    # Install all required files for portable package
     install(TARGETS ${SHADER_GEN_EXECUTABLE_NAME}
-        RUNTIME DESTINATION ${SHADER_GEN_EXECUTABLE_NAME}
+        RUNTIME DESTINATION .
     )
 
-    install(DIRECTORY 
-        "$<TARGET_FILE_DIR:${SHADER_GEN_EXECUTABLE_NAME}>/"
-        DESTINATION ${SHADER_GEN_EXECUTABLE_NAME}
-        FILES_MATCHING
-        PATTERN "*.dll"
-        PATTERN "*.pdb"
-        PATTERN "qt*"
+    # Install all required files for portable package
+    # https://cmake.org/cmake/help/latest/command/install.html#directory
+    install(DIRECTORY "${SHADER_GEN_PORTABLE_DIR}/"
+        DESTINATION .
+        FILES_MATCHING PATTERN "*"
     )
 
-    # Create NSIS installer package
-    set(CPACK_PACKAGE_NAME ${SHADER_GEN_EXECUTABLE_NAME})
-    set(CPACK_PACKAGE_VERSION ${SHADER_GEN_PROJECT_VERSION})
-    set(CPACK_PACKAGE_INSTALL_DIRECTORY ${ENIGMA_ORG_NAME})
-    set(CPACK_NSIS_EXECUTABLES_DIRECTORY .)
-    set(CPACK_NSIS_MUI_ICON "${CMAKE_CURRENT_SOURCE_DIR}/assets/icon.ico")
-    set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/LICENSE")
-    set(CPACK_RESOURCE_FILE_README "${CMAKE_CURRENT_SOURCE_DIR}/README.md")
-    set(CPACK_NSIS_DISPLAY_NAME "${SHADER_GEN_EXECUTABLE_NAME}")
+    # Install LICENSE file
+    install(FILES
+        "${SHADER_GEN_ROOTDIR}/LICENSE"
+        DESTINATION .
+    )
+
+    # Configure ZIP package
+    set(CPACK_GENERATOR "ZIP")
+
+    set(CPACK_PACKAGE_NAME "${SHADER_GEN_EXECUTABLE_NAME}-portable")
+    set(CPACK_PACKAGE_VERSION "${SHADER_GEN_PROJECT_VERSION}")
+    set(CPACK_PACKAGE_DESCRIPTION "${SHADER_GEN_PROJECT_DESCRIPTION}")
+    
+    set(CPACK_INCLUDE_TOPLEVEL_DIRECTORY OFF)
 
     include(CPack)
 endif()

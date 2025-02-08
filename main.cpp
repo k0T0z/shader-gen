@@ -44,6 +44,8 @@ int main(int argc, char** argv) {
   // compatible with the version of the headers we compiled against.
   GOOGLE_PROTOBUF_VERIFY_VERSION;
 
+  qputenv("QT_DEBUG_PLUGINS", "1");  // Enable plugin diagnostics
+
   QApplication shader_gen_app(argc, argv);
   QCoreApplication::setOrganizationName(ENIGMA_ORG_NAME);
   QCoreApplication::setApplicationName(SHADER_GEN_PROJECT_NAME);

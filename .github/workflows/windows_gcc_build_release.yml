@@ -28,32 +28,37 @@ jobs:
           install: >-
             mingw-w64-x86_64-gcc
             mingw-w64-x86_64-qt6-base
-            mingw-w64-x86_64-protobuf
             mingw-w64-x86_64-make
             mingw-w64-x86_64-cmake
+
+      - name: Build Protobuf
+        shell: msys2 {0}
+        run: |
+          mkdir -p "${{ github.workspace }}/protobuf-lib-static"
+          echo "Protobuf: '${{ github.workspace }}/protobuf-lib-static'"
+          chmod +x ./CI/build_static_protobuf.sh
+          sudo ./CI/build_static_protobuf.sh "${{ github.workspace }}/protobuf-lib-static"
   
       - name: Configure CMake
         shell: msys2 {0}
-        run: cmake -B build -G "Unix Makefiles" -DCMAKE_MAKE_PROGRAM=mingw32-make
+        run: cmake -B build -G "Unix Makefiles" -DCMAKE_MAKE_PROGRAM=mingw32-make -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="${{ github.workspace }}/protobuf-lib-static/lib/cmake"
   
       - name: Build project
         shell: msys2 {0}
         run: |
-          cmake --build build --config Debug --parallel $(nproc)
+          cmake --build build --config Release --parallel $(nproc)
           echo "Dependencies for shader-gen.exe"
           ldd build/shader-gen
-  
-          echo "Dependencies for shader-gen-tests.exe"
-          ldd build/shader-gen-tests
 
-      - name: Package executable
+      - name: Create portable package
         shell: msys2 {0}
         run: |
-          cpack --config build/CPackConfig.cmake -G NSIS
+          cpack --config CPackConfig.cmake -G ZIP --verbose -C Release
+        working-directory: build
         
-      - name: Upload artifact
+      - name: Upload portable package
         uses: actions/upload-artifact@v4
         with:
-          name: ShaderGen-Package
-          path: build/*.exe
+          name: ShaderGen-Portable
+          path: build/*.zip
         

@@ -1,0 +1,30 @@
+// This is a static linking configuration for the protobuf library using
+// Unix Makefiles generator coming from MSYS2 MinGW64.
+
+{
+    "cmake.configureArgs": [
+        "-DCMAKE_MAKE_PROGRAM=mingw32-make",
+
+        "-Dprotobuf_BUILD_TESTS=OFF",
+        "-Dprotobuf_BUILD_CONFORMANCE=OFF",
+        "-Dprotobuf_BUILD_EXAMPLES=OFF",
+        "-Dprotobuf_ABSL_PROVIDER=module",
+        "-DCMAKE_BUILD_TYPE=Release",
+        "-DCMAKE_CXX_STANDARD=17",
+        "-Dprotobuf_BUILD_SHARED_LIBS=OFF",
+        "-DCMAKE_INSTALL_PREFIX='${workspaceFolder}/.build/protolib-static'", // Change this to your desired output directory
+
+        "-DABSL_PROPAGATE_CXX_STD=ON",
+        "-DBUILD_TESTING=OFF",
+        "-DABSL_BUILD_TESTING=OFF",
+        "-DABSL_USE_GOOGLETEST_HEAD=OFF",
+        "-DABSL_ENABLE_INSTALL=ON",
+        "-DBUILD_SHARED_LIBS=OFF",
+        "-DABSL_BUILD_MONOLITHIC_SHARED_LIBS=OFF",
+        "-DCMAKE_MODULE_LINKER_FLAGS='-Wl,--no-undefined'"
+    ],
+    "cmake.generator": "Unix Makefiles",
+    "cmake.configureOnEdit": false,
+    "cmake.buildDirectory": "${workspaceFolder}/.build",
+    "cmake.sourceDirectory": "${workspaceFolder}"
+}
