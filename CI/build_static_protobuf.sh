@@ -42,7 +42,7 @@ cmake .. -G "Unix Makefiles" \
          -DABSL_BUILD_MONOLITHIC_SHARED_LIBS=OFF \
          -DCMAKE_MODULE_LINKER_FLAGS="-Wl,--no-undefined"
 
-cmake --build . --config Release --parallel
+cmake --build . --config Release # --parallel
 cmake --install . --config Release
 
 cd "$GITHUB_WORKSPACE"
