@@ -2,8 +2,8 @@ name: Windows GCC Build and Release
 
 on:
   push:
-    tags:
-      - 'v*'
+    branches:
+      - master-qt6
   workflow_dispatch:
 
 concurrency:
@@ -60,6 +60,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: build/*.zip
+          tag_name: latest
           generate_release_notes: true
           draft: false
           token: ${{ secrets.SHADER_GEN_RELEASES_TOKEN }}
