@@ -10,7 +10,7 @@ fi
 INSTALL_PREFIX=$1
 
 # Fetch the latest tags
-PROTOBUF_LATEST_TAG=$(git ls-remote --tags https://github.com/protocolbuffers/protobuf.git | tail -n1 | awk '{print $2}' | awk -F/ '{print $3}' | cut -d^ -f1)
+PROTOBUF_LATEST_TAG=v29.3 # $(git ls-remote --tags https://github.com/protocolbuffers/protobuf.git | tail -n1 | awk '{print $2}' | awk -F/ '{print $3}' | cut -d^ -f1)
 
 # Build and install Protobuf
 echo "Installing Protobuf $PROTOBUF_LATEST_TAG..."

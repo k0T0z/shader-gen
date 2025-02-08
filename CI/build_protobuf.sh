@@ -2,8 +2,8 @@
 set -e
 
 # Fetch the latest tags
-ABSL_LATEST_TAG=$(git ls-remote --tags https://github.com/abseil/abseil-cpp.git | tail -n1 | awk '{print $2}' | awk -F/ '{print $3}' | cut -d^ -f1)
-PROTOBUF_LATEST_TAG=$(git ls-remote --tags https://github.com/protocolbuffers/protobuf.git | tail -n1 | awk '{print $2}' | awk -F/ '{print $3}' | cut -d^ -f1)
+ABSL_LATEST_TAG=20250127.0 # $(git ls-remote --tags https://github.com/abseil/abseil-cpp.git | tail -n1 | awk '{print $2}' | awk -F/ '{print $3}' | cut -d^ -f1)
+PROTOBUF_LATEST_TAG=v29.3 # $(git ls-remote --tags https://github.com/protocolbuffers/protobuf.git | tail -n1 | awk '{print $2}' | awk -F/ '{print $3}' | cut -d^ -f1)
 
 # Build and install Abseil
 echo "Installing Abseil $ABSL_LATEST_TAG..."

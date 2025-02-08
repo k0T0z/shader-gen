@@ -69,7 +69,6 @@ else()
 endif()
 
 option(SHADER_GEN_BUILD_TESTS "Build tests for Shader Gen" OFF)
-# option(SHADER_GEN_LINK_STATIC_LIBS "Link static libraries" OFF)
 
 if(${PROJECT_SOURCE_DIR} STREQUAL ${PROJECT_BINARY_DIR})
   message(
@@ -127,14 +126,6 @@ endif()
 if(MSVC)
     set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS TRUE)
 endif()
-
-# if (SHADER_GEN_LINK_STATIC_LIBS)
-#     if (WIN32 AND MINGW)
-#         # Force linking libraries statically to avoid tons of DLLs in the portable package
-#         set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static -static-libgcc -static-libstdc++")
-#         set(BUILD_SHARED_LIBS OFF CACHE BOOL "Build shared libraries" FORCE)
-#     endif()
-# endif()
 
 set(SHADER_GEN_QT_VERSION "6")
 
@@ -358,9 +349,6 @@ if(WIN32 AND MINGW)
         # Copy main executable
         COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:${SHADER_GEN_EXECUTABLE_NAME}> "${SHADER_GEN_PORTABLE_DIR}"
 
-        # Copy Protobuf DLL
-        COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:protobuf::libprotobuf> "${SHADER_GEN_PORTABLE_DIR}"
-
         # Deploy Qt runtime dependencies
         COMMAND ${WINDEPLOYQT_EXECUTABLE}
             --release
@@ -378,12 +366,15 @@ if(WIN32 AND MINGW)
         COMMENT "Copying runtime dependencies..."
     )
 
+    get_filename_component(SHADER_GEN_MINGW_BIN_DIR "${CMAKE_CXX_COMPILER}" DIRECTORY)
+
     # https://doc.qt.io/qt-6/windows-deployment.html#additional-libraries
     add_custom_command(TARGET ${SHADER_GEN_EXECUTABLE_NAME} POST_BUILD
         COMMAND ${CMAKE_COMMAND} 
             -DTEMP_SHADER_GEN_EXECUTABLE_NAME="$<TARGET_FILE:${SHADER_GEN_EXECUTABLE_NAME}>" 
             -DTEMP_SHADER_GEN_EXECUTABLE_OUTPUT_DIR="${SHADER_GEN_PORTABLE_DIR}"
             -DTEMP_SHADER_GEN_PROTOBUF_DLL="$<TARGET_FILE:protobuf::libprotobuf>"
+            -DTEMP_SHADER_GEN_MINGW_BIN_DIR="${SHADER_GEN_MINGW_BIN_DIR}"
             -P ${CMAKE_CURRENT_BINARY_DIR}/CopyDependencies.cmake
         COMMENT "Copying runtime dependencies..."
     )
@@ -402,10 +393,10 @@ file(GET_RUNTIME_DEPENDENCIES
     RESOLVED_DEPENDENCIES_VAR SHADER_GEN_RESOLVED_DEPS
     UNRESOLVED_DEPENDENCIES_VAR SHADER_GEN_UNRESOLVED_DEPS
     DIRECTORIES 
-        "$ENV{PATH}"
+        "${TEMP_SHADER_GEN_MINGW_BIN_DIR}"
     PRE_EXCLUDE_REGEXES
         "api-ms-win-.*"        # Windows API DLLs
-        "ext-ms-win-.*"        # More Windows internals
+        "ext-ms-.*"            # More Windows internals
         "kernel32.dll"         # System DLLs
         "advapi32.dll"
         "user32.dll"
