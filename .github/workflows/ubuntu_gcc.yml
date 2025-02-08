@@ -52,4 +52,4 @@ jobs:
 
     - name: Run tests
       shell: bash
-      run: ctest --test-dir build --parallel $(nproc) --output-on-failure --verbose -C Debug -D Experimental
+      run: ctest --test-dir build --parallel $(nproc) --output-on-failure --verbose -C Debug
