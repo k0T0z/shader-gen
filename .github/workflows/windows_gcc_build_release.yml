@@ -36,8 +36,7 @@ jobs:
         run: |
           mkdir -p "${{ github.workspace }}/protobuf-lib-static"
           echo "Protobuf: '${{ github.workspace }}/protobuf-lib-static'"
-          chmod +x ./CI/build_static_protobuf.sh
-          sudo ./CI/build_static_protobuf.sh "${{ github.workspace }}/protobuf-lib-static"
+          ./CI/build_static_protobuf.sh "${{ github.workspace }}/protobuf-lib-static"
   
       - name: Configure CMake
         shell: msys2 {0}
