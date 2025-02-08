@@ -37,7 +37,7 @@ jobs:
 
     - name: Configure CMake
       shell: bash
-      run: cmake -B build -G "Unix Makefiles"
+      run: cmake -B build -G "Unix Makefiles" -DSHADER_GEN_BUILD_TESTS=ON
 
     - name: Build project
       shell: bash

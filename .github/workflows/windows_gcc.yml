@@ -31,13 +31,14 @@ jobs:
         install: >-
           mingw-w64-x86_64-gcc
           mingw-w64-x86_64-qt5-base
+          mingw-w64-x86_64-qt5-tools
           mingw-w64-x86_64-protobuf
           mingw-w64-x86_64-make
           mingw-w64-x86_64-cmake
 
     - name: Configure CMake
       shell: msys2 {0}
-      run: cmake -B build -G "Unix Makefiles" -DCMAKE_MAKE_PROGRAM=mingw32-make
+      run: cmake -B build -G "Unix Makefiles" -DCMAKE_MAKE_PROGRAM=mingw32-make -DSHADER_GEN_BUILD_TESTS=ON
 
     - name: Build project
       shell: msys2 {0}

@@ -173,8 +173,11 @@ void VisualShaderEditor::init() {
       FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kConnectionsFieldNumber))));
   scene->set_connections_model(connections_model);
 
+  scene->blockSignals(true);  // Temporarily block updates
   add_output_node(); // Add the output node
-  load_graph();      // Load the graphs
+  load_graph();      // Load the graph
+  scene->blockSignals(false);
+  scene->on_scene_update_requested();
 
   // Create the menu bar layer on top of the scene layer.
   top_layer = new QWidget(view);
@@ -392,22 +395,92 @@ void VisualShaderEditor::init() {
 
 bool VisualShaderEditor::add_output_node() {
   int node_entry{VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, 0)};
+
+  // If the output node exists in the model, don't add it because it will be added by the load_graph function
   SILENT_CHECK_CONDITION_TRUE_NON_VOID(node_entry != -1, true);
 
   // Output node has the id 0
-  return scene->add_node(0, std::make_shared<VisualShaderProtoNode<VisualShaderNodeOutput>>(), QPointF(0, 0));
+  return scene->add_node(std::make_shared<VisualShaderProtoNode<VisualShaderNodeOutput>>(), QPointF(0, 0), 0);
 }
 
 void VisualShaderEditor::load_graph() {
+  const RepeatedMessageModel* repeated_nodes{dynamic_cast<const RepeatedMessageModel*>(nodes_model)};
+  CHECK_PARAM_NULLPTR(repeated_nodes, "Nodes is not a repeated message model.");
 
+  // Load the nodes
+  int nodes_size{nodes_model->rowCount()};
+  for (int i{0}; i < nodes_size; ++i) {
+    int n_id = visual_shader_model->data(
+        FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
+                                    FieldPath::RepeatedAt(i),
+                                    FieldPath::FieldNumber(VisualShader::VisualShaderNode::kIdFieldNumber))).toInt();
+
+    double x = visual_shader_model->data(
+        FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
+                                    FieldPath::RepeatedAt(i),
+                                    FieldPath::FieldNumber(VisualShader::VisualShaderNode::kXCoordinateFieldNumber))).toDouble();
+
+    double y = visual_shader_model->data(
+        FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
+                                    FieldPath::RepeatedAt(i),
+                                    FieldPath::FieldNumber(VisualShader::VisualShaderNode::kYCoordinateFieldNumber))).toDouble();
+
+    std::shared_ptr<IVisualShaderProtoNode> proto_node;
+
+    const MessageModel* node_model{repeated_nodes->get_sub_model(i)};
+
+    // I don't care about the field number, just send any field number inside the oneof model you want to get
+    const ProtoModel* oneof_model{
+        node_model->get_sub_model(FieldPath::Of<VisualShader::VisualShaderNode>(
+                                      FieldPath::FieldNumber(VisualShader::VisualShaderNode::kInputFieldNumber)),
+                                  false, true)};
+    CHECK_PARAM_NULLPTR(oneof_model, "Oneof Model is nullptr.");
+    const int oneof_value_field_number{oneof_model->get_oneof_value_field_number()};
+
+    proto_node = shadergen_utils::get_proto_node_by_oneof_value_field_number(oneof_value_field_number);
+    CHECK_PARAM_NULLPTR(proto_node, "Proto node is nullptr.");
+
+    bool result{scene->add_node_to_scene(n_id, proto_node, QPointF(x, y))};
+    CONTINUE_IF_TRUE(!result, "Failed to add node to scene");
+  }
+
+  // Load the connections
+  int connections_size{connections_model->rowCount()};
+  for (int i{0}; i < connections_size; ++i)  {
+    int c_id = visual_shader_model->data(
+        FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kConnectionsFieldNumber),
+                                    FieldPath::RepeatedAt(i),
+                                    FieldPath::FieldNumber(VisualShader::VisualShaderConnection::kIdFieldNumber))).toInt();
+
+    int from_node_id = visual_shader_model->data(
+        FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kConnectionsFieldNumber),
+                                    FieldPath::RepeatedAt(i),
+                                    FieldPath::FieldNumber(VisualShader::VisualShaderConnection::kFromNodeIdFieldNumber))).toInt();
+
+    int from_port_index = visual_shader_model->data(
+        FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kConnectionsFieldNumber),
+                                    FieldPath::RepeatedAt(i),
+                                    FieldPath::FieldNumber(VisualShader::VisualShaderConnection::kFromPortIndexFieldNumber))).toInt();
+
+    int to_node_id = visual_shader_model->data(
+        FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kConnectionsFieldNumber),
+                                    FieldPath::RepeatedAt(i),
+                                    FieldPath::FieldNumber(VisualShader::VisualShaderConnection::kToNodeIdFieldNumber))).toInt();
+
+    int to_port_index = visual_shader_model->data(
+        FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kConnectionsFieldNumber),
+                                    FieldPath::RepeatedAt(i),
+                                    FieldPath::FieldNumber(VisualShader::VisualShaderConnection::kToPortIndexFieldNumber))).toInt();
+
+    bool result{scene->add_connection_to_scene(c_id, from_node_id, from_port_index, to_node_id, to_port_index)};
+    CONTINUE_IF_TRUE(!result, "Failed to add connection to scene");
+  }
 }
 
 void VisualShaderEditor::create_node(const QPointF& coordinate) {
   QTreeWidgetItem* selected_item{create_node_dialog->get_selected_item()};
 
-  if (!selected_item) {
-    return;
-  }
+  CHECK_PARAM_NULLPTR(selected_item, "Selected item is null");
 
   VisualShaderEditor::add_node(selected_item, coordinate);
 }
@@ -417,10 +490,7 @@ void VisualShaderEditor::add_node(QTreeWidgetItem* selected_item, const QPointF&
 
   CHECK_CONDITION_TRUE(!proto_node.canConvert<std::shared_ptr<IVisualShaderProtoNode>>(), "Node type is empty");
 
-  int n_id{VisualShaderGraphicsScene::get_new_node_id(visual_shader_model, nodes_model)};
-  CHECK_CONDITION_TRUE(n_id == 0, "The id " + std::to_string(n_id) + " is reserved for the output node");
-
-  bool result {scene->add_node(n_id, proto_node.value<std::shared_ptr<IVisualShaderProtoNode>>(), coordinate)};
+  bool result {scene->add_node(proto_node.value<std::shared_ptr<IVisualShaderProtoNode>>(), coordinate)};
   if (!result) {
     ERROR_PRINT("Failed to add node");
   }
@@ -856,7 +926,9 @@ VisualShaderGraphicsScene::VisualShaderGraphicsScene(QObject* parent)
   setItemIndexMethod(QGraphicsScene::NoIndex);  // https://doc.qt.io/qt-6/qgraphicsscene.html#ItemIndexMethod-enum
 }
 
-bool VisualShaderGraphicsScene::add_node(const int& n_id, const std::shared_ptr<IVisualShaderProtoNode>& proto_node, const QPointF& coordinate) {
+bool VisualShaderGraphicsScene::add_node_to_model(const int& n_id, const std::shared_ptr<IVisualShaderProtoNode>& proto_node, const QPointF& coordinate) {
+  CHECK_CONDITION_TRUE_NON_VOID(find_node_entry(visual_shader_model, connections_model, n_id) != -1, false, "Node already exists");
+
   int row_entry{nodes_model->append_row()};
 
   bool result = visual_shader_model->set_data(
@@ -1015,6 +1087,10 @@ bool VisualShaderGraphicsScene::add_node(const int& n_id, const std::shared_ptr<
     FAIL_AND_RETURN_NON_VOID(false, "Unknown node type");
   }
 
+  return true;
+}
+
+bool VisualShaderGraphicsScene::add_node_to_scene(const int& n_id, const std::shared_ptr<IVisualShaderProtoNode>& proto_node, const QPointF& coordinate) {
   CHECK_CONDITION_TRUE_NON_VOID(node_graphics_objects.find(n_id) != node_graphics_objects.end(), false,
                                 "Graphics node object already exists");
 
@@ -1061,17 +1137,15 @@ bool VisualShaderGraphicsScene::add_node(const int& n_id, const std::shared_ptr<
   QObject::connect(n_o, &VisualShaderNodeGraphicsObject::out_port_remove_requested, this,
                    &VisualShaderGraphicsScene::on_out_port_remove_requested);
 
+  // If not the output node
   if (n_id != 0) {
     VisualShaderNodeEmbedWidget* embed_widget{
-      new VisualShaderNodeEmbedWidget(visual_shader_model, nodes_model, n_id, proto_node)};
+      new VisualShaderNodeEmbedWidget(this, visual_shader_model, nodes_model, n_id, proto_node)};
     QGraphicsProxyWidget* embed_widget_proxy{new QGraphicsProxyWidget(n_o)};
     embed_widget_proxy->setWidget(embed_widget);
     n_o->set_embed_widget(embed_widget);
     QObject::connect(embed_widget, &VisualShaderNodeEmbedWidget::shader_preview_update_requested, this,
                     &VisualShaderGraphicsScene::on_update_shader_previewer_widgets_requested);
-
-    QObject::connect(embed_widget, &VisualShaderNodeEmbedWidget::node_update_requested, n_o,
-                    &VisualShaderNodeGraphicsObject::on_node_update_requested);
 
     // Send the shader previewer widget
     embed_widget->set_shader_previewer_widget(n_o->get_shader_previewer_widget());
@@ -1081,6 +1155,8 @@ bool VisualShaderGraphicsScene::add_node(const int& n_id, const std::shared_ptr<
                       &VisualShaderGraphicsScene::on_scene_update_requested);
     }
   }
+
+  n_o->update_layout(); // Update the layout of the node
 
   QObject::connect(n_o, &VisualShaderNodeGraphicsObject::node_deleted, this,
                    &VisualShaderGraphicsScene::on_node_deleted);
@@ -1092,10 +1168,26 @@ bool VisualShaderGraphicsScene::add_node(const int& n_id, const std::shared_ptr<
   return true;
 }
 
-bool VisualShaderGraphicsScene::delete_node(const int& n_id, const int& in_port_count, const int& out_port_count) {
+bool VisualShaderGraphicsScene::add_node(const std::shared_ptr<IVisualShaderProtoNode>& proto_node, const QPointF& coordinate, const int& n_id) {
+  int temp_n_id{n_id};
+
+  if (temp_n_id == -1)  {
+    temp_n_id = VisualShaderGraphicsScene::get_new_node_id(visual_shader_model, nodes_model);
+    CHECK_CONDITION_TRUE_NON_VOID(temp_n_id == 0, false, "The id " + std::to_string(temp_n_id) + " is reserved for the output node");
+  }
+
+  return add_node_to_model(temp_n_id, proto_node, coordinate) && add_node_to_scene(temp_n_id, proto_node, coordinate);
+}
+
+bool VisualShaderGraphicsScene::delete_node_from_model(const int& n_id) {
   int row_entry{find_node_entry(visual_shader_model, nodes_model, n_id)};
   VALIDATE_INDEX_NON_VOID(row_entry, nodes_model->rowCount(), false, "Node entry not found");
 
+  // Remove the node from the model
+  return nodes_model->remove_row(row_entry);
+}
+
+bool VisualShaderGraphicsScene::delete_node_from_scene(const int& n_id, const int& in_port_count, const int& out_port_count) {
   VisualShaderNodeGraphicsObject* n_o{this->get_node_graphics_object(n_id)};
   CHECK_PARAM_NULLPTR_NON_VOID(n_o, false, "Node graphics object is null");
 
@@ -1105,30 +1197,26 @@ bool VisualShaderGraphicsScene::delete_node(const int& n_id, const int& in_port_
     SILENT_CONTINUE_IF_TRUE(!i_port || !i_port->is_connected());
 
     // Get the output port of the connection
-    VisualShaderConnectionGraphicsObject* c_o{i_port->get_connection_graphics_object()};
+    const int c_id{i_port->get_c_id()};
+    VisualShaderConnectionGraphicsObject* c_o{get_connection_graphics_object(c_id)};
     SILENT_CONTINUE_IF_TRUE(!c_o);
 
-    bool result{this->delete_connection(c_o->get_from_node_id(), c_o->get_from_port_index(), n_id, i)};
-    CONTINUE_IF_TRUE(!result, "Failed to delete connection");
+    CONTINUE_IF_TRUE(!this->delete_connection(c_o->get_id(), c_o->get_from_node_id(), c_o->get_from_port_index(), n_id, i), "Failed to delete connection");
   }
 
   for (int i{0}; i < out_port_count; i++) {
     VisualShaderOutputPortGraphicsObject* o_port{n_o->get_output_port_graphics_object(i)};
     SILENT_CONTINUE_IF_TRUE(!o_port || !o_port->is_connected());
 
-    std::vector<VisualShaderConnectionGraphicsObject*> c_os{o_port->get_connection_graphics_objects()};
+    std::unordered_set<int> c_ids{o_port->get_c_ids()};
 
-    for (VisualShaderConnectionGraphicsObject* c_o : c_os) {
+    for (const int& c_id : c_ids) {
+      VisualShaderConnectionGraphicsObject* c_o{get_connection_graphics_object(c_id)};
       SILENT_CONTINUE_IF_TRUE(!c_o);
 
-      bool result{this->delete_connection(n_id, i, c_o->get_to_node_id(), c_o->get_to_port_index())};
-      CONTINUE_IF_TRUE(!result, "Failed to delete connection");
+      CONTINUE_IF_TRUE(!this->delete_connection(c_o->get_id(), n_id, i, c_o->get_to_node_id(), c_o->get_to_port_index()), "Failed to delete connection");
     }
   }
-
-  // Remove the node from the model
-  bool result{nodes_model->remove_row(row_entry)};
-  CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to remove row");
 
   // Remove the node from the scene
   // TODO: Why if we exchange the order of these two lines, the program crashes?
@@ -1138,6 +1226,87 @@ bool VisualShaderGraphicsScene::delete_node(const int& n_id, const int& in_port_
   remove_item(n_o);
 
   return true;
+}
+
+bool VisualShaderGraphicsScene::delete_node(const int& n_id, const int& in_port_count, const int& out_port_count) {
+  return delete_node_from_model(n_id) && delete_node_from_scene(n_id, in_port_count, out_port_count);
+}
+
+bool VisualShaderGraphicsScene::update_node_in_model(const int& n_id, const int& field_number, const QVariant& value) {
+  int row_entry{find_node_entry(visual_shader_model, nodes_model, n_id)};
+  CHECK_CONDITION_TRUE_NON_VOID(row_entry == -1, false, "Failed to find node entry");
+
+  const int oneof_value_field_number{get_node_type_field_number(nodes_model, row_entry)};
+  CHECK_CONDITION_TRUE_NON_VOID(oneof_value_field_number == -1, false, "Failed to get oneof value field number");
+
+  bool result{visual_shader_model->set_data(
+      FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry),
+                                  FieldPath::FieldNumber(oneof_value_field_number), FieldPath::FieldNumber(field_number)),
+      value)};
+  CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to update node in model");
+
+  return true;
+}
+
+bool VisualShaderGraphicsScene::update_node_in_scene(const int& n_id, const int& field_number, const QVariant& value) {
+  VisualShaderNodeGraphicsObject* n_o{this->get_node_graphics_object(n_id)};
+  CHECK_PARAM_NULLPTR_NON_VOID(n_o, false, "Node graphics object is null");
+
+  QWidget* embed_widget{n_o->get_embed_widget()};
+  CHECK_PARAM_NULLPTR_NON_VOID(embed_widget, false, "Embed widget is null");
+
+  VisualShaderNodeEmbedWidget* embed_widget_cast{dynamic_cast<VisualShaderNodeEmbedWidget*>(embed_widget)};
+  CHECK_PARAM_NULLPTR_NON_VOID(embed_widget_cast, false, "Embed widget is not a VisualShaderNodeEmbedWidget");
+
+  QWidget* widget{embed_widget_cast->get_embed_widget(field_number)};
+  CHECK_PARAM_NULLPTR_NON_VOID(widget, false, "Widget is null");
+
+  widget->blockSignals(true); // Block signals to prevent saving the value to the model
+
+  if (auto combo_box{dynamic_cast<VisualShaderNodeEmbedComboBox*>(widget)}) {
+    combo_box->set_current_index(value.toInt());
+  } else if (auto line_edit{dynamic_cast<VisualShaderNodeEmbedLineEditFloat*>(widget)}) {
+    line_edit->set_current_text(value.toString().toStdString());
+  } else if (auto line_edit{dynamic_cast<VisualShaderNodeEmbedLineEditInt*>(widget)})  {
+    line_edit->set_current_text(value.toString().toStdString());
+  } else if (auto line_edit{dynamic_cast<VisualShaderNodeEmbedLineEditUInt*>(widget)}) {
+    line_edit->set_current_text(value.toString().toStdString());
+  } else if (auto check_box{dynamic_cast<VisualShaderNodeEmbedCheckBox*>(widget)}) {
+    check_box->set_checked(value.toBool());
+  } else if (auto color_picker{dynamic_cast<VisualShaderNodeEmbedColorPicker*>(widget)}) {
+    switch (field_number) {
+      case VisualShaderNodeColorConstant::kRFieldNumber: {
+        color_picker->set_r(value.toInt());
+        break;
+      }
+      case VisualShaderNodeColorConstant::kGFieldNumber: {
+        color_picker->set_g(value.toInt());
+        break;
+      }
+      case VisualShaderNodeColorConstant::kBFieldNumber: {
+        color_picker->set_b(value.toInt());
+        break;
+      }
+      case VisualShaderNodeColorConstant::kAFieldNumber: {
+        color_picker->set_a(value.toInt());
+        break;
+      }
+      default: {
+        FAIL_AND_RETURN_NON_VOID(false, "Unknown field number");
+      }
+    }
+  } else {
+    FAIL_AND_RETURN_NON_VOID(false, "Unknown widget type");
+  }
+
+  widget->blockSignals(false); // Unblock signals
+
+  return true;
+}
+
+bool VisualShaderGraphicsScene::update_node(const int& n_id, const int& field_number, const QVariant& value) {
+  return update_node_in_model(n_id, field_number, value) &&
+         update_node_in_scene(n_id, field_number, value);
 }
 
 void VisualShaderGraphicsScene::on_update_shader_previewer_widgets_requested() {
@@ -1164,13 +1333,15 @@ void VisualShaderGraphicsScene::on_update_shader_previewer_widgets_requested() {
   }
 }
 
-void VisualShaderGraphicsScene::on_scene_update_requested() { update(); }
-
 void VisualShaderGraphicsScene::on_in_port_remove_requested(VisualShaderInputPortGraphicsObject* in_port) {
   if (in_port->is_connected()) {
-    VisualShaderConnectionGraphicsObject* c_o{in_port->get_connection_graphics_object()};
-    delete_connection(c_o->get_from_node_id(), c_o->get_from_port_index(), c_o->get_to_node_id(),
-                      c_o->get_to_port_index());
+    const int c_id{in_port->get_c_id()};
+    VisualShaderConnectionGraphicsObject* c_o{get_connection_graphics_object(c_id)};
+    CHECK_PARAM_NULLPTR(c_o, "Connection graphics object is null");
+
+    CHECK_CONDITION_TRUE(!delete_connection(c_o->get_id(), c_o->get_from_node_id(), c_o->get_from_port_index(), c_o->get_to_node_id(),
+                      c_o->get_to_port_index()),
+                     "Failed to delete connection");
   }
 
   remove_item(in_port);
@@ -1178,10 +1349,15 @@ void VisualShaderGraphicsScene::on_in_port_remove_requested(VisualShaderInputPor
 
 void VisualShaderGraphicsScene::on_out_port_remove_requested(VisualShaderOutputPortGraphicsObject* out_port) {
   if (out_port->is_connected()) {
-    std::vector<VisualShaderConnectionGraphicsObject*> c_os{out_port->get_connection_graphics_objects()};
-    for (VisualShaderConnectionGraphicsObject* c_o : c_os) {
-      delete_connection(c_o->get_from_node_id(), c_o->get_from_port_index(), c_o->get_to_node_id(),
-                        c_o->get_to_port_index());
+    std::unordered_set<int> c_ids{out_port->get_c_ids()};
+
+    for (const int& c_id : c_ids) {
+      VisualShaderConnectionGraphicsObject* c_o{get_connection_graphics_object(c_id)};
+      SILENT_CONTINUE_IF_TRUE(!c_o);
+
+      CONTINUE_IF_TRUE(!delete_connection(c_o->get_id(), c_o->get_from_node_id(), c_o->get_from_port_index(), c_o->get_to_node_id(),
+                              c_o->get_to_port_index()),
+                       "Failed to delete connection");
     }
   }
 
@@ -1250,142 +1426,340 @@ int VisualShaderGraphicsScene::find_connection_entry(ProtoModel* visual_shader_m
   return -1;
 }
 
-bool VisualShaderGraphicsScene::add_connection(const int& from_node_id, const int& from_port_index,
-                                               const int& to_node_id, const int& to_port_index) {
-  QList<QGraphicsView*> views{this->views()};
-  CHECK_CONDITION_TRUE_NON_VOID(views.isEmpty(), false, "No views available");
+int VisualShaderGraphicsScene::get_node_type_field_number(ProtoModel* nodes_model, const int& row_entry) {
+  const RepeatedMessageModel* repeated_nodes{dynamic_cast<const RepeatedMessageModel*>(nodes_model)};
+  CHECK_PARAM_NULLPTR_NON_VOID(repeated_nodes, -1, "Nodes is not a repeated message model.");
+
+  const MessageModel* node_model{repeated_nodes->get_sub_model(row_entry)};
+
+  // I don't care about the field number, just send any field number inside the oneof model you want to get
+  const ProtoModel* oneof_model{
+      node_model->get_sub_model(FieldPath::Of<VisualShader::VisualShaderNode>(
+                                    FieldPath::FieldNumber(VisualShader::VisualShaderNode::kInputFieldNumber)),
+                                false, true)};
+  CHECK_PARAM_NULLPTR_NON_VOID(oneof_model, -1, "Oneof Model is nullptr.");
+
+  return oneof_model->get_oneof_value_field_number();
+}
+
+bool VisualShaderGraphicsScene::add_connection_to_model(const int& c_id, const int& from_node_id, const int& from_port_index, const int& to_node_id,
+                              const int& to_port_index) {
+  CHECK_CONDITION_TRUE_NON_VOID(find_connection_entry(visual_shader_model, connections_model, c_id) != -1, false, "Connection already exists");
+
+  int row_entry{connections_model->append_row()};
+
+  bool result = visual_shader_model->set_data(
+      FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kConnectionsFieldNumber),
+                                  FieldPath::RepeatedAt(row_entry),
+                                  FieldPath::FieldNumber(VisualShader::VisualShaderConnection::kIdFieldNumber)),
+      c_id);
+  CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to set connection id");
+
+  result = visual_shader_model->set_data(
+      FieldPath::Of<VisualShader>(
+          FieldPath::FieldNumber(VisualShader::kConnectionsFieldNumber), FieldPath::RepeatedAt(row_entry),
+          FieldPath::FieldNumber(VisualShader::VisualShaderConnection::kFromNodeIdFieldNumber)),
+      from_node_id);
+  CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to set connection from node id");
+
+  result = visual_shader_model->set_data(
+      FieldPath::Of<VisualShader>(
+          FieldPath::FieldNumber(VisualShader::kConnectionsFieldNumber), FieldPath::RepeatedAt(row_entry),
+          FieldPath::FieldNumber(VisualShader::VisualShaderConnection::kFromPortIndexFieldNumber)),
+      from_port_index);
+  CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to set connection from port index");
+
+  result = visual_shader_model->set_data(
+      FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kConnectionsFieldNumber),
+                                  FieldPath::RepeatedAt(row_entry),
+                                  FieldPath::FieldNumber(VisualShader::VisualShaderConnection::kToNodeIdFieldNumber)),
+      to_node_id);
+  CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to set connection to node id");
+
+  result = visual_shader_model->set_data(
+      FieldPath::Of<VisualShader>(
+          FieldPath::FieldNumber(VisualShader::kConnectionsFieldNumber), FieldPath::RepeatedAt(row_entry),
+          FieldPath::FieldNumber(VisualShader::VisualShaderConnection::kToPortIndexFieldNumber)),
+      to_port_index);
+  CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to set connection to port index");
+
+  return true;
+}
+                            
+bool VisualShaderGraphicsScene::add_connection_to_scene(const int& from_node_id, const int& from_port_index, const int& to_node_id,
+                              const int& to_port_index) {
+  CHECK_PARAM_NULLPTR_NON_VOID(this->temporary_connection_graphics_object, false, "Temporary connection object is null");
+  CHECK_CONDITION_TRUE_NON_VOID(connection_graphics_objects.find(this->temporary_connection_graphics_object->get_id()) != connection_graphics_objects.end(), false, "Connection graphics object already exists");
 
   // Create the connection and set its start
+  VisualShaderNodeGraphicsObject* to_n_o{this->get_node_graphics_object(to_node_id)};
+  CHECK_PARAM_NULLPTR_NON_VOID(to_n_o, false, "Failed to get to node graphics object");
+
+  VisualShaderInputPortGraphicsObject* to_i_port{to_n_o->get_input_port_graphics_object(to_port_index)};
+  CHECK_PARAM_NULLPTR_NON_VOID(to_i_port, false, "Failed to get to input port graphics object");
+
+  CHECK_CONDITION_TRUE_NON_VOID(to_i_port->is_connected(), false, "Connection is already connected");
+
   VisualShaderNodeGraphicsObject* from_n_o{this->get_node_graphics_object(from_node_id)};
   CHECK_PARAM_NULLPTR_NON_VOID(from_n_o, false, "Failed to get from node graphics object");
 
   VisualShaderOutputPortGraphicsObject* from_o_port{from_n_o->get_output_port_graphics_object(from_port_index)};
   CHECK_PARAM_NULLPTR_NON_VOID(from_o_port, false, "Failed to get from output port graphics object");
 
-  VisualShaderGraphicsView* view{dynamic_cast<VisualShaderGraphicsView*>(views.first())};
+  CHECK_CONDITION_TRUE_NON_VOID(!check_if_connection_out_of_bounds(from_o_port, to_i_port), false, "Connection is out of bounds");
 
-  if (from_o_port->get_global_coordinate().x() < view->get_x() ||
-      from_o_port->get_global_coordinate().x() > view->get_x() + view->get_width()) {
-    WARN_PRINT("Start of connection is out of view bounds");
-  }
+  CHECK_CONDITION_TRUE_NON_VOID(!to_i_port->connect(this->temporary_connection_graphics_object->get_id()), false, "Failed to connect to input port graphics object");
+  this->temporary_connection_graphics_object->set_end_coordinate(to_i_port->get_global_coordinate());
+  this->temporary_connection_graphics_object->set_to_node_id(to_node_id);
+  this->temporary_connection_graphics_object->set_to_port_index(to_port_index);
 
-  if (!this->temporary_connection_graphics_object) {
-    int c_id{get_new_connection_id(visual_shader_model, connections_model)};
-    this->temporary_connection_graphics_object = new VisualShaderConnectionGraphicsObject(
-        c_id, from_node_id, from_port_index, from_o_port->get_global_coordinate());
-    from_o_port->connect(this->temporary_connection_graphics_object);
-    addItem(this->temporary_connection_graphics_object);
-    return true;
-  }
+  this->temporary_connection_graphics_object->update_layout();
+  connection_graphics_objects[this->temporary_connection_graphics_object->get_id()] = this->temporary_connection_graphics_object;
 
-  if (to_node_id != -1 && to_port_index != -1) {
-    // Set the end of the connection
-    VisualShaderNodeGraphicsObject* to_n_o{this->get_node_graphics_object(to_node_id)};
-    CHECK_PARAM_NULLPTR_NON_VOID(to_n_o, false, "Failed to get to node graphics object");
+  this->temporary_connection_graphics_object = nullptr;  // Make sure to reset the temporary connection object
 
-    VisualShaderInputPortGraphicsObject* to_i_port{to_n_o->get_input_port_graphics_object(to_port_index)};
-    CHECK_PARAM_NULLPTR_NON_VOID(to_i_port, false, "Failed to get to input port graphics object");
+  on_update_shader_previewer_widgets_requested();
 
-    if (to_i_port->get_global_coordinate().y() < view->get_y() ||
-        to_i_port->get_global_coordinate().y() > view->get_y() + view->get_height()) {
-      WARN_PRINT("End of connection is out of view bounds");
-    }
+  return true;
+}
 
-    int c_id{get_new_connection_id(visual_shader_model, connections_model)};
+bool VisualShaderGraphicsScene::add_connection_to_scene(const int& c_id, const int& from_node_id, const int& from_port_index, const int& to_node_id,
+                               const int& to_port_index) {
+  CHECK_CONDITION_TRUE_NON_VOID(connection_graphics_objects.find(c_id) != connection_graphics_objects.end(), false,
+                                "Connection graphics object already exists");
 
-    int row_entry{connections_model->append_row()};
+  VisualShaderNodeGraphicsObject* from_n_o{this->get_node_graphics_object(from_node_id)};
+  CHECK_PARAM_NULLPTR_NON_VOID(from_n_o, false, "Failed to get from node graphics object");
 
-    bool result = visual_shader_model->set_data(
-        FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kConnectionsFieldNumber),
-                                    FieldPath::RepeatedAt(row_entry),
-                                    FieldPath::FieldNumber(VisualShader::VisualShaderConnection::kIdFieldNumber)),
-        c_id);
-    CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to set connection id");
+  VisualShaderOutputPortGraphicsObject* from_o_port{from_n_o->get_output_port_graphics_object(from_port_index)};
+  CHECK_PARAM_NULLPTR_NON_VOID(from_o_port, false, "Failed to get from output port graphics object");
 
-    result = visual_shader_model->set_data(
-        FieldPath::Of<VisualShader>(
-            FieldPath::FieldNumber(VisualShader::kConnectionsFieldNumber), FieldPath::RepeatedAt(row_entry),
-            FieldPath::FieldNumber(VisualShader::VisualShaderConnection::kFromNodeIdFieldNumber)),
-        from_node_id);
-    CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to set connection from node id");
+  VisualShaderNodeGraphicsObject* to_n_o{this->get_node_graphics_object(to_node_id)};
+  CHECK_PARAM_NULLPTR_NON_VOID(to_n_o, false, "Failed to get to node graphics object");
 
-    result = visual_shader_model->set_data(
-        FieldPath::Of<VisualShader>(
-            FieldPath::FieldNumber(VisualShader::kConnectionsFieldNumber), FieldPath::RepeatedAt(row_entry),
-            FieldPath::FieldNumber(VisualShader::VisualShaderConnection::kFromPortIndexFieldNumber)),
-        from_port_index);
-    CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to set connection from port index");
+  VisualShaderInputPortGraphicsObject* to_i_port{to_n_o->get_input_port_graphics_object(to_port_index)};
+  CHECK_PARAM_NULLPTR_NON_VOID(to_i_port, false, "Failed to get to input port graphics object");
 
-    result = visual_shader_model->set_data(
-        FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kConnectionsFieldNumber),
-                                    FieldPath::RepeatedAt(row_entry),
-                                    FieldPath::FieldNumber(VisualShader::VisualShaderConnection::kToNodeIdFieldNumber)),
-        to_node_id);
-    CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to set connection to node id");
+  CHECK_CONDITION_TRUE_NON_VOID(!check_if_connection_out_of_bounds(from_o_port, to_i_port), false, "Connection is out of bounds");
+  CHECK_CONDITION_TRUE_NON_VOID(to_i_port->is_connected(), false, "Connection is already connected");
 
-    result = visual_shader_model->set_data(
-        FieldPath::Of<VisualShader>(
-            FieldPath::FieldNumber(VisualShader::kConnectionsFieldNumber), FieldPath::RepeatedAt(row_entry),
-            FieldPath::FieldNumber(VisualShader::VisualShaderConnection::kToPortIndexFieldNumber)),
-        to_port_index);
-    CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to set connection to port index");
+  CHECK_CONDITION_TRUE_NON_VOID(!from_o_port->connect(c_id), false, "Failed to connect from connection graphics object");
+  CHECK_CONDITION_TRUE_NON_VOID(!to_i_port->connect(c_id), false, "Failed to connect to connection graphics object");
 
-    this->temporary_connection_graphics_object->set_end_coordinate(to_i_port->get_global_coordinate());
-    to_i_port->connect(this->temporary_connection_graphics_object);
-    this->temporary_connection_graphics_object->set_to_node_id(to_node_id);
-    this->temporary_connection_graphics_object->set_to_port_index(to_port_index);
-    this->temporary_connection_graphics_object = nullptr;  // Make sure to reset the temporary connection object
+  VisualShaderConnectionGraphicsObject* c_o{new VisualShaderConnectionGraphicsObject(
+      c_id, from_node_id, from_port_index, from_o_port->get_global_coordinate())};
 
-    on_update_shader_previewer_widgets_requested();
+  c_o->set_end_coordinate(to_i_port->get_global_coordinate());
+  c_o->set_to_node_id(to_node_id);
+  c_o->set_to_port_index(to_port_index);
 
-    return true;
-  }
+  c_o->update_layout();
+  connection_graphics_objects[c_id] = c_o;
 
-  return false;
+  addItem(c_o);
+
+  on_update_shader_previewer_widgets_requested();
+
+  return true;
+}
+
+bool VisualShaderGraphicsScene::add_connection(const int& c_id, const int& from_node_id, const int& from_port_index,
+                                               const int& to_node_id, const int& to_port_index) {
+  return add_connection_to_model(c_id, from_node_id, from_port_index, to_node_id, to_port_index) &&
+         add_connection_to_scene(from_node_id, from_port_index, to_node_id, to_port_index);
+}
+
+bool VisualShaderGraphicsScene::delete_connection_from_model(const int& c_id) {
+  int row_entry{find_connection_entry(visual_shader_model, connections_model, c_id)};
+  VALIDATE_INDEX_NON_VOID(row_entry, connections_model->rowCount(), false, "Connection entry not found");
+
+  return connections_model->remove_row(row_entry);
+}
+
+bool VisualShaderGraphicsScene::delete_connection_from_scene(const int& c_id, const int& from_node_id, const int& from_port_index,
+                                  const int& to_node_id, const int& to_port_index) {
+  VisualShaderNodeGraphicsObject* to_n_o{this->get_node_graphics_object(to_node_id)};
+  CHECK_PARAM_NULLPTR_NON_VOID(to_n_o, false, "Failed to get to node graphics object");
+
+  VisualShaderInputPortGraphicsObject* to_i_port{to_n_o->get_input_port_graphics_object(to_port_index)};
+  CHECK_PARAM_NULLPTR_NON_VOID(to_i_port, false, "Failed to get to input port graphics object");
+
+  CHECK_CONDITION_TRUE_NON_VOID(!to_i_port->is_connected(), false, "Output port is not connected");
+
+  VisualShaderNodeGraphicsObject* from_n_o{this->get_node_graphics_object(from_node_id)};
+  CHECK_PARAM_NULLPTR_NON_VOID(from_n_o, false, "Failed to get from node graphics object");
+
+  VisualShaderOutputPortGraphicsObject* from_o_port{from_n_o->get_output_port_graphics_object(from_port_index)};
+  CHECK_PARAM_NULLPTR_NON_VOID(from_o_port, false, "Failed to get from output port graphics object");
+
+  CHECK_CONDITION_TRUE_NON_VOID(!from_o_port->is_connected(), false, "Output port is not connected");
+  CHECK_CONDITION_TRUE_NON_VOID(!to_i_port->detach_connection(), false, "Failed to detach connection");
+  CHECK_CONDITION_TRUE_NON_VOID(!from_o_port->detach_connection(c_id), false, "Failed to detach connection");
+
+  VisualShaderConnectionGraphicsObject* c_o{get_connection_graphics_object(c_id)};
+  CHECK_PARAM_NULLPTR_NON_VOID(c_o, false, "Failed to get connection graphics object");
+
+  int erased_count{(int)this->connection_graphics_objects.erase(c_id)};
+  CHECK_CONDITION_TRUE_NON_VOID(erased_count == 0, false, "Failed to erase connection graphics object");
+
+  remove_item(c_o);
+
+  on_update_shader_previewer_widgets_requested();
+
+  return true;
 }
 
 bool VisualShaderGraphicsScene::delete_connection(const int& c_id, const int& from_node_id, const int& from_port_index,
                                                   const int& to_node_id, const int& to_port_index) {
+  return delete_connection_from_model(c_id) &&
+         delete_connection_from_scene(c_id, from_node_id, from_port_index, to_node_id, to_port_index);
+}
+
+bool VisualShaderGraphicsScene::add_temporary_connection(const int& from_node_id, const int& from_port_index) {
+  if  (this->temporary_connection_graphics_object != nullptr)  {
+    return false;
+  }
+
   VisualShaderNodeGraphicsObject* from_n_o{this->get_node_graphics_object(from_node_id)};
   CHECK_PARAM_NULLPTR_NON_VOID(from_n_o, false, "Failed to get from node graphics object");
 
   VisualShaderOutputPortGraphicsObject* from_o_port{from_n_o->get_output_port_graphics_object(from_port_index)};
   CHECK_PARAM_NULLPTR_NON_VOID(from_o_port, false, "Failed to get from output port graphics object");
 
-  if (this->temporary_connection_graphics_object) {
-    from_o_port->detach_connection(this->temporary_connection_graphics_object);
-    remove_item(this->temporary_connection_graphics_object);
-    this->temporary_connection_graphics_object = nullptr;
-    return true;
+  int c_id{get_new_connection_id(visual_shader_model, connections_model)};
+  CHECK_CONDITION_TRUE_NON_VOID(!from_o_port->connect(c_id), false, "Failed to connect connection");
+  this->temporary_connection_graphics_object = new VisualShaderConnectionGraphicsObject(
+      c_id, from_node_id, from_port_index, from_o_port->get_global_coordinate());
+  this->temporary_connection_graphics_object->update_layout();
+  addItem(this->temporary_connection_graphics_object);
+
+  return true;
+}
+
+bool VisualShaderGraphicsScene::delete_temporary_connection(const int& from_node_id, const int& from_port_index) {
+  CHECK_PARAM_NULLPTR_NON_VOID(this->temporary_connection_graphics_object, false, "Temporary connection object is null");
+
+  VisualShaderNodeGraphicsObject* from_n_o{this->get_node_graphics_object(from_node_id)};
+  CHECK_PARAM_NULLPTR_NON_VOID(from_n_o, false, "Failed to get from node graphics object");
+
+  VisualShaderOutputPortGraphicsObject* from_o_port{from_n_o->get_output_port_graphics_object(from_port_index)};
+  CHECK_PARAM_NULLPTR_NON_VOID(from_o_port, false, "Failed to get from output port graphics object");
+
+  CHECK_CONDITION_TRUE_NON_VOID(!from_o_port->is_connected(), false, "Output port is not connected");
+
+  CHECK_CONDITION_TRUE_NON_VOID(!from_o_port->detach_connection(this->temporary_connection_graphics_object->get_id()), false, "Failed to detach connection");
+  remove_item(this->temporary_connection_graphics_object);
+  this->temporary_connection_graphics_object = nullptr;
+
+  return true;
+}
+
+bool VisualShaderGraphicsScene::convert_to_temporary_connection(const int& c_id, const int& to_node_id, const int& to_port_index) {
+  VisualShaderConnectionGraphicsObject* c_o{get_connection_graphics_object(c_id)};
+  CHECK_PARAM_NULLPTR_NON_VOID(c_o, false, "Connection graphics object is null");
+
+  VisualShaderNodeGraphicsObject* to_n_o{this->get_node_graphics_object(to_node_id)};
+  CHECK_PARAM_NULLPTR_NON_VOID(to_n_o, false, "Failed to get to node graphics object");
+
+  VisualShaderInputPortGraphicsObject* to_i_port{to_n_o->get_input_port_graphics_object(to_port_index)};
+  CHECK_PARAM_NULLPTR_NON_VOID(to_i_port, false, "Failed to get to input port graphics object");
+
+  CHECK_CONDITION_TRUE_NON_VOID(!to_i_port->is_connected(), false, "Input port is not connected");
+  
+  CHECK_CONDITION_TRUE_NON_VOID(!to_i_port->detach_connection(), false, "Failed to detach connection");
+  c_o->detach_end();
+
+  int erased_count{(int)this->connection_graphics_objects.erase(c_id)};
+  CHECK_CONDITION_TRUE_NON_VOID(erased_count == 0, false, "Failed to erase connection graphics object");
+
+  on_update_shader_previewer_widgets_requested();
+
+  return true;
+}
+
+bool VisualShaderGraphicsScene::update_connection_in_model(const int& c_id, const int& node_id_field_number, const int& port_index_field_number, const int& node_id, const int& port_index) {
+  int row_entry{find_connection_entry(visual_shader_model, connections_model, c_id)};
+  VALIDATE_INDEX_NON_VOID(row_entry, connections_model->rowCount(), false, "Connection entry not found");
+
+  bool result{visual_shader_model->set_data(
+      FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kConnectionsFieldNumber),
+                                  FieldPath::RepeatedAt(row_entry),
+                                  FieldPath::FieldNumber(node_id_field_number)),
+      node_id)};
+  CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to update connection in model");
+
+  result = visual_shader_model->set_data(
+      FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kConnectionsFieldNumber),
+                                  FieldPath::RepeatedAt(row_entry),
+                                  FieldPath::FieldNumber(port_index_field_number)),
+      port_index);
+  CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to update connection in model");
+
+  return true;
+}
+
+bool VisualShaderGraphicsScene::update_connection_in_scene(const int& c_id, const int& node_id_field_number, const int& node_id, const int& port_index) {
+  VisualShaderConnectionGraphicsObject* c_o{get_connection_graphics_object(c_id)};
+  CHECK_PARAM_NULLPTR_NON_VOID(c_o, false, "Failed to get connection graphics object");
+
+  switch (node_id_field_number) {
+    case VisualShader::VisualShaderConnection::kFromNodeIdFieldNumber: {
+      VisualShaderNodeGraphicsObject* from_n_o{this->get_node_graphics_object(c_o->get_from_node_id())};
+      CHECK_PARAM_NULLPTR_NON_VOID(from_n_o, false, "Failed to get from node graphics object");
+
+      VisualShaderOutputPortGraphicsObject* from_o_port{from_n_o->get_output_port_graphics_object(c_o->get_from_port_index())};
+      CHECK_PARAM_NULLPTR_NON_VOID(from_o_port, false, "Failed to get from output port graphics object");
+
+      VisualShaderNodeGraphicsObject* target_from_n_o{this->get_node_graphics_object(node_id)};
+      CHECK_PARAM_NULLPTR_NON_VOID(target_from_n_o, false, "Failed to get from node graphics object");
+
+      VisualShaderOutputPortGraphicsObject* target_from_o_port{target_from_n_o->get_output_port_graphics_object(port_index)};
+      CHECK_PARAM_NULLPTR_NON_VOID(target_from_o_port, false,  "Failed to get from output port graphics object");
+
+      CHECK_CONDITION_TRUE_NON_VOID(!from_o_port->detach_connection(c_id), false, "Failed to detach connection");
+      CHECK_CONDITION_TRUE_NON_VOID(!target_from_o_port->connect(c_id), false, "Failed to connect connection");
+
+      c_o->set_from_node_id(node_id);
+      c_o->set_from_port_index(port_index);
+      c_o->set_start_coordinate(target_from_o_port->get_global_coordinate());
+      c_o->update_layout();
+
+      break;
+    }
+    case VisualShader::VisualShaderConnection::kToNodeIdFieldNumber: {
+      VisualShaderNodeGraphicsObject* to_n_o{this->get_node_graphics_object(c_o->get_to_node_id())};
+      CHECK_PARAM_NULLPTR_NON_VOID(to_n_o, false, "Failed to get to node graphics object");
+
+      VisualShaderInputPortGraphicsObject* to_i_port{to_n_o->get_input_port_graphics_object(c_o->get_to_port_index())};
+      CHECK_PARAM_NULLPTR_NON_VOID(to_i_port, false, "Failed to get to input port graphics object");
+
+      VisualShaderNodeGraphicsObject* target_to_n_o{this->get_node_graphics_object(node_id)};
+      CHECK_PARAM_NULLPTR_NON_VOID(target_to_n_o, false, "Failed to get to node graphics object");
+
+      VisualShaderInputPortGraphicsObject* target_to_i_port{target_to_n_o->get_input_port_graphics_object(port_index)};
+      CHECK_PARAM_NULLPTR_NON_VOID(target_to_i_port, false, "Failed to get to input port graphics object");
+
+      CHECK_CONDITION_TRUE_NON_VOID(!to_i_port->detach_connection(), false, "Failed to detach connection");
+      CHECK_CONDITION_TRUE_NON_VOID(!target_to_i_port->connect(c_id), false, "Failed to connect connection");
+
+      c_o->set_to_node_id(node_id);
+      c_o->set_to_port_index(port_index);
+      c_o->set_end_coordinate(target_to_i_port->get_global_coordinate());
+      c_o->update_layout();
+
+      break;
+    }
+    default: {
+      FAIL_AND_RETURN_NON_VOID(false, "Unknown field number");
+    }
   }
 
-  // If we have a complete connection, then we can disconnect the nodes
-  if (to_node_id != -1 && to_port_index != -1) {
-    VisualShaderConnectionGraphicsObject* c_o{from_o_port->get_connection_graphics_object(to_node_id, to_port_index)};
-    CHECK_PARAM_NULLPTR_NON_VOID(c_o, false, "Failed to get connection graphics object");
+  return true;
+}
 
-    VisualShaderNodeGraphicsObject* to_n_o{this->get_node_graphics_object(to_node_id)};
-    CHECK_PARAM_NULLPTR_NON_VOID(to_n_o, false, "Failed to get to node graphics object");
-
-    VisualShaderInputPortGraphicsObject* to_i_port{to_n_o->get_input_port_graphics_object(to_port_index)};
-    CHECK_PARAM_NULLPTR_NON_VOID(to_i_port, false, "Failed to get to input port graphics object");
-
-    int row_entry{find_connection_entry(visual_shader_model, connections_model, c_id)};
-    VALIDATE_INDEX_NON_VOID(row_entry, connections_model->rowCount(), false, "Connection entry not found");
-
-    bool result{connections_model->remove_row(row_entry)};
-    CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to remove connection entry");
-
-    to_i_port->detach_connection();
-    from_o_port->detach_connection(c_o);
-    remove_item(c_o);
-
-    on_update_shader_previewer_widgets_requested();
-
-    return true;
-  }
-
-  return false;
+bool VisualShaderGraphicsScene::update_connection(const int& c_id, const int& node_id_field_number, const int& port_index_field_number, const int& node_id, const int& port_index) {
+  return update_connection_in_model(c_id, node_id_field_number, port_index_field_number, node_id, port_index) &&
+         update_connection_in_scene(c_id, node_id_field_number, node_id, port_index);
 }
 
 VisualShaderNodeGraphicsObject* VisualShaderGraphicsScene::get_node_graphics_object(const int& n_id) const {
@@ -1398,6 +1772,19 @@ VisualShaderNodeGraphicsObject* VisualShaderGraphicsScene::get_node_graphics_obj
 
   return n_o;
 }
+
+VisualShaderConnectionGraphicsObject* VisualShaderGraphicsScene::get_connection_graphics_object(const int& c_id) const {
+  VisualShaderConnectionGraphicsObject* c_o{nullptr};
+
+  auto it{connection_graphics_objects.find(c_id)};
+  if  (it  != connection_graphics_objects.end())  {
+    c_o = it->second;
+  }
+
+  return c_o;
+}
+
+void VisualShaderGraphicsScene::on_scene_update_requested() { update(); }
 
 void VisualShaderGraphicsScene::on_node_deleted(const int& n_id, const int& in_port_count, const int& out_port_count) {
   CHECK_CONDITION_TRUE(n_id == 0, "Cannot delete the output node");
@@ -1424,19 +1811,11 @@ void VisualShaderGraphicsScene::on_port_dragged(QGraphicsObject* port, const QPo
     SILENT_CHECK_PARAM_NULLPTR(i_port);
 
     if (i_port->is_connected() && !temporary_connection_graphics_object) {
-      c_o = i_port->get_connection_graphics_object();
+      const int c_id = i_port->get_c_id();
+      c_o = get_connection_graphics_object(c_id);
       temporary_connection_graphics_object = c_o;  // Store the connection object for access in the next drag call
-      int c_id{c_o->get_id()};
-      int row_entry{find_connection_entry(visual_shader_model, connections_model, c_id)};
-      VALIDATE_INDEX(row_entry, connections_model->rowCount(), "Connection entry not found");
-      bool result{connections_model->remove_row(row_entry)};
-      if (!result) {
-        ERROR_PRINT("Failed to remove connection entry");
-      }
-      i_port->detach_connection();
-      c_o->detach_end();  
-
-      on_update_shader_previewer_widgets_requested();
+      CHECK_CONDITION_TRUE(!delete_connection_from_model(c_id), "Failed to delete connection from model");
+      CHECK_CONDITION_TRUE(!convert_to_temporary_connection(c_id, i_port->get_node_id(), i_port->get_port_index()), "Failed to convert to temporary connection");
     } else if (!i_port->is_connected() && temporary_connection_graphics_object) {
       c_o = temporary_connection_graphics_object;
       on_scene_update_requested();
@@ -1445,6 +1824,7 @@ void VisualShaderGraphicsScene::on_port_dragged(QGraphicsObject* port, const QPo
     }
 
     c_o->set_end_coordinate(coordinate);
+    c_o->update_layout();
 
     return;
   }
@@ -1452,7 +1832,7 @@ void VisualShaderGraphicsScene::on_port_dragged(QGraphicsObject* port, const QPo
   if (o_port->is_connected() && temporary_connection_graphics_object) {
     c_o = temporary_connection_graphics_object;
   } else if (!temporary_connection_graphics_object) {
-    bool result{this->add_connection(o_port->get_node_id(), o_port->get_port_index())};
+    bool result{this->add_temporary_connection(o_port->get_node_id(), o_port->get_port_index())};
     CHECK_CONDITION_TRUE(!result, "Failed to add connection");
     c_o = temporary_connection_graphics_object;
   } else {
@@ -1460,11 +1840,14 @@ void VisualShaderGraphicsScene::on_port_dragged(QGraphicsObject* port, const QPo
   }
 
   c_o->set_end_coordinate(coordinate);
+  c_o->update_layout();
 }
 
 void VisualShaderGraphicsScene::on_port_dropped(QGraphicsObject* port, const QPointF& coordinate) {
   VisualShaderConnectionGraphicsObject* c_o{temporary_connection_graphics_object};
   SILENT_CHECK_PARAM_NULLPTR(c_o);
+
+  int c_id{c_o->get_id()};
 
   // Find all items under the coordinate
   QList<QGraphicsItem*> items_at_coordinate{this->items(coordinate)};
@@ -1484,8 +1867,7 @@ void VisualShaderGraphicsScene::on_port_dropped(QGraphicsObject* port, const QPo
     SILENT_CHECK_PARAM_NULLPTR(i_port);
 
     if (!in_p_o) {
-      int c_id{c_o->get_id()};
-      bool result{this->delete_connection(c_id, c_o->get_from_node_id(), c_o->get_from_port_index())};
+      bool result{this->delete_temporary_connection(c_o->get_from_node_id(), c_o->get_from_port_index())};
       if (!result) {
         ERROR_PRINT("Failed to delete connection");
       }
@@ -1493,12 +1875,20 @@ void VisualShaderGraphicsScene::on_port_dropped(QGraphicsObject* port, const QPo
       return;  // Return because we dragging an input port and dropped on nothing
     }
 
-    bool result{add_connection(c_o->get_from_node_id(), c_o->get_from_port_index(), in_p_o->get_node_id(),
+    if (in_p_o->is_connected()) {
+      bool result{this->delete_temporary_connection(c_o->get_from_node_id(), c_o->get_from_port_index())};
+      if (!result) {
+        ERROR_PRINT("Failed to delete connection");
+      }
+
+      return;  // Return because we dragging an input port and dropped on a connected input port
+    }
+
+    bool result{add_connection(c_id, c_o->get_from_node_id(), c_o->get_from_port_index(), in_p_o->get_node_id(),
                                in_p_o->get_port_index())};
 
     if (!result) {
-      int c_id{c_o->get_id()};
-      bool result{this->delete_connection(c_id, c_o->get_from_node_id(), c_o->get_from_port_index())};
+      bool result{this->delete_temporary_connection(c_o->get_from_node_id(), c_o->get_from_port_index())};
 
       if (!result) {
         ERROR_PRINT("Failed to delete connection");
@@ -1511,8 +1901,7 @@ void VisualShaderGraphicsScene::on_port_dropped(QGraphicsObject* port, const QPo
   }
 
   if (!in_p_o) {
-    int c_id{c_o->get_id()};
-    bool result{this->delete_connection(c_id, c_o->get_from_node_id(), c_o->get_from_port_index())};
+    bool result{this->delete_temporary_connection(c_o->get_from_node_id(), c_o->get_from_port_index())};
 
     if (!result) {
       ERROR_PRINT("Failed to delete connection");
@@ -1521,12 +1910,21 @@ void VisualShaderGraphicsScene::on_port_dropped(QGraphicsObject* port, const QPo
     return;  // Return because we dragging an output port and dropped on nothing
   }
 
+  if (in_p_o->is_connected()) {
+    bool result{this->delete_temporary_connection(c_o->get_from_node_id(), c_o->get_from_port_index())};
+
+    if (!result) {
+      ERROR_PRINT("Failed to delete connection");
+    }
+
+    return;  // Return because we dragging an output port and dropped on a connected input port
+  }
+
   bool result{
-      add_connection(o_port->get_node_id(), o_port->get_port_index(), in_p_o->get_node_id(), in_p_o->get_port_index())};
+      add_connection(c_id, o_port->get_node_id(), o_port->get_port_index(), in_p_o->get_node_id(), in_p_o->get_port_index())};
 
   if (!result) {
-    int c_id{c_o->get_id()};
-    bool result{this->delete_connection(c_id, c_o->get_from_node_id(), c_o->get_from_port_index())};
+    bool result{this->delete_temporary_connection(c_o->get_from_node_id(), c_o->get_from_port_index())};
 
     if (!result) {
       ERROR_PRINT("Failed to delete connection");
@@ -1562,29 +1960,53 @@ void VisualShaderGraphicsScene::on_node_moved(const int& n_id, const int& in_por
     VisualShaderInputPortGraphicsObject* i_port{n_o->get_input_port_graphics_object(i)};
     SILENT_CONTINUE_IF_TRUE(!i_port || !i_port->is_connected());
 
-    VisualShaderConnectionGraphicsObject* c_o{i_port->get_connection_graphics_object()};
+    const int c_id{i_port->get_c_id()};
+    VisualShaderConnectionGraphicsObject* c_o{get_connection_graphics_object(c_id)};
     SILENT_CONTINUE_IF_TRUE(!c_o);
 
     c_o->set_end_coordinate(i_port->get_global_coordinate());
+    c_o->update_layout();
   }
 
   for (int i{0}; i < out_port_count; i++) {
     VisualShaderOutputPortGraphicsObject* o_port{n_o->get_output_port_graphics_object(i)};
     SILENT_CONTINUE_IF_TRUE(!o_port || !o_port->is_connected());
 
-    std::vector<VisualShaderConnectionGraphicsObject*> c_os{o_port->get_connection_graphics_objects()};
+    std::unordered_set<int> c_ids{o_port->get_c_ids()};
 
-    for (VisualShaderConnectionGraphicsObject* c_o : c_os) {
+    for (const int& c_id : c_ids) {
+      VisualShaderConnectionGraphicsObject* c_o{get_connection_graphics_object(c_id)};
       SILENT_CONTINUE_IF_TRUE(!c_o);
 
       c_o->set_start_coordinate(o_port->get_global_coordinate());
+      c_o->update_layout();
     }
   }
 }
 
 void VisualShaderGraphicsScene::remove_item(QGraphicsItem* item) {
+  qDeleteAll(item->childItems());
   removeItem(item);
   delete item;
+}
+
+bool VisualShaderGraphicsScene::check_if_connection_out_of_bounds(VisualShaderOutputPortGraphicsObject* from_o_port, VisualShaderInputPortGraphicsObject* to_i_port) {
+  QList<QGraphicsView*> views{this->views()};
+  CHECK_CONDITION_TRUE_NON_VOID(views.isEmpty(), false, "No views available");
+
+  VisualShaderGraphicsView* view{dynamic_cast<VisualShaderGraphicsView*>(views.first())};
+
+  if (from_o_port->get_global_coordinate().x() < view->get_x() ||
+      from_o_port->get_global_coordinate().x() > view->get_x() + view->get_width()) {
+    WARN_PRINT("Start of connection is out of view bounds");
+  }
+
+  if (to_i_port->get_global_coordinate().y() < view->get_y() ||
+        to_i_port->get_global_coordinate().y() > view->get_y() + view->get_height()) {
+    WARN_PRINT("End of connection is out of view bounds");
+  }
+
+  return true;
 }
 
 /**********************************************************************/
@@ -1890,13 +2312,13 @@ VisualShaderNodeGraphicsObject::VisualShaderNodeGraphicsObject(const int& n_id, 
       context_menu(nullptr),
       delete_node_action(nullptr),
       rect_width(0.0f),
-      caption_rect_height(0.0f),
       rect_height(0.0f),
-      rect_margin(0.0f),
       rect_padding(0.0f),
+      rect_margin(0.0f),
+      caption_rect_height(0.0f),
       embed_widget(nullptr),
-      matching_image_widget(nullptr)  // ,
-{                                     //shader_previewer_widget(nullptr) {
+      matching_image_widget(nullptr), 
+      shader_previewer_widget(nullptr) {
   setFlag(QGraphicsItem::ItemDoesntPropagateOpacityToChildren, true);
   setFlag(QGraphicsItem::ItemIsFocusable, true);
   setFlag(QGraphicsItem::ItemIsMovable, true);
@@ -1961,41 +2383,14 @@ VisualShaderOutputPortGraphicsObject* VisualShaderNodeGraphicsObject::get_output
   return nullptr;
 }
 
-void VisualShaderNodeGraphicsObject::on_node_update_requested() {
-  // Here if the number of ports changed, for example, changing the operation type in a decompose node,
-  // we need to remove any extra ports that are not needed anymore. Don't forget to remove the connections
-  // as well.
-  if ((int)in_port_graphics_objects.size() > in_port_count) {
-    int p_index{in_port_count};
-    int size{(int)in_port_graphics_objects.size() - p_index};
-    for (int i{0}; i < size; ++i) {
-      Q_EMIT in_port_remove_requested(in_port_graphics_objects.at(p_index));
-      in_port_graphics_objects.erase(p_index);
-      p_index++;
-    }
-  }
-
-  if ((int)out_port_graphics_objects.size() > out_port_count) {
-    int p_index{out_port_count};
-    int size{(int)out_port_graphics_objects.size() - p_index};
-    for (int i{0}; i < size; ++i) {
-      Q_EMIT out_port_remove_requested(out_port_graphics_objects.at(p_index));
-      out_port_graphics_objects.erase(p_index);
-      p_index++;
-    }
-  }
-
-  update();
-  Q_EMIT scene_update_requested();
-}
-
-QRectF VisualShaderNodeGraphicsObject::boundingRect() const {
+void VisualShaderNodeGraphicsObject::update_layout() {
   QFont f("Arial", caption_font_size);
   f.setBold(true);
   QFontMetrics fm(f);
 
   QString t_caption{QString::fromStdString(caption)};
 
+  // Set the width of the node
   rect_width = (float)(fm.horizontalAdvance(t_caption, t_caption.length()) + caption_h_padding * 2.0f);
 
   caption_rect_height = (float)((fm.height()) + caption_v_padding * 2.0f);
@@ -2011,7 +2406,7 @@ QRectF VisualShaderNodeGraphicsObject::boundingRect() const {
   }
   t_rect_h += body_rect_footer_height;  // Footer
 
-  rect_height = t_rect_h;
+  rect_height = t_rect_h; // Set the height of the node
 
   // Correct node rect if it has an embed widget (if needed).
   if (embed_widget) {
@@ -2033,7 +2428,7 @@ QRectF VisualShaderNodeGraphicsObject::boundingRect() const {
         // If the port name is empty, use a default name
         // This is because the horizontal advance of an empty string is 0 and
         // this will wrong the calculation of the rect width
-        w = (float)fm.horizontalAdvance("Input");
+        w = (float)fm.horizontalAdvance("in");
       }
 
       if ((w + port_caption_spacing) > max_in_p_width) {
@@ -2057,7 +2452,7 @@ QRectF VisualShaderNodeGraphicsObject::boundingRect() const {
         // If the port name is empty, use a default name
         // This is because the horizontal advance of an empty string is 0 and
         // this will wrong the calculation of the rect width
-        w = (float)fm.horizontalAdvance("Output");
+        w = (float)fm.horizontalAdvance("out");
       }
 
       if ((w + port_caption_spacing) > max_out_p_width) {
@@ -2065,7 +2460,7 @@ QRectF VisualShaderNodeGraphicsObject::boundingRect() const {
       }
     }
 
-    float calculated_rect{max_in_p_width + embed_widget_width + max_out_p_width + embed_widget_h_padding * 2.0f};
+    float calculated_rect{max_in_p_width + embed_widget_width + max_out_p_width + embed_widget_h_margin * 2.0f};
 
     if (calculated_rect > rect_width) {
       rect_width = calculated_rect;
@@ -2073,84 +2468,42 @@ QRectF VisualShaderNodeGraphicsObject::boundingRect() const {
 
     // Check the height
     float calculated_height{caption_rect_height + body_rect_header_height + embed_widget->height() +
-                            body_rect_footer_height + embed_widget_v_padding * 2.0f};
+                            body_rect_footer_height + embed_widget_v_margin * 2.0f};
 
     if (calculated_height > rect_height) {
       rect_height = calculated_height;
     }
-  }
+  } // End of embed widget correction
 
+  // Create a rect to calculate the rest of the layout
   QRectF r({0.0f, 0.0f}, QSizeF(rect_width, rect_height));
 
   // Calculate the margin
+  // We add a safe area around the rect to prevent the ports from being cut off
   this->rect_margin = port_diameter * 0.5f;
 
   // Calculate the rect padding
-  // We add a safe area around the rect to prevent the ports from being cut off
-  this->rect_padding = port_diameter * 0.5f;
+  this->rect_padding = port_diameter * 0.4f;
 
-  r.adjust(-rect_margin - rect_padding, -rect_margin - rect_padding, rect_margin + rect_padding,
-           rect_margin + rect_padding);
+  // Add the padding to draw the border
+  r.adjust( - rect_padding, - rect_padding, rect_padding, rect_padding);
 
-  return r;
-}
-
-void VisualShaderNodeGraphicsObject::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget) {
-  painter->setClipRect(option->exposedRect);
-
-  // Get the rect without the padding
-  QRectF r{this->boundingRect()};
-
-  // {
-  //   // Draw Node Rect
-  //   painter->setPen(Qt::red);
-  //   painter->setBrush(Qt::NoBrush);
-  //   painter->drawRect(r);
-  // }
-
-  // Add the padding to the rect
-  r.adjust(rect_padding, rect_padding, -rect_padding, -rect_padding);
-
-  {
-    // Draw Node Rect
-    QColor rect_color;
-    if (isSelected()) {
-      rect_color = this->normal_boundary_color;
-    } else {
-      rect_color = this->selected_boundary_color;
-    }
-
-    QPen p(rect_color, this->pen_width);
-    painter->setPen(p);
-
-    painter->setBrush(this->fill_color);
-
-    painter->drawRoundedRect(r, this->corner_radius, this->corner_radius);
-  }
-
-  // Draw Matching Image Widget
   if (n_id == 0) {
-    float matching_image_widget_x{(float)r.x() + (float)r.width() + spacing_between_output_node_and_matching_image};
-    float matching_image_widget_y{(float)r.y()};
-
-    matching_image_widget->setGeometry(matching_image_widget_x, matching_image_widget_y, r.height(), r.height());
+    this->matching_image_widget_coordinate = {
+      (float)r.x() + (float)r.width() + spacing_between_output_node_and_matching_image,
+      (float)r.y()
+    };
+    matching_image_widget->setGeometry(this->matching_image_widget_coordinate.x(), this->matching_image_widget_coordinate.y(), r.height(), r.height());
   } else {
-    // Draw Shader Previewer Widget
-    float shader_previewer_widget_x{(float)r.x()};
-    float shader_previewer_widget_y{(float)r.y() + (float)r.height() +
-                                    spacing_between_current_node_and_shader_previewer};
-    shader_previewer_widget->setGeometry(shader_previewer_widget_x, shader_previewer_widget_y, r.width(), r.width());
+    this->shader_previewer_widget_coordinate = {
+      (float)r.x(),
+      (float)r.y() + (float)r.height() + spacing_between_current_node_and_shader_previewer
+    };
+    shader_previewer_widget->setGeometry(this->shader_previewer_widget_coordinate.x(), this->shader_previewer_widget_coordinate.y(), r.width(), r.width());
   }
 
-  // Add the margin to the rect
-  r.adjust(rect_margin, rect_margin, -rect_margin, -rect_margin);
-
-  // {
-  //   // Draw Node Rect
-  //   painter->setPen(Qt::red);
-  //   painter->setBrush(Qt::NoBrush);
-  //   painter->drawRect(r);
-  // }
+  // Remove the padding from the rect
+  r.adjust(rect_padding, rect_padding, - rect_padding, - rect_padding);
 
   float rect_x{(float)r.topLeft().x()};
   float rect_y{(float)r.topLeft().y()};
@@ -2161,44 +2514,28 @@ void VisualShaderNodeGraphicsObject::paint(QPainter* painter, const QStyleOption
   QRectF caption_rect(rect_x, rect_y, rect_w, caption_rect_height);
 
   {
-    // Draw Caption
-    QString t_caption{QString::fromStdString(caption)};
-
-    QFont t_f{painter->font()};
-
-    QFont f("Arial", caption_font_size);
-    f.setBold(true);
-    QFontMetrics fm(f);
-    painter->setFont(f);
-
-    // Calculate the coordinates of the caption
-    float x{(float)(caption_rect.center().x() - (float)fm.horizontalAdvance(t_caption) * 0.5f)};
-
-    // Instead of subtracting, add the ascent to properly align text within the rect
-    float y{(float)(caption_rect.center().y() + (float)((fm.ascent() + fm.descent()) * 0.5f - fm.descent()))};
-
-    // {
-    //   painter->setPen(Qt::red);
-    //   painter->setBrush(Qt::NoBrush);
-    //   painter->drawRect(QRectF(x,y, (float)fm.horizontalAdvance(caption), (float)(fm.ascent() + fm.descent())));
-    // }
-
-    QPointF coordinate{x, y};
-
-    painter->setPen(this->font_color);
-    painter->drawText(coordinate, t_caption);
-
-    painter->setFont(t_f);  // Reset the font
+    // Calculate the caption coordinate
+    this->caption_coordinate = {
+      (float)(caption_rect.center().x() - (float)fm.horizontalAdvance(t_caption) * 0.5f),
+      // Instead of subtracting, add the ascent to properly align text within the rect
+      (float)(caption_rect.center().y() + (float)((fm.ascent() + fm.descent()) * 0.5f - fm.descent()))
+    };
   }
 
   QPointF caption_rect_bl{caption_rect.bottomLeft()};
   QPointF first_in_port_coordinate{caption_rect_bl.x(), caption_rect_bl.y() + body_rect_header_height};
 
-  // Correct X coordinate: Remove the margin
-  first_in_port_coordinate.setX((float)first_in_port_coordinate.x() - this->rect_margin);
+  // Correct X coordinate: Remove the padding
+  first_in_port_coordinate.setX((float)first_in_port_coordinate.x() - this->rect_padding);
 
   {
-    // Draw Input Ports
+    this->input_ports_rects.clear();
+    this->input_ports_caption_coordinates.clear();
+
+    this->input_ports_rects.resize(in_port_count);
+    this->input_ports_caption_coordinates.resize(in_port_count);
+
+    // Calculate the input ports coordinates
     for (int i{0}; i < in_port_count; ++i) {
       QPointF port_coordinate{first_in_port_coordinate.x(), first_in_port_coordinate.y() + body_rect_port_step * i};
 
@@ -2208,32 +2545,19 @@ void VisualShaderNodeGraphicsObject::paint(QPainter* painter, const QStyleOption
       port_rect.adjust(-port_rect.width() * 0.5f, -port_rect.height() * 0.5f, -port_rect.width() * 0.5f,
                        -port_rect.height() * 0.5f);
 
+      this->input_ports_rects.at(i) = port_rect;
+
       // Draw caption
       QString p_n{QString::fromStdString(in_port_captions.at(i))};
 
       if (!p_n.isEmpty()) {
-        QFont t_f{painter->font()};
-
         QFont f("Arial", port_caption_font_size);
         QFontMetrics fm(f);
-        painter->setFont(f);
 
-        float x{rect_x + port_caption_spacing};
-
-        float y{(float)(port_rect.center().y()) + (float)((fm.ascent() + fm.descent()) * 0.5f - fm.descent())};
-
-        // {
-        //   painter->setPen(Qt::red);
-        //   painter->setBrush(Qt::NoBrush);
-        //   painter->drawRect(QRectF(x,y, (float)fm.horizontalAdvance(p_n), (float)(fm.ascent() + fm.descent())));
-        // }
-
-        QPointF coordinate{x, y};
-
-        painter->setPen(this->font_color);
-        painter->drawText(coordinate, p_n);
-
-        painter->setFont(t_f);  // Reset the font
+        this->input_ports_caption_coordinates.at(i) = QPointF(
+          rect_x + port_caption_spacing,
+          (float)(port_rect.center().y()) + (float)((fm.ascent() + fm.descent()) * 0.5f - fm.descent())
+        );
       }
 
       if (in_port_graphics_objects.find(i) != in_port_graphics_objects.end()) continue;
@@ -2255,10 +2579,16 @@ void VisualShaderNodeGraphicsObject::paint(QPainter* painter, const QStyleOption
   QPointF caption_rect_br{caption_rect.bottomRight()};
   QPointF first_out_port_coordinate{caption_rect_br.x(), caption_rect_br.y() + body_rect_header_height};
 
-  // Correct X coordinate: Remove the margin
-  first_out_port_coordinate.setX((float)first_out_port_coordinate.x() + this->rect_margin);
+  // Correct X coordinate: Remove the padding
+  first_out_port_coordinate.setX((float)first_out_port_coordinate.x() + this->rect_padding);
 
   {
+    this->output_ports_rects.clear();
+    this->output_ports_caption_coordinates.clear();
+
+    this->output_ports_rects.resize(out_port_count);
+    this->output_ports_caption_coordinates.resize(out_port_count);
+
     // Draw Output Ports
     for (int i{0}; i < out_port_count; ++i) {
       QPointF port_coordinate{first_out_port_coordinate.x(), first_out_port_coordinate.y() + body_rect_port_step * i};
@@ -2269,32 +2599,19 @@ void VisualShaderNodeGraphicsObject::paint(QPainter* painter, const QStyleOption
       port_rect.adjust(-port_rect.width() * 0.5f, -port_rect.height() * 0.5f, -port_rect.width() * 0.5f,
                        -port_rect.height() * 0.5f);
 
+      this->output_ports_rects.at(i) = port_rect;
+
       // Draw caption
       QString p_n{QString::fromStdString(out_port_captions.at(i))};
 
       if (!p_n.isEmpty()) {
-        QFont t_f{painter->font()};
-
         QFont f("Arial", port_caption_font_size);
         QFontMetrics fm(f);
-        painter->setFont(f);
 
-        float x{rect_x + rect_w - (float)fm.horizontalAdvance(p_n) - port_caption_spacing};
-
-        float y{(float)(port_rect.center().y()) + (float)((fm.ascent() + fm.descent()) * 0.5f - fm.descent())};
-
-        // {
-        //   painter->setPen(Qt::red);
-        //   painter->setBrush(Qt::NoBrush);
-        //   painter->drawRect(QRectF(x,y, (float)fm.horizontalAdvance(p_n), (float)(fm.ascent() + fm.descent())));
-        // }
-
-        QPointF coordinate{x, y};
-
-        painter->setPen(this->font_color);
-        painter->drawText(coordinate, p_n);
-
-        painter->setFont(t_f);  // Reset the font
+        this->output_ports_caption_coordinates.at(i) = QPointF(
+          rect_x + rect_w - (float)fm.horizontalAdvance(p_n) - port_caption_spacing,
+          (float)(port_rect.center().y()) + (float)((fm.ascent() + fm.descent()) * 0.5f - fm.descent())
+        );
       }
 
       if (out_port_graphics_objects.find(i) != out_port_graphics_objects.end()) continue;
@@ -2316,17 +2633,111 @@ void VisualShaderNodeGraphicsObject::paint(QPainter* painter, const QStyleOption
   {
     // Correct the coordinate of the embed widget
     if (embed_widget) {
-      float embed_widget_x{rect_x + rect_w * 0.5f - embed_widget->width() * 0.5f};
-      float embed_widget_y{rect_y + caption_rect_height + body_rect_header_height + embed_widget_v_padding};
+      this->embed_widget_coordinate = {
+        rect_x + rect_w * 0.5f - embed_widget->width() * 0.5f,
+        rect_y + caption_rect_height + body_rect_header_height + embed_widget_v_margin
+      };
 
-      embed_widget->setGeometry(embed_widget_x, embed_widget_y, embed_widget->width(), embed_widget->height());
+      embed_widget->setGeometry(this->embed_widget_coordinate.x(), this->embed_widget_coordinate.y(), embed_widget->width(), embed_widget->height());
+    }
+  }
 
-      // {
-      //   // Draw Embed Widget
-      //   painter->setPen(Qt::red);
-      //   painter->setBrush(Qt::NoBrush);
-      //   painter->drawRect(embed_widget_x, embed_widget_y, embed_widget->width(), embed_widget->height());
-      // }
+  prepareGeometryChange();
+}
+
+QRectF VisualShaderNodeGraphicsObject::boundingRect() const {
+  QRectF r({0.0f, 0.0f}, QSizeF(rect_width, rect_height));
+
+  r.adjust(- rect_margin - rect_padding, 
+           - rect_margin - rect_padding, 
+           rect_margin + rect_padding,
+           rect_margin + rect_padding);
+
+  return r;
+}
+
+void VisualShaderNodeGraphicsObject::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget) {
+  painter->setClipRect(option->exposedRect);
+
+  // Get the rect without the padding
+  QRectF r({0.0f, 0.0f}, QSizeF(rect_width, rect_height));
+
+  // Add the padding to draw the border
+  r.adjust( - rect_padding, - rect_padding, rect_padding, rect_padding);
+
+  {
+    // Draw Node Rect
+    QColor rect_color;
+    if (isSelected()) {
+      rect_color = this->normal_boundary_color;
+    } else {
+      rect_color = this->selected_boundary_color;
+    }
+
+    QPen p(rect_color, this->pen_width);
+    painter->setPen(p);
+
+    painter->setBrush(this->fill_color);
+
+    painter->drawRoundedRect(r, this->corner_radius, this->corner_radius);
+  }
+
+  // Remove the padding to draw the inner content
+  r.adjust(rect_padding, rect_padding, - rect_padding, - rect_padding);
+
+  {
+    // Draw Caption
+    QString t_caption{QString::fromStdString(caption)};
+
+    QFont t_f{painter->font()};
+
+    QFont f("Arial", caption_font_size);
+    f.setBold(true);
+    painter->setFont(f);
+
+    painter->setPen(this->font_color);
+    painter->drawText(this->caption_coordinate, t_caption);
+
+    painter->setFont(t_f);  // Reset the font
+  }
+
+  {
+    // Draw Input Ports
+    for (int i{0}; i < in_port_count; ++i) {
+      // Draw caption
+      QString p_n{QString::fromStdString(in_port_captions.at(i))};
+
+      if (!p_n.isEmpty()) {
+        QFont t_f{painter->font()};
+
+        QFont f("Arial", port_caption_font_size);
+        painter->setFont(f);
+
+        painter->setPen(this->font_color);
+        painter->drawText(this->input_ports_caption_coordinates.at(i), p_n);
+
+        painter->setFont(t_f);  // Reset the font
+      }
+    }
+  }
+
+  {
+    // Draw Output Ports
+    for (int i{0}; i < out_port_count; ++i) {
+      // Draw caption
+      QString p_n{QString::fromStdString(out_port_captions.at(i))};
+
+      if (!p_n.isEmpty()) {
+        QFont t_f{painter->font()};
+
+        QFont f("Arial", port_caption_font_size);
+        painter->setFont(f);
+
+        painter->setPen(this->font_color);
+        painter->drawText(this->output_ports_caption_coordinates.at(i), p_n);
+
+        painter->setFont(t_f);  // Reset the font
+      }
     }
   }
 }
@@ -2343,13 +2754,12 @@ void VisualShaderNodeGraphicsObject::contextMenuEvent(QGraphicsSceneContextMenuE
 }
 
 void VisualShaderNodeGraphicsObject::mouseReleaseEvent(QGraphicsSceneMouseEvent* event) {
-  // Q_EMIT node_moved(n_id, in_port_count, out_port_count, scenePos());
   QGraphicsObject::mouseReleaseEvent(event);
 }
 
 VisualShaderInputPortGraphicsObject::VisualShaderInputPortGraphicsObject(const QRectF& rect, const int& n_id,
                                                                          const int& p_index, QGraphicsItem* parent)
-    : QGraphicsObject(parent), rect(rect), n_id(n_id), p_index(p_index), connection_graphics_object(nullptr) {
+    : QGraphicsObject(parent), rect(rect), n_id(n_id), p_index(p_index), c_id(-1) {
   setFlag(QGraphicsItem::ItemDoesntPropagateOpacityToChildren, true);
   setFlag(QGraphicsItem::ItemIsFocusable, true);
   setFlag(QGraphicsItem::ItemIsSelectable, true);
@@ -2363,8 +2773,6 @@ VisualShaderInputPortGraphicsObject::VisualShaderInputPortGraphicsObject(const Q
 
   setZValue(0);
 }
-
-VisualShaderInputPortGraphicsObject::~VisualShaderInputPortGraphicsObject() {}
 
 QRectF VisualShaderInputPortGraphicsObject::boundingRect() const {
   QRectF t_rect{rect};
@@ -2411,18 +2819,6 @@ VisualShaderOutputPortGraphicsObject::VisualShaderOutputPortGraphicsObject(const
   setOpacity(this->opacity);
 
   setZValue(0);
-}
-
-VisualShaderOutputPortGraphicsObject::~VisualShaderOutputPortGraphicsObject() {}
-
-VisualShaderConnectionGraphicsObject* VisualShaderOutputPortGraphicsObject::get_connection_graphics_object(
-    const int& to_node_id, const int& to_port_index) const {
-  for (auto c_g_o : connection_graphics_objects) {
-    if (c_g_o->get_to_node_id() == to_node_id && c_g_o->get_to_port_index() == to_port_index) {
-      return c_g_o;
-    }
-  }
-  return nullptr;
 }
 
 QRectF VisualShaderOutputPortGraphicsObject::boundingRect() const {
@@ -2477,7 +2873,7 @@ VisualShaderConnectionGraphicsObject::VisualShaderConnectionGraphicsObject(const
       to_p_index(-1),
       start_coordinate(start_coordinate),
       end_coordinate(start_coordinate),
-      rect_padding(0.0f) {
+      rect_margin(0.0f) {
   setFlag(QGraphicsItem::ItemIsFocusable, true);
   setFlag(QGraphicsItem::ItemIsSelectable, true);
   setAcceptedMouseButtons(Qt::NoButton);
@@ -2485,17 +2881,38 @@ VisualShaderConnectionGraphicsObject::VisualShaderConnectionGraphicsObject(const
   setZValue(-1.0f);
 }
 
-VisualShaderConnectionGraphicsObject::~VisualShaderConnectionGraphicsObject() {}
-
-QRectF VisualShaderConnectionGraphicsObject::boundingRect() const {
-  QRectF r{calculate_bounding_rect_from_coordinates(start_coordinate, end_coordinate)};
+void VisualShaderConnectionGraphicsObject::update_layout() {
+  this->rect = calculate_bounding_rect_from_coordinates(start_coordinate, end_coordinate);
 
   // Calculate the rect padding
   // We add a safe area around the rect to prevent the ports from being cut off
   // Due to inaccuracy in the calculation of the bounding rect we use the point diameter not the radius
-  this->rect_padding = this->point_diameter;
+  this->rect_margin = this->point_diameter;
 
-  r.adjust(-rect_padding, -rect_padding, rect_padding, rect_padding);
+  this->control_points = calculate_control_points(start_coordinate, end_coordinate, this->rect);
+  this->cubic_path.clear(); // Clear the path
+  this->cubic_path.moveTo(start_coordinate);
+  this->cubic_path.cubicTo(control_points.first, control_points.second, end_coordinate);
+
+  this->start_rect = QRectF(start_coordinate.x(), start_coordinate.y(), this->point_diameter, this->point_diameter);
+
+  // Adjust the port rect to be centered
+  start_rect.adjust(-start_rect.width() * 0.5f, -start_rect.height() * 0.5f, -start_rect.width() * 0.5f,
+                    -start_rect.height() * 0.5f);
+
+  this->end_rect = QRectF(end_coordinate.x(), end_coordinate.y(), this->point_diameter, this->point_diameter);
+
+  // Adjust the port rect to be centered
+  end_rect.adjust(-end_rect.width() * 0.5f, -end_rect.height() * 0.5f, -end_rect.width() * 0.5f,
+                  -end_rect.height() * 0.5f);
+
+  prepareGeometryChange();
+}
+
+QRectF VisualShaderConnectionGraphicsObject::boundingRect() const {
+  QRectF r{this->rect};
+
+  r.adjust(-rect_margin, -rect_margin, rect_margin, rect_margin);
 
   return r;
 }
@@ -2511,11 +2928,6 @@ void VisualShaderConnectionGraphicsObject::paint(QPainter* painter, const QStyle
 
     const bool selected{this->isSelected()};
 
-    std::pair<QPointF, QPointF> control_points{calculate_control_points(start_coordinate, end_coordinate)};
-
-    QPainterPath cubic(start_coordinate);
-    cubic.cubicTo(control_points.first, control_points.second, end_coordinate);
-
     p.setColor(this->normal_color);
 
     if (selected) {
@@ -2525,30 +2937,16 @@ void VisualShaderConnectionGraphicsObject::paint(QPainter* painter, const QStyle
     painter->setPen(p);
     painter->setBrush(Qt::NoBrush);
 
-    painter->drawPath(cubic);
+    painter->drawPath(cubic_path);
   }
 
   painter->setBrush(this->connection_point_color);
 
   {
-    // Draw start point
-    QRectF start_rect(start_coordinate.x(), start_coordinate.y(), this->point_diameter, this->point_diameter);
-
-    // Adjust the port rect to be centered
-    start_rect.adjust(-start_rect.width() * 0.5f, -start_rect.height() * 0.5f, -start_rect.width() * 0.5f,
-                      -start_rect.height() * 0.5f);
-
     painter->drawEllipse(start_rect);
   }
 
   {
-    // Draw end point
-    QRectF end_rect(end_coordinate.x(), end_coordinate.y(), this->point_diameter, this->point_diameter);
-
-    // Adjust the port rect to be centered
-    end_rect.adjust(-end_rect.width() * 0.5f, -end_rect.height() * 0.5f, -end_rect.width() * 0.5f,
-                    -end_rect.height() * 0.5f);
-
     painter->drawEllipse(end_rect);
   }
 }
@@ -2630,7 +3028,7 @@ QRectF VisualShaderConnectionGraphicsObject::calculate_bounding_rect_from_coordi
 }
 
 std::pair<QPointF, QPointF> VisualShaderConnectionGraphicsObject::calculate_control_points(
-    const QPointF& start_coordinate, [[maybe_unused]] const QPointF& end_coordinated) const {
+    const QPointF& start_coordinate, [[maybe_unused]] const QPointF& end_coordinated, const QRectF& rect) const {
   QPointF cp1;
   QPointF cp2;
 
@@ -2638,8 +3036,6 @@ std::pair<QPointF, QPointF> VisualShaderConnectionGraphicsObject::calculate_cont
   const float y1{(float)start_coordinate.y()};
   const float x2{(float)end_coordinate.x()};
   const float y2{(float)end_coordinate.y()};
-
-  QRectF r{calculate_bounding_rect_from_coordinates(start_coordinate, end_coordinate)};
 
   const bool in_h_abnormal_region{x2 < (x1 + h_abnormal_offset)};
   const bool in_v_abnormal_region{std::abs(y2 - y1) < v_abnormal_offset};
@@ -2654,12 +3050,12 @@ std::pair<QPointF, QPointF> VisualShaderConnectionGraphicsObject::calculate_cont
   const float cp_y_delta_factor{0.25f};
 
   // Normal region control points deltas
-  const float cp_x_delta{(float)r.width() * cp_x_delta_factor};
-  const float cp_y_delta{(float)r.height() * cp_y_delta_factor};
+  const float cp_x_delta{(float)rect.width() * cp_x_delta_factor};
+  const float cp_y_delta{(float)rect.height() * cp_y_delta_factor};
 
   // Abnormal region control points deltas
-  const float a_cp_x_delta{((float)r.width() - a_width_expansion) * cp_x_delta_factor};
-  const float a_cp_y_delta{((float)r.height() - a_height_expansion) * cp_y_delta_factor};
+  const float a_cp_x_delta{((float)rect.width() - a_width_expansion) * cp_x_delta_factor};
+  const float a_cp_y_delta{((float)rect.height() - a_height_expansion) * cp_y_delta_factor};
 
   switch (quadrant) {
     case 1:  // Quadrant I: Normal face to back
@@ -2742,7 +3138,7 @@ std::pair<QPointF, QPointF> VisualShaderConnectionGraphicsObject::calculate_cont
 /**********************************************************************/
 /**********************************************************************/
 
-VisualShaderNodeEmbedWidget::VisualShaderNodeEmbedWidget(ProtoModel* visual_shader_model, ProtoModel* nodes_model,
+VisualShaderNodeEmbedWidget::VisualShaderNodeEmbedWidget(VisualShaderGraphicsScene* scene, ProtoModel* visual_shader_model, ProtoModel* nodes_model,
                                                          const int& n_id, const std::shared_ptr<IVisualShaderProtoNode>& proto_node,
                                                          QWidget* parent)
     : QWidget(parent), layout(nullptr), preview_shader_button(nullptr), shader_previewer_widget(nullptr) {
@@ -2753,155 +3149,272 @@ VisualShaderNodeEmbedWidget::VisualShaderNodeEmbedWidget(ProtoModel* visual_shad
   layout->setAlignment(Qt::AlignVCenter | Qt::AlignHCenter);
 
   if (auto input_node = std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNodeInput>>(proto_node)) {
-    VisualShaderNodeInputEmbedWidget* embed_widget =
-        new VisualShaderNodeInputEmbedWidget(visual_shader_model, nodes_model, n_id, proto_node);
+    VisualShaderNodeEmbedComboBox* embed_widget =
+        new VisualShaderNodeEmbedComboBox(visual_shader_model, nodes_model, n_id, proto_node, 
+                                          VisualShaderNodeInputType_descriptor(), 
+                                          VisualShaderNodeInput::kTypeFieldNumber);
     layout->addWidget(embed_widget);
     QObject::connect(embed_widget, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
                      &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
+    QObject::connect(embed_widget, &VisualShaderNodeEmbedComboBox::node_update_requested, scene, &VisualShaderGraphicsScene::update_node_in_model);
+    embed_widgets[VisualShaderNodeInput::kTypeFieldNumber] = embed_widget;
   } else if (auto float_constant_node =
                  std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNodeFloatConstant>>(proto_node)) {
-    VisualShaderNodeFloatConstantEmbedWidget* embed_widget =
-        new VisualShaderNodeFloatConstantEmbedWidget(visual_shader_model, nodes_model, n_id, proto_node);
+    VisualShaderNodeEmbedLineEditFloat* embed_widget =
+        new VisualShaderNodeEmbedLineEditFloat(visual_shader_model, nodes_model, n_id, proto_node, VisualShaderNodeFloatConstant::kValueFieldNumber);
     layout->addWidget(embed_widget);
     QObject::connect(embed_widget, &QLineEdit::textChanged, this,
                      &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
+    QObject::connect(embed_widget, &VisualShaderNodeEmbedLineEditFloat::node_update_requested, scene, &VisualShaderGraphicsScene::update_node_in_model);
+    embed_widgets[VisualShaderNodeFloatConstant::kValueFieldNumber] = embed_widget;
+    embed_widget->setPlaceholderText("Value");
   } else if (auto int_constant_node = std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNodeIntConstant>>(proto_node)) {
-    VisualShaderNodeIntConstantEmbedWidget* embed_widget =
-        new VisualShaderNodeIntConstantEmbedWidget(visual_shader_model, nodes_model, n_id, proto_node);
+    VisualShaderNodeEmbedLineEditInt* embed_widget =
+        new VisualShaderNodeEmbedLineEditInt(visual_shader_model, nodes_model, n_id, proto_node, VisualShaderNodeIntConstant::kValueFieldNumber);
     layout->addWidget(embed_widget);
     QObject::connect(embed_widget, &QLineEdit::textChanged, this,
                      &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
+    QObject::connect(embed_widget, &VisualShaderNodeEmbedLineEditInt::node_update_requested, scene, &VisualShaderGraphicsScene::update_node_in_model);
+    embed_widgets[VisualShaderNodeIntConstant::kValueFieldNumber] = embed_widget;
+    embed_widget->setPlaceholderText("Value");
   } else if (auto uint_constant_node = std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNodeUIntConstant>>(proto_node)) {
-    VisualShaderNodeUIntConstantEmbedWidget* embed_widget =
-        new VisualShaderNodeUIntConstantEmbedWidget(visual_shader_model, nodes_model, n_id, proto_node);
+    VisualShaderNodeEmbedLineEditUInt* embed_widget =
+        new VisualShaderNodeEmbedLineEditUInt(visual_shader_model, nodes_model, n_id, proto_node, VisualShaderNodeUIntConstant::kValueFieldNumber);
     layout->addWidget(embed_widget);
     QObject::connect(embed_widget, &QLineEdit::textChanged, this,
                      &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
+    QObject::connect(embed_widget, &VisualShaderNodeEmbedLineEditUInt::node_update_requested, scene, &VisualShaderGraphicsScene::update_node_in_model);
+    embed_widgets[VisualShaderNodeUIntConstant::kValueFieldNumber] = embed_widget;
+    embed_widget->setPlaceholderText("Value");
   } else if (auto boolean_constant_node =
                  std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNodeBooleanConstant>>(proto_node)) {
-    VisualShaderNodeBooleanConstantEmbedWidget* embed_widget =
-        new VisualShaderNodeBooleanConstantEmbedWidget(visual_shader_model, nodes_model, n_id, proto_node);
+    VisualShaderNodeEmbedCheckBox* embed_widget =
+        new VisualShaderNodeEmbedCheckBox(visual_shader_model, nodes_model, n_id, proto_node, VisualShaderNodeBooleanConstant::kValueFieldNumber);
     layout->addWidget(embed_widget);
     QObject::connect(embed_widget, &QCheckBox::stateChanged, this,
                      &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
+    QObject::connect(embed_widget, &VisualShaderNodeEmbedCheckBox::node_update_requested, scene, &VisualShaderGraphicsScene::update_node_in_model);
+    embed_widgets[VisualShaderNodeBooleanConstant::kValueFieldNumber] = embed_widget;
   } else if (auto color_constant_node =
                  std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNodeColorConstant>>(proto_node)) {
-    VisualShaderNodeColorConstantEmbedWidget* embed_widget =
-        new VisualShaderNodeColorConstantEmbedWidget(visual_shader_model, nodes_model, n_id, proto_node);
+    VisualShaderNodeEmbedColorPicker* embed_widget =
+        new VisualShaderNodeEmbedColorPicker(visual_shader_model, nodes_model, n_id, proto_node);
     layout->addWidget(embed_widget);
-    QObject::connect(embed_widget, &VisualShaderNodeColorConstantEmbedWidget::color_changed, this,
+    QObject::connect(embed_widget, &VisualShaderNodeEmbedColorPicker::color_changed, this,
                      &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
+    QObject::connect(embed_widget, &VisualShaderNodeEmbedColorPicker::node_update_requested, scene, &VisualShaderGraphicsScene::update_node_in_model);
+    embed_widgets[VisualShaderNodeColorConstant::kRFieldNumber] = embed_widget;
+    embed_widgets[VisualShaderNodeColorConstant::kGFieldNumber] = embed_widget;
+    embed_widgets[VisualShaderNodeColorConstant::kBFieldNumber] = embed_widget;
+    embed_widgets[VisualShaderNodeColorConstant::kAFieldNumber] = embed_widget;
   } else if (auto vec2_constant_node = std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNodeVec2Constant>>(proto_node)) {
-    VisualShaderNodeVec2ConstantEmbedWidget* embed_widget =
-        new VisualShaderNodeVec2ConstantEmbedWidget(visual_shader_model, nodes_model, n_id, proto_node);
-    layout->addLayout(embed_widget);
-    QObject::connect(embed_widget->get_x_edit_widget(), &QLineEdit::textChanged, this,
+    VisualShaderNodeEmbedLineEditFloat* embed_widget =
+        new VisualShaderNodeEmbedLineEditFloat(visual_shader_model, nodes_model, n_id, proto_node, VisualShaderNodeVec2Constant::kXFieldNumber);
+    layout->addWidget(embed_widget);
+    VisualShaderNodeEmbedLineEditFloat* embed_widget2 =
+        new VisualShaderNodeEmbedLineEditFloat(visual_shader_model, nodes_model, n_id, proto_node, VisualShaderNodeVec2Constant::kYFieldNumber);
+    layout->addWidget(embed_widget2);
+    QObject::connect(embed_widget, &QLineEdit::textChanged, this,
                      &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
-    QObject::connect(embed_widget->get_y_edit_widget(), &QLineEdit::textChanged, this,
-                     &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
+    QObject::connect(embed_widget, &VisualShaderNodeEmbedLineEditFloat::node_update_requested, scene, &VisualShaderGraphicsScene::update_node_in_model);
+    embed_widgets[VisualShaderNodeVec2Constant::kXFieldNumber] = embed_widget;
+    QObject::connect(embed_widget2, &QLineEdit::textChanged, this,
+                      &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
+    QObject::connect(embed_widget2, &VisualShaderNodeEmbedLineEditFloat::node_update_requested, scene, &VisualShaderGraphicsScene::update_node_in_model);
+    embed_widgets[VisualShaderNodeVec2Constant::kYFieldNumber] = embed_widget2;
+    embed_widget->setPlaceholderText("X");
+    embed_widget2->setPlaceholderText("Y");
   } else if (auto vec3_constant_node = std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNodeVec3Constant>>(proto_node)) {
-    VisualShaderNodeVec3ConstantEmbedWidget* embed_widget =
-        new VisualShaderNodeVec3ConstantEmbedWidget(visual_shader_model, nodes_model, n_id, proto_node);
-    layout->addLayout(embed_widget);
-    QObject::connect(embed_widget->get_x_edit_widget(), &QLineEdit::textChanged, this,
+    VisualShaderNodeEmbedLineEditFloat* embed_widget 
+        = new VisualShaderNodeEmbedLineEditFloat(visual_shader_model, nodes_model, n_id, proto_node, VisualShaderNodeVec3Constant::kXFieldNumber);
+    layout->addWidget(embed_widget);
+    VisualShaderNodeEmbedLineEditFloat* embed_widget2 
+        = new VisualShaderNodeEmbedLineEditFloat(visual_shader_model, nodes_model, n_id, proto_node, VisualShaderNodeVec3Constant::kYFieldNumber);
+    layout->addWidget(embed_widget2);
+    VisualShaderNodeEmbedLineEditFloat* embed_widget3 
+        = new VisualShaderNodeEmbedLineEditFloat(visual_shader_model, nodes_model, n_id, proto_node, VisualShaderNodeVec3Constant::kZFieldNumber);
+    layout->addWidget(embed_widget3);
+    QObject::connect(embed_widget, &QLineEdit::textChanged, this,
                      &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
-    QObject::connect(embed_widget->get_y_edit_widget(), &QLineEdit::textChanged, this,
-                     &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
-    QObject::connect(embed_widget->get_z_edit_widget(), &QLineEdit::textChanged, this,
-                     &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
+    QObject::connect(embed_widget, &VisualShaderNodeEmbedLineEditFloat::node_update_requested, scene, &VisualShaderGraphicsScene::update_node_in_model);
+    embed_widgets[VisualShaderNodeVec3Constant::kXFieldNumber] = embed_widget;
+    QObject::connect(embed_widget2, &QLineEdit::textChanged, this,
+                      &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
+    QObject::connect(embed_widget2, &VisualShaderNodeEmbedLineEditFloat::node_update_requested, scene, &VisualShaderGraphicsScene::update_node_in_model);
+    embed_widgets[VisualShaderNodeVec3Constant::kYFieldNumber] = embed_widget2;
+    QObject::connect(embed_widget3, &QLineEdit::textChanged, this,
+                      &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
+    QObject::connect(embed_widget3, &VisualShaderNodeEmbedLineEditFloat::node_update_requested, scene, &VisualShaderGraphicsScene::update_node_in_model);
+    embed_widgets[VisualShaderNodeVec3Constant::kZFieldNumber] = embed_widget3;
+    embed_widget->setPlaceholderText("X");
+    embed_widget2->setPlaceholderText("Y");
+    embed_widget3->setPlaceholderText("Z");
   } else if (auto vec4_constant_node = std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNodeVec4Constant>>(proto_node)) {
-    VisualShaderNodeVec4ConstantEmbedWidget* embed_widget =
-        new VisualShaderNodeVec4ConstantEmbedWidget(visual_shader_model, nodes_model, n_id, proto_node);
-    layout->addLayout(embed_widget);
-    QObject::connect(embed_widget->get_x_edit_widget(), &QLineEdit::textChanged, this,
+    VisualShaderNodeEmbedLineEditFloat* embed_widget 
+        = new VisualShaderNodeEmbedLineEditFloat(visual_shader_model, nodes_model, n_id, proto_node, VisualShaderNodeVec4Constant::kXFieldNumber);
+    layout->addWidget(embed_widget);
+    VisualShaderNodeEmbedLineEditFloat* embed_widget2 
+        = new VisualShaderNodeEmbedLineEditFloat(visual_shader_model, nodes_model, n_id, proto_node, VisualShaderNodeVec4Constant::kYFieldNumber);
+    layout->addWidget(embed_widget2);
+    VisualShaderNodeEmbedLineEditFloat* embed_widget3 
+        = new VisualShaderNodeEmbedLineEditFloat(visual_shader_model, nodes_model, n_id, proto_node, VisualShaderNodeVec4Constant::kZFieldNumber);
+    layout->addWidget(embed_widget3);
+    VisualShaderNodeEmbedLineEditFloat* embed_widget4 
+        = new VisualShaderNodeEmbedLineEditFloat(visual_shader_model, nodes_model, n_id, proto_node, VisualShaderNodeVec4Constant::kWFieldNumber);
+    layout->addWidget(embed_widget4);
+    QObject::connect(embed_widget, &QLineEdit::textChanged, this,
                      &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
-    QObject::connect(embed_widget->get_y_edit_widget(), &QLineEdit::textChanged, this,
-                     &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
-    QObject::connect(embed_widget->get_z_edit_widget(), &QLineEdit::textChanged, this,
-                     &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
-    QObject::connect(embed_widget->get_w_edit_widget(), &QLineEdit::textChanged, this,
-                     &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
+    QObject::connect(embed_widget, &VisualShaderNodeEmbedLineEditFloat::node_update_requested, scene, &VisualShaderGraphicsScene::update_node_in_model);
+    embed_widgets[VisualShaderNodeVec4Constant::kXFieldNumber] = embed_widget;
+    QObject::connect(embed_widget2, &QLineEdit::textChanged, this,
+                      &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
+    QObject::connect(embed_widget2, &VisualShaderNodeEmbedLineEditFloat::node_update_requested, scene, &VisualShaderGraphicsScene::update_node_in_model);
+    embed_widgets[VisualShaderNodeVec4Constant::kYFieldNumber] = embed_widget2;
+    QObject::connect(embed_widget3, &QLineEdit::textChanged, this,
+                      &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
+    QObject::connect(embed_widget3, &VisualShaderNodeEmbedLineEditFloat::node_update_requested, scene, &VisualShaderGraphicsScene::update_node_in_model);
+    embed_widgets[VisualShaderNodeVec4Constant::kZFieldNumber] = embed_widget3;
+    QObject::connect(embed_widget4, &QLineEdit::textChanged, this,
+                      &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
+    QObject::connect(embed_widget4, &VisualShaderNodeEmbedLineEditFloat::node_update_requested, scene, &VisualShaderGraphicsScene::update_node_in_model);
+    embed_widgets[VisualShaderNodeVec4Constant::kWFieldNumber] = embed_widget4;
+    embed_widget->setPlaceholderText("X");
+    embed_widget2->setPlaceholderText("Y");
+    embed_widget3->setPlaceholderText("Z");
+    embed_widget4->setPlaceholderText("W");
   } else if (auto float_op_node = std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNodeFloatOp>>(proto_node)) {
-    VisualShaderNodeFloatOpEmbedWidget* embed_widget =
-        new VisualShaderNodeFloatOpEmbedWidget(visual_shader_model, nodes_model, n_id, proto_node);
+    VisualShaderNodeEmbedComboBox* embed_widget =
+        new VisualShaderNodeEmbedComboBox(visual_shader_model, nodes_model, n_id, proto_node, 
+                                          VisualShaderNodeFloatOp::VisualShaderNodeFloatOpType_descriptor(), 
+                                          VisualShaderNodeFloatOp::kOpFieldNumber);
     layout->addWidget(embed_widget);
     QObject::connect(embed_widget, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
                      &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
+    QObject::connect(embed_widget, &VisualShaderNodeEmbedComboBox::node_update_requested, scene, &VisualShaderGraphicsScene::update_node_in_model);
+    embed_widgets[VisualShaderNodeFloatOp::kOpFieldNumber] = embed_widget;
   } else if (auto int_op_node = std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNodeIntOp>>(proto_node)) {
-    VisualShaderNodeIntOpEmbedWidget* embed_widget =
-        new VisualShaderNodeIntOpEmbedWidget(visual_shader_model, nodes_model, n_id, proto_node);
+    VisualShaderNodeEmbedComboBox* embed_widget =
+        new VisualShaderNodeEmbedComboBox(visual_shader_model, nodes_model, n_id, proto_node, 
+                                          VisualShaderNodeIntOp::VisualShaderNodeIntOpType_descriptor(), 
+                                          VisualShaderNodeIntOp::kOpFieldNumber);
     layout->addWidget(embed_widget);
     QObject::connect(embed_widget, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
                      &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
+    QObject::connect(embed_widget, &VisualShaderNodeEmbedComboBox::node_update_requested, scene, &VisualShaderGraphicsScene::update_node_in_model);
+    embed_widgets[VisualShaderNodeIntOp::kOpFieldNumber] = embed_widget;
   } else if (auto uint_op_node = std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNodeUIntOp>>(proto_node)) {
-    VisualShaderNodeUIntOpEmbedWidget* embed_widget =
-        new VisualShaderNodeUIntOpEmbedWidget(visual_shader_model, nodes_model, n_id, proto_node);
+    VisualShaderNodeEmbedComboBox* embed_widget =
+        new VisualShaderNodeEmbedComboBox(visual_shader_model, nodes_model, n_id, proto_node, 
+                                          VisualShaderNodeUIntOp::VisualShaderNodeUIntOpType_descriptor(), 
+                                          VisualShaderNodeUIntOp::kOpFieldNumber);
     layout->addWidget(embed_widget);
     QObject::connect(embed_widget, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
                      &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
+    QObject::connect(embed_widget, &VisualShaderNodeEmbedComboBox::node_update_requested, scene, &VisualShaderGraphicsScene::update_node_in_model);
+    embed_widgets[VisualShaderNodeUIntOp::kOpFieldNumber] = embed_widget;
   } else if (auto vector_op_node = std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNodeVectorOp>>(proto_node)) {
-    VisualShaderNodeVectorTypeEmbedWidget* embed_widget =
-        new VisualShaderNodeVectorTypeEmbedWidget(visual_shader_model, nodes_model, n_id, proto_node);
+    VisualShaderNodeEmbedComboBox* embed_widget =
+        new VisualShaderNodeEmbedComboBox(visual_shader_model, nodes_model, n_id, proto_node, 
+                                          VisualShaderNodeVectorType_descriptor(), 
+                                          VisualShaderNodeVectorOp::kTypeFieldNumber);
     layout->addWidget(embed_widget);
-    VisualShaderNodeVectorOpEmbedWidget* embed_widget2 =
-        new VisualShaderNodeVectorOpEmbedWidget(visual_shader_model, nodes_model, n_id, proto_node);
+    VisualShaderNodeEmbedComboBox* embed_widget2 =
+        new VisualShaderNodeEmbedComboBox(visual_shader_model, nodes_model, n_id, proto_node, 
+                                          VisualShaderNodeVectorOp::VisualShaderNodeVectorOpType_descriptor(), 
+                                          VisualShaderNodeVectorOp::kOpFieldNumber);
     layout->addWidget(embed_widget2);
-    QObject::connect(embed_widget, QOverload<int>::of(&QComboBox::currentIndexChanged), embed_widget2,
-                   &VisualShaderNodeVectorOpEmbedWidget::on_current_vector_type_changed);
+    QObject::connect(embed_widget, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
+                     &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
+    QObject::connect(embed_widget, &VisualShaderNodeEmbedComboBox::node_update_requested, scene, &VisualShaderGraphicsScene::update_node_in_model);
+    embed_widgets[VisualShaderNodeVectorOp::kTypeFieldNumber] = embed_widget;
     QObject::connect(embed_widget2, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
                      &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
+    QObject::connect(embed_widget2, &VisualShaderNodeEmbedComboBox::node_update_requested, scene, &VisualShaderGraphicsScene::update_node_in_model);
+    embed_widgets[VisualShaderNodeVectorOp::kOpFieldNumber] = embed_widget2;
   } else if (auto float_func_node = std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNodeFloatFunc>>(proto_node)) {
-    VisualShaderNodeFloatFuncEmbedWidget* embed_widget =
-        new VisualShaderNodeFloatFuncEmbedWidget(visual_shader_model, nodes_model, n_id, proto_node);
+    VisualShaderNodeEmbedComboBox* embed_widget =
+        new VisualShaderNodeEmbedComboBox(visual_shader_model, nodes_model, n_id, proto_node, 
+                                          VisualShaderNodeFloatFunc::VisualShaderNodeFloatFuncType_descriptor(), 
+                                          VisualShaderNodeFloatFunc::kFuncFieldNumber);
     layout->addWidget(embed_widget);
     QObject::connect(embed_widget, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
                      &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
+    QObject::connect(embed_widget, &VisualShaderNodeEmbedComboBox::node_update_requested, scene, &VisualShaderGraphicsScene::update_node_in_model);
+    embed_widgets[VisualShaderNodeFloatFunc::kFuncFieldNumber] = embed_widget;
   } else if (auto int_func_node = std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNodeIntFunc>>(proto_node)) {
-    VisualShaderNodeIntFuncEmbedWidget* embed_widget =
-        new VisualShaderNodeIntFuncEmbedWidget(visual_shader_model, nodes_model, n_id, proto_node);
+    VisualShaderNodeEmbedComboBox* embed_widget =
+        new VisualShaderNodeEmbedComboBox(visual_shader_model, nodes_model, n_id, proto_node, 
+                                          VisualShaderNodeIntFunc::VisualShaderNodeIntFuncType_descriptor(), 
+                                          VisualShaderNodeIntFunc::kFuncFieldNumber);
     layout->addWidget(embed_widget);
     QObject::connect(embed_widget, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
                      &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
+    QObject::connect(embed_widget, &VisualShaderNodeEmbedComboBox::node_update_requested, scene, &VisualShaderGraphicsScene::update_node_in_model);
+    embed_widgets[VisualShaderNodeIntFunc::kFuncFieldNumber] = embed_widget;
   } else if (auto uint_func_node = std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNodeUIntFunc>>(proto_node)) {
-    VisualShaderNodeUIntFuncEmbedWidget* embed_widget =
-        new VisualShaderNodeUIntFuncEmbedWidget(visual_shader_model, nodes_model, n_id, proto_node);
+    VisualShaderNodeEmbedComboBox* embed_widget =
+        new VisualShaderNodeEmbedComboBox(visual_shader_model, nodes_model, n_id, proto_node, 
+                                          VisualShaderNodeUIntFunc::VisualShaderNodeUIntFuncType_descriptor(), 
+                                          VisualShaderNodeUIntFunc::kFuncFieldNumber);
     layout->addWidget(embed_widget);
     QObject::connect(embed_widget, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
                      &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
+    QObject::connect(embed_widget, &VisualShaderNodeEmbedComboBox::node_update_requested, scene, &VisualShaderGraphicsScene::update_node_in_model);
+    embed_widgets[VisualShaderNodeUIntFunc::kFuncFieldNumber] = embed_widget;
   } else if (auto vector_func_node = std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNodeVectorFunc>>(proto_node)) {
-    VisualShaderNodeVectorTypeEmbedWidget* embed_widget =
-        new VisualShaderNodeVectorTypeEmbedWidget(visual_shader_model, nodes_model, n_id, proto_node);
+    VisualShaderNodeEmbedComboBox* embed_widget =
+        new VisualShaderNodeEmbedComboBox(visual_shader_model, nodes_model, n_id, proto_node, 
+                                          VisualShaderNodeVectorType_descriptor(), 
+                                          VisualShaderNodeVectorFunc::kTypeFieldNumber);
     layout->addWidget(embed_widget);
-    VisualShaderNodeVectorFuncEmbedWidget* embed_widget2 =
-        new VisualShaderNodeVectorFuncEmbedWidget(visual_shader_model, nodes_model, n_id, proto_node);
+    VisualShaderNodeEmbedComboBox* embed_widget2 =
+        new VisualShaderNodeEmbedComboBox(visual_shader_model, nodes_model, n_id, proto_node, 
+                                          VisualShaderNodeVectorFunc::VisualShaderNodeVectorFuncType_descriptor(), 
+                                          VisualShaderNodeVectorFunc::kFuncFieldNumber);
     layout->addWidget(embed_widget2);
-    QObject::connect(embed_widget, QOverload<int>::of(&QComboBox::currentIndexChanged), embed_widget2,
-                   &VisualShaderNodeVectorFuncEmbedWidget::on_current_vector_type_changed);
+    QObject::connect(embed_widget, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
+                     &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
+    QObject::connect(embed_widget, &VisualShaderNodeEmbedComboBox::node_update_requested, scene, &VisualShaderGraphicsScene::update_node_in_model);
+    embed_widgets[VisualShaderNodeVectorFunc::kTypeFieldNumber] = embed_widget;
     QObject::connect(embed_widget2, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
                      &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
+    QObject::connect(embed_widget2, &VisualShaderNodeEmbedComboBox::node_update_requested, scene, &VisualShaderGraphicsScene::update_node_in_model);
+    embed_widgets[VisualShaderNodeVectorFunc::kFuncFieldNumber] = embed_widget2;
   } else if (auto value_noise_node = std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNodeValueNoise>>(proto_node)) {
-    VisualShaderNodeValueNoiseEmbedWidget* embed_widget =
-        new VisualShaderNodeValueNoiseEmbedWidget(visual_shader_model, nodes_model, n_id, proto_node);
+    VisualShaderNodeEmbedLineEditFloat* embed_widget =
+        new VisualShaderNodeEmbedLineEditFloat(visual_shader_model, nodes_model, n_id, proto_node, VisualShaderNodeValueNoise::kScaleFieldNumber);
     layout->addWidget(embed_widget);
     QObject::connect(embed_widget, &QLineEdit::textChanged, this,
                      &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
+    QObject::connect(embed_widget, &VisualShaderNodeEmbedLineEditFloat::node_update_requested, scene, &VisualShaderGraphicsScene::update_node_in_model);
+    embed_widgets[VisualShaderNodeValueNoise::kScaleFieldNumber] = embed_widget;
+    embed_widget->setPlaceholderText("Scale");
   } else if (auto perlin_noise_node = std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNodePerlinNoise>>(proto_node)) {
-    VisualShaderNodePerlinNoiseEmbedWidget* embed_widget =
-        new VisualShaderNodePerlinNoiseEmbedWidget(visual_shader_model, nodes_model, n_id, proto_node);
+    VisualShaderNodeEmbedLineEditFloat* embed_widget =
+        new VisualShaderNodeEmbedLineEditFloat(visual_shader_model, nodes_model, n_id, proto_node, VisualShaderNodePerlinNoise::kScaleFieldNumber);
     layout->addWidget(embed_widget);
     QObject::connect(embed_widget, &QLineEdit::textChanged, this,
                      &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
+    QObject::connect(embed_widget, &VisualShaderNodeEmbedLineEditFloat::node_update_requested, scene, &VisualShaderGraphicsScene::update_node_in_model);
+    embed_widgets[VisualShaderNodePerlinNoise::kScaleFieldNumber] = embed_widget;
+    embed_widget->setPlaceholderText("Scale");
   } else if (auto voronoi_noise_node = std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNodeVoronoiNoise>>(proto_node)) {
-    VisualShaderNodeVoronoiNoiseAngleOffsetEmbedWidget* embed_widget =
-        new VisualShaderNodeVoronoiNoiseAngleOffsetEmbedWidget(visual_shader_model, nodes_model, n_id, proto_node);
-    VisualShaderNodeVoronoiNoiseCellDensityEmbedWidget* embed_widget2 =
-        new VisualShaderNodeVoronoiNoiseCellDensityEmbedWidget(visual_shader_model, nodes_model, n_id, proto_node);
+    VisualShaderNodeEmbedLineEditFloat* embed_widget =
+        new VisualShaderNodeEmbedLineEditFloat(visual_shader_model, nodes_model, n_id, proto_node, VisualShaderNodeVoronoiNoise::kAngleOffsetFieldNumber);
+    VisualShaderNodeEmbedLineEditFloat* embed_widget2 =
+        new VisualShaderNodeEmbedLineEditFloat(visual_shader_model, nodes_model, n_id, proto_node, VisualShaderNodeVoronoiNoise::kCellDensityFieldNumber);
     layout->addWidget(embed_widget);
     layout->addWidget(embed_widget2);
     QObject::connect(embed_widget, &QLineEdit::textChanged, this,
                      &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
+    QObject::connect(embed_widget, &VisualShaderNodeEmbedLineEditFloat::node_update_requested, scene, &VisualShaderGraphicsScene::update_node_in_model);
+    embed_widgets[VisualShaderNodeVoronoiNoise::kAngleOffsetFieldNumber] = embed_widget;
     QObject::connect(embed_widget2, &QLineEdit::textChanged, this,
                      &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
+    QObject::connect(embed_widget2, &VisualShaderNodeEmbedLineEditFloat::node_update_requested, scene, &VisualShaderGraphicsScene::update_node_in_model);
+    embed_widgets[VisualShaderNodeVoronoiNoise::kCellDensityFieldNumber] = embed_widget2;
+    embed_widget->setPlaceholderText("Angle Offset");
+    embed_widget2->setPlaceholderText("Cell Density");
   } else if (auto dot_product_node = std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNodeDotProduct>>(proto_node)) {
   } else if (auto vector_len_node = std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNodeVectorLen>>(proto_node)) {
   } else if (auto clamp_node = std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNodeClamp>>(proto_node)) {
@@ -2924,27 +3437,45 @@ VisualShaderNodeEmbedWidget::VisualShaderNodeEmbedWidget(ProtoModel* visual_shad
                  std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNode4dVectorDecompose>>(proto_node)) {
   } else if (auto if_node = std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNodeIf>>(proto_node)) {
   } else if (auto switch_node = std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNodeSwitch>>(proto_node)) {
-    VisualShaderNodeSwitchEmbedWidget* embed_widget =
-        new VisualShaderNodeSwitchEmbedWidget(visual_shader_model, nodes_model, n_id, proto_node);
-    layout->addWidget(embed_widget);
-    QObject::connect(embed_widget, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
-                     &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
+    
   } else if (auto is_node = std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNodeIs>>(proto_node)) {
-    VisualShaderNodeIsEmbedWidget* embed_widget =
-        new VisualShaderNodeIsEmbedWidget(visual_shader_model, nodes_model, n_id, proto_node);
+    VisualShaderNodeEmbedComboBox* embed_widget =
+        new VisualShaderNodeEmbedComboBox(visual_shader_model, nodes_model, n_id, proto_node, 
+                                          VisualShaderNodeIs::Function_descriptor(), 
+                                          VisualShaderNodeIs::kFuncFieldNumber);
     layout->addWidget(embed_widget);
     QObject::connect(embed_widget, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
                      &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
+    QObject::connect(embed_widget, &VisualShaderNodeEmbedComboBox::node_update_requested, scene, &VisualShaderGraphicsScene::update_node_in_model);
+    embed_widgets[VisualShaderNodeIs::kFuncFieldNumber] = embed_widget;
   } else if (auto compare_node = std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNodeCompare>>(proto_node)) {
-    VisualShaderNodeCompareEmbedWidget* embed_widget =
-        new VisualShaderNodeCompareEmbedWidget(visual_shader_model, nodes_model, n_id, proto_node);
-    layout->addLayout(embed_widget);
-    QObject::connect(embed_widget->get_comparison_type_combo_box(), QOverload<int>::of(&QComboBox::currentIndexChanged),
-                     this, &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
-    QObject::connect(embed_widget->get_func_combo_box(), QOverload<int>::of(&QComboBox::currentIndexChanged), this,
+    VisualShaderNodeEmbedComboBox* embed_widget =
+        new VisualShaderNodeEmbedComboBox(visual_shader_model, nodes_model, n_id, proto_node, 
+                                          VisualShaderNodeCompare::ComparisonType_descriptor(), 
+                                          VisualShaderNodeCompare::kTypeFieldNumber);
+    layout->addWidget(embed_widget);
+    VisualShaderNodeEmbedComboBox* embed_widget2 =
+        new VisualShaderNodeEmbedComboBox(visual_shader_model, nodes_model, n_id, proto_node, 
+                                          VisualShaderNodeCompare::Function_descriptor(), 
+                                          VisualShaderNodeCompare::kFuncFieldNumber);
+    layout->addWidget(embed_widget2);
+    VisualShaderNodeEmbedComboBox* embed_widget3 =
+        new VisualShaderNodeEmbedComboBox(visual_shader_model, nodes_model, n_id, proto_node, 
+                                          VisualShaderNodeCompare::Condition_descriptor(), 
+                                          VisualShaderNodeCompare::kCondFieldNumber);
+    layout->addWidget(embed_widget3);
+    QObject::connect(embed_widget, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
                      &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
-    QObject::connect(embed_widget->get_condition_combo_box(), QOverload<int>::of(&QComboBox::currentIndexChanged), this,
-                     &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
+    QObject::connect(embed_widget, &VisualShaderNodeEmbedComboBox::node_update_requested, scene, &VisualShaderGraphicsScene::update_node_in_model);
+    embed_widgets[VisualShaderNodeCompare::kTypeFieldNumber] = embed_widget;
+    QObject::connect(embed_widget2, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
+                      &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
+    QObject::connect(embed_widget2, &VisualShaderNodeEmbedComboBox::node_update_requested, scene, &VisualShaderGraphicsScene::update_node_in_model);
+    embed_widgets[VisualShaderNodeCompare::kFuncFieldNumber] = embed_widget2;
+    QObject::connect(embed_widget3, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
+                      &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
+    QObject::connect(embed_widget3, &VisualShaderNodeEmbedComboBox::node_update_requested, scene, &VisualShaderGraphicsScene::update_node_in_model);
+    embed_widgets[VisualShaderNodeCompare::kCondFieldNumber] = embed_widget3;
   } else {
     FAIL_AND_RETURN("Unknown node type");
   }
@@ -2963,81 +3494,65 @@ VisualShaderNodeEmbedWidget::VisualShaderNodeEmbedWidget(ProtoModel* visual_shad
   setLayout(layout);
 }
 
-/*************************************/
-/* Input Node                        */
-/*************************************/
-
-VisualShaderNodeInputEmbedWidget::VisualShaderNodeInputEmbedWidget(ProtoModel* visual_shader_model,
-                                                                   ProtoModel* nodes_model, const int& n_id,
-                                                                   const std::shared_ptr<IVisualShaderProtoNode>& proto_node)
+VisualShaderNodeEmbedComboBox::VisualShaderNodeEmbedComboBox(ProtoModel* visual_shader_model,
+                                                             ProtoModel* nodes_model, const int& n_id,
+                                                             const std::shared_ptr<IVisualShaderProtoNode>& proto_node,
+                                                             const EnumDescriptor* enum_descriptor, const int& field_number)
     : QComboBox(),
       visual_shader_model(visual_shader_model),
       nodes_model(nodes_model),
       n_id(n_id),
-      proto_node(proto_node) {
+      proto_node(proto_node),
+      field_number(field_number) {
   setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
   setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
 
-  int size{VisualShaderNodeInputType_descriptor()->value_count()};
+  int size{enum_descriptor->value_count()};
   for (int i{0}; i < size; ++i) {
-    int input_type{shadergen_utils::get_enum_value_by_enum_index(VisualShaderNodeInputType_descriptor(), i)};
+    int input_type{shadergen_utils::get_enum_value_by_enum_index(enum_descriptor, i)};
     addItem(QString::fromStdString(
-        shadergen_utils::get_enum_value_caption_by_value(VisualShaderNodeInputType_descriptor(), input_type)));
+        shadergen_utils::get_enum_value_caption_by_value(enum_descriptor, input_type)));
   }
 
   int row_entry{VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, n_id)};
   setCurrentIndex(visual_shader_model
                       ->data(FieldPath::Of<VisualShader>(
                           FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry),
-                          FieldPath::FieldNumber(VisualShader::VisualShaderNode::kInputFieldNumber),
-                          FieldPath::FieldNumber(VisualShaderNodeInput::kTypeFieldNumber)))
+                          FieldPath::FieldNumber(VisualShaderGraphicsScene::get_node_type_field_number(nodes_model, row_entry)),
+                          FieldPath::FieldNumber(field_number)))
                       .toInt());
 
   QObject::connect(this, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
-                   &VisualShaderNodeInputEmbedWidget::on_current_index_changed);
+                   &VisualShaderNodeEmbedComboBox::on_current_index_changed);
 }
 
-void VisualShaderNodeInputEmbedWidget::on_current_index_changed(const int& index) {
-  int row_entry{VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, n_id)};
-  bool result = visual_shader_model->set_data(
-      FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
-                                  FieldPath::RepeatedAt(row_entry),
-                                  FieldPath::FieldNumber(VisualShader::VisualShaderNode::kInputFieldNumber),
-                                  FieldPath::FieldNumber(VisualShaderNodeInput::kTypeFieldNumber)),
-      index);
-  if (!result) {
-    ERROR_PRINT("Failed to set data");
-  }
+void VisualShaderNodeEmbedComboBox::on_current_index_changed(const int& index) {
+  Q_EMIT node_update_requested(n_id, field_number, index);
 }
 
-/*************************************/
-/* CONSTANTS                         */
-/*************************************/
-
-VisualShaderNodeFloatConstantEmbedWidget::VisualShaderNodeFloatConstantEmbedWidget(
+VisualShaderNodeEmbedLineEditFloat::VisualShaderNodeEmbedLineEditFloat(
     ProtoModel* visual_shader_model, ProtoModel* nodes_model, const int& n_id,
-    const std::shared_ptr<IVisualShaderProtoNode>& proto_node)
+    const std::shared_ptr<IVisualShaderProtoNode>& proto_node, const int& field_number)
     : QLineEdit(), visual_shader_model(visual_shader_model),
       nodes_model(nodes_model),
-      n_id(n_id), proto_node(proto_node) {
+      n_id(n_id), proto_node(proto_node),
+      field_number(field_number) {
   setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
   setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
-
-  setPlaceholderText("Value");
 
   int row_entry{VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, n_id)};
   setText(
       QString::number(visual_shader_model
                           ->data(FieldPath::Of<VisualShader>(
                               FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry),
-                              FieldPath::FieldNumber(VisualShader::VisualShaderNode::kFloatConstantFieldNumber),
-                              FieldPath::FieldNumber(VisualShaderNodeFloatConstant::kValueFieldNumber)))
+                              FieldPath::FieldNumber(VisualShaderGraphicsScene::get_node_type_field_number(nodes_model, row_entry)),
+                              FieldPath::FieldNumber(field_number)))
                           .toFloat()));
 
-  QObject::connect(this, &QLineEdit::textChanged, this, &VisualShaderNodeFloatConstantEmbedWidget::on_text_changed);
+  QObject::connect(this, &QLineEdit::textChanged, this, &VisualShaderNodeEmbedLineEditFloat::on_text_changed);
 }
 
-void VisualShaderNodeFloatConstantEmbedWidget::on_text_changed(const QString& text) {
+void VisualShaderNodeEmbedLineEditFloat::on_text_changed(const QString& text) {
   SILENT_CHECK_CONDITION_TRUE(text.isEmpty());
 
   bool ok;
@@ -3045,42 +3560,32 @@ void VisualShaderNodeFloatConstantEmbedWidget::on_text_changed(const QString& te
 
   SILENT_CHECK_CONDITION_TRUE(!ok);
 
-  int row_entry{VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, n_id)};
-
-  bool result = visual_shader_model->set_data(
-      FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
-                                  FieldPath::RepeatedAt(row_entry),
-                                  FieldPath::FieldNumber(VisualShader::VisualShaderNode::kFloatConstantFieldNumber),
-                                  FieldPath::FieldNumber(VisualShaderNodeFloatConstant::kValueFieldNumber)), t);
-  if (!result) {
-    ERROR_PRINT("Failed to set data");
-  }
+  Q_EMIT node_update_requested(n_id, field_number, t);
 }
 
-VisualShaderNodeIntConstantEmbedWidget::VisualShaderNodeIntConstantEmbedWidget(
+VisualShaderNodeEmbedLineEditInt::VisualShaderNodeEmbedLineEditInt(
     ProtoModel* visual_shader_model, ProtoModel* nodes_model, const int& n_id,
-    const std::shared_ptr<IVisualShaderProtoNode>& proto_node)
+    const std::shared_ptr<IVisualShaderProtoNode>& proto_node, const int& field_number)
     : QLineEdit(), visual_shader_model(visual_shader_model),
       nodes_model(nodes_model),
-      n_id(n_id), proto_node(proto_node) {
+      n_id(n_id), proto_node(proto_node),
+      field_number(field_number) {
   setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
   setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
-
-  setPlaceholderText("Value");
 
   int row_entry{VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, n_id)};
   setText(
       QString::number(visual_shader_model
                           ->data(FieldPath::Of<VisualShader>(
                               FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry),
-                              FieldPath::FieldNumber(VisualShader::VisualShaderNode::kIntConstantFieldNumber),
-                              FieldPath::FieldNumber(VisualShaderNodeIntConstant::kValueFieldNumber)))
+                              FieldPath::FieldNumber(VisualShaderGraphicsScene::get_node_type_field_number(nodes_model, row_entry)),
+                              FieldPath::FieldNumber(field_number)))
                           .toInt()));
 
-  QObject::connect(this, &QLineEdit::textChanged, this, &VisualShaderNodeIntConstantEmbedWidget::on_text_changed);
+  QObject::connect(this, &QLineEdit::textChanged, this, &VisualShaderNodeEmbedLineEditInt::on_text_changed);
 }
 
-void VisualShaderNodeIntConstantEmbedWidget::on_text_changed(const QString& text) {
+void VisualShaderNodeEmbedLineEditInt::on_text_changed(const QString& text) {
   SILENT_CHECK_CONDITION_TRUE(text.isEmpty());
 
   bool ok;
@@ -3088,42 +3593,32 @@ void VisualShaderNodeIntConstantEmbedWidget::on_text_changed(const QString& text
 
   SILENT_CHECK_CONDITION_TRUE(!ok);
 
-  int row_entry{VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, n_id)};
-
-  bool result = visual_shader_model->set_data(
-      FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
-                                  FieldPath::RepeatedAt(row_entry),
-                                  FieldPath::FieldNumber(VisualShader::VisualShaderNode::kIntConstantFieldNumber),
-                                  FieldPath::FieldNumber(VisualShaderNodeIntConstant::kValueFieldNumber)), t);
-  if (!result) {
-    ERROR_PRINT("Failed to set data");
-  }
+  Q_EMIT node_update_requested(n_id, field_number, t);
 }
 
-VisualShaderNodeUIntConstantEmbedWidget::VisualShaderNodeUIntConstantEmbedWidget(
+VisualShaderNodeEmbedLineEditUInt::VisualShaderNodeEmbedLineEditUInt(
     ProtoModel* visual_shader_model, ProtoModel* nodes_model, const int& n_id,
-    const std::shared_ptr<IVisualShaderProtoNode>& proto_node)
+    const std::shared_ptr<IVisualShaderProtoNode>& proto_node, const int& field_number)
     : QLineEdit(), visual_shader_model(visual_shader_model),
       nodes_model(nodes_model),
-      n_id(n_id), proto_node(proto_node) {
+      n_id(n_id), proto_node(proto_node),
+      field_number(field_number) {
   setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
   setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
-
-  setPlaceholderText("Value");
 
   int row_entry{VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, n_id)};
   setText(
       QString::number(visual_shader_model
                           ->data(FieldPath::Of<VisualShader>(
                               FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry),
-                              FieldPath::FieldNumber(VisualShader::VisualShaderNode::kUintConstantFieldNumber),
-                              FieldPath::FieldNumber(VisualShaderNodeUIntConstant::kValueFieldNumber)))
+                              FieldPath::FieldNumber(VisualShaderGraphicsScene::get_node_type_field_number(nodes_model, row_entry)),
+                              FieldPath::FieldNumber(field_number)))
                           .toUInt()));
 
-  QObject::connect(this, &QLineEdit::textChanged, this, &VisualShaderNodeUIntConstantEmbedWidget::on_text_changed);
+  QObject::connect(this, &QLineEdit::textChanged, this, &VisualShaderNodeEmbedLineEditUInt::on_text_changed);
 }
 
-void VisualShaderNodeUIntConstantEmbedWidget::on_text_changed(const QString& text) {
+void VisualShaderNodeEmbedLineEditUInt::on_text_changed(const QString& text) {
   SILENT_CHECK_CONDITION_TRUE(text.isEmpty());
 
   bool ok;
@@ -3131,19 +3626,35 @@ void VisualShaderNodeUIntConstantEmbedWidget::on_text_changed(const QString& tex
 
   SILENT_CHECK_CONDITION_TRUE(!ok);
 
-  int row_entry{VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, n_id)};
-
-  bool result = visual_shader_model->set_data(
-      FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
-                                  FieldPath::RepeatedAt(row_entry),
-                                  FieldPath::FieldNumber(VisualShader::VisualShaderNode::kUintConstantFieldNumber),
-                                  FieldPath::FieldNumber(VisualShaderNodeUIntConstant::kValueFieldNumber)), t);
-  if (!result) {
-    ERROR_PRINT("Failed to set data");
-  }
+  Q_EMIT node_update_requested(n_id, field_number, t);
 }
 
-VisualShaderNodeColorConstantEmbedWidget::VisualShaderNodeColorConstantEmbedWidget(
+VisualShaderNodeEmbedCheckBox::VisualShaderNodeEmbedCheckBox(
+    ProtoModel* visual_shader_model, ProtoModel* nodes_model, const int& n_id,
+    const std::shared_ptr<IVisualShaderProtoNode>& proto_node, const int& field_number)
+    : QCheckBox(), visual_shader_model(visual_shader_model),
+      nodes_model(nodes_model),
+      n_id(n_id), proto_node(proto_node),
+      field_number(field_number) {
+  setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
+  setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
+
+  int row_entry{VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, n_id)};
+  setChecked(visual_shader_model
+                 ->data(FieldPath::Of<VisualShader>(
+                     FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry),
+                     FieldPath::FieldNumber(VisualShaderGraphicsScene::get_node_type_field_number(nodes_model, row_entry)),
+                     FieldPath::FieldNumber(field_number)))
+                 .toBool());
+
+  QObject::connect(this, &QCheckBox::stateChanged, this, &VisualShaderNodeEmbedCheckBox::on_state_changed);
+}
+
+void VisualShaderNodeEmbedCheckBox::on_state_changed(const int& state) {
+  Q_EMIT node_update_requested(n_id, field_number, state);
+}
+
+VisualShaderNodeEmbedColorPicker::VisualShaderNodeEmbedColorPicker(
     ProtoModel* visual_shader_model, ProtoModel* nodes_model, const int& n_id,
     const std::shared_ptr<IVisualShaderProtoNode>& proto_node)
     : QPushButton(), visual_shader_model(visual_shader_model),
@@ -3152,1230 +3663,64 @@ VisualShaderNodeColorConstantEmbedWidget::VisualShaderNodeColorConstantEmbedWidg
   setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
   setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
 
+  QObject::connect(this, &VisualShaderNodeEmbedColorPicker::color_changed, this, &VisualShaderNodeEmbedColorPicker::on_color_changed);
+  QObject::connect(this, &QPushButton::pressed, this, &VisualShaderNodeEmbedColorPicker::on_pressed);
+
   {
-    int row_entry{VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, n_id)};
+    const int row_entry{VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, n_id)};
+    const int node_type_field_number{ VisualShaderGraphicsScene::get_node_type_field_number(nodes_model, row_entry)};
     float r = visual_shader_model
                   ->data(FieldPath::Of<VisualShader>(
                       FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry),
-                      FieldPath::FieldNumber(VisualShader::VisualShaderNode::kColorConstantFieldNumber),
+                      FieldPath::FieldNumber(node_type_field_number),
                       FieldPath::FieldNumber(VisualShaderNodeColorConstant::kRFieldNumber)))
                   .toFloat();
     float g = visual_shader_model
                   ->data(FieldPath::Of<VisualShader>(
                       FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry),
-                      FieldPath::FieldNumber(VisualShader::VisualShaderNode::kColorConstantFieldNumber),
+                      FieldPath::FieldNumber(node_type_field_number),
                       FieldPath::FieldNumber(VisualShaderNodeColorConstant::kGFieldNumber)))
                   .toFloat();
     float b = visual_shader_model
                   ->data(FieldPath::Of<VisualShader>(
                       FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry),
-                      FieldPath::FieldNumber(VisualShader::VisualShaderNode::kColorConstantFieldNumber),
+                      FieldPath::FieldNumber(node_type_field_number),
                       FieldPath::FieldNumber(VisualShaderNodeColorConstant::kBFieldNumber)))
                   .toFloat();
     float a = visual_shader_model
                   ->data(FieldPath::Of<VisualShader>(
                       FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry),
-                      FieldPath::FieldNumber(VisualShader::VisualShaderNode::kColorConstantFieldNumber),
+                      FieldPath::FieldNumber(node_type_field_number),
                       FieldPath::FieldNumber(VisualShaderNodeColorConstant::kAFieldNumber)))
                   .toFloat();
 
-    QPalette palette{this->palette()};
-    palette.setColor(QPalette::Button, QColor(r, g, b, a));
-    this->setPalette(palette);
+    this->color = {static_cast<int>(r), static_cast<int>(g), static_cast<int>(b), static_cast<int>(a)};
+    Q_EMIT color_changed();
   }
-
-  QObject::connect(this, &QPushButton::pressed, this, &VisualShaderNodeColorConstantEmbedWidget::on_pressed);
 }
 
-void VisualShaderNodeColorConstantEmbedWidget::on_pressed() {
-  int row_entry{VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, n_id)};
-  float r = visual_shader_model
-                ->data(FieldPath::Of<VisualShader>(
-                    FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry),
-                    FieldPath::FieldNumber(VisualShader::VisualShaderNode::kColorConstantFieldNumber),
-                    FieldPath::FieldNumber(VisualShaderNodeColorConstant::kRFieldNumber)))
-                .toFloat();
-  float g = visual_shader_model
-                ->data(FieldPath::Of<VisualShader>(
-                    FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry),
-                    FieldPath::FieldNumber(VisualShader::VisualShaderNode::kColorConstantFieldNumber),
-                    FieldPath::FieldNumber(VisualShaderNodeColorConstant::kGFieldNumber)))
-                .toFloat();
-  float b = visual_shader_model
-                ->data(FieldPath::Of<VisualShader>(
-                    FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry),
-                    FieldPath::FieldNumber(VisualShader::VisualShaderNode::kColorConstantFieldNumber),
-                    FieldPath::FieldNumber(VisualShaderNodeColorConstant::kBFieldNumber)))
-                .toFloat();
-  float a = visual_shader_model
-                ->data(FieldPath::Of<VisualShader>(
-                    FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry),
-                    FieldPath::FieldNumber(VisualShader::VisualShaderNode::kColorConstantFieldNumber),
-                    FieldPath::FieldNumber(VisualShaderNodeColorConstant::kAFieldNumber)))
-                .toFloat();
+void VisualShaderNodeEmbedColorPicker::on_color_changed() {
+  QPalette palette{this->palette()};
+  QColor t{this->color};
+  palette.setColor(QPalette::Button, t);
+  this->setPalette(palette);
+  this->update();
+}
 
-  QColor color{QColorDialog::getColor(QColor(r, g, b, a), this, "Select Color")};
+void VisualShaderNodeEmbedColorPicker::on_pressed() {
+  QColorDialog::ColorDialogOptions options;
+  options.setFlag(QColorDialog::ShowAlphaChannel, true);
+  options.setFlag(QColorDialog::DontUseNativeDialog, false);
+  QColor t{QColorDialog::getColor(this->color, this, "Select Color", options)};
 
   // If a valid color is picked, update the button and store the color
-  if (color.isValid()) {
-    visual_shader_model->set_data(
-        FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
-                                    FieldPath::RepeatedAt(row_entry),
-                                    FieldPath::FieldNumber(VisualShader::VisualShaderNode::kColorConstantFieldNumber),
-                                    FieldPath::FieldNumber(VisualShaderNodeColorConstant::kRFieldNumber)),
-        color.red());
-    visual_shader_model->set_data(
-        FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
-                                    FieldPath::RepeatedAt(row_entry),
-                                    FieldPath::FieldNumber(VisualShader::VisualShaderNode::kColorConstantFieldNumber),
-                                    FieldPath::FieldNumber(VisualShaderNodeColorConstant::kGFieldNumber)),
-        color.green());
-    visual_shader_model->set_data(
-        FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
-                                    FieldPath::RepeatedAt(row_entry),
-                                    FieldPath::FieldNumber(VisualShader::VisualShaderNode::kColorConstantFieldNumber),
-                                    FieldPath::FieldNumber(VisualShaderNodeColorConstant::kBFieldNumber)),
-        color.blue());
-    visual_shader_model->set_data(
-        FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
-                                    FieldPath::RepeatedAt(row_entry),
-                                    FieldPath::FieldNumber(VisualShader::VisualShaderNode::kColorConstantFieldNumber),
-                                    FieldPath::FieldNumber(VisualShaderNodeColorConstant::kAFieldNumber)),
-        color.alpha());
+  if (t.isValid()) {
+    Q_EMIT node_update_requested(n_id, VisualShaderNodeColorConstant::kRFieldNumber, t.red());
+    Q_EMIT node_update_requested(n_id, VisualShaderNodeColorConstant::kGFieldNumber, t.green());
+    Q_EMIT node_update_requested(n_id, VisualShaderNodeColorConstant::kBFieldNumber, t.blue());
+    Q_EMIT node_update_requested(n_id, VisualShaderNodeColorConstant::kAFieldNumber, t.alpha());
 
-    QPalette palette{this->palette()};
-    palette.setColor(QPalette::Button, color);
-    this->setPalette(palette);
-    this->update();
+    this->color = t;
     Q_EMIT color_changed();
-  } else {
-    // If the user cancels the color dialog, reset the button to the previous color
-    QColor previous_color{QColor(r, g, b, a)};
-    QPalette palette{this->palette()};
-    palette.setColor(QPalette::Button, previous_color);
-    this->setPalette(palette);
-    this->update();
-  }
-}
-
-VisualShaderNodeBooleanConstantEmbedWidget::VisualShaderNodeBooleanConstantEmbedWidget(
-    ProtoModel* visual_shader_model, ProtoModel* nodes_model, const int& n_id,
-    const std::shared_ptr<IVisualShaderProtoNode>& proto_node)
-    : QCheckBox(), visual_shader_model(visual_shader_model),
-      nodes_model(nodes_model),
-      n_id(n_id), proto_node(proto_node) {
-  setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
-  setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
-
-  int row_entry{VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, n_id)};
-  setChecked(visual_shader_model
-                 ->data(FieldPath::Of<VisualShader>(
-                     FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry),
-                     FieldPath::FieldNumber(VisualShader::VisualShaderNode::kBooleanConstantFieldNumber),
-                     FieldPath::FieldNumber(VisualShaderNodeBooleanConstant::kValueFieldNumber)))
-                 .toBool());
-
-  QObject::connect(this, &QCheckBox::stateChanged, this, &VisualShaderNodeBooleanConstantEmbedWidget::on_state_changed);
-}
-
-void VisualShaderNodeBooleanConstantEmbedWidget::on_state_changed(const int& state) {
-  int row_entry{VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, n_id)};
-  bool result = visual_shader_model->set_data(
-      FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
-                                  FieldPath::RepeatedAt(row_entry),
-                                  FieldPath::FieldNumber(VisualShader::VisualShaderNode::kBooleanConstantFieldNumber),
-                                  FieldPath::FieldNumber(VisualShaderNodeBooleanConstant::kValueFieldNumber)),
-      state);
-  if (!result) {
-    ERROR_PRINT("Failed to set data");
-  }
-}
-
-VisualShaderNodeVec2ConstantEmbedWidget::VisualShaderNodeVec2ConstantEmbedWidget(
-    ProtoModel* visual_shader_model, ProtoModel* nodes_model, const int& n_id,
-    const std::shared_ptr<IVisualShaderProtoNode>& proto_node)
-    : QVBoxLayout(), visual_shader_model(visual_shader_model),
-      nodes_model(nodes_model),
-      n_id(n_id), proto_node(proto_node) {
-  setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
-  setSizeConstraint(QLayout::SetNoConstraint);
-  setSpacing(2);
-  setAlignment(Qt::AlignVCenter | Qt::AlignHCenter);
-
-  x_edit_widget = new QLineEdit();
-  y_edit_widget = new QLineEdit();
-
-  x_edit_widget->setPlaceholderText("X");
-  y_edit_widget->setPlaceholderText("Y");
-
-  int row_entry{VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, n_id)};
-  x_edit_widget->setText(
-      QString::number(visual_shader_model
-                          ->data(FieldPath::Of<VisualShader>(
-                              FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry),
-                              FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec2ConstantFieldNumber),
-                              FieldPath::FieldNumber(VisualShaderNodeVec2Constant::kXFieldNumber)))
-                          .toFloat()));
-  y_edit_widget->setText(
-      QString::number(visual_shader_model
-                          ->data(FieldPath::Of<VisualShader>(
-                              FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry),
-                              FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec2ConstantFieldNumber),
-                              FieldPath::FieldNumber(VisualShaderNodeVec2Constant::kYFieldNumber)))
-                          .toFloat()));
-
-  QObject::connect(x_edit_widget, &QLineEdit::textChanged, this,
-                   &VisualShaderNodeVec2ConstantEmbedWidget::on_x_text_changed);
-  QObject::connect(y_edit_widget, &QLineEdit::textChanged, this,
-                   &VisualShaderNodeVec2ConstantEmbedWidget::on_y_text_changed);
-
-  addWidget(x_edit_widget);
-  addWidget(y_edit_widget);
-}
-
-void VisualShaderNodeVec2ConstantEmbedWidget::on_x_text_changed(const QString& text) {
-  SILENT_CHECK_CONDITION_TRUE(text.isEmpty());
-
-  bool ok;
-  float t {text.toFloat(&ok)};
-
-  SILENT_CHECK_CONDITION_TRUE(!ok);
-
-  int row_entry{VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, n_id)};
-
-  bool result = visual_shader_model->set_data(
-      FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
-                                  FieldPath::RepeatedAt(row_entry),
-                                  FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec2ConstantFieldNumber),
-                                  FieldPath::FieldNumber(VisualShaderNodeVec2Constant::kXFieldNumber)), t);
-  if (!result) {
-    ERROR_PRINT("Failed to set data");
-  }
-}
-
-void VisualShaderNodeVec2ConstantEmbedWidget::on_y_text_changed(const QString& text) {
-  SILENT_CHECK_CONDITION_TRUE(text.isEmpty());
-
-  bool ok;
-  float t {text.toFloat(&ok)};
-
-  SILENT_CHECK_CONDITION_TRUE(!ok);
-
-  int row_entry{VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, n_id)};
-
-  bool result = visual_shader_model->set_data(
-      FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
-                                  FieldPath::RepeatedAt(row_entry),
-                                  FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec2ConstantFieldNumber),
-                                  FieldPath::FieldNumber(VisualShaderNodeVec2Constant::kYFieldNumber)), t);
-  if (!result) {
-    ERROR_PRINT("Failed to set data");
-  }
-}
-
-VisualShaderNodeVec3ConstantEmbedWidget::VisualShaderNodeVec3ConstantEmbedWidget(
-    ProtoModel* visual_shader_model, ProtoModel* nodes_model, const int& n_id,
-    const std::shared_ptr<IVisualShaderProtoNode>& proto_node)
-    : QVBoxLayout(), visual_shader_model(visual_shader_model),
-      nodes_model(nodes_model),
-      n_id(n_id), proto_node(proto_node) {
-  setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
-  setSizeConstraint(QLayout::SetNoConstraint);
-  setSpacing(2);
-  setAlignment(Qt::AlignVCenter | Qt::AlignHCenter);
-
-  x_edit_widget = new QLineEdit();
-  y_edit_widget = new QLineEdit();
-  z_edit_widget = new QLineEdit();
-
-  x_edit_widget->setPlaceholderText("X");
-  y_edit_widget->setPlaceholderText("Y");
-  z_edit_widget->setPlaceholderText("Z");
-
-  int row_entry{VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, n_id)};
-  x_edit_widget->setText(
-      QString::number(visual_shader_model
-                          ->data(FieldPath::Of<VisualShader>(
-                              FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry),
-                              FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec3ConstantFieldNumber),
-                              FieldPath::FieldNumber(VisualShaderNodeVec3Constant::kXFieldNumber)))
-                          .toFloat()));
-  y_edit_widget->setText(
-      QString::number(visual_shader_model
-                          ->data(FieldPath::Of<VisualShader>(
-                              FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry),
-                              FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec3ConstantFieldNumber),
-                              FieldPath::FieldNumber(VisualShaderNodeVec3Constant::kYFieldNumber)))
-                          .toFloat()));
-  z_edit_widget->setText(
-      QString::number(visual_shader_model
-                          ->data(FieldPath::Of<VisualShader>(
-                              FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry),
-                              FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec3ConstantFieldNumber),
-                              FieldPath::FieldNumber(VisualShaderNodeVec3Constant::kZFieldNumber)))
-                          .toFloat()));
-
-  QObject::connect(x_edit_widget, &QLineEdit::textChanged, this,
-                   &VisualShaderNodeVec3ConstantEmbedWidget::on_x_text_changed);
-  QObject::connect(y_edit_widget, &QLineEdit::textChanged, this,
-                   &VisualShaderNodeVec3ConstantEmbedWidget::on_y_text_changed);
-  QObject::connect(z_edit_widget, &QLineEdit::textChanged, this,
-                   &VisualShaderNodeVec3ConstantEmbedWidget::on_z_text_changed);
-
-  addWidget(x_edit_widget);
-  addWidget(y_edit_widget);
-  addWidget(z_edit_widget);
-}
-
-void VisualShaderNodeVec3ConstantEmbedWidget::on_x_text_changed(const QString& text) {
-  SILENT_CHECK_CONDITION_TRUE(text.isEmpty());
-
-  bool ok;
-  float t {text.toFloat(&ok)};
-
-  SILENT_CHECK_CONDITION_TRUE(!ok);
-
-  int row_entry{VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, n_id)};
-
-  bool result = visual_shader_model->set_data(
-      FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
-                                  FieldPath::RepeatedAt(row_entry),
-                                  FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec3ConstantFieldNumber),
-                                  FieldPath::FieldNumber(VisualShaderNodeVec3Constant::kXFieldNumber)), t);
-  if (!result) {
-    ERROR_PRINT("Failed to set data");
-  }
-}
-
-void VisualShaderNodeVec3ConstantEmbedWidget::on_y_text_changed(const QString& text) {
-  SILENT_CHECK_CONDITION_TRUE(text.isEmpty());
-
-  bool ok;
-  float t {text.toFloat(&ok)};
-
-  SILENT_CHECK_CONDITION_TRUE(!ok);
-
-  int row_entry{VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, n_id)};
-
-  bool result = visual_shader_model->set_data(
-      FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
-                                  FieldPath::RepeatedAt(row_entry),
-                                  FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec3ConstantFieldNumber),
-                                  FieldPath::FieldNumber(VisualShaderNodeVec3Constant::kYFieldNumber)), t);
-  if (!result) {
-    ERROR_PRINT("Failed to set data");
-  }
-}
-
-void VisualShaderNodeVec3ConstantEmbedWidget::on_z_text_changed(const QString& text) {
-  SILENT_CHECK_CONDITION_TRUE(text.isEmpty());
-
-  bool ok;
-  float t {text.toFloat(&ok)};
-
-  SILENT_CHECK_CONDITION_TRUE(!ok);
-
-  int row_entry{VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, n_id)};
-
-  bool result = visual_shader_model->set_data(
-      FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
-                                  FieldPath::RepeatedAt(row_entry),
-                                  FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec3ConstantFieldNumber),
-                                  FieldPath::FieldNumber(VisualShaderNodeVec3Constant::kZFieldNumber)), t);
-  if (!result) {
-    ERROR_PRINT("Failed to set data");
-  }
-}
-
-VisualShaderNodeVec4ConstantEmbedWidget::VisualShaderNodeVec4ConstantEmbedWidget(
-    ProtoModel* visual_shader_model, ProtoModel* nodes_model, const int& n_id,
-    const std::shared_ptr<IVisualShaderProtoNode>& proto_node)
-    : QVBoxLayout(), visual_shader_model(visual_shader_model),
-      nodes_model(nodes_model),
-      n_id(n_id), proto_node(proto_node) {
-  setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
-  setSizeConstraint(QLayout::SetNoConstraint);
-  setSpacing(2);
-  setAlignment(Qt::AlignVCenter | Qt::AlignHCenter);
-
-  x_edit_widget = new QLineEdit();
-  y_edit_widget = new QLineEdit();
-  z_edit_widget = new QLineEdit();
-  w_edit_widget = new QLineEdit();
-
-  x_edit_widget->setPlaceholderText("X");
-  y_edit_widget->setPlaceholderText("Y");
-  z_edit_widget->setPlaceholderText("Z");
-  w_edit_widget->setPlaceholderText("W");
-
-  int row_entry{VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, n_id)};
-  x_edit_widget->setText(
-      QString::number(visual_shader_model
-                          ->data(FieldPath::Of<VisualShader>(
-                              FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry),
-                              FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec4ConstantFieldNumber),
-                              FieldPath::FieldNumber(VisualShaderNodeVec4Constant::kXFieldNumber)))
-                          .toFloat()));
-  y_edit_widget->setText(
-      QString::number(visual_shader_model
-                          ->data(FieldPath::Of<VisualShader>(
-                              FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry),
-                              FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec4ConstantFieldNumber),
-                              FieldPath::FieldNumber(VisualShaderNodeVec4Constant::kYFieldNumber)))
-                          .toFloat()));
-  z_edit_widget->setText(
-      QString::number(visual_shader_model
-                          ->data(FieldPath::Of<VisualShader>(
-                              FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry),
-                              FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec4ConstantFieldNumber),
-                              FieldPath::FieldNumber(VisualShaderNodeVec4Constant::kZFieldNumber)))
-                          .toFloat()));
-  w_edit_widget->setText(
-      QString::number(visual_shader_model
-                          ->data(FieldPath::Of<VisualShader>(
-                              FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry),
-                              FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec4ConstantFieldNumber),
-                              FieldPath::FieldNumber(VisualShaderNodeVec4Constant::kWFieldNumber)))
-                          .toFloat()));
-
-  QObject::connect(x_edit_widget, &QLineEdit::textChanged, this,
-                   &VisualShaderNodeVec4ConstantEmbedWidget::on_x_text_changed);
-  QObject::connect(y_edit_widget, &QLineEdit::textChanged, this,
-                   &VisualShaderNodeVec4ConstantEmbedWidget::on_y_text_changed);
-  QObject::connect(z_edit_widget, &QLineEdit::textChanged, this,
-                   &VisualShaderNodeVec4ConstantEmbedWidget::on_z_text_changed);
-  QObject::connect(w_edit_widget, &QLineEdit::textChanged, this,
-                   &VisualShaderNodeVec4ConstantEmbedWidget::on_w_text_changed);
-
-  addWidget(x_edit_widget);
-  addWidget(y_edit_widget);
-  addWidget(z_edit_widget);
-  addWidget(w_edit_widget);
-}
-
-void VisualShaderNodeVec4ConstantEmbedWidget::on_x_text_changed(const QString& text) {
-  SILENT_CHECK_CONDITION_TRUE(text.isEmpty());
-
-  bool ok;
-  float t {text.toFloat(&ok)};
-
-  SILENT_CHECK_CONDITION_TRUE(!ok);
-
-  int row_entry{VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, n_id)};
-
-  bool result = visual_shader_model->set_data(
-      FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
-                                  FieldPath::RepeatedAt(row_entry),
-                                  FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec4ConstantFieldNumber),
-                                  FieldPath::FieldNumber(VisualShaderNodeVec4Constant::kXFieldNumber)), t);
-  if (!result) {
-    ERROR_PRINT("Failed to set data");
-  }
-}
-
-void VisualShaderNodeVec4ConstantEmbedWidget::on_y_text_changed(const QString& text) {
-  SILENT_CHECK_CONDITION_TRUE(text.isEmpty());
-
-  bool ok;
-  float t {text.toFloat(&ok)};
-
-  SILENT_CHECK_CONDITION_TRUE(!ok);
-
-  int row_entry{VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, n_id)};
-
-  bool result = visual_shader_model->set_data(
-      FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
-                                  FieldPath::RepeatedAt(row_entry),
-                                  FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec4ConstantFieldNumber),
-                                  FieldPath::FieldNumber(VisualShaderNodeVec4Constant::kYFieldNumber)), t);
-  if (!result) {
-    ERROR_PRINT("Failed to set data");
-  }
-}
-
-void VisualShaderNodeVec4ConstantEmbedWidget::on_z_text_changed(const QString& text) {
-  SILENT_CHECK_CONDITION_TRUE(text.isEmpty());
-
-  bool ok;
-  float t {text.toFloat(&ok)};
-
-  SILENT_CHECK_CONDITION_TRUE(!ok);
-
-  int row_entry{VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, n_id)};
-
-  bool result = visual_shader_model->set_data(
-      FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
-                                  FieldPath::RepeatedAt(row_entry),
-                                  FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec4ConstantFieldNumber),
-                                  FieldPath::FieldNumber(VisualShaderNodeVec4Constant::kZFieldNumber)), t);
-  if (!result) {
-    ERROR_PRINT("Failed to set data");
-  }
-}
-
-void VisualShaderNodeVec4ConstantEmbedWidget::on_w_text_changed(const QString& text) {
-  SILENT_CHECK_CONDITION_TRUE(text.isEmpty());
-
-  bool ok;
-  float t {text.toFloat(&ok)};
-
-  SILENT_CHECK_CONDITION_TRUE(!ok);
-
-  int row_entry{VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, n_id)};
-
-  bool result = visual_shader_model->set_data(
-      FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
-                                  FieldPath::RepeatedAt(row_entry),
-                                  FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVec4ConstantFieldNumber),
-                                  FieldPath::FieldNumber(VisualShaderNodeVec4Constant::kWFieldNumber)), t);
-  if (!result) {
-    ERROR_PRINT("Failed to set data");
-  }
-}
-
-/*************************************/
-/* OPERATORS                         */
-/*************************************/
-
-VisualShaderNodeFloatOpEmbedWidget::VisualShaderNodeFloatOpEmbedWidget(ProtoModel* visual_shader_model,
-                                                                       ProtoModel* nodes_model, const int& n_id,
-                                                                       const std::shared_ptr<IVisualShaderProtoNode>& proto_node)
-    : QComboBox(), visual_shader_model(visual_shader_model),
-      nodes_model(nodes_model),
-      n_id(n_id), proto_node(proto_node) {
-  setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
-  setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
-
-  int size{VisualShaderNodeFloatOp::VisualShaderNodeFloatOpType_descriptor()->value_count()};
-  for (int i{0}; i < size; ++i) {
-    int input_type{
-        shadergen_utils::get_enum_value_by_enum_index(VisualShaderNodeFloatOp::VisualShaderNodeFloatOpType_descriptor(), i)};
-    addItem(QString::fromStdString(shadergen_utils::get_enum_value_caption_by_value(
-        VisualShaderNodeFloatOp::VisualShaderNodeFloatOpType_descriptor(), input_type)));
-  }
-
-  int row_entry{VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, n_id)};
-  setCurrentIndex(visual_shader_model
-                      ->data(FieldPath::Of<VisualShader>(
-                          FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry),
-                          FieldPath::FieldNumber(VisualShader::VisualShaderNode::kFloatOpFieldNumber),
-                          FieldPath::FieldNumber(VisualShaderNodeFloatOp::kOpFieldNumber)))
-                      .toInt());
-
-  QObject::connect(this, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
-                   &VisualShaderNodeFloatOpEmbedWidget::on_current_index_changed);
-}
-
-void VisualShaderNodeFloatOpEmbedWidget::on_current_index_changed(const int& index) {
-  int row_entry{VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, n_id)};
-  bool result = visual_shader_model->set_data(
-      FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
-                                  FieldPath::RepeatedAt(row_entry),
-                                  FieldPath::FieldNumber(VisualShader::VisualShaderNode::kFloatOpFieldNumber),
-                                  FieldPath::FieldNumber(VisualShaderNodeFloatOp::kOpFieldNumber)),
-      index);
-  if (!result) {
-    ERROR_PRINT("Failed to set data");
-  }
-}
-
-VisualShaderNodeIntOpEmbedWidget::VisualShaderNodeIntOpEmbedWidget(ProtoModel* visual_shader_model,
-                                                                   ProtoModel* nodes_model, const int& n_id,
-                                                                   const std::shared_ptr<IVisualShaderProtoNode>& proto_node)
-    : QComboBox(), visual_shader_model(visual_shader_model),
-      nodes_model(nodes_model),
-      n_id(n_id), proto_node(proto_node) {
-  setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
-  setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
-
-  int size{VisualShaderNodeIntOp::VisualShaderNodeIntOpType_descriptor()->value_count()};
-  for (int i{0}; i < size; ++i) {
-    int input_type{
-        shadergen_utils::get_enum_value_by_enum_index(VisualShaderNodeIntOp::VisualShaderNodeIntOpType_descriptor(), i)};
-    addItem(QString::fromStdString(shadergen_utils::get_enum_value_caption_by_value(
-        VisualShaderNodeIntOp::VisualShaderNodeIntOpType_descriptor(), input_type)));
-  }
-
-  int row_entry{VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, n_id)};
-  setCurrentIndex(visual_shader_model
-                      ->data(FieldPath::Of<VisualShader>(
-                          FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry),
-                          FieldPath::FieldNumber(VisualShader::VisualShaderNode::kIntOpFieldNumber),
-                          FieldPath::FieldNumber(VisualShaderNodeIntOp::kOpFieldNumber)))
-                      .toInt());
-
-  QObject::connect(this, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
-                   &VisualShaderNodeIntOpEmbedWidget::on_current_index_changed);
-}
-
-void VisualShaderNodeIntOpEmbedWidget::on_current_index_changed(const int& index) {
-  int row_entry{VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, n_id)};
-  bool result = visual_shader_model->set_data(
-      FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
-                                  FieldPath::RepeatedAt(row_entry),
-                                  FieldPath::FieldNumber(VisualShader::VisualShaderNode::kIntOpFieldNumber),
-                                  FieldPath::FieldNumber(VisualShaderNodeIntOp::kOpFieldNumber)),
-      index);
-  if (!result) {
-    ERROR_PRINT("Failed to set data");
-  }
-}
-
-VisualShaderNodeUIntOpEmbedWidget::VisualShaderNodeUIntOpEmbedWidget(ProtoModel* visual_shader_model,
-                                                                     ProtoModel* nodes_model, const int& n_id,
-                                                                     const std::shared_ptr<IVisualShaderProtoNode>& proto_node)
-    : QComboBox(), visual_shader_model(visual_shader_model),
-      nodes_model(nodes_model),
-      n_id(n_id), proto_node(proto_node) {
-  setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
-  setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
-
-  int size{VisualShaderNodeUIntOp::VisualShaderNodeUIntOpType_descriptor()->value_count()};
-  for (int i{0}; i < size; ++i) {
-    int input_type{
-        shadergen_utils::get_enum_value_by_enum_index(VisualShaderNodeUIntOp::VisualShaderNodeUIntOpType_descriptor(), i)};
-    addItem(QString::fromStdString(shadergen_utils::get_enum_value_caption_by_value(
-        VisualShaderNodeUIntOp::VisualShaderNodeUIntOpType_descriptor(), input_type)));
-  }
-
-  int row_entry{VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, n_id)};
-  setCurrentIndex(visual_shader_model
-                      ->data(FieldPath::Of<VisualShader>(
-                          FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry),
-                          FieldPath::FieldNumber(VisualShader::VisualShaderNode::kUintOpFieldNumber),
-                          FieldPath::FieldNumber(VisualShaderNodeUIntOp::kOpFieldNumber)))
-                      .toInt());
-
-  QObject::connect(this, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
-                   &VisualShaderNodeUIntOpEmbedWidget::on_current_index_changed);
-}
-
-void VisualShaderNodeUIntOpEmbedWidget::on_current_index_changed(const int& index) {
-  int row_entry{VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, n_id)};
-  bool result = visual_shader_model->set_data(
-      FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
-                                  FieldPath::RepeatedAt(row_entry),
-                                  FieldPath::FieldNumber(VisualShader::VisualShaderNode::kUintOpFieldNumber),
-                                  FieldPath::FieldNumber(VisualShaderNodeUIntOp::kOpFieldNumber)),
-      index);
-  if (!result) {
-    ERROR_PRINT("Failed to set data");
-  }
-}
-
-VisualShaderNodeVectorTypeEmbedWidget::VisualShaderNodeVectorTypeEmbedWidget(
-    ProtoModel* visual_shader_model, ProtoModel* nodes_model, const int& n_id,
-    const std::shared_ptr<IVisualShaderProtoNode>& proto_node)
-    : QComboBox(), visual_shader_model(visual_shader_model),
-      nodes_model(nodes_model),
-      n_id(n_id), proto_node(proto_node) {
-  setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
-  setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
-
-  int size{VisualShaderNodeVectorType_descriptor()->value_count()};
-  for (int i{0}; i < size; ++i) {
-    int input_type{shadergen_utils::get_enum_value_by_enum_index(VisualShaderNodeVectorType_descriptor(), i)};
-    addItem(QString::fromStdString(
-        shadergen_utils::get_enum_value_caption_by_value(VisualShaderNodeVectorType_descriptor(), input_type)));
-  } 
-}
-
-VisualShaderNodeVectorOpEmbedWidget::VisualShaderNodeVectorOpEmbedWidget(ProtoModel* visual_shader_model,
-                                                                         ProtoModel* nodes_model, const int& n_id,
-                                                                         const std::shared_ptr<IVisualShaderProtoNode>& proto_node)
-    : QComboBox(), visual_shader_model(visual_shader_model),
-      nodes_model(nodes_model),
-      n_id(n_id), proto_node(proto_node) {
-  setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
-  setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
-
-  int size{VisualShaderNodeVectorOp::VisualShaderNodeVectorOpType_descriptor()->value_count()};
-  for (int i{0}; i < size; ++i) {
-    int input_type{shadergen_utils::get_enum_value_by_enum_index(
-        VisualShaderNodeVectorOp::VisualShaderNodeVectorOpType_descriptor(), i)};
-    addItem(QString::fromStdString(shadergen_utils::get_enum_value_caption_by_value(
-        VisualShaderNodeVectorOp::VisualShaderNodeVectorOpType_descriptor(), input_type)));
-  }
-
-  int row_entry{VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, n_id)};
-  setCurrentIndex(visual_shader_model
-                      ->data(FieldPath::Of<VisualShader>(
-                          FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry),
-                          FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVectorOpFieldNumber),
-                          FieldPath::FieldNumber(VisualShaderNodeVectorOp::kOpFieldNumber)))
-                      .toInt());
-
-  QObject::connect(this, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
-                   &VisualShaderNodeVectorOpEmbedWidget::on_current_index_changed);
-}
-
-void VisualShaderNodeVectorOpEmbedWidget::on_current_vector_type_changed(const int& index) {
-  int row_entry{VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, n_id)};
-  bool result = visual_shader_model->set_data(
-      FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
-                                  FieldPath::RepeatedAt(row_entry),
-                                  FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVectorOpFieldNumber),
-                                  FieldPath::FieldNumber(VisualShaderNodeVectorOp::kTypeFieldNumber)),
-      index);
-  if (!result) {
-    ERROR_PRINT("Failed to set data");
-  }
-}
-
-void VisualShaderNodeVectorOpEmbedWidget::on_current_index_changed(const int& index) {
-  int row_entry{VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, n_id)};
-  bool result = visual_shader_model->set_data(
-      FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
-                                  FieldPath::RepeatedAt(row_entry),
-                                  FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVectorOpFieldNumber),
-                                  FieldPath::FieldNumber(VisualShaderNodeVectorOp::kOpFieldNumber)),
-      index);
-  if (!result) {
-    ERROR_PRINT("Failed to set data");
-  }
-}
-
-/*************************************/
-/* Funcs Node                        */
-/*************************************/
-
-VisualShaderNodeFloatFuncEmbedWidget::VisualShaderNodeFloatFuncEmbedWidget(
-    ProtoModel* visual_shader_model, ProtoModel* nodes_model, const int& n_id,
-    const std::shared_ptr<IVisualShaderProtoNode>& proto_node)
-    : QComboBox(), visual_shader_model(visual_shader_model),
-      nodes_model(nodes_model),
-      n_id(n_id), proto_node(proto_node) {
-  setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
-  setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
-
-  int size{VisualShaderNodeFloatFunc::VisualShaderNodeFloatFuncType_descriptor()->value_count()};
-  for (int i{0}; i < size; ++i) {
-    int input_type{shadergen_utils::get_enum_value_by_enum_index(
-        VisualShaderNodeFloatFunc::VisualShaderNodeFloatFuncType_descriptor(), i)};
-    addItem(QString::fromStdString(shadergen_utils::get_enum_value_caption_by_value(
-        VisualShaderNodeFloatFunc::VisualShaderNodeFloatFuncType_descriptor(), input_type)));
-  }
-
-  int row_entry{VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, n_id)};
-  setCurrentIndex(visual_shader_model
-                      ->data(FieldPath::Of<VisualShader>(
-                          FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry),
-                          FieldPath::FieldNumber(VisualShader::VisualShaderNode::kFloatFuncFieldNumber),
-                          FieldPath::FieldNumber(VisualShaderNodeFloatFunc::kFuncFieldNumber)))
-                      .toInt());
-
-  QObject::connect(this, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
-                   &VisualShaderNodeFloatFuncEmbedWidget::on_current_index_changed);
-}
-
-void VisualShaderNodeFloatFuncEmbedWidget::on_current_index_changed(const int& index) {
-  int row_entry{VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, n_id)};
-  bool result = visual_shader_model->set_data(
-      FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
-                                  FieldPath::RepeatedAt(row_entry),
-                                  FieldPath::FieldNumber(VisualShader::VisualShaderNode::kFloatFuncFieldNumber),
-                                  FieldPath::FieldNumber(VisualShaderNodeFloatFunc::kFuncFieldNumber)),
-      index);
-  if (!result) {
-    ERROR_PRINT("Failed to set data");
-  }
-}
-
-VisualShaderNodeIntFuncEmbedWidget::VisualShaderNodeIntFuncEmbedWidget(ProtoModel* visual_shader_model,
-                                                                       ProtoModel* nodes_model, const int& n_id,
-                                                                       const std::shared_ptr<IVisualShaderProtoNode>& proto_node)
-    : QComboBox(), visual_shader_model(visual_shader_model),
-      nodes_model(nodes_model),
-      n_id(n_id), proto_node(proto_node) {
-  setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
-  setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
-
-  int size{VisualShaderNodeIntFunc::VisualShaderNodeIntFuncType_descriptor()->value_count()};
-  for (int i{0}; i < size; ++i) {
-    int input_type{
-        shadergen_utils::get_enum_value_by_enum_index(VisualShaderNodeIntFunc::VisualShaderNodeIntFuncType_descriptor(), i)};
-    addItem(QString::fromStdString(shadergen_utils::get_enum_value_caption_by_value(
-        VisualShaderNodeIntFunc::VisualShaderNodeIntFuncType_descriptor(), input_type)));
-  }
-
-  int row_entry{VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, n_id)};
-  setCurrentIndex(visual_shader_model
-                      ->data(FieldPath::Of<VisualShader>(
-                          FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry),
-                          FieldPath::FieldNumber(VisualShader::VisualShaderNode::kIntFuncFieldNumber),
-                          FieldPath::FieldNumber(VisualShaderNodeIntFunc::kFuncFieldNumber)))
-                      .toInt());
-
-  QObject::connect(this, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
-                   &VisualShaderNodeIntFuncEmbedWidget::on_current_index_changed);
-}
-
-void VisualShaderNodeIntFuncEmbedWidget::on_current_index_changed(const int& index) {
-  int row_entry{VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, n_id)};
-  bool result = visual_shader_model->set_data(
-      FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
-                                  FieldPath::RepeatedAt(row_entry),
-                                  FieldPath::FieldNumber(VisualShader::VisualShaderNode::kIntFuncFieldNumber),
-                                  FieldPath::FieldNumber(VisualShaderNodeIntFunc::kFuncFieldNumber)),
-      index);
-  if (!result) {
-    ERROR_PRINT("Failed to set data");
-  }
-}
-
-VisualShaderNodeUIntFuncEmbedWidget::VisualShaderNodeUIntFuncEmbedWidget(ProtoModel* visual_shader_model,
-                                                                         ProtoModel* nodes_model, const int& n_id,
-                                                                         const std::shared_ptr<IVisualShaderProtoNode>& proto_node)
-    : QComboBox(), visual_shader_model(visual_shader_model),
-      nodes_model(nodes_model),
-      n_id(n_id), proto_node(proto_node) {
-  setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
-  setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
-
-  int size{VisualShaderNodeUIntFunc::VisualShaderNodeUIntFuncType_descriptor()->value_count()};
-  for (int i{0}; i < size; ++i) {
-    int input_type{shadergen_utils::get_enum_value_by_enum_index(
-        VisualShaderNodeUIntFunc::VisualShaderNodeUIntFuncType_descriptor(), i)};
-    addItem(QString::fromStdString(shadergen_utils::get_enum_value_caption_by_value(
-        VisualShaderNodeUIntFunc::VisualShaderNodeUIntFuncType_descriptor(), input_type)));
-  }
-
-  int row_entry{VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, n_id)};
-  setCurrentIndex(visual_shader_model
-                      ->data(FieldPath::Of<VisualShader>(
-                          FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry),
-                          FieldPath::FieldNumber(VisualShader::VisualShaderNode::kUintFuncFieldNumber),
-                          FieldPath::FieldNumber(VisualShaderNodeUIntFunc::kFuncFieldNumber)))
-                      .toInt());
-
-  QObject::connect(this, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
-                   &VisualShaderNodeUIntFuncEmbedWidget::on_current_index_changed);
-}
-
-void VisualShaderNodeUIntFuncEmbedWidget::on_current_index_changed(const int& index) {
-  int row_entry{VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, n_id)};
-  bool result = visual_shader_model->set_data(
-      FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
-                                  FieldPath::RepeatedAt(row_entry),
-                                  FieldPath::FieldNumber(VisualShader::VisualShaderNode::kUintFuncFieldNumber),
-                                  FieldPath::FieldNumber(VisualShaderNodeUIntFunc::kFuncFieldNumber)),
-      index);
-  if (!result) {
-    ERROR_PRINT("Failed to set data");
-  }
-}
-
-VisualShaderNodeVectorFuncEmbedWidget::VisualShaderNodeVectorFuncEmbedWidget(
-    ProtoModel* visual_shader_model, ProtoModel* nodes_model, const int& n_id,
-    const std::shared_ptr<IVisualShaderProtoNode>& proto_node)
-    : QComboBox(), visual_shader_model(visual_shader_model),
-      nodes_model(nodes_model),
-      n_id(n_id), proto_node(proto_node) {
-  setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
-  setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
-
-  int size{VisualShaderNodeVectorFunc::VisualShaderNodeVectorFuncType_descriptor()->value_count()};
-  for (int i{0}; i < size; ++i) {
-    int input_type{shadergen_utils::get_enum_value_by_enum_index(
-        VisualShaderNodeVectorFunc::VisualShaderNodeVectorFuncType_descriptor(), i)};
-    addItem(QString::fromStdString(shadergen_utils::get_enum_value_caption_by_value(
-        VisualShaderNodeVectorFunc::VisualShaderNodeVectorFuncType_descriptor(), input_type)));
-  }
-
-  int row_entry{VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, n_id)};
-  setCurrentIndex(visual_shader_model
-                      ->data(FieldPath::Of<VisualShader>(
-                          FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry),
-                          FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVectorFuncFieldNumber),
-                          FieldPath::FieldNumber(VisualShaderNodeVectorFunc::kFuncFieldNumber)))
-                      .toInt());
-
-  QObject::connect(this, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
-                   &VisualShaderNodeVectorFuncEmbedWidget::on_current_index_changed);
-}
-
-void VisualShaderNodeVectorFuncEmbedWidget::on_current_vector_type_changed(const int& index) {
-  int row_entry{VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, n_id)};
-  bool result = visual_shader_model->set_data(
-      FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
-                                  FieldPath::RepeatedAt(row_entry),
-                                  FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVectorFuncFieldNumber),
-                                  FieldPath::FieldNumber(VisualShaderNodeVectorFunc::kTypeFieldNumber)),
-      index);
-  if (!result) {
-    ERROR_PRINT("Failed to set data");
-  }
-}
-
-void VisualShaderNodeVectorFuncEmbedWidget::on_current_index_changed(const int& index) {
-  int row_entry{VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, n_id)};
-  bool result = visual_shader_model->set_data(
-      FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
-                                  FieldPath::RepeatedAt(row_entry),
-                                  FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVectorFuncFieldNumber),
-                                  FieldPath::FieldNumber(VisualShaderNodeVectorFunc::kFuncFieldNumber)),
-      index);
-  if (!result) {
-    ERROR_PRINT("Failed to set data");
-  }
-}
-
-/*************************************/
-/* Value Noise Node                  */
-/*************************************/
-
-VisualShaderNodeValueNoiseEmbedWidget::VisualShaderNodeValueNoiseEmbedWidget(
-    ProtoModel* visual_shader_model, ProtoModel* nodes_model, const int& n_id,
-    const std::shared_ptr<IVisualShaderProtoNode>& proto_node)
-    : QLineEdit(), visual_shader_model(visual_shader_model),
-      nodes_model(nodes_model),
-      n_id(n_id), proto_node(proto_node) {
-  setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
-  setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
-
-  setPlaceholderText("Scale");
-
-  int row_entry{VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, n_id)};
-  setText(
-      QString::number(visual_shader_model
-                          ->data(FieldPath::Of<VisualShader>(
-                              FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry),
-                              FieldPath::FieldNumber(VisualShader::VisualShaderNode::kValueNoiseFieldNumber),
-                              FieldPath::FieldNumber(VisualShaderNodeValueNoise::kScaleFieldNumber)))
-                          .toFloat()));
-
-  QObject::connect(this, &QLineEdit::textChanged, this, &VisualShaderNodeValueNoiseEmbedWidget::on_text_changed);
-}
-
-void VisualShaderNodeValueNoiseEmbedWidget::on_text_changed(const QString& text) {
-  SILENT_CHECK_CONDITION_TRUE(text.isEmpty());
-
-  bool ok;
-  float t {text.toFloat(&ok)};
-
-  SILENT_CHECK_CONDITION_TRUE(!ok);
-
-  int row_entry{VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, n_id)};
-
-  bool result = visual_shader_model->set_data(
-      FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
-                                  FieldPath::RepeatedAt(row_entry),
-                                  FieldPath::FieldNumber(VisualShader::VisualShaderNode::kValueNoiseFieldNumber),
-                                  FieldPath::FieldNumber(VisualShaderNodeValueNoise::kScaleFieldNumber)), t);
-  if (!result) {
-    ERROR_PRINT("Failed to set data");
-  }
-}
-
-/*************************************/
-/* Perlin Noise Node                 */
-/*************************************/
-
-VisualShaderNodePerlinNoiseEmbedWidget::VisualShaderNodePerlinNoiseEmbedWidget(
-    ProtoModel* visual_shader_model, ProtoModel* nodes_model, const int& n_id,
-    const std::shared_ptr<IVisualShaderProtoNode>& proto_node)
-    : QLineEdit(), visual_shader_model(visual_shader_model),
-      nodes_model(nodes_model),
-      n_id(n_id), proto_node(proto_node) {
-  setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
-  setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
-
-  setPlaceholderText("Scale");
-
-  int row_entry{VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, n_id)};
-  setText(
-      QString::number(visual_shader_model
-                          ->data(FieldPath::Of<VisualShader>(
-                              FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry),
-                              FieldPath::FieldNumber(VisualShader::VisualShaderNode::kPerlinNoiseFieldNumber),
-                              FieldPath::FieldNumber(VisualShaderNodePerlinNoise::kScaleFieldNumber)))
-                          .toFloat()));
-
-  QObject::connect(this, &QLineEdit::textChanged, this, &VisualShaderNodePerlinNoiseEmbedWidget::on_text_changed);
-}
-
-void VisualShaderNodePerlinNoiseEmbedWidget::on_text_changed(const QString& text) {
-  SILENT_CHECK_CONDITION_TRUE(text.isEmpty());
-
-  bool ok;
-  float t {text.toFloat(&ok)};
-
-  SILENT_CHECK_CONDITION_TRUE(!ok);
-
-  int row_entry{VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, n_id)};
-
-  bool result = visual_shader_model->set_data(
-      FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
-                                  FieldPath::RepeatedAt(row_entry),
-                                  FieldPath::FieldNumber(VisualShader::VisualShaderNode::kPerlinNoiseFieldNumber),
-                                  FieldPath::FieldNumber(VisualShaderNodePerlinNoise::kScaleFieldNumber)), t);
-  if (!result) {
-    ERROR_PRINT("Failed to set data");
-  }
-}
-
-/*************************************/
-/* Voronoi Noise Node                */
-/*************************************/
-
-VisualShaderNodeVoronoiNoiseAngleOffsetEmbedWidget::VisualShaderNodeVoronoiNoiseAngleOffsetEmbedWidget(
-    ProtoModel* visual_shader_model, ProtoModel* nodes_model, const int& n_id,
-    const std::shared_ptr<IVisualShaderProtoNode>& proto_node)
-    : QLineEdit(), visual_shader_model(visual_shader_model),
-      nodes_model(nodes_model),
-      n_id(n_id), proto_node(proto_node) {
-  setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
-  setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
-
-  setPlaceholderText("Angle Offset");
-
-  int row_entry{VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, n_id)};
-  setText(
-      QString::number(visual_shader_model
-                          ->data(FieldPath::Of<VisualShader>(
-                              FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry),
-                              FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVoronoiNoiseFieldNumber),
-                              FieldPath::FieldNumber(VisualShaderNodeVoronoiNoise::kAngleOffsetFieldNumber)))
-                          .toFloat()));
-
-  QObject::connect(this, &QLineEdit::textChanged, this,
-                   &VisualShaderNodeVoronoiNoiseAngleOffsetEmbedWidget::on_text_changed);
-}
-
-void VisualShaderNodeVoronoiNoiseAngleOffsetEmbedWidget::on_text_changed(const QString& text) {
-  SILENT_CHECK_CONDITION_TRUE(text.isEmpty());
-
-  bool ok;
-  float t {text.toFloat(&ok)};
-
-  SILENT_CHECK_CONDITION_TRUE(!ok);
-
-  int row_entry{VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, n_id)};
-
-  bool result = visual_shader_model->set_data(
-      FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
-                                  FieldPath::RepeatedAt(row_entry),
-                                  FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVoronoiNoiseFieldNumber),
-                                  FieldPath::FieldNumber(VisualShaderNodeVoronoiNoise::kAngleOffsetFieldNumber)), t);
-  if (!result) {
-    ERROR_PRINT("Failed to set data");
-  }
-}
-
-VisualShaderNodeVoronoiNoiseCellDensityEmbedWidget::VisualShaderNodeVoronoiNoiseCellDensityEmbedWidget(
-    ProtoModel* visual_shader_model, ProtoModel* nodes_model, const int& n_id,
-    const std::shared_ptr<IVisualShaderProtoNode>& proto_node)
-    : QLineEdit(), visual_shader_model(visual_shader_model),
-      nodes_model(nodes_model),
-      n_id(n_id), proto_node(proto_node) {
-  setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
-  setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
-
-  setPlaceholderText("Cell Density");
-
-  int row_entry{VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, n_id)};
-  setText(
-      QString::number(visual_shader_model
-                          ->data(FieldPath::Of<VisualShader>(
-                              FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry),
-                              FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVoronoiNoiseFieldNumber),
-                              FieldPath::FieldNumber(VisualShaderNodeVoronoiNoise::kCellDensityFieldNumber)))
-                          .toFloat()));
-
-  QObject::connect(this, &QLineEdit::textChanged, this,
-                   &VisualShaderNodeVoronoiNoiseCellDensityEmbedWidget::on_text_changed);
-}
-
-void VisualShaderNodeVoronoiNoiseCellDensityEmbedWidget::on_text_changed(const QString& text) {
-  SILENT_CHECK_CONDITION_TRUE(text.isEmpty());
-
-  bool ok;
-  float t {text.toFloat(&ok)};
-
-  SILENT_CHECK_CONDITION_TRUE(!ok);
-
-  int row_entry{VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, n_id)};
-
-  bool result = visual_shader_model->set_data(
-      FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
-                                  FieldPath::RepeatedAt(row_entry),
-                                  FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVoronoiNoiseFieldNumber),
-                                  FieldPath::FieldNumber(VisualShaderNodeVoronoiNoise::kCellDensityFieldNumber)), t);
-  if (!result) {
-    ERROR_PRINT("Failed to set data");
-  }
-}
-
-/*************************************/
-/* MISC                              */
-/*************************************/
-
-VisualShaderNodeCompareEmbedWidget::VisualShaderNodeCompareEmbedWidget(ProtoModel* visual_shader_model,
-                                                                       ProtoModel* nodes_model, const int& n_id,
-                                                                       const std::shared_ptr<IVisualShaderProtoNode>& proto_node)
-    : QVBoxLayout(), visual_shader_model(visual_shader_model),
-      nodes_model(nodes_model),
-      n_id(n_id), proto_node(proto_node) {
-  setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
-  setSizeConstraint(QLayout::SetNoConstraint);
-  setSpacing(2);
-  setAlignment(Qt::AlignVCenter | Qt::AlignHCenter);
-
-  comparison_type_combo_box = new QComboBox();
-  func_combo_box = new QComboBox();
-  condition_combo_box = new QComboBox();
-
-  int size{VisualShaderNodeCompare::ComparisonType_descriptor()->value_count()};
-  for (int i = 0; i < size; i++) {
-    int comp_type{shadergen_utils::get_enum_value_by_enum_index(VisualShaderNodeCompare::ComparisonType_descriptor(), i)};
-    comparison_type_combo_box->addItem(QString::fromStdString(
-        shadergen_utils::get_enum_value_caption_by_value(VisualShaderNodeCompare::ComparisonType_descriptor(), comp_type)));
-  }
-
-  int row_entry{VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, n_id)};
-  comparison_type_combo_box->setCurrentIndex(
-      visual_shader_model
-          ->data(FieldPath::Of<VisualShader>(
-              FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry),
-              FieldPath::FieldNumber(VisualShader::VisualShaderNode::kCompareFieldNumber),
-              FieldPath::FieldNumber(VisualShaderNodeCompare::kTypeFieldNumber)))
-          .toInt());
-
-  size = VisualShaderNodeCompare::Function_descriptor()->value_count();
-  for (int i = 0; i < size; i++) {
-    int func{shadergen_utils::get_enum_value_by_enum_index(VisualShaderNodeCompare::Function_descriptor(), i)};
-    func_combo_box->addItem(QString::fromStdString(
-        shadergen_utils::get_enum_value_caption_by_value(VisualShaderNodeCompare::Function_descriptor(), func)));
-  }
-
-  row_entry = VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, n_id);
-  func_combo_box->setCurrentIndex(
-      visual_shader_model
-          ->data(FieldPath::Of<VisualShader>(
-              FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry),
-              FieldPath::FieldNumber(VisualShader::VisualShaderNode::kCompareFieldNumber),
-              FieldPath::FieldNumber(VisualShaderNodeCompare::kFuncFieldNumber)))
-          .toInt());
-
-  size = VisualShaderNodeCompare::Condition_descriptor()->value_count();
-  for (int i = 0; i < size; i++) {
-    int cond{shadergen_utils::get_enum_value_by_enum_index(VisualShaderNodeCompare::Condition_descriptor(), i)};
-    condition_combo_box->addItem(QString::fromStdString(
-        shadergen_utils::get_enum_value_caption_by_value(VisualShaderNodeCompare::Condition_descriptor(), cond)));
-  }
-
-  row_entry = VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, n_id);
-  condition_combo_box->setCurrentIndex(
-      visual_shader_model
-          ->data(FieldPath::Of<VisualShader>(
-              FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry),
-              FieldPath::FieldNumber(VisualShader::VisualShaderNode::kCompareFieldNumber),
-              FieldPath::FieldNumber(VisualShaderNodeCompare::kCondFieldNumber)))
-          .toInt());
-
-  addWidget(comparison_type_combo_box);
-  addWidget(func_combo_box);
-  addWidget(condition_combo_box);
-}
-
-void VisualShaderNodeCompareEmbedWidget::on_comparison_type_current_index_changed(const int& index) {
-  int row_entry{VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, n_id)};
-  bool result = visual_shader_model->set_data(
-      FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
-                                  FieldPath::RepeatedAt(row_entry),
-                                  FieldPath::FieldNumber(VisualShader::VisualShaderNode::kCompareFieldNumber),
-                                  FieldPath::FieldNumber(VisualShaderNodeCompare::kTypeFieldNumber)),
-      index);
-  if (!result) {
-    ERROR_PRINT("Failed to set data");
-  }
-}
-void VisualShaderNodeCompareEmbedWidget::on_func_current_index_changed(const int& index) {
-  int row_entry{VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, n_id)};
-  bool result = visual_shader_model->set_data(
-      FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
-                                  FieldPath::RepeatedAt(row_entry),
-                                  FieldPath::FieldNumber(VisualShader::VisualShaderNode::kCompareFieldNumber),
-                                  FieldPath::FieldNumber(VisualShaderNodeCompare::kFuncFieldNumber)),
-      index);
-  if (!result) {
-    ERROR_PRINT("Failed to set data");
-  }
-}
-void VisualShaderNodeCompareEmbedWidget::on_condition_current_index_changed(const int& index) {
-  int row_entry{VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, n_id)};
-  bool result = visual_shader_model->set_data(
-      FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
-                                  FieldPath::RepeatedAt(row_entry),
-                                  FieldPath::FieldNumber(VisualShader::VisualShaderNode::kCompareFieldNumber),
-                                  FieldPath::FieldNumber(VisualShaderNodeCompare::kCondFieldNumber)),
-      index);
-  if (!result) {
-    ERROR_PRINT("Failed to set data");
-  }
-}
-
-/*************************************/
-/* Switch Node                       */
-/*************************************/
-
-VisualShaderNodeSwitchEmbedWidget::VisualShaderNodeSwitchEmbedWidget(ProtoModel* visual_shader_model,
-                                                                     ProtoModel* nodes_model, const int& n_id,
-                                                                     const std::shared_ptr<IVisualShaderProtoNode>& proto_node)
-    : QComboBox(), visual_shader_model(visual_shader_model),
-      nodes_model(nodes_model),
-      n_id(n_id), proto_node(proto_node) {
-  setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
-  setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
-
-  QObject::connect(this, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
-                   &VisualShaderNodeSwitchEmbedWidget::on_current_index_changed);
-}
-
-void VisualShaderNodeSwitchEmbedWidget::on_current_index_changed(const int& index) {}
-
-/*************************************/
-/* Is Node                           */
-/*************************************/
-
-VisualShaderNodeIsEmbedWidget::VisualShaderNodeIsEmbedWidget(ProtoModel* visual_shader_model, ProtoModel* nodes_model,
-                                                             const int& n_id,
-                                                             const std::shared_ptr<IVisualShaderProtoNode>& proto_node)
-    : QComboBox(), visual_shader_model(visual_shader_model),
-      nodes_model(nodes_model),
-      n_id(n_id), proto_node(proto_node) {
-  setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
-  setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
-
-  int size{VisualShaderNodeIs::Function_descriptor()->value_count()};
-  for (int i = 0; i < size; i++) {
-    int func{shadergen_utils::get_enum_value_by_enum_index(VisualShaderNodeIs::Function_descriptor(), i)};
-    addItem(QString::fromStdString(
-                shadergen_utils::get_enum_value_caption_by_value(VisualShaderNodeIs::Function_descriptor(), func)),
-            func);
-  }
-
-  int row_entry{VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, n_id)};
-  setCurrentIndex(visual_shader_model
-                      ->data(FieldPath::Of<VisualShader>(
-                          FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry),
-                          FieldPath::FieldNumber(VisualShader::VisualShaderNode::kIsFieldNumber),
-                          FieldPath::FieldNumber(VisualShaderNodeIs::kFuncFieldNumber)))
-                      .toInt());
-
-  QObject::connect(this, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
-                   &VisualShaderNodeIsEmbedWidget::on_current_index_changed);
-}
-
-void VisualShaderNodeIsEmbedWidget::on_current_index_changed(const int& index) {
-  int row_entry{VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, n_id)};
-  bool result = visual_shader_model->set_data(
-      FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
-                                  FieldPath::RepeatedAt(row_entry),
-                                  FieldPath::FieldNumber(VisualShader::VisualShaderNode::kIsFieldNumber),
-                                  FieldPath::FieldNumber(VisualShaderNodeIs::kFuncFieldNumber)),
-      index);
-  if (!result) {
-    ERROR_PRINT("Failed to set data");
   }
 }

@@ -53,12 +53,13 @@ QByteArray ProtoModel::serializeToJson() const {
   Message* message_buffer = root_model->get_message_buffer();
   CHECK_PARAM_NULLPTR_NON_VOID(message_buffer, QByteArray(), "Failed to get message buffer");
 
-  std::string jsonString;
+  std::string json_string;
   JsonOptions options;
   options.add_whitespace = true;  // Makes JSON human-readable
-  absl::Status status = MessageToJsonString(*message_buffer, &jsonString, options);
+  absl::Status status = MessageToJsonString(*message_buffer, &json_string, options);
   CHECK_CONDITION_TRUE_NON_VOID(!status.ok(), QByteArray(), "Failed to serialize JSON:" + status.ToString());
-  return QByteArray::fromStdString(jsonString);
+  CHECK_CONDITION_TRUE_NON_VOID(json_string.empty(), QByteArray(), "Failed to serialize JSON: Empty JSON string");
+  return QByteArray::fromStdString(json_string);
 }
 
 bool ProtoModel::deserializeFromJson(const QByteArray& jsonData) {

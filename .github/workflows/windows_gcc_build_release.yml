@@ -1,0 +1,68 @@
+name: Windows GCC Build and Release
+
+on:
+  push:
+    branches:
+      - master
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{github.actor}}-${{github.head_ref || github.run_number}}-${{github.ref}}-windows-gcc
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: 'master'
+          submodules: recursive
+  
+      - name: Setup MSYS2
+        uses: msys2/setup-msys2@v2
+        with:
+          update: true
+          install: >-
+            mingw-w64-x86_64-gcc
+            mingw-w64-x86_64-qt5-base
+            mingw-w64-x86_64-qt5-tools
+            mingw-w64-x86_64-make
+            mingw-w64-x86_64-cmake
+            git
+
+      - name: Build Protobuf
+        shell: msys2 {0}
+        run: |
+          mkdir -p "${{ github.workspace }}/protobuf-lib-static"
+          echo "Protobuf: '${{ github.workspace }}/protobuf-lib-static'"
+          ./CI/build_static_protobuf.sh "${{ github.workspace }}/protobuf-lib-static"
+  
+      - name: Configure CMake
+        shell: msys2 {0}
+        run: cmake -B build -G "Unix Makefiles" -DCMAKE_MAKE_PROGRAM=mingw32-make -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="${{ github.workspace }}/protobuf-lib-static/lib/cmake"
+  
+      - name: Build project
+        shell: msys2 {0}
+        run: |
+          cmake --build build --config Release --parallel $(nproc)
+          echo "Dependencies for shader-gen.exe"
+          ldd build/shader-gen
+
+      - name: Create portable package
+        shell: msys2 {0}
+        run: |
+          cpack --config CPackConfig.cmake -G ZIP --verbose -C Release
+        working-directory: build
+        
+      - name: Upload Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: build/*.zip
+          tag_name: latest
+          generate_release_notes: true
+          draft: false
+          token: ${{ secrets.SHADER_GEN_RELEASES_TOKEN }}
+        
