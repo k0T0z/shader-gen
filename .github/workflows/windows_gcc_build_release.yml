@@ -13,6 +13,8 @@ concurrency:
 jobs:
   build:
     runs-on: windows-latest
+    permissions:
+      actions: write
 
     steps:
       - name: Checkout repository
