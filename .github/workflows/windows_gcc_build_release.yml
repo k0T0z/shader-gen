@@ -56,9 +56,11 @@ jobs:
           cpack --config CPackConfig.cmake -G ZIP --verbose -C Release
         working-directory: build
         
-      - name: Upload portable package
-        uses: actions/upload-artifact@v4
+      - name: Upload Release
+        uses: softprops/action-gh-release@v2
         with:
-          name: ShaderGen-Portable
-          path: build/*.zip
+          files: build/*.zip
+          tag_name: latest
+          generate_release_notes: true
+          draft: false
         

@@ -2,7 +2,7 @@ param(
     [string]$protobuf_prefix
 )
 
-$PROTOBUF_LATEST_TAG = v29.3 # ($(git ls-remote --tags https://github.com/protocolbuffers/protobuf.git | Select-Object -Last 1) -split '\s+')[1].Split('/')[-1].Split('^')[0]
+$PROTOBUF_LATEST_TAG = "v29.3" # ($(git ls-remote --tags https://github.com/protocolbuffers/protobuf.git | Select-Object -Last 1) -split '\s+')[1].Split('/')[-1].Split('^')[0]
 
 $ErrorActionPreference = 'Stop'
 
