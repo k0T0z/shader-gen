@@ -22,6 +22,8 @@ git submodule update --init --recursive
 mkdir build && cd build
 
 cmake .. -G "Unix Makefiles" \
+         -DCMAKE_MAKE_PROGRAM=mingw32-make \
+                                        \
          -Dprotobuf_BUILD_TESTS=OFF \
          -Dprotobuf_BUILD_CONFORMANCE=OFF \
          -Dprotobuf_BUILD_EXAMPLES=OFF \
