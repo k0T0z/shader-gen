@@ -53,12 +53,12 @@ jobs:
           cpack --config CPackConfig.cmake -G ZIP --verbose -C Release
         working-directory: build
         
-      # - name: Upload Release
-      #   uses: softprops/action-gh-release@v2
-      #   with:
-      #     files: build/*.zip
-      #     tag_name: latest-qt6
-      #     generate_release_notes: true
-      #     draft: false
-      #     token: ${{ secrets.SHADER_GEN_RELEASES_TOKEN }}
+      - name: Upload Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: build/*.zip
+          tag_name: latest-qt6
+          generate_release_notes: true
+          draft: false
+          token: ${{ secrets.SHADER_GEN_RELEASES_TOKEN }}
         
