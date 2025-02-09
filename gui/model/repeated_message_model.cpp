@@ -173,10 +173,11 @@ int RepeatedMessageModel::append_row() {
   int row{rowCount()};
   QModelIndex parent_index{this->parent(QModelIndex())};
 
+  beginInsertRows(parent_index, row, row);
+  
   bool result{insertRows(row, 1, parent_index)};
   SILENT_CHECK_CONDITION_TRUE_NON_VOID(!result, -1);
 
-  beginInsertRows(parent_index, row, row);
   endInsertRows();
 
   return row;
@@ -187,10 +188,11 @@ bool RepeatedMessageModel::remove_row(const int& row) {
 
   QModelIndex parent_index{this->parent(QModelIndex())};
 
+  beginRemoveRows(parent_index, row, row);
+
   bool result{removeRows(row, 1, parent_index)};
   SILENT_CHECK_CONDITION_TRUE_NON_VOID(!result, false);
 
-  beginRemoveRows(parent_index, row, row);
   endRemoveRows();
 
   return true;
@@ -233,7 +235,7 @@ bool RepeatedMessageModel::removeRows(int row, int count, const QModelIndex& par
 
   int last_row{rowCount() - 1};
 
-  std::swap(m_sub_models.at(row), m_sub_models.at(last_row));
+  if (row < last_row) std::swap(m_sub_models.at(row), m_sub_models.at(last_row));
 
   delete m_sub_models.at(last_row);
   m_sub_models.erase(m_sub_models.begin() + last_row);
@@ -264,10 +266,11 @@ void RepeatedMessageModel::append_row(const int& row) {
                  "You are allowed to append only a row between 0 and " + std::to_string(rowCount()) + "exclusive.");
 
   QModelIndex parent_index{this->parent(QModelIndex())};
-
+  
+  beginInsertRows(parent_index, row, row);
+  
   bool result{insertRows(row, 1, parent_index)};
   CHECK_CONDITION_TRUE(!result, "Failed to insert row.");
 
-  beginInsertRows(parent_index, row, row);
   endInsertRows();
 }
