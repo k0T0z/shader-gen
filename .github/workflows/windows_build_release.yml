@@ -48,7 +48,7 @@ jobs:
         run: cmake --build build --config Release --parallel $env:NUMBER_OF_PROCESSORS
 
       - name: Create portable package
-        shell: msys2 {0}
+        shell: pwsh
         run: |
           cpack --config CPackConfig.cmake -G ZIP --verbose -C Release
         working-directory: build
