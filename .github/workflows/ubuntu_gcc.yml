@@ -32,8 +32,8 @@ jobs:
     - name: Build Protobuf
       shell: bash
       run: |
-        chmod +x ./CI/build_protobuf.sh
-        sudo ./CI/build_protobuf.sh
+        chmod +x ./CI/build_protobuf_ubuntu.sh
+        sudo ./CI/build_protobuf_ubuntu.sh Debug Dynamic
 
     - name: Configure CMake
       shell: bash

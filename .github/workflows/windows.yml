@@ -40,8 +40,7 @@ jobs:
         New-Item -ItemType Directory -Path "${{ github.workspace }}\protobuf-lib"
         Write-Output "Protobuf: '${{ github.workspace }}\protobuf-lib'"
         Write-Output "Qt6: $env:Qt6_DIR"
-        .\CI\build_protobuf.ps1 `
-          -protobuf_prefix "${{ github.workspace }}\protobuf-lib"
+        .\CI\build_protobuf_win64.ps1 Debug Dynamic "${{ github.workspace }}\protobuf-lib"
 
     - name: Configure CMake
       shell: pwsh

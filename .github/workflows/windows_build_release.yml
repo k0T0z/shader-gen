@@ -1,0 +1,64 @@
+name: Windows Build and Release
+
+on:
+  push:
+    branches:
+      - master-qt6
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{github.actor}}-${{github.head_ref || github.run_number}}-${{github.ref}}-windows
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: 'master-qt6'
+          submodules: recursive
+  
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: '6'
+          host: 'windows'
+          target: 'desktop'
+          arch: 'win64_msvc2022_64'
+          dir: '${{ github.workspace }}'
+          setup-python: 'false'
+
+      - name: Build Protobuf
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Path "${{ github.workspace }}\protobuf-lib-static"
+          Write-Output "Protobuf: '${{ github.workspace }}\protobuf-lib-static'"
+          Write-Output "Qt6: $env:Qt6_DIR"
+          .\CI\build_protobuf_win64.ps1 Release Static "${{ github.workspace }}\protobuf-lib-static"
+
+      - name: Configure CMake
+        shell: pwsh
+        run: cmake -B build -G "Visual Studio 17 2022" -A x64 -DCMAKE_PREFIX_PATH="$env:Qt6_DIR;${{ github.workspace }}\protobuf-lib-static\lib\cmake" -DCMAKE_BUILD_TYPE=Release -DSHADER_GEN_LINK_STATIC=ON
+    
+      - name: Build project
+        shell: pwsh
+        run: cmake --build build --config Release --parallel $env:NUMBER_OF_PROCESSORS
+
+      - name: Create portable package
+        shell: msys2 {0}
+        run: |
+          cpack --config CPackConfig.cmake -G ZIP --verbose -C Release
+        working-directory: build
+        
+      # - name: Upload Release
+      #   uses: softprops/action-gh-release@v2
+      #   with:
+      #     files: build/*.zip
+      #     tag_name: latest-qt6
+      #     generate_release_notes: true
+      #     draft: false
+      #     token: ${{ secrets.SHADER_GEN_RELEASES_TOKEN }}
+        
