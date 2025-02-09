@@ -69,6 +69,7 @@ else()
 endif()
 
 option(SHADER_GEN_BUILD_TESTS "Build tests for Shader Gen" OFF)
+option(SHADER_GEN_LINK_STATIC "Link statically. Enable this for portable packaging." OFF)
 
 if(${PROJECT_SOURCE_DIR} STREQUAL ${PROJECT_BINARY_DIR})
   message(
@@ -109,22 +110,21 @@ if(CMAKE_BUILD_TYPE MATCHES Debug)
     # endif()
 endif()
 
-if(MSVC)
-    string(APPEND CMAKE_CXX_FLAGS " /EHsc /wd26812")
-    string(APPEND CMAKE_C_FLAGS " /EHsc /wd26812")
-endif()
-
-# Disable C++ exceptions.
-if(MSVC)
-    string(REGEX REPLACE "/EHsc" "/EHs-c-" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
-    add_definitions(-D_HAS_EXCEPTIONS=0)
-elseif(NOT MINGW)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-exceptions -fno-unwind-tables -fno-asynchronous-unwind-tables")
-endif()
-
-# Check https://stackoverflow.com/q/33062728/14629018 for more information.
-if(MSVC)
-    set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS TRUE)
+if (MSVC)
+    # In case we are building static libraries, link also the runtime library statically
+    # so that MSVCR*.DLL is not required at runtime.
+    # https://cmake.org/cmake/help/latest/variable/CMAKE_MSVC_RUNTIME_LIBRARY.html
+    # https://learn.microsoft.com/en-us/cpp/build/reference/md-mt-ld-use-run-time-library
+    if (SHADER_GEN_LINK_STATIC)
+        set(CMAKE_MSVC_RUNTIME_LIBRARY MultiThreaded$<$<CONFIG:Debug>:Debug>)
+    else()
+        set(CMAKE_MSVC_RUNTIME_LIBRARY MultiThreaded$<$<CONFIG:Debug>:Debug>DLL)
+    endif()
+elseif(WIN32 AND MINGW)
+    if (SHADER_GEN_LINK_STATIC)
+        # Force static linking for GCC runtime and winpthreads.
+        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static -static-libgcc -static-libstdc++")
+    endif()
 endif()
 
 set(SHADER_GEN_QT_VERSION "5")
@@ -331,7 +331,7 @@ endif()
 # Portable Packaging
 #####################
 
-if(WIN32 AND MINGW)
+if (WIN32)
     set(SHADER_GEN_PORTABLE_DIR "${CMAKE_BINARY_DIR}/portable")
     file(MAKE_DIRECTORY ${SHADER_GEN_PORTABLE_DIR})
 
@@ -365,7 +365,7 @@ if(WIN32 AND MINGW)
         COMMENT "Copying runtime dependencies..."
     )
 
-    get_filename_component(SHADER_GEN_MINGW_BIN_DIR "${CMAKE_CXX_COMPILER}" DIRECTORY)
+    get_filename_component(SHADER_GEN_COMPILER_BIN_DIR "${CMAKE_CXX_COMPILER}" DIRECTORY)
 
     # https://doc.qt.io/qt-6/windows-deployment.html#additional-libraries
     add_custom_command(TARGET ${SHADER_GEN_EXECUTABLE_NAME} POST_BUILD
@@ -373,7 +373,7 @@ if(WIN32 AND MINGW)
             -DTEMP_SHADER_GEN_EXECUTABLE_NAME="$<TARGET_FILE:${SHADER_GEN_EXECUTABLE_NAME}>" 
             -DTEMP_SHADER_GEN_EXECUTABLE_OUTPUT_DIR="${SHADER_GEN_PORTABLE_DIR}"
             -DTEMP_SHADER_GEN_PROTOBUF_DLL="$<TARGET_FILE:protobuf::libprotobuf>"
-            -DTEMP_SHADER_GEN_MINGW_BIN_DIR="${SHADER_GEN_MINGW_BIN_DIR}"
+            -DTEMP_SHADER_GEN_COMPILER_BIN_DIR="${SHADER_GEN_COMPILER_BIN_DIR}"
             -P ${CMAKE_CURRENT_BINARY_DIR}/CopyDependencies.cmake
         COMMENT "Copying runtime dependencies..."
     )
@@ -381,6 +381,7 @@ if(WIN32 AND MINGW)
     # Create CopyDependencies.cmake
     file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/CopyDependencies.cmake
     [[
+
 # https://cmake.org/cmake/help/latest/command/file.html#get-runtime-dependencies
 cmake_minimum_required(VERSION 3.16)
 
@@ -392,7 +393,7 @@ file(GET_RUNTIME_DEPENDENCIES
     RESOLVED_DEPENDENCIES_VAR SHADER_GEN_RESOLVED_DEPS
     UNRESOLVED_DEPENDENCIES_VAR SHADER_GEN_UNRESOLVED_DEPS
     DIRECTORIES 
-        "${TEMP_SHADER_GEN_MINGW_BIN_DIR}"
+        "${TEMP_SHADER_GEN_COMPILER_BIN_DIR}"
     PRE_EXCLUDE_REGEXES
         "api-ms-win-.*"        # Windows API DLLs
         "ext-ms-.*"            # More Windows internals
@@ -406,6 +407,7 @@ file(GET_RUNTIME_DEPENDENCIES
     POST_EXCLUDE_REGEXES
         ".*/Windows/.*"        # Exclude system paths
         ".*/WinSxS/.*"
+
 )
 
 if(SHADER_GEN_RESOLVED_DEPS)
@@ -440,11 +442,16 @@ endif()
     # Configure ZIP package
     set(CPACK_GENERATOR "ZIP")
 
-    set(CPACK_PACKAGE_NAME "${SHADER_GEN_EXECUTABLE_NAME}-portable")
     set(CPACK_PACKAGE_VERSION "${SHADER_GEN_PROJECT_VERSION}")
     set(CPACK_PACKAGE_DESCRIPTION "${SHADER_GEN_PROJECT_DESCRIPTION}")
-    
+
     set(CPACK_INCLUDE_TOPLEVEL_DIRECTORY OFF)
+
+    if(WIN32 AND MINGW)
+        set(CPACK_PACKAGE_NAME "${SHADER_GEN_EXECUTABLE_NAME}-portable-gcc")
+    elseif(MSVC)
+        set(CPACK_PACKAGE_NAME "${SHADER_GEN_EXECUTABLE_NAME}-portable")
+    endif()
 
     include(CPack)
 endif()
