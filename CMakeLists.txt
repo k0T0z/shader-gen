@@ -69,6 +69,7 @@ else()
 endif()
 
 option(SHADER_GEN_BUILD_TESTS "Build tests for Shader Gen" OFF)
+option(SHADER_GEN_LINK_STATIC "Link statically. Enable this for portable packaging." OFF)
 
 if(${PROJECT_SOURCE_DIR} STREQUAL ${PROJECT_BINARY_DIR})
   message(
@@ -109,22 +110,21 @@ if(CMAKE_BUILD_TYPE MATCHES Debug)
     # endif()
 endif()
 
-if(MSVC)
-    string(APPEND CMAKE_CXX_FLAGS " /EHsc /wd26812")
-    string(APPEND CMAKE_C_FLAGS " /EHsc /wd26812")
-endif()
-
-# Disable C++ exceptions.
-if(MSVC)
-    string(REGEX REPLACE "/EHsc" "/EHs-c-" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
-    add_definitions(-D_HAS_EXCEPTIONS=0)
-elseif(NOT MINGW)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-exceptions -fno-unwind-tables -fno-asynchronous-unwind-tables")
-endif()
-
-# Check https://stackoverflow.com/q/33062728/14629018 for more information.
-if(MSVC)
-    set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS TRUE)
+if (MSVC)
+    # In case we are building static libraries, link also the runtime library statically
+    # so that MSVCR*.DLL is not required at runtime.
+    # https://cmake.org/cmake/help/latest/variable/CMAKE_MSVC_RUNTIME_LIBRARY.html
+    # https://learn.microsoft.com/en-us/cpp/build/reference/md-mt-ld-use-run-time-library
+    if (SHADER_GEN_LINK_STATIC)
+        set(CMAKE_MSVC_RUNTIME_LIBRARY MultiThreaded$<$<CONFIG:Debug>:Debug>)
+    else()
+        set(CMAKE_MSVC_RUNTIME_LIBRARY MultiThreaded$<$<CONFIG:Debug>:Debug>DLL)
+    endif()
+elseif(WIN32 AND MINGW)
+    if (SHADER_GEN_LINK_STATIC)
+        # Force static linking for GCC runtime and winpthreads.
+        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static -static-libgcc -static-libstdc++")
+    endif()
 endif()
 
 set(SHADER_GEN_QT_VERSION "6")

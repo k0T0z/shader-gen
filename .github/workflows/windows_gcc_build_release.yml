@@ -37,11 +37,11 @@ jobs:
         run: |
           mkdir -p "${{ github.workspace }}/protobuf-lib-static"
           echo "Protobuf: '${{ github.workspace }}/protobuf-lib-static'"
-          ./CI/build_static_protobuf.sh "${{ github.workspace }}/protobuf-lib-static"
+          ./CI/build_protobuf_win64_gcc.sh Release Static "${{ github.workspace }}/protobuf-lib-static"
   
       - name: Configure CMake
         shell: msys2 {0}
-        run: cmake -B build -G "Unix Makefiles" -DCMAKE_MAKE_PROGRAM=mingw32-make -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="${{ github.workspace }}/protobuf-lib-static/lib/cmake"
+        run: cmake -B build -G "Unix Makefiles" -DCMAKE_MAKE_PROGRAM=mingw32-make -DCMAKE_BUILD_TYPE=Release -DSHADER_GEN_LINK_STATIC=ON -DCMAKE_PREFIX_PATH="${{ github.workspace }}/protobuf-lib-static/lib/cmake"
   
       - name: Build project
         shell: msys2 {0}
