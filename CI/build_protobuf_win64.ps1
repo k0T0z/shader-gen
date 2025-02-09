@@ -21,7 +21,7 @@ switch ($link_type) {
     default   { throw "Invalid link_type '$link_type'. Expected 'Dynamic' or 'Static'." }
 }
 
-Write-Output "Installing Protobuf $PROTOBUF_LATEST_TAG with build type '$build_type' and link type '$link_type' (shared libs: $shared_libs)..."
+Write-Output "Installing Protobuf '$PROTOBUF_LATEST_TAG' with build type '$build_type' and link type '$link_type' (shared libs: '$shared_libs')..."
 
 # Clone the Protobuf repository.
 git clone --depth 1 -b $PROTOBUF_LATEST_TAG https://github.com/protocolbuffers/protobuf.git
@@ -39,9 +39,9 @@ cmake .. -G "Visual Studio 17 2022" -A x64 `
          -Dprotobuf_BUILD_CONFORMANCE=OFF `
          -Dprotobuf_BUILD_EXAMPLES=OFF `
          -Dprotobuf_ABSL_PROVIDER=module `
-         -DCMAKE_BUILD_TYPE=$build_type `
+         -DCMAKE_BUILD_TYPE="$build_type" `
          -DCMAKE_CXX_STANDARD=17 `
-         -Dprotobuf_BUILD_SHARED_LIBS=$shared_libs `
+         -Dprotobuf_BUILD_SHARED_LIBS="$shared_libs" `
          -DCMAKE_INSTALL_PREFIX="$protobuf_prefix" `
                                                    `
          -DABSL_PROPAGATE_CXX_STD=ON `
@@ -49,8 +49,8 @@ cmake .. -G "Visual Studio 17 2022" -A x64 `
          -DABSL_BUILD_TESTING=OFF `
          -DABSL_USE_GOOGLETEST_HEAD=OFF `
          -DABSL_ENABLE_INSTALL=ON `
-         -DBUILD_SHARED_LIBS=$shared_libs `
-         -DABSL_BUILD_MONOLITHIC_SHARED_LIBS=$shared_libs `
+         -DBUILD_SHARED_LIBS="$shared_libs" `
+         -DABSL_BUILD_MONOLITHIC_SHARED_LIBS="$shared_libs" `
          -DCMAKE_MODULE_LINKER_FLAGS='-Wl,--no-undefined'
 
 # Build and install.

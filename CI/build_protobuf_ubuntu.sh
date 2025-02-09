@@ -31,7 +31,7 @@ else
     SHARED_LIBS="OFF"
 fi
 
-# Hard-coded tags for demonstration purposes
+# Hard-coded tags for Abseil and Protobuf
 ABSL_LATEST_TAG=20250127.0  # Abseil tag
 PROTOBUF_LATEST_TAG=v29.3   # Protobuf tag
 
