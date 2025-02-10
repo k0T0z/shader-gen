@@ -175,11 +175,16 @@ file(GLOB SHADER_GEN_UI_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/gui/view/visual_shader_editor.ui
 )
 
+file(GLOB SHADER_GEN_RC_FILES 
+    ${CMAKE_CURRENT_SOURCE_DIR}/assets/resources.rc
+)
+
 if (WIN32)
     add_executable(${SHADER_GEN_EXECUTABLE_NAME} WIN32
         ${SHADER_GEN_MAIN_ENTRY} 
         ${SHADER_GEN_CPP_FILES} 
         ${SHADER_GEN_PROTO_GENERATED_SRCS} # Include the generated protobuf files
+        ${SHADER_GEN_RC_FILES}
     )
 else()
     add_executable(${SHADER_GEN_EXECUTABLE_NAME}  
@@ -448,9 +453,9 @@ endif()
     set(CPACK_INCLUDE_TOPLEVEL_DIRECTORY OFF)
 
     if(WIN32 AND MINGW)
-        set(CPACK_PACKAGE_NAME "${SHADER_GEN_EXECUTABLE_NAME}-portable-gcc")
+        set(CPACK_PACKAGE_NAME "${SHADER_GEN_EXECUTABLE_NAME}-portable-gcc-qt${SHADER_GEN_QT_VERSION}")
     elseif(MSVC)
-        set(CPACK_PACKAGE_NAME "${SHADER_GEN_EXECUTABLE_NAME}-portable")
+        set(CPACK_PACKAGE_NAME "${SHADER_GEN_EXECUTABLE_NAME}-portable-qt${SHADER_GEN_QT_VERSION}")
     endif()
 
     include(CPack)
