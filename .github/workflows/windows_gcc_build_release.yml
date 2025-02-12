@@ -31,6 +31,7 @@ jobs:
             mingw-w64-x86_64-make
             mingw-w64-x86_64-cmake
             git
+            mingw-w64-x86_64-double-conversion
 
       - name: Build Protobuf
         shell: msys2 {0}
