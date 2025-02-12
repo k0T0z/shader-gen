@@ -389,60 +389,60 @@ if (SHADER_GEN_BUILD_PORTABLE_RELEASE_PACKAGE)
         file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/CopyDependencies.cmake
         [[
 
-    # https://cmake.org/cmake/help/latest/command/file.html#get-runtime-dependencies
-    cmake_minimum_required(VERSION 3.16)
+# https://cmake.org/cmake/help/latest/command/file.html#get-runtime-dependencies
+cmake_minimum_required(VERSION 3.16)
 
-    file(GET_RUNTIME_DEPENDENCIES
-        EXECUTABLES 
-            "${TEMP_SHADER_GEN_EXECUTABLE_NAME}"
-            "${TEMP_SHADER_GEN_PROTOBUF_DLL}"
-        BUNDLE_EXECUTABLE FALSE
-        RESOLVED_DEPENDENCIES_VAR SHADER_GEN_RESOLVED_DEPS
-        UNRESOLVED_DEPENDENCIES_VAR SHADER_GEN_UNRESOLVED_DEPS
-        DIRECTORIES 
-            "${TEMP_SHADER_GEN_COMPILER_BIN_DIR}"
-        PRE_EXCLUDE_REGEXES
-            "api-ms-win-.*"        # Windows API DLLs
-            "ext-ms-.*"            # More Windows internals
-            "kernel32.dll"         # System DLLs
-            "advapi32.dll"
-            "user32.dll"
-            "shell32.dll"
-            "ole32.dll"
-            "dbghelp.dll"
-            "msvcrt.dll"
-            "uxtheme.dll"
-            "dxgi.dll"
-            "dwrite.dll"
-            "d3d11.dll"
-            "winmm.dll"
-            "d3d12.dll"
-            "authz.dll"
-            "mpr.dll"
-            "netapi32.dll"
-            "dwmapi.dll"
-            "version.dll"
-            "userenv.dll"
-            "usp10.dll"
-            "gdi32.dll"
-            "ws2_32.dll"
-            "rpcrt4.dll"
-            "dxil.dll"
-            "dxcompiler.dll"
-        POST_EXCLUDE_REGEXES
-            ".*/Windows/.*"        # Exclude system paths
-            ".*/WinSxS/.*"
+file(GET_RUNTIME_DEPENDENCIES
+    EXECUTABLES 
+        "${TEMP_SHADER_GEN_EXECUTABLE_NAME}"
+        "${TEMP_SHADER_GEN_PROTOBUF_DLL}"
+    BUNDLE_EXECUTABLE FALSE
+    RESOLVED_DEPENDENCIES_VAR SHADER_GEN_RESOLVED_DEPS
+    UNRESOLVED_DEPENDENCIES_VAR SHADER_GEN_UNRESOLVED_DEPS
+    DIRECTORIES 
+        "${TEMP_SHADER_GEN_COMPILER_BIN_DIR}"
+    PRE_EXCLUDE_REGEXES
+        "api-ms-win-.*"        # Windows API DLLs
+        "ext-ms-.*"            # More Windows internals
+        "kernel32.dll"         # System DLLs
+        "advapi32.dll"
+        "user32.dll"
+        "shell32.dll"
+        "ole32.dll"
+        "dbghelp.dll"
+        "msvcrt.dll"
+        "uxtheme.dll"
+        "dxgi.dll"
+        "dwrite.dll"
+        "d3d11.dll"
+        "winmm.dll"
+        "d3d12.dll"
+        "authz.dll"
+        "mpr.dll"
+        "netapi32.dll"
+        "dwmapi.dll"
+        "version.dll"
+        "userenv.dll"
+        "usp10.dll"
+        "gdi32.dll"
+        "ws2_32.dll"
+        "rpcrt4.dll"
+        "dxil.dll"
+        "dxcompiler.dll"
+    POST_EXCLUDE_REGEXES
+        ".*/Windows/.*"        # Exclude system paths
+        ".*/WinSxS/.*"
 
-    )
+)
 
-    if(SHADER_GEN_RESOLVED_DEPS)
-        file(COPY ${SHADER_GEN_RESOLVED_DEPS} DESTINATION "${TEMP_SHADER_GEN_EXECUTABLE_OUTPUT_DIR}")
-        message(STATUS "Copied dependencies: ${SHADER_GEN_RESOLVED_DEPS}")
-    endif()
+if(SHADER_GEN_RESOLVED_DEPS)
+    file(COPY ${SHADER_GEN_RESOLVED_DEPS} DESTINATION "${TEMP_SHADER_GEN_EXECUTABLE_OUTPUT_DIR}")
+    message(STATUS "Copied dependencies: ${SHADER_GEN_RESOLVED_DEPS}")
+endif()
 
-    if(SHADER_GEN_UNRESOLVED_DEPS)
-        message(WARNING "Unresolved dependencies: ${SHADER_GEN_UNRESOLVED_DEPS}")
-    endif()
+if(SHADER_GEN_UNRESOLVED_DEPS)
+    message(WARNING "Unresolved dependencies: ${SHADER_GEN_UNRESOLVED_DEPS}")
+endif()
 
         ]])
 
