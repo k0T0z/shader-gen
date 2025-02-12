@@ -70,6 +70,7 @@ endif()
 
 option(SHADER_GEN_BUILD_TESTS "Build tests for Shader Gen" OFF)
 option(SHADER_GEN_LINK_STATIC "Link statically. Enable this for portable packaging." OFF)
+option(SHADER_GEN_BUILD_PORTABLE_RELEASE_PACKAGE "Build a portable release package." OFF)
 
 if(${PROJECT_SOURCE_DIR} STREQUAL ${PROJECT_BINARY_DIR})
   message(
@@ -339,142 +340,144 @@ endif()
 # Portable Packaging
 #####################
 
-if (WIN32)
-    set(SHADER_GEN_PORTABLE_DIR "${CMAKE_BINARY_DIR}/portable")
-    file(MAKE_DIRECTORY ${SHADER_GEN_PORTABLE_DIR})
+if (SHADER_GEN_BUILD_PORTABLE_RELEASE_PACKAGE)
+    if (WIN32)
+        set(SHADER_GEN_PORTABLE_DIR "${CMAKE_BINARY_DIR}/portable")
+        file(MAKE_DIRECTORY ${SHADER_GEN_PORTABLE_DIR})
 
-    # Deploy Qt dependencies using windeployqt
-    find_program(WINDEPLOYQT_EXECUTABLE windeployqt)
-    if(NOT WINDEPLOYQT_EXECUTABLE)
-        message(FATAL_ERROR "windeployqt not found. Ensure Qt is installed and in PATH.")
+        # Deploy Qt dependencies using windeployqt
+        find_program(WINDEPLOYQT_EXECUTABLE windeployqt)
+        if(NOT WINDEPLOYQT_EXECUTABLE)
+            message(FATAL_ERROR "windeployqt not found. Ensure Qt is installed and in PATH.")
+        endif()
+
+        add_custom_command(TARGET ${SHADER_GEN_EXECUTABLE_NAME} POST_BUILD
+
+            # Copy main executable
+            COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:${SHADER_GEN_EXECUTABLE_NAME}> "${SHADER_GEN_PORTABLE_DIR}"
+
+            # Deploy Qt runtime dependencies
+            COMMAND ${WINDEPLOYQT_EXECUTABLE}
+                --release
+                --no-patchqt
+                --no-quick-import
+                --no-translations
+                --no-system-d3d-compiler
+                --no-compiler-runtime
+                --no-opengl-sw
+                --verbose 1
+                --dir "${SHADER_GEN_PORTABLE_DIR}"
+                "$<TARGET_FILE:${SHADER_GEN_EXECUTABLE_NAME}>"
+
+            COMMENT "Copying runtime dependencies..."
+        )
+
+        get_filename_component(SHADER_GEN_COMPILER_BIN_DIR "${CMAKE_CXX_COMPILER}" DIRECTORY)
+
+        # https://doc.qt.io/qt-6/windows-deployment.html#additional-libraries
+        add_custom_command(TARGET ${SHADER_GEN_EXECUTABLE_NAME} POST_BUILD
+            COMMAND ${CMAKE_COMMAND} 
+                -DTEMP_SHADER_GEN_EXECUTABLE_NAME="$<TARGET_FILE:${SHADER_GEN_EXECUTABLE_NAME}>" 
+                -DTEMP_SHADER_GEN_EXECUTABLE_OUTPUT_DIR="${SHADER_GEN_PORTABLE_DIR}"
+                -DTEMP_SHADER_GEN_PROTOBUF_DLL="$<TARGET_FILE:protobuf::libprotobuf>"
+                -DTEMP_SHADER_GEN_COMPILER_BIN_DIR="${SHADER_GEN_COMPILER_BIN_DIR}"
+                -P ${CMAKE_CURRENT_BINARY_DIR}/CopyDependencies.cmake
+            COMMENT "Copying runtime dependencies..."
+        )
+
+        # Create CopyDependencies.cmake
+        file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/CopyDependencies.cmake
+        [[
+
+    # https://cmake.org/cmake/help/latest/command/file.html#get-runtime-dependencies
+    cmake_minimum_required(VERSION 3.16)
+
+    file(GET_RUNTIME_DEPENDENCIES
+        EXECUTABLES 
+            "${TEMP_SHADER_GEN_EXECUTABLE_NAME}"
+            "${TEMP_SHADER_GEN_PROTOBUF_DLL}"
+        BUNDLE_EXECUTABLE FALSE
+        RESOLVED_DEPENDENCIES_VAR SHADER_GEN_RESOLVED_DEPS
+        UNRESOLVED_DEPENDENCIES_VAR SHADER_GEN_UNRESOLVED_DEPS
+        DIRECTORIES 
+            "${TEMP_SHADER_GEN_COMPILER_BIN_DIR}"
+        PRE_EXCLUDE_REGEXES
+            "api-ms-win-.*"        # Windows API DLLs
+            "ext-ms-.*"            # More Windows internals
+            "kernel32.dll"         # System DLLs
+            "advapi32.dll"
+            "user32.dll"
+            "shell32.dll"
+            "ole32.dll"
+            "dbghelp.dll"
+            "msvcrt.dll"
+            "uxtheme.dll"
+            "dxgi.dll"
+            "dwrite.dll"
+            "d3d11.dll"
+            "winmm.dll"
+            "d3d12.dll"
+            "authz.dll"
+            "mpr.dll"
+            "netapi32.dll"
+            "dwmapi.dll"
+            "version.dll"
+            "userenv.dll"
+            "usp10.dll"
+            "gdi32.dll"
+            "ws2_32.dll"
+            "rpcrt4.dll"
+            "dxil.dll"
+            "dxcompiler.dll"
+        POST_EXCLUDE_REGEXES
+            ".*/Windows/.*"        # Exclude system paths
+            ".*/WinSxS/.*"
+
+    )
+
+    if(SHADER_GEN_RESOLVED_DEPS)
+        file(COPY ${SHADER_GEN_RESOLVED_DEPS} DESTINATION "${TEMP_SHADER_GEN_EXECUTABLE_OUTPUT_DIR}")
+        message(STATUS "Copied dependencies: ${SHADER_GEN_RESOLVED_DEPS}")
     endif()
 
-    add_custom_command(TARGET ${SHADER_GEN_EXECUTABLE_NAME} POST_BUILD
-
-        # Copy main executable
-        COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:${SHADER_GEN_EXECUTABLE_NAME}> "${SHADER_GEN_PORTABLE_DIR}"
-
-        # Deploy Qt runtime dependencies
-        COMMAND ${WINDEPLOYQT_EXECUTABLE}
-            --release
-            --no-patchqt
-            --no-quick-import
-            --no-translations
-            --no-system-d3d-compiler
-            --no-compiler-runtime
-            --no-opengl-sw
-            --verbose 1
-            --dir "${SHADER_GEN_PORTABLE_DIR}"
-            "$<TARGET_FILE:${SHADER_GEN_EXECUTABLE_NAME}>"
-
-        COMMENT "Copying runtime dependencies..."
-    )
-
-    get_filename_component(SHADER_GEN_COMPILER_BIN_DIR "${CMAKE_CXX_COMPILER}" DIRECTORY)
-
-    # https://doc.qt.io/qt-6/windows-deployment.html#additional-libraries
-    add_custom_command(TARGET ${SHADER_GEN_EXECUTABLE_NAME} POST_BUILD
-        COMMAND ${CMAKE_COMMAND} 
-            -DTEMP_SHADER_GEN_EXECUTABLE_NAME="$<TARGET_FILE:${SHADER_GEN_EXECUTABLE_NAME}>" 
-            -DTEMP_SHADER_GEN_EXECUTABLE_OUTPUT_DIR="${SHADER_GEN_PORTABLE_DIR}"
-            -DTEMP_SHADER_GEN_PROTOBUF_DLL="$<TARGET_FILE:protobuf::libprotobuf>"
-            -DTEMP_SHADER_GEN_COMPILER_BIN_DIR="${SHADER_GEN_COMPILER_BIN_DIR}"
-            -P ${CMAKE_CURRENT_BINARY_DIR}/CopyDependencies.cmake
-        COMMENT "Copying runtime dependencies..."
-    )
-
-    # Create CopyDependencies.cmake
-    file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/CopyDependencies.cmake
-    [[
-
-# https://cmake.org/cmake/help/latest/command/file.html#get-runtime-dependencies
-cmake_minimum_required(VERSION 3.16)
-
-file(GET_RUNTIME_DEPENDENCIES
-    EXECUTABLES 
-        "${TEMP_SHADER_GEN_EXECUTABLE_NAME}"
-        "${TEMP_SHADER_GEN_PROTOBUF_DLL}"
-    BUNDLE_EXECUTABLE FALSE
-    RESOLVED_DEPENDENCIES_VAR SHADER_GEN_RESOLVED_DEPS
-    UNRESOLVED_DEPENDENCIES_VAR SHADER_GEN_UNRESOLVED_DEPS
-    DIRECTORIES 
-        "${TEMP_SHADER_GEN_COMPILER_BIN_DIR}"
-    PRE_EXCLUDE_REGEXES
-        "api-ms-win-.*"        # Windows API DLLs
-        "ext-ms-.*"            # More Windows internals
-        "kernel32.dll"         # System DLLs
-        "advapi32.dll"
-        "user32.dll"
-        "shell32.dll"
-        "ole32.dll"
-        "dbghelp.dll"
-        "msvcrt.dll"
-        "uxtheme.dll"
-        "dxgi.dll"
-        "dwrite.dll"
-        "d3d11.dll"
-        "winmm.dll"
-        "d3d12.dll"
-        "authz.dll"
-        "mpr.dll"
-        "netapi32.dll"
-        "dwmapi.dll"
-        "version.dll"
-        "userenv.dll"
-        "usp10.dll"
-        "gdi32.dll"
-        "ws2_32.dll"
-        "rpcrt4.dll"
-        "dxil.dll"
-        "dxcompiler.dll"
-    POST_EXCLUDE_REGEXES
-        ".*/Windows/.*"        # Exclude system paths
-        ".*/WinSxS/.*"
-
-)
-
-if(SHADER_GEN_RESOLVED_DEPS)
-    file(COPY ${SHADER_GEN_RESOLVED_DEPS} DESTINATION "${TEMP_SHADER_GEN_EXECUTABLE_OUTPUT_DIR}")
-    message(STATUS "Copied dependencies: ${SHADER_GEN_RESOLVED_DEPS}")
-endif()
-
-if(SHADER_GEN_UNRESOLVED_DEPS)
-    message(WARNING "Unresolved dependencies: ${SHADER_GEN_UNRESOLVED_DEPS}")
-endif()
-
-    ]])
-
-    # Install all required files for portable package
-    install(TARGETS ${SHADER_GEN_EXECUTABLE_NAME}
-        RUNTIME DESTINATION .
-    )
-
-    # Install all required files for portable package
-    # https://cmake.org/cmake/help/latest/command/install.html#directory
-    install(DIRECTORY "${SHADER_GEN_PORTABLE_DIR}/"
-        DESTINATION .
-        FILES_MATCHING PATTERN "*"
-    )
-
-    # Install LICENSE file
-    install(FILES
-        "${SHADER_GEN_ROOTDIR}/LICENSE"
-        DESTINATION .
-    )
-
-    # Configure ZIP package
-    set(CPACK_GENERATOR "ZIP")
-
-    set(CPACK_PACKAGE_VERSION "${SHADER_GEN_PROJECT_VERSION}")
-    set(CPACK_PACKAGE_DESCRIPTION "${SHADER_GEN_PROJECT_DESCRIPTION}")
-
-    set(CPACK_INCLUDE_TOPLEVEL_DIRECTORY OFF)
-
-    if(WIN32 AND MINGW)
-        set(CPACK_PACKAGE_NAME "${SHADER_GEN_EXECUTABLE_NAME}-portable-gcc-qt${SHADER_GEN_QT_VERSION}")
-    elseif(MSVC)
-        set(CPACK_PACKAGE_NAME "${SHADER_GEN_EXECUTABLE_NAME}-portable-qt${SHADER_GEN_QT_VERSION}")
+    if(SHADER_GEN_UNRESOLVED_DEPS)
+        message(WARNING "Unresolved dependencies: ${SHADER_GEN_UNRESOLVED_DEPS}")
     endif()
 
-    include(CPack)
-endif()
+        ]])
+
+        # Install all required files for portable package
+        install(TARGETS ${SHADER_GEN_EXECUTABLE_NAME}
+            RUNTIME DESTINATION .
+        )
+
+        # Install all required files for portable package
+        # https://cmake.org/cmake/help/latest/command/install.html#directory
+        install(DIRECTORY "${SHADER_GEN_PORTABLE_DIR}/"
+            DESTINATION .
+            FILES_MATCHING PATTERN "*"
+        )
+
+        # Install LICENSE file
+        install(FILES
+            "${SHADER_GEN_ROOTDIR}/LICENSE"
+            DESTINATION .
+        )
+
+        # Configure ZIP package
+        set(CPACK_GENERATOR "ZIP")
+
+        set(CPACK_PACKAGE_VERSION "${SHADER_GEN_PROJECT_VERSION}")
+        set(CPACK_PACKAGE_DESCRIPTION "${SHADER_GEN_PROJECT_DESCRIPTION}")
+
+        set(CPACK_INCLUDE_TOPLEVEL_DIRECTORY OFF)
+
+        if(WIN32 AND MINGW)
+            set(CPACK_PACKAGE_NAME "${SHADER_GEN_EXECUTABLE_NAME}-portable-gcc-qt${SHADER_GEN_QT_VERSION}")
+        elseif(MSVC)
+            set(CPACK_PACKAGE_NAME "${SHADER_GEN_EXECUTABLE_NAME}-portable-qt${SHADER_GEN_QT_VERSION}")
+        endif()
+
+        include(CPack)
+    endif(WIN32)
+endif(SHADER_GEN_BUILD_PORTABLE_RELEASE_PACKAGE)
