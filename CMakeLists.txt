@@ -70,6 +70,7 @@ endif()
 
 option(SHADER_GEN_BUILD_TESTS "Build tests for Shader Gen" OFF)
 option(SHADER_GEN_LINK_STATIC "Link statically. Enable this for portable packaging." OFF)
+option(SHADER_GEN_BUILD_PORTABLE_RELEASE_PACKAGE "Build a portable release package" OFF)
 
 if(${PROJECT_SOURCE_DIR} STREQUAL ${PROJECT_BINARY_DIR})
   message(
@@ -336,56 +337,57 @@ endif()
 # Portable Packaging
 #####################
 
-if (WIN32)
-    set(SHADER_GEN_PORTABLE_DIR "${CMAKE_BINARY_DIR}/portable")
-    file(MAKE_DIRECTORY ${SHADER_GEN_PORTABLE_DIR})
+if (SHADER_GEN_BUILD_PORTABLE_RELEASE_PACKAGE)
+    if (WIN32)
+        set(SHADER_GEN_PORTABLE_DIR "${CMAKE_BINARY_DIR}/portable")
+        file(MAKE_DIRECTORY ${SHADER_GEN_PORTABLE_DIR})
 
-    # Deploy Qt dependencies using windeployqt
-    find_program(WINDEPLOYQT_EXECUTABLE windeployqt)
-    if(NOT WINDEPLOYQT_EXECUTABLE)
-        message(FATAL_ERROR "windeployqt not found. Ensure Qt is installed and in PATH.")
-    endif()
+        # Deploy Qt dependencies using windeployqt
+        find_program(WINDEPLOYQT_EXECUTABLE windeployqt)
+        if(NOT WINDEPLOYQT_EXECUTABLE)
+            message(FATAL_ERROR "windeployqt not found. Ensure Qt is installed and in PATH.")
+        endif()
 
-    add_custom_command(TARGET ${SHADER_GEN_EXECUTABLE_NAME} POST_BUILD
+        add_custom_command(TARGET ${SHADER_GEN_EXECUTABLE_NAME} POST_BUILD
 
-        # Copy main executable
-        COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:${SHADER_GEN_EXECUTABLE_NAME}> "${SHADER_GEN_PORTABLE_DIR}"
+            # Copy main executable
+            COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:${SHADER_GEN_EXECUTABLE_NAME}> "${SHADER_GEN_PORTABLE_DIR}"
 
-        # Deploy Qt runtime dependencies
-        COMMAND ${WINDEPLOYQT_EXECUTABLE}
-            # https://bugreports.qt.io/browse/QTBUG-90614
-            # https://stackoverflow.com/q/61045959
-            # --release
-            --no-patchqt
-            --no-quick-import
-            --no-translations
-            --no-system-d3d-compiler
-            --no-compiler-runtime
-            --no-angle
-            --no-opengl-sw
-            --verbose 1
-            --dir "${SHADER_GEN_PORTABLE_DIR}"
-            "$<TARGET_FILE:${SHADER_GEN_EXECUTABLE_NAME}>"
+            # Deploy Qt runtime dependencies
+            COMMAND ${WINDEPLOYQT_EXECUTABLE}
+                # https://bugreports.qt.io/browse/QTBUG-90614
+                # https://stackoverflow.com/q/61045959
+                # --release
+                --no-patchqt
+                --no-quick-import
+                --no-translations
+                --no-system-d3d-compiler
+                --no-compiler-runtime
+                --no-angle
+                --no-opengl-sw
+                --verbose 1
+                --dir "${SHADER_GEN_PORTABLE_DIR}"
+                "$<TARGET_FILE:${SHADER_GEN_EXECUTABLE_NAME}>"
 
-        COMMENT "Copying runtime dependencies..."
-    )
+            COMMENT "Copying runtime dependencies..."
+        )
 
-    get_filename_component(SHADER_GEN_COMPILER_BIN_DIR "${CMAKE_CXX_COMPILER}" DIRECTORY)
+        get_filename_component(SHADER_GEN_COMPILER_BIN_DIR "${CMAKE_CXX_COMPILER}" DIRECTORY)
 
-    # https://doc.qt.io/qt-6/windows-deployment.html#additional-libraries
-    add_custom_command(TARGET ${SHADER_GEN_EXECUTABLE_NAME} POST_BUILD
-        COMMAND ${CMAKE_COMMAND} 
-            -DTEMP_SHADER_GEN_EXECUTABLE_NAME="$<TARGET_FILE:${SHADER_GEN_EXECUTABLE_NAME}>" 
-            -DTEMP_SHADER_GEN_EXECUTABLE_OUTPUT_DIR="${SHADER_GEN_PORTABLE_DIR}"
-            -DTEMP_SHADER_GEN_PROTOBUF_DLL="$<TARGET_FILE:protobuf::libprotobuf>"
-            -DTEMP_SHADER_GEN_COMPILER_BIN_DIR="${SHADER_GEN_COMPILER_BIN_DIR}"
-            -P ${CMAKE_CURRENT_BINARY_DIR}/CopyDependencies.cmake
-        COMMENT "Copying runtime dependencies..."
-    )
+        # https://doc.qt.io/qt-6/windows-deployment.html#additional-libraries
+        add_custom_command(TARGET ${SHADER_GEN_EXECUTABLE_NAME} POST_BUILD
+            COMMAND ${CMAKE_COMMAND} 
+                -DTEMP_SHADER_GEN_EXECUTABLE_NAME="$<TARGET_FILE:${SHADER_GEN_EXECUTABLE_NAME}>" 
+                -DTEMP_SHADER_GEN_EXECUTABLE_OUTPUT_DIR="${SHADER_GEN_PORTABLE_DIR}"
+                -DTEMP_SHADER_GEN_PROTOBUF_DLL="$<TARGET_FILE:protobuf::libprotobuf>"
+                -DTEMP_SHADER_GEN_COMPILER_BIN_DIR="${SHADER_GEN_COMPILER_BIN_DIR}"
+                -P ${CMAKE_CURRENT_BINARY_DIR}/CopyDependencies.cmake
+            COMMENT "Copying runtime dependencies..."
+        )
 
-    # Create CopyDependencies.cmake
-    file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/CopyDependencies.cmake
-    [[
+        # Create CopyDependencies.cmake
+        file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/CopyDependencies.cmake
+        [[
 
 # https://cmake.org/cmake/help/latest/command/file.html#get-runtime-dependencies
 cmake_minimum_required(VERSION 3.16)
@@ -443,39 +445,42 @@ if(SHADER_GEN_UNRESOLVED_DEPS)
     message(WARNING "Unresolved dependencies: ${SHADER_GEN_UNRESOLVED_DEPS}")
 endif()
 
-    ]])
+        ]])
 
-    # Install all required files for portable package
-    install(TARGETS ${SHADER_GEN_EXECUTABLE_NAME}
-        RUNTIME DESTINATION .
-    )
+        # Install all required files for portable package
+        install(TARGETS ${SHADER_GEN_EXECUTABLE_NAME}
+            RUNTIME DESTINATION .
+        )
 
-    # Install all required files for portable package
-    # https://cmake.org/cmake/help/latest/command/install.html#directory
-    install(DIRECTORY "${SHADER_GEN_PORTABLE_DIR}/"
-        DESTINATION .
-        FILES_MATCHING PATTERN "*"
-    )
+        # Install all required files for portable package
+        # https://cmake.org/cmake/help/latest/command/install.html#directory
+        install(DIRECTORY "${SHADER_GEN_PORTABLE_DIR}/"
+            DESTINATION .
+            FILES_MATCHING PATTERN "*"
+        )
 
-    # Install LICENSE file
-    install(FILES
-        "${SHADER_GEN_ROOTDIR}/LICENSE"
-        DESTINATION .
-    )
+        # Install LICENSE file
+        install(FILES
+            "${SHADER_GEN_ROOTDIR}/LICENSE"
+            DESTINATION .
+        )
 
-    # Configure ZIP package
-    set(CPACK_GENERATOR "ZIP")
+        # Configure ZIP package
+        set(CPACK_GENERATOR "ZIP")
 
-    set(CPACK_PACKAGE_VERSION "${SHADER_GEN_PROJECT_VERSION}")
-    set(CPACK_PACKAGE_DESCRIPTION "${SHADER_GEN_PROJECT_DESCRIPTION}")
+        set(CPACK_PACKAGE_VERSION "${SHADER_GEN_PROJECT_VERSION}")
+        set(CPACK_PACKAGE_DESCRIPTION "${SHADER_GEN_PROJECT_DESCRIPTION}")
 
-    set(CPACK_INCLUDE_TOPLEVEL_DIRECTORY OFF)
+        set(CPACK_INCLUDE_TOPLEVEL_DIRECTORY OFF)
 
-    if(WIN32 AND MINGW)
-        set(CPACK_PACKAGE_NAME "${SHADER_GEN_EXECUTABLE_NAME}-portable-gcc-qt${SHADER_GEN_QT_VERSION}")
-    elseif(MSVC)
-        set(CPACK_PACKAGE_NAME "${SHADER_GEN_EXECUTABLE_NAME}-portable-qt${SHADER_GEN_QT_VERSION}")
-    endif()
+        if(WIN32 AND MINGW)
+            set(CPACK_PACKAGE_NAME "${SHADER_GEN_EXECUTABLE_NAME}-portable-gcc-qt${SHADER_GEN_QT_VERSION}")
+        elseif(MSVC)
+            set(CPACK_PACKAGE_NAME "${SHADER_GEN_EXECUTABLE_NAME}-portable-qt${SHADER_GEN_QT_VERSION}")
+        endif()
 
-    include(CPack)
-endif()
+        include(CPack)
+    endif(WIN32)
+endif(SHADER_GEN_BUILD_PORTABLE_RELEASE_PACKAGE)
+
+
