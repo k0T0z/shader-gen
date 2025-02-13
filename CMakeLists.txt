@@ -378,7 +378,7 @@ if (SHADER_GEN_BUILD_PORTABLE_RELEASE_PACKAGE)
         add_custom_command(TARGET ${SHADER_GEN_EXECUTABLE_NAME} POST_BUILD
             COMMAND ${CMAKE_COMMAND} 
                 -DTEMP_SHADER_GEN_EXECUTABLE_NAME="$<TARGET_FILE:${SHADER_GEN_EXECUTABLE_NAME}>" 
-                -DTEMP_SHADER_GEN_EXECUTABLE_OUTPUT_DIR="${SHADER_GEN_PORTABLE_DIR}"
+                -DTEMP_SHADER_GEN_PORTABLE_DIR="${SHADER_GEN_PORTABLE_DIR}"
                 -DTEMP_SHADER_GEN_COMPILER_BIN_DIR="${SHADER_GEN_COMPILER_BIN_DIR}"
                 -P ${CMAKE_CURRENT_BINARY_DIR}/CopyDependencies.cmake
             COMMENT "Copying runtime dependencies..."
@@ -404,7 +404,7 @@ file(GET_RUNTIME_DEPENDENCIES
 )
 
 if(SHADER_GEN_RESOLVED_DEPS)
-    file(COPY ${SHADER_GEN_RESOLVED_DEPS} DESTINATION "${TEMP_SHADER_GEN_EXECUTABLE_OUTPUT_DIR}")
+    file(COPY ${SHADER_GEN_RESOLVED_DEPS} DESTINATION "${TEMP_SHADER_GEN_PORTABLE_DIR}")
     message(STATUS "Copied dependencies: ${SHADER_GEN_RESOLVED_DEPS}")
 endif()
 
@@ -412,16 +412,16 @@ if(SHADER_GEN_UNRESOLVED_DEPS)
     message(WARNING "Unresolved dependencies: ${SHADER_GEN_UNRESOLVED_DEPS}")
 endif()
 
-# Additional dependency: libdouble-conversion.dll
-set(LIB_DOUBLE_CONVERSION_DLL "${TEMP_SHADER_GEN_COMPILER_BIN_DIR}/libdouble-conversion.dll")
-if(EXISTS "${LIB_DOUBLE_CONVERSION_DLL}")
-    file(COPY "${LIB_DOUBLE_CONVERSION_DLL}" DESTINATION "${TEMP_SHADER_GEN_EXECUTABLE_OUTPUT_DIR}")
-    message(STATUS "Copied dependency: libdouble-conversion.dll")
-else()
-    message(WARNING "libdouble-conversion.dll not found at ${LIB_DOUBLE_CONVERSION_DLL}")
-endif()
-
         ]])
+
+        # Additional dependency: libdouble-conversion.dll
+        set(SHADER_GEN_LIB_DOUBLE_CONVERSION_DLL "${SHADER_GEN_COMPILER_BIN_DIR}/libdouble-conversion.dll")
+        if(EXISTS "${SHADER_GEN_LIB_DOUBLE_CONVERSION_DLL}")
+            file(COPY "${SHADER_GEN_LIB_DOUBLE_CONVERSION_DLL}" DESTINATION "${SHADER_GEN_PORTABLE_DIR}")
+            message(STATUS "Copied dependency: libdouble-conversion.dll")
+        else()
+            message(WARNING "libdouble-conversion.dll not found at ${SHADER_GEN_LIB_DOUBLE_CONVERSION_DLL}")
+        endif()
 
         # Install all required files for portable package
         install(TARGETS ${SHADER_GEN_EXECUTABLE_NAME}
