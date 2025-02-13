@@ -414,6 +414,15 @@ if(SHADER_GEN_UNRESOLVED_DEPS)
     message(WARNING "Unresolved dependencies: ${SHADER_GEN_UNRESOLVED_DEPS}")
 endif()
 
+# Additional dependency: libdouble-conversion.dll
+set(LIB_DOUBLE_CONVERSION_DLL "${TEMP_SHADER_GEN_COMPILER_BIN_DIR}/libdouble-conversion.dll")
+if(EXISTS "${LIB_DOUBLE_CONVERSION_DLL}")
+    file(COPY "${LIB_DOUBLE_CONVERSION_DLL}" DESTINATION "${TEMP_SHADER_GEN_EXECUTABLE_OUTPUT_DIR}")
+    message(STATUS "Copied dependency: libdouble-conversion.dll")
+else()
+    message(WARNING "libdouble-conversion.dll not found at ${LIB_DOUBLE_CONVERSION_DLL}")
+endif()
+
         ]])
 
         # Install all required files for portable package
