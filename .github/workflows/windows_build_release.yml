@@ -31,46 +31,24 @@ jobs:
           dir: '${{ github.workspace }}'
           setup-python: 'false'
 
-      - name: Download patched windeployqt for MSVC2022
+      - name: Download patched windeployqt
         shell: pwsh
         run: |
+          Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+
           Write-Output "Original Qt5_DIR: $env:Qt5_DIR"
           $qtCMakeDir = $env:Qt5_DIR
           $qtLibDir = Split-Path $qtCMakeDir -Parent
           $qtRootDir = Split-Path $qtLibDir -Parent
           $qtBinDir = Join-Path $qtRootDir "bin"
           Write-Output "Derived Qt bin directory: $qtBinDir"
-          
-          # Ensure the bin directory exists
-          if (-Not (Test-Path $qtBinDir)) {
-              New-Item -ItemType Directory -Force -Path $qtBinDir | Out-Null
-          }
-          
-          Write-Output "Downloading patched windeployqt64releaseonly.zip..."
-          $zipPath = Join-Path $qtBinDir "windeployqt64releaseonly.zip"
-          $retryCount = 3
-          $success = $false
-          for ($i = 1; $i -le $retryCount; $i++) {
-              try {
-                  Invoke-WebRequest -Uri "http://tripleboot.org/Uploads/windeployqt64releaseonly.zip" -OutFile $zipPath -UseBasicParsing
-                  $success = $true
-                  break
-              } catch {
-                  Write-Output "Download attempt $i of $retryCount failed: $_"
-                  Start-Sleep -Seconds 5
-              }
-          }
-          if (-not $success) {
-              Write-Error "Failed to download patched windeployqt64releaseonly.zip after $retryCount attempts."
-              exit 1
-          }
-          
-          Write-Output "Extracting patched executable into $qtBinDir..."
-          Expand-Archive -Path $zipPath -DestinationPath $qtBinDir -Force
+          .\CI\download_patched_windeployqt.ps1 -TargetDir $qtBinDir
 
       - name: Build Protobuf
         shell: pwsh
         run: |
+          Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+
           New-Item -ItemType Directory -Path "${{ github.workspace }}\protobuf-lib-static"
           Write-Output "Protobuf: '${{ github.workspace }}\protobuf-lib-static'"
           Write-Output "Qt5: $env:Qt5_DIR"

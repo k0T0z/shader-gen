@@ -37,11 +37,7 @@ jobs:
 
       - name: Download patched windeployqt
         shell: msys2 {0}
-        run: |
-          echo "Downloading patched windeployqt64releaseonly.zip..."
-          curl -L -o windeployqt64releaseonly.zip http://tripleboot.org/Uploads/windeployqt64releaseonly.zip
-          echo "Extracting patched executable into mingw64/bin..."
-          unzip -o windeployqt64releaseonly.zip -d /mingw64/bin/
+        run: ./CI/download_patched_windeployqt.sh "/mingw64/bin/"
 
       - name: Build Protobuf
         shell: msys2 {0}
