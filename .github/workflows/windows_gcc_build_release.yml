@@ -21,6 +21,7 @@ jobs:
           ref: 'master'
           submodules: recursive
   
+      # unzip is required for extracting the patched windeployqt executable
       - name: Setup MSYS2
         uses: msys2/setup-msys2@v2
         with:
@@ -32,6 +33,15 @@ jobs:
             mingw-w64-x86_64-make
             mingw-w64-x86_64-cmake
             git
+            unzip
+
+      - name: Download patched windeployqt
+        shell: msys2 {0}
+        run: |
+          echo "Downloading patched windeployqt64releaseonly.zip..."
+          curl -L -o windeployqt64releaseonly.zip http://tripleboot.org/Uploads/windeployqt64releaseonly.zip
+          echo "Extracting patched executable into mingw64/bin..."
+          unzip -o windeployqt64releaseonly.zip -d /mingw64/bin/
 
       - name: Build Protobuf
         shell: msys2 {0}

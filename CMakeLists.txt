@@ -343,9 +343,14 @@ if (SHADER_GEN_BUILD_PORTABLE_RELEASE_PACKAGE)
         file(MAKE_DIRECTORY ${SHADER_GEN_PORTABLE_DIR})
 
         # Deploy Qt dependencies using windeployqt
-        find_program(WINDEPLOYQT_EXECUTABLE windeployqt)
+        # The original exe is windeployqt, and due to the fact that it has problems, we will use this patched version.
+        # The patched version will allow us to use --release flag without issues.
+        # The original version works fine for GCC but not for MSVC. The patched version works for both.
+        # https://bugreports.qt.io/browse/QTBUG-90614
+        # https://stackoverflow.com/q/61045959
+        find_program(WINDEPLOYQT_EXECUTABLE windeployqt64releaseonly)
         if(NOT WINDEPLOYQT_EXECUTABLE)
-            message(FATAL_ERROR "windeployqt not found. Ensure Qt is installed and in PATH.")
+            message(FATAL_ERROR "windeployqt64releaseonly not found. Ensure Qt is installed and in PATH.")
         endif()
 
         add_custom_command(TARGET ${SHADER_GEN_EXECUTABLE_NAME} POST_BUILD
@@ -355,9 +360,7 @@ if (SHADER_GEN_BUILD_PORTABLE_RELEASE_PACKAGE)
 
             # Deploy Qt runtime dependencies
             COMMAND ${WINDEPLOYQT_EXECUTABLE}
-                # https://bugreports.qt.io/browse/QTBUG-90614
-                # https://stackoverflow.com/q/61045959
-                # --release
+                --release
                 --no-patchqt
                 --no-quick-import
                 --no-translations
@@ -414,14 +417,10 @@ endif()
 
         ]])
 
-        # Additional dependency: libdouble-conversion.dll
-        set(SHADER_GEN_LIB_DOUBLE_CONVERSION_DLL "${SHADER_GEN_COMPILER_BIN_DIR}/libdouble-conversion.dll")
-        if(EXISTS "${SHADER_GEN_LIB_DOUBLE_CONVERSION_DLL}")
-            file(COPY "${SHADER_GEN_LIB_DOUBLE_CONVERSION_DLL}" DESTINATION "${SHADER_GEN_PORTABLE_DIR}")
-            message(STATUS "Copied dependency: libdouble-conversion.dll")
-        else()
-            message(WARNING "libdouble-conversion.dll not found at ${SHADER_GEN_LIB_DOUBLE_CONVERSION_DLL}")
-        endif()
+        add_custom_command(TARGET ${SHADER_GEN_EXECUTABLE_NAME} POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy "${SHADER_GEN_COMPILER_BIN_DIR}/libdouble-conversion.dll" "${SHADER_GEN_PORTABLE_DIR}"
+            COMMENT "Copying dependency: libdouble-conversion.dll"
+        )
 
         # Install all required files for portable package
         install(TARGETS ${SHADER_GEN_EXECUTABLE_NAME}

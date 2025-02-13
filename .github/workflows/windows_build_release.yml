@@ -31,6 +31,28 @@ jobs:
           dir: '${{ github.workspace }}'
           setup-python: 'false'
 
+      - name: Download patched windeployqt for MSVC2022
+        shell: pwsh
+        run: |
+          Write-Output "Original Qt5_DIR: $env:Qt5_DIR"
+          $qtCMakeDir = $env:Qt5_DIR
+          $qtLibDir = Split-Path $qtCMakeDir -Parent
+          $qtRootDir = Split-Path $qtLibDir -Parent
+          $qtBinDir = Join-Path $qtRootDir "bin"
+          Write-Output "Derived Qt bin directory: $qtBinDir"
+          
+          # Ensure the bin directory exists
+          if (-Not (Test-Path $qtBinDir)) {
+              New-Item -ItemType Directory -Force -Path $qtBinDir | Out-Null
+          }
+          
+          Write-Output "Downloading patched windeployqt64releaseonly.zip..."
+          $zipPath = Join-Path $qtBinDir "windeployqt64releaseonly.zip"
+          Invoke-WebRequest -Uri "http://tripleboot.org/Uploads/windeployqt64releaseonly.zip" -OutFile $zipPath
+          
+          Write-Output "Extracting patched executable into $qtBinDir..."
+          Expand-Archive -Path $zipPath -DestinationPath $qtBinDir -Force
+
       - name: Build Protobuf
         shell: pwsh
         run: |
