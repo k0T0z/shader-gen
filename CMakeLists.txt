@@ -414,10 +414,12 @@ endif()
 
         ]])
 
-        add_custom_command(TARGET ${SHADER_GEN_EXECUTABLE_NAME} POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy "${SHADER_GEN_COMPILER_BIN_DIR}/libdouble-conversion.dll" "${SHADER_GEN_PORTABLE_DIR}"
-            COMMENT "Copying dependency: libdouble-conversion.dll"
-        )
+        if (MINGW)
+            add_custom_command(TARGET ${SHADER_GEN_EXECUTABLE_NAME} POST_BUILD
+                COMMAND ${CMAKE_COMMAND} -E copy "${SHADER_GEN_COMPILER_BIN_DIR}/libdouble-conversion.dll" "${SHADER_GEN_PORTABLE_DIR}"
+                COMMENT "Copying dependency: libdouble-conversion.dll"
+            )
+        endif(MINGW)
 
         # Install all required files for portable package
         install(TARGETS ${SHADER_GEN_EXECUTABLE_NAME}
