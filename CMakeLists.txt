@@ -414,14 +414,10 @@ endif()
 
         ]])
 
-        # Additional dependency: libdouble-conversion.dll
-        set(SHADER_GEN_LIB_DOUBLE_CONVERSION_DLL "${SHADER_GEN_COMPILER_BIN_DIR}/libdouble-conversion.dll")
-        if(EXISTS "${SHADER_GEN_LIB_DOUBLE_CONVERSION_DLL}")
-            file(COPY "${SHADER_GEN_LIB_DOUBLE_CONVERSION_DLL}" DESTINATION "${SHADER_GEN_PORTABLE_DIR}")
-            message(STATUS "Copied dependency: libdouble-conversion.dll")
-        else()
-            message(WARNING "libdouble-conversion.dll not found at ${SHADER_GEN_LIB_DOUBLE_CONVERSION_DLL}")
-        endif()
+        add_custom_command(TARGET ${SHADER_GEN_EXECUTABLE_NAME} POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy "${SHADER_GEN_COMPILER_BIN_DIR}/libdouble-conversion.dll" "${SHADER_GEN_PORTABLE_DIR}"
+            COMMENT "Copying dependency: libdouble-conversion.dll"
+        )
 
         # Install all required files for portable package
         install(TARGETS ${SHADER_GEN_EXECUTABLE_NAME}
