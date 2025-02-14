@@ -122,10 +122,10 @@ if (MSVC)
         set(CMAKE_MSVC_RUNTIME_LIBRARY MultiThreaded$<$<CONFIG:Debug>:Debug>DLL)
     endif()
 elseif(WIN32 AND MINGW)
-    if (SHADER_GEN_LINK_STATIC)
-        # Force static linking for GCC runtime and winpthreads.
-        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static -static-libgcc -static-libstdc++")
-    endif()
+    # if (SHADER_GEN_LINK_STATIC)
+    #     # Force static linking for GCC runtime and winpthreads.
+    #     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static -static-libgcc -static-libstdc++")
+    # endif()
 endif()
 
 set(SHADER_GEN_QT_VERSION "6")
@@ -415,10 +415,14 @@ endif()
         ]])
 
         if (MINGW)
-            add_custom_command(TARGET ${SHADER_GEN_EXECUTABLE_NAME} POST_BUILD
-                COMMAND ${CMAKE_COMMAND} -E copy "${SHADER_GEN_COMPILER_BIN_DIR}/libdouble-conversion.dll" "${SHADER_GEN_PORTABLE_DIR}"
-                COMMENT "Copying dependency: libdouble-conversion.dll"
-            )
+            if (EXISTS "${SHADER_GEN_COMPILER_BIN_DIR}/libdouble-conversion.dll")
+                add_custom_command(TARGET ${SHADER_GEN_EXECUTABLE_NAME} POST_BUILD
+                    COMMAND ${CMAKE_COMMAND} -E copy "${SHADER_GEN_COMPILER_BIN_DIR}/libdouble-conversion.dll" "${SHADER_GEN_PORTABLE_DIR}"
+                    COMMENT "Copying dependency: libdouble-conversion.dll"
+                )
+            else()
+                message(WARNING "libdouble-conversion.dll not found in ${SHADER_GEN_COMPILER_BIN_DIR}")
+            endif()
         endif(MINGW)
 
         # Install all required files for portable package
