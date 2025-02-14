@@ -369,7 +369,7 @@ if (SHADER_GEN_BUILD_PORTABLE_RELEASE_PACKAGE)
                 --dir "${SHADER_GEN_PORTABLE_DIR}"
                 "$<TARGET_FILE:${SHADER_GEN_EXECUTABLE_NAME}>"
 
-            COMMENT "Copying runtime dependencies..."
+            COMMENT "Copying main executable and Qt${SHADER_GEN_QT_VERSION} runtime dependencies..."
         )
 
         get_filename_component(SHADER_GEN_COMPILER_BIN_DIR "${CMAKE_CXX_COMPILER}" DIRECTORY)

@@ -21,6 +21,12 @@ switch ($link_type) {
     default   { throw "Invalid link_type '$link_type'. Expected 'Dynamic' or 'Static'." }
 }
 
+# Check if the install prefix directory exists; if not, create it.
+if (-not (Test-Path -Path $protobuf_prefix -PathType Container)) {
+    Write-Output "Install prefix directory '$protobuf_prefix' does not exist. Creating it..."
+    New-Item -ItemType Directory -Path $protobuf_prefix -Force | Out-Null
+}
+
 Write-Output "Installing Protobuf '$PROTOBUF_LATEST_TAG' with build type '$build_type' and link type '$link_type' (shared libs: '$shared_libs')..."
 
 # Clone the Protobuf repository.
