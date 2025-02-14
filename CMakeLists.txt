@@ -122,10 +122,10 @@ if (MSVC)
         set(CMAKE_MSVC_RUNTIME_LIBRARY MultiThreaded$<$<CONFIG:Debug>:Debug>DLL)
     endif()
 elseif(WIN32 AND MINGW)
-    if (SHADER_GEN_LINK_STATIC)
-        # Force static linking for GCC runtime and winpthreads.
-        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static -static-libgcc -static-libstdc++")
-    endif()
+    # if (SHADER_GEN_LINK_STATIC)
+    #     # Force static linking for GCC runtime and winpthreads.
+    #     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static -static-libgcc -static-libstdc++")
+    # endif()
 endif()
 
 set(SHADER_GEN_QT_VERSION "5")
@@ -362,13 +362,17 @@ if (SHADER_GEN_BUILD_PORTABLE_RELEASE_PACKAGE)
         # It looks for icudt75.dll but the actual file is libicudt75.dll.
         # We delete it later below to avoid shipping it with the portable package. See below.
         if(MINGW)
-            add_custom_command(TARGET ${SHADER_GEN_EXECUTABLE_NAME} POST_BUILD
-                COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                    "${SHADER_GEN_COMPILER_BIN_DIR}/libicudt75.dll"
-                    "${SHADER_GEN_COMPILER_BIN_DIR}/icudt75.dll"
-                COMMENT "Copying and renaming ICU dependency: libicudt75.dll to icudt75.dll"
-            )
-        endif()
+            if (EXISTS "${SHADER_GEN_COMPILER_BIN_DIR}/libicudt75.dll")
+                add_custom_command(TARGET ${SHADER_GEN_EXECUTABLE_NAME} POST_BUILD
+                    COMMAND ${CMAKE_COMMAND} -E copy
+                        "${SHADER_GEN_COMPILER_BIN_DIR}/libicudt75.dll"
+                        "${SHADER_GEN_COMPILER_BIN_DIR}/icudt75.dll"
+                    COMMENT "Copying and renaming ICU dependency: libicudt75.dll to icudt75.dll"
+                )
+            else()
+                message(WARNING "libicudt75.dll not found in ${SHADER_GEN_COMPILER_BIN_DIR}")
+            endif()
+        endif(MINGW)
 
         add_custom_command(TARGET ${SHADER_GEN_EXECUTABLE_NAME} POST_BUILD
 
@@ -433,18 +437,34 @@ endif()
         ]])
 
         if (MINGW)
-            add_custom_command(TARGET ${SHADER_GEN_EXECUTABLE_NAME} POST_BUILD
-                COMMAND ${CMAKE_COMMAND} -E copy "${SHADER_GEN_COMPILER_BIN_DIR}/libdouble-conversion.dll" "${SHADER_GEN_PORTABLE_DIR}"
-                COMMAND ${CMAKE_COMMAND} -E copy "${SHADER_GEN_COMPILER_BIN_DIR}/libicudt75.dll" "${SHADER_GEN_PORTABLE_DIR}"
-                COMMENT "Copying dependencies: libdouble-conversion.dll and libicudt75.dll"
-            )
+            if (EXISTS "${SHADER_GEN_COMPILER_BIN_DIR}/libdouble-conversion.dll")
+                add_custom_command(TARGET ${SHADER_GEN_EXECUTABLE_NAME} POST_BUILD
+                    COMMAND ${CMAKE_COMMAND} -E copy "${SHADER_GEN_COMPILER_BIN_DIR}/libdouble-conversion.dll" "${SHADER_GEN_PORTABLE_DIR}"
+                    COMMENT "Copying dependency: libdouble-conversion.dll"
+                )
+            else()
+                message(WARNING "libdouble-conversion.dll not found in ${SHADER_GEN_COMPILER_BIN_DIR}")
+            endif()
 
-            # Delete the ICU dependency
-            # Check the workaround above for more information.
-            add_custom_command(TARGET ${SHADER_GEN_EXECUTABLE_NAME} POST_BUILD
-                COMMAND ${CMAKE_COMMAND} -E remove "${SHADER_GEN_PORTABLE_DIR}/icudt75.dll"
-                COMMENT "Deleting ICU dependency: icudt75.dll"
-            )
+            if(EXISTS "${SHADER_GEN_COMPILER_BIN_DIR}/libicudt75.dll")
+                add_custom_command(TARGET ${SHADER_GEN_EXECUTABLE_NAME} POST_BUILD
+                    COMMAND ${CMAKE_COMMAND} -E copy "${SHADER_GEN_COMPILER_BIN_DIR}/libicudt75.dll" "${SHADER_GEN_PORTABLE_DIR}"
+                    COMMENT "Copying dependency: libicudt75.dll"
+                )
+            else()
+                message(WARNING "libicudt75.dll not found in ${SHADER_GEN_COMPILER_BIN_DIR}")
+            endif()
+
+            if(EXISTS "${SHADER_GEN_PORTABLE_DIR}/icudt75.dll")
+                # Delete the ICU dependency
+                # Check the workaround above for more information.
+                add_custom_command(TARGET ${SHADER_GEN_EXECUTABLE_NAME} POST_BUILD
+                    COMMAND ${CMAKE_COMMAND} -E remove "${SHADER_GEN_PORTABLE_DIR}/icudt75.dll"
+                    COMMENT "Deleting ICU dependency: icudt75.dll"
+                )
+            else()
+                message(WARNING "icudt75.dll not found in ${SHADER_GEN_PORTABLE_DIR}")
+            endif()
         endif(MINGW)
 
         # Install all required files for portable package
@@ -482,5 +502,3 @@ endif()
         include(CPack)
     endif(WIN32)
 endif(SHADER_GEN_BUILD_PORTABLE_RELEASE_PACKAGE)
-
-
