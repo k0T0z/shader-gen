@@ -357,6 +357,20 @@ if (SHADER_GEN_BUILD_PORTABLE_RELEASE_PACKAGE)
         # Win GCC: /c/msys64/mingw64/bin/
         get_filename_component(SHADER_GEN_COMPILER_BIN_DIR "${CMAKE_CXX_COMPILER}" DIRECTORY)
 
+        execute_process(
+            COMMAND ls -l "${SHADER_GEN_COMPILER_BIN_DIR}"
+            OUTPUT_VARIABLE BIN_FILES
+            OUTPUT_STRIP_TRAILING_WHITESPACE
+            ERROR_VARIABLE BIN_ERR
+            RESULT_VARIABLE BIN_RESULT
+        )
+
+        if(BIN_RESULT EQUAL 0)
+            message(STATUS "Files in bin directory:\n${BIN_FILES}")
+        else()
+            message(WARNING "Error listing bin directory: ${BIN_ERR}")
+        endif()
+
         # This is a workaround for the ICU dependency issue on Windows.
         # The patched windeployqt gives an error when trying to deploy the ICU dependency.
         # It looks for icudt75.dll but the actual file is libicudt75.dll.
