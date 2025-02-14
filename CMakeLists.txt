@@ -357,20 +357,6 @@ if (SHADER_GEN_BUILD_PORTABLE_RELEASE_PACKAGE)
         # Win GCC: /c/msys64/mingw64/bin/
         get_filename_component(SHADER_GEN_COMPILER_BIN_DIR "${CMAKE_CXX_COMPILER}" DIRECTORY)
 
-        execute_process(
-            COMMAND ls -l "${SHADER_GEN_COMPILER_BIN_DIR}"
-            OUTPUT_VARIABLE BIN_FILES
-            OUTPUT_STRIP_TRAILING_WHITESPACE
-            ERROR_VARIABLE BIN_ERR
-            RESULT_VARIABLE BIN_RESULT
-        )
-
-        if(BIN_RESULT EQUAL 0)
-            message(STATUS "Files in bin directory:\n${BIN_FILES}")
-        else()
-            message(WARNING "Error listing bin directory: ${BIN_ERR}")
-        endif()
-
         # This is a workaround for the ICU dependency issue on Windows.
         # The patched windeployqt gives an error when trying to deploy the ICU dependency.
         # It looks for icudt75.dll but the actual file is libicudt75.dll.
@@ -449,7 +435,7 @@ endif()
         if (MINGW)
             add_custom_command(TARGET ${SHADER_GEN_EXECUTABLE_NAME} POST_BUILD
                 COMMAND ${CMAKE_COMMAND} -E copy "${SHADER_GEN_COMPILER_BIN_DIR}/libdouble-conversion.dll" "${SHADER_GEN_PORTABLE_DIR}"
-                COMMENT ${CMAKE_COMMAND} -E copy "${SHADER_GEN_COMPILER_BIN_DIR}/libicudt75.dll" "${SHADER_GEN_PORTABLE_DIR}"
+                COMMAND ${CMAKE_COMMAND} -E copy "${SHADER_GEN_COMPILER_BIN_DIR}/libicudt75.dll" "${SHADER_GEN_PORTABLE_DIR}"
                 COMMENT "Copying dependencies: libdouble-conversion.dll and libicudt75.dll"
             )
 
