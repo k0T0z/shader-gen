@@ -363,7 +363,7 @@ if (SHADER_GEN_BUILD_PORTABLE_RELEASE_PACKAGE)
         # We delete it later below to avoid shipping it with the portable package. See below.
         if(MINGW)
             add_custom_command(TARGET ${SHADER_GEN_EXECUTABLE_NAME} POST_BUILD
-                COMMAND ${CMAKE_COMMAND} -E copy
+                COMMAND ${CMAKE_COMMAND} -E copy_if_different
                     "${SHADER_GEN_COMPILER_BIN_DIR}/libicudt75.dll"
                     "${SHADER_GEN_COMPILER_BIN_DIR}/icudt75.dll"
                 COMMENT "Copying and renaming ICU dependency: libicudt75.dll to icudt75.dll"
