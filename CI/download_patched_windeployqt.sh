@@ -12,6 +12,14 @@ SLEEP_TIME=5
 ZIP_FILE="windeployqt64releaseonly.zip"
 DOWNLOAD_URL="http://tripleboot.org/Uploads/windeployqt64releaseonly.zip"
 
+echo  "Target directory: $TARGET_DIR"
+
+# Ensure the target directory exists
+if  [ ! -d  "$TARGET_DIR"  ]; then
+    echo  "Creating target directory: $TARGET_DIR"
+    mkdir  -p  "$TARGET_DIR"
+fi
+
 download() {
     echo "Downloading patched ${ZIP_FILE}..."
     local attempt=1

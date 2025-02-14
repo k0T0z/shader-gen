@@ -353,6 +353,23 @@ if (SHADER_GEN_BUILD_PORTABLE_RELEASE_PACKAGE)
             message(FATAL_ERROR "windeployqt64releaseonly not found. Ensure Qt is installed and in PATH.")
         endif()
 
+        # Get the directory of the compiler
+        # Win GCC: /c/msys64/mingw64/bin/
+        get_filename_component(SHADER_GEN_COMPILER_BIN_DIR "${CMAKE_CXX_COMPILER}" DIRECTORY)
+
+        # This is a workaround for the ICU dependency issue on Windows.
+        # The patched windeployqt gives an error when trying to deploy the ICU dependency.
+        # It looks for icudt75.dll but the actual file is libicudt75.dll.
+        # We delete it later below to avoid shipping it with the portable package. See below.
+        if(MINGW)
+            add_custom_command(TARGET ${SHADER_GEN_EXECUTABLE_NAME} POST_BUILD
+                COMMAND ${CMAKE_COMMAND} -E copy
+                    "${SHADER_GEN_COMPILER_BIN_DIR}/libicudt75.dll"
+                    "${SHADER_GEN_COMPILER_BIN_DIR}/icudt75.dll"
+                COMMENT "Copying and renaming ICU dependency: libicudt75.dll to icudt75.dll"
+            )
+        endif()
+
         add_custom_command(TARGET ${SHADER_GEN_EXECUTABLE_NAME} POST_BUILD
 
             # Copy main executable
@@ -372,10 +389,8 @@ if (SHADER_GEN_BUILD_PORTABLE_RELEASE_PACKAGE)
                 --dir "${SHADER_GEN_PORTABLE_DIR}"
                 "$<TARGET_FILE:${SHADER_GEN_EXECUTABLE_NAME}>"
 
-            COMMENT "Copying runtime dependencies..."
+            COMMENT "Copying main executable and Qt${SHADER_GEN_QT_VERSION} runtime dependencies..."
         )
-
-        get_filename_component(SHADER_GEN_COMPILER_BIN_DIR "${CMAKE_CXX_COMPILER}" DIRECTORY)
 
         # https://doc.qt.io/qt-6/windows-deployment.html#additional-libraries
         add_custom_command(TARGET ${SHADER_GEN_EXECUTABLE_NAME} POST_BUILD
@@ -420,7 +435,15 @@ endif()
         if (MINGW)
             add_custom_command(TARGET ${SHADER_GEN_EXECUTABLE_NAME} POST_BUILD
                 COMMAND ${CMAKE_COMMAND} -E copy "${SHADER_GEN_COMPILER_BIN_DIR}/libdouble-conversion.dll" "${SHADER_GEN_PORTABLE_DIR}"
-                COMMENT "Copying dependency: libdouble-conversion.dll"
+                COMMENT ${CMAKE_COMMAND} -E copy "${SHADER_GEN_COMPILER_BIN_DIR}/libicudt75.dll" "${SHADER_GEN_PORTABLE_DIR}"
+                COMMENT "Copying dependencies: libdouble-conversion.dll and libicudt75.dll"
+            )
+
+            # Delete the ICU dependency
+            # Check the workaround above for more information.
+            add_custom_command(TARGET ${SHADER_GEN_EXECUTABLE_NAME} POST_BUILD
+                COMMAND ${CMAKE_COMMAND} -E remove "${SHADER_GEN_PORTABLE_DIR}/icudt75.dll"
+                COMMENT "Deleting ICU dependency: icudt75.dll"
             )
         endif(MINGW)
 

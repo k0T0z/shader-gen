@@ -32,6 +32,12 @@ else
     SHARED_LIBS="OFF"
 fi
 
+# Check if the install prefix directory exists; if not, create it
+if [ ! -d "$INSTALL_PREFIX" ]; then
+    echo "Install prefix directory '$INSTALL_PREFIX' does not exist. Creating it..."
+    mkdir -p "$INSTALL_PREFIX"
+fi
+
 # Fetch the latest tag (hard-coded)
 PROTOBUF_LATEST_TAG=v29.3
 
