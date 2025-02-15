@@ -15,7 +15,7 @@ pr:
       - master-qt6
 
 jobs:
-- job: Build
+- job: Build ShaderGen on Ubuntu
   pool:
     vmImage: ubuntu-latest
   workspace:
