@@ -467,16 +467,33 @@ endif()
                 message(WARNING "No libicudt*.dll found in ${SHADER_GEN_COMPILER_BIN_DIR}")
             endif()
 
-            # Cleanup any temporary icudt*.dll files created for windeployqt
-            file(GLOB SHADER_GEN_ICU_TEMP_DLLS "${SHADER_GEN_PORTABLE_DIR}/icudt*.dll")
-            if(SHADER_GEN_ICU_TEMP_DLLS)
-                add_custom_command(TARGET ${SHADER_GEN_EXECUTABLE_NAME} POST_BUILD
-                    COMMAND ${CMAKE_COMMAND} -E remove ${SHADER_GEN_ICU_TEMP_DLLS}
-                    COMMENT "Removing temporary ICU files: ${SHADER_GEN_ICU_TEMP_DLLS}"
-                )
-            else()
-                message(WARNING "No icudt*.dll files to remove in ${SHADER_GEN_PORTABLE_DIR}")
-            endif()
+            add_custom_command(TARGET ${SHADER_GEN_EXECUTABLE_NAME} POST_BUILD
+                COMMAND ${CMAKE_COMMAND} 
+                    -DTEMP_SHADER_GEN_EXECUTABLE_NAME="$<TARGET_FILE:${SHADER_GEN_EXECUTABLE_NAME}>" 
+                    -DTEMP_SHADER_GEN_PORTABLE_DIR="${SHADER_GEN_PORTABLE_DIR}"
+                    -DTEMP_SHADER_GEN_COMPILER_BIN_DIR="${SHADER_GEN_COMPILER_BIN_DIR}"
+                    -P ${CMAKE_CURRENT_BINARY_DIR}/CleanupDependencies.cmake
+                COMMENT "Cleaning up runtime dependencies..."
+            )
+
+            # Create CleanupDependencies.cmake
+            file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/CleanupDependencies.cmake
+            [[
+
+cmake_minimum_required(VERSION 3.15)
+
+# Cleanup any temporary icudt*.dll files created for windeployqt
+file(GLOB SHADER_GEN_ICU_TEMP_DLLS "${TEMP_SHADER_GEN_PORTABLE_DIR}/icudt*.dll")
+if(SHADER_GEN_ICU_TEMP_DLLS)
+    add_custom_command(TARGET ${TEMP_SHADER_GEN_EXECUTABLE_NAME} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E remove ${SHADER_GEN_ICU_TEMP_DLLS}
+        COMMENT "Removing temporary ICU files: ${SHADER_GEN_ICU_TEMP_DLLS}"
+    )
+else()
+    message(WARNING "No icudt*.dll files to remove in ${TEMP_SHADER_GEN_PORTABLE_DIR}")
+endif()
+
+            ]])
         endif(MINGW)
 
         # Install all required files for portable package
