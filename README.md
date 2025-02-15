@@ -55,4 +55,4 @@ Or mRGM, which stands for mini-RadialGM, is a simple and lightweight version of 
 ## Acknowledgements
 
 > [!NOTE]
-> The way my ``Visual Shader Editor`` and ``Generator`` are written is inspired by [Godot](https://github.com/godotengine/godot) Game Engine.
+> The way my ``Visual Shader Editor`` and ``Generator`` are written is inspired by [Godot](https://github.com/godotengine/godot) Game Engine. Check [Godot's LICENSE](https://github.com/godotengine/godot/blob/master/LICENSE.txt) for more info.
