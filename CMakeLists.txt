@@ -130,12 +130,12 @@ endif()
 
 set(SHADER_GEN_QT_VERSION "6")
 
-file(GLOB SHADER_GEN_MAIN_ENTRY 
+set(SHADER_GEN_MAIN_ENTRY 
     ${CMAKE_CURRENT_SOURCE_DIR}/main.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp
 )
 
-file(GLOB SHADER_GEN_HPP_FILES 
+set(SHADER_GEN_HPP_FILES 
     ${CMAKE_CURRENT_SOURCE_DIR}/generator/visual_shader_generator.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/generator/visual_shader_node_generators.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/generator/vs_node_noise_generators.hpp
@@ -152,7 +152,7 @@ file(GLOB SHADER_GEN_HPP_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/error_macros.hpp
 )
 
-file(GLOB SHADER_GEN_CPP_FILES 
+set(SHADER_GEN_CPP_FILES 
     ${CMAKE_CURRENT_SOURCE_DIR}/generator/visual_shader_generator.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/generator/visual_shader_node_generators.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/generator/vs_node_noise_generators.cpp
@@ -167,16 +167,16 @@ file(GLOB SHADER_GEN_CPP_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/gui/model/utils/field_path.cpp
 )
 
-file(GLOB SHADER_GEN_PROTO_FILES 
+set(SHADER_GEN_PROTO_FILES 
     ${CMAKE_CURRENT_SOURCE_DIR}/gui/model/schema/visual_shader.proto
     ${CMAKE_CURRENT_SOURCE_DIR}/gui/model/schema/visual_shader_nodes.proto
 )
 
-file(GLOB SHADER_GEN_UI_FILES 
+set(SHADER_GEN_UI_FILES 
     ${CMAKE_CURRENT_SOURCE_DIR}/gui/view/visual_shader_editor.ui
 )
 
-file(GLOB SHADER_GEN_RC_FILES 
+set(SHADER_GEN_RC_FILES 
     ${CMAKE_CURRENT_SOURCE_DIR}/assets/resources.rc
 )
 
@@ -240,14 +240,14 @@ target_compile_definitions(${SHADER_GEN_EXECUTABLE_NAME} PRIVATE
 if(SHADER_GEN_BUILD_TESTS)
     set(SHADER_GEN_TESTS_EXECUTABLE_NAME "shader-gen-tests" CACHE STRING "The name of the tests executable.")
 
-    file(GLOB SHADER_GEN_TESTS_CPP_FILES
+    set(SHADER_GEN_TESTS_CPP_FILES
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/gui/model/test_model.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/gui/model/utils/test_field_path.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/generator/test_vs_generator.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/generator/test_vs_node_generators.cpp
     )
 
-    file(GLOB SHADER_GEN_TESTS_PROTO_FILES 
+    set(SHADER_GEN_TESTS_PROTO_FILES 
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/gui/model/schema/test_schema.proto
     )
 
