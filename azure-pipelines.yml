@@ -1,0 +1,50 @@
+# Starter pipeline
+# Start with a minimal pipeline that you can customize to build and deploy your code.
+# Add steps that build, run tests, deploy, and more:
+# https://aka.ms/yaml
+
+trigger:
+  branches:
+    include:
+      - master-qt6
+  batch: true
+
+pr:
+  branches:
+    include:
+      - master-qt6
+
+jobs:
+- job: Build
+  pool:
+    vmImage: ubuntu-latest
+  workspace:
+    clean: all
+
+  steps:
+  - checkout: self
+    submodules: recursive
+
+  - script: |
+      sudo apt-get update
+      sudo apt-get install -y g++ cmake qt6-base-dev
+    displayName: Install dependencies
+
+  - script: |
+      chmod +x ./CI/build_protobuf_ubuntu.sh
+      sudo ./CI/build_protobuf_ubuntu.sh Debug Dynamic
+    displayName: Build Protobuf
+
+  - script: cmake -B build -G "Unix Makefiles" -DSHADER_GEN_BUILD_TESTS=ON
+    displayName: Configure CMake
+
+  - script: |
+      cmake --build build --config Debug --parallel $(nproc)
+      echo "Dependencies for shader-gen"
+      ldd build/shader-gen
+      echo "Dependencies for shader-gen-tests"
+      ldd build/shader-gen-tests
+    displayName: Build project
+
+  - script: ctest --test-dir build --parallel $(nproc) --output-on-failure --verbose -C Debug
+    displayName: Run tests
