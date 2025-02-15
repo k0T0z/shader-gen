@@ -469,7 +469,6 @@ endif()
 
             add_custom_command(TARGET ${SHADER_GEN_EXECUTABLE_NAME} POST_BUILD
                 COMMAND ${CMAKE_COMMAND} 
-                    -DTEMP_SHADER_GEN_EXECUTABLE_NAME="$<TARGET_FILE:${SHADER_GEN_EXECUTABLE_NAME}>" 
                     -DTEMP_SHADER_GEN_PORTABLE_DIR="${SHADER_GEN_PORTABLE_DIR}"
                     -P ${CMAKE_CURRENT_BINARY_DIR}/CleanupDependencies.cmake
                 COMMENT "Cleaning up runtime dependencies..."
@@ -484,10 +483,10 @@ cmake_minimum_required(VERSION 3.15)
 # Cleanup any temporary icudt*.dll files created for windeployqt
 file(GLOB SHADER_GEN_ICU_TEMP_DLLS "${TEMP_SHADER_GEN_PORTABLE_DIR}/icudt*.dll")
 if(SHADER_GEN_ICU_TEMP_DLLS)
-    add_custom_command(TARGET ${TEMP_SHADER_GEN_EXECUTABLE_NAME} POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E remove ${SHADER_GEN_ICU_TEMP_DLLS}
-        COMMENT "Removing temporary ICU files: ${SHADER_GEN_ICU_TEMP_DLLS}"
-    )
+    foreach(SHADER_GEN_ICU_TEMP_DLL IN LISTS SHADER_GEN_ICU_TEMP_DLLS)
+        file(REMOVE ${SHADER_GEN_ICU_TEMP_DLL})
+        message(STATUS "Removed temporary ICU file: ${SHADER_GEN_ICU_TEMP_DLL}")
+    endforeach()
 else()
     message(WARNING "No icudt*.dll files to remove in ${TEMP_SHADER_GEN_PORTABLE_DIR}")
 endif()

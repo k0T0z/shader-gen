@@ -37,6 +37,8 @@ jobs:
     - name: Build Protobuf
       shell: pwsh
       run: |
+        Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+
         New-Item -ItemType Directory -Path "${{ github.workspace }}\protobuf-lib"
         Write-Output "Protobuf: '${{ github.workspace }}\protobuf-lib'"
         Write-Output "Qt5: $env:Qt5_DIR"
