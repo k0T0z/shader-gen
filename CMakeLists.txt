@@ -130,12 +130,12 @@ endif()
 
 set(SHADER_GEN_QT_VERSION "5")
 
-file(GLOB SHADER_GEN_MAIN_ENTRY 
+set(SHADER_GEN_MAIN_ENTRY 
     ${CMAKE_CURRENT_SOURCE_DIR}/main.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp
 )
 
-file(GLOB SHADER_GEN_HPP_FILES 
+set(SHADER_GEN_HPP_FILES 
     ${CMAKE_CURRENT_SOURCE_DIR}/generator/visual_shader_generator.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/generator/visual_shader_node_generators.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/generator/vs_node_noise_generators.hpp
@@ -152,7 +152,7 @@ file(GLOB SHADER_GEN_HPP_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/error_macros.hpp
 )
 
-file(GLOB SHADER_GEN_CPP_FILES 
+set(SHADER_GEN_CPP_FILES 
     ${CMAKE_CURRENT_SOURCE_DIR}/generator/visual_shader_generator.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/generator/visual_shader_node_generators.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/generator/vs_node_noise_generators.cpp
@@ -167,16 +167,16 @@ file(GLOB SHADER_GEN_CPP_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/gui/model/utils/field_path.cpp
 )
 
-file(GLOB SHADER_GEN_PROTO_FILES 
+set(SHADER_GEN_PROTO_FILES 
     ${CMAKE_CURRENT_SOURCE_DIR}/gui/model/schema/visual_shader.proto
     ${CMAKE_CURRENT_SOURCE_DIR}/gui/model/schema/visual_shader_nodes.proto
 )
 
-file(GLOB SHADER_GEN_UI_FILES 
+set(SHADER_GEN_UI_FILES 
     ${CMAKE_CURRENT_SOURCE_DIR}/gui/view/visual_shader_editor.ui
 )
 
-file(GLOB SHADER_GEN_RC_FILES 
+set(SHADER_GEN_RC_FILES 
     ${CMAKE_CURRENT_SOURCE_DIR}/assets/resources.rc
 )
 
@@ -238,14 +238,14 @@ target_compile_definitions(${SHADER_GEN_EXECUTABLE_NAME} PRIVATE
 if(SHADER_GEN_BUILD_TESTS)
     set(SHADER_GEN_TESTS_EXECUTABLE_NAME "shader-gen-tests" CACHE STRING "The name of the tests executable.")
 
-    file(GLOB SHADER_GEN_TESTS_CPP_FILES
+    set(SHADER_GEN_TESTS_CPP_FILES
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/gui/model/test_model.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/gui/model/utils/test_field_path.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/generator/test_vs_generator.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/generator/test_vs_node_generators.cpp
     )
 
-    file(GLOB SHADER_GEN_TESTS_PROTO_FILES 
+    set(SHADER_GEN_TESTS_PROTO_FILES 
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/gui/model/schema/test_schema.proto
     )
 
@@ -362,15 +362,20 @@ if (SHADER_GEN_BUILD_PORTABLE_RELEASE_PACKAGE)
         # It looks for icudt75.dll but the actual file is libicudt75.dll.
         # We delete it later below to avoid shipping it with the portable package. See below.
         if(MINGW)
-            if (EXISTS "${SHADER_GEN_COMPILER_BIN_DIR}/libicudt75.dll")
-                add_custom_command(TARGET ${SHADER_GEN_EXECUTABLE_NAME} POST_BUILD
-                    COMMAND ${CMAKE_COMMAND} -E copy
-                        "${SHADER_GEN_COMPILER_BIN_DIR}/libicudt75.dll"
-                        "${SHADER_GEN_COMPILER_BIN_DIR}/icudt75.dll"
-                    COMMENT "Copying and renaming ICU dependency: libicudt75.dll to icudt75.dll"
-                )
+            file(GLOB SHADER_GEN_ICU_DLLS "${SHADER_GEN_COMPILER_BIN_DIR}/libicudt*.dll")
+            if(SHADER_GEN_ICU_DLLS)
+                foreach(SHADER_GEN_ICU_DLL IN LISTS SHADER_GEN_ICU_DLLS)
+                    get_filename_component(SHADER_GEN_ICU_DLL_NAME "${SHADER_GEN_ICU_DLL}" NAME)
+                    string(REGEX REPLACE "^lib" "" SHADER_GEN_NEW_ICU_DLL_NAME "${SHADER_GEN_ICU_DLL_NAME}")
+                    add_custom_command(TARGET ${SHADER_GEN_EXECUTABLE_NAME} POST_BUILD
+                        COMMAND ${CMAKE_COMMAND} -E copy
+                            "${SHADER_GEN_ICU_DLL}"
+                            "${SHADER_GEN_COMPILER_BIN_DIR}/${SHADER_GEN_NEW_ICU_DLL_NAME}"
+                        COMMENT "Copying and renaming ICU dependency: ${SHADER_GEN_ICU_DLL_NAME} to ${SHADER_GEN_NEW_ICU_DLL_NAME}"
+                    )
+                endforeach()
             else()
-                message(WARNING "libicudt75.dll not found in ${SHADER_GEN_COMPILER_BIN_DIR}")
+                message(WARNING "No libicudt*.dll found in ${SHADER_GEN_COMPILER_BIN_DIR}")
             endif()
         endif(MINGW)
 
@@ -446,24 +451,31 @@ endif()
                 message(WARNING "libdouble-conversion.dll not found in ${SHADER_GEN_COMPILER_BIN_DIR}")
             endif()
 
-            if(EXISTS "${SHADER_GEN_COMPILER_BIN_DIR}/libicudt75.dll")
-                add_custom_command(TARGET ${SHADER_GEN_EXECUTABLE_NAME} POST_BUILD
-                    COMMAND ${CMAKE_COMMAND} -E copy "${SHADER_GEN_COMPILER_BIN_DIR}/libicudt75.dll" "${SHADER_GEN_PORTABLE_DIR}"
-                    COMMENT "Copying dependency: libicudt75.dll"
-                )
+            # Copy all libicudt*.dll to portable dir
+            file(GLOB SHADER_GEN_ICU_DLLS "${SHADER_GEN_COMPILER_BIN_DIR}/libicudt*.dll")
+            if(SHADER_GEN_ICU_DLLS)
+                foreach(SHADER_GEN_ICU_DLL IN LISTS SHADER_GEN_ICU_DLLS)
+                    get_filename_component(SHADER_GEN_ICU_DLL_NAME "${SHADER_GEN_ICU_DLL}" NAME)
+                    add_custom_command(TARGET ${SHADER_GEN_EXECUTABLE_NAME} POST_BUILD
+                        COMMAND ${CMAKE_COMMAND} -E copy 
+                            "${SHADER_GEN_ICU_DLL}" 
+                            "${SHADER_GEN_PORTABLE_DIR}"
+                        COMMENT "Copying ICU dependency: ${SHADER_GEN_ICU_DLL_NAME}"
+                    )
+                endforeach()
             else()
-                message(WARNING "libicudt75.dll not found in ${SHADER_GEN_COMPILER_BIN_DIR}")
+                message(WARNING "No libicudt*.dll found in ${SHADER_GEN_COMPILER_BIN_DIR}")
             endif()
 
-            if(EXISTS "${SHADER_GEN_PORTABLE_DIR}/icudt75.dll")
-                # Delete the ICU dependency
-                # Check the workaround above for more information.
+            # Cleanup any temporary icudt*.dll files created for windeployqt
+            file(GLOB SHADER_GEN_ICU_TEMP_DLLS "${SHADER_GEN_PORTABLE_DIR}/icudt*.dll")
+            if(SHADER_GEN_ICU_TEMP_DLLS)
                 add_custom_command(TARGET ${SHADER_GEN_EXECUTABLE_NAME} POST_BUILD
-                    COMMAND ${CMAKE_COMMAND} -E remove "${SHADER_GEN_PORTABLE_DIR}/icudt75.dll"
-                    COMMENT "Deleting ICU dependency: icudt75.dll"
+                    COMMAND ${CMAKE_COMMAND} -E remove ${SHADER_GEN_ICU_TEMP_DLLS}
+                    COMMENT "Removing temporary ICU files: ${SHADER_GEN_ICU_TEMP_DLLS}"
                 )
             else()
-                message(WARNING "icudt75.dll not found in ${SHADER_GEN_PORTABLE_DIR}")
+                message(WARNING "No icudt*.dll files to remove in ${SHADER_GEN_PORTABLE_DIR}")
             endif()
         endif(MINGW)
 
