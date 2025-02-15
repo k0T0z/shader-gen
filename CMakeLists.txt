@@ -471,7 +471,6 @@ endif()
                 COMMAND ${CMAKE_COMMAND} 
                     -DTEMP_SHADER_GEN_EXECUTABLE_NAME="$<TARGET_FILE:${SHADER_GEN_EXECUTABLE_NAME}>" 
                     -DTEMP_SHADER_GEN_PORTABLE_DIR="${SHADER_GEN_PORTABLE_DIR}"
-                    -DTEMP_SHADER_GEN_COMPILER_BIN_DIR="${SHADER_GEN_COMPILER_BIN_DIR}"
                     -P ${CMAKE_CURRENT_BINARY_DIR}/CleanupDependencies.cmake
                 COMMENT "Cleaning up runtime dependencies..."
             )
