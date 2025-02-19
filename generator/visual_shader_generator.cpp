@@ -500,7 +500,7 @@ std::string generate_preview_shader(const std::unordered_map<int, std::shared_pt
 
   VisualShaderNodePortType from_port_type{VisualShaderNodePortType::PORT_TYPE_UNSPECIFIED};
 
-  if (auto input_node = std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNodeInput>>(proto_node)) {
+  if (proto_node->get_oneof_value_field_number() == VisualShader::VisualShaderNode::kInputFieldNumber) {
     // For Input node, type is by input type
     const std::shared_ptr<VisualShaderNodeGenerator> generator{generators.at(node_id)};
     from_port_type = shadergen_utils::get_enum_value_port_type_by_value(VisualShaderNodeInputType_descriptor(), generator->get_input_type());
@@ -630,7 +630,7 @@ static inline bool generate_shader_for_each_node(std::string& global_code, std::
       VisualShaderNodePortType to_port_type{proto_node->get_input_port_type(i)};
       VisualShaderNodePortType from_port_type{VisualShaderNodePortType::PORT_TYPE_UNSPECIFIED};
 
-      if (auto input_node = std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNodeInput>>(proto_nodes.at(from_node))) {
+      if (proto_node->get_oneof_value_field_number() == VisualShader::VisualShaderNode::kInputFieldNumber) {
         // For Input node, type is by input type
         const std::shared_ptr<VisualShaderNodeGenerator> t_generator{generators.at(from_node)};
         from_port_type = shadergen_utils::get_enum_value_port_type_by_value(VisualShaderNodeInputType_descriptor(), t_generator->get_input_type());
@@ -887,7 +887,7 @@ static inline bool generate_shader_for_each_node(std::string& global_code, std::
 
       VisualShaderNodePortType from_port_type{VisualShaderNodePortType::PORT_TYPE_UNSPECIFIED};
 
-      if (auto input_node = std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNodeInput>>(proto_node)) {
+      if (proto_node->get_oneof_value_field_number() == VisualShader::VisualShaderNode::kInputFieldNumber) {
         // For Input node, type is by input type
         from_port_type = shadergen_utils::get_enum_value_port_type_by_value(VisualShaderNodeInputType_descriptor(), generator->get_input_type());
       } else {
@@ -926,7 +926,7 @@ static inline bool generate_shader_for_each_node(std::string& global_code, std::
 
       VisualShaderNodePortType from_port_type{VisualShaderNodePortType::PORT_TYPE_UNSPECIFIED};
 
-      if (auto input_node = std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNodeInput>>(proto_node)) {
+      if (proto_node->get_oneof_value_field_number() == VisualShader::VisualShaderNode::kInputFieldNumber) {
         // For Input node, type is by input type
         from_port_type = shadergen_utils::get_enum_value_port_type_by_value(VisualShaderNodeInputType_descriptor(), generator->get_input_type());
       } else {

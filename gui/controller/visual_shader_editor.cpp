@@ -754,7 +754,7 @@ bool VisualShaderGraphicsScene::add_node_to_model(const int& n_id, const std::sh
   OneofModel* oneof{dynamic_cast<OneofModel*>(oneof_model)};
   CHECK_PARAM_NULLPTR_NON_VOID(oneof, false, "Failed to get oneof model");
 
-  const int oneof_value_field_number = shadergen_utils::get_oneof_value_field_number_by_proto_node(proto_node);
+  const int oneof_value_field_number = proto_node->get_oneof_value_field_number();
   result = oneof->set_oneof(oneof_value_field_number);
   CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to set oneof");
 
@@ -2841,336 +2841,371 @@ VisualShaderNodeEmbedWidget::VisualShaderNodeEmbedWidget(VisualShaderGraphicsSce
   layout->setSpacing(2);
   layout->setAlignment(Qt::AlignVCenter | Qt::AlignHCenter);
 
-  if (auto input_node = std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNodeInput>>(proto_node)) {
-    VisualShaderNodeEmbedComboBox* embed_widget =
-        new VisualShaderNodeEmbedComboBox(visual_shader_model, nodes_model, n_id, proto_node, 
-                                          VisualShaderNodeInputType_descriptor(), 
-                                          VisualShaderNodeInput::kTypeFieldNumber);
-    layout->addWidget(embed_widget);
-    QObject::connect(embed_widget, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
-                     &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
-    QObject::connect(embed_widget, &VisualShaderNodeEmbedComboBox::node_update_requested, scene, &VisualShaderGraphicsScene::update_node_in_model);
-    embed_widgets[VisualShaderNodeInput::kTypeFieldNumber] = embed_widget;
-  } else if (auto float_constant_node =
-                 std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNodeFloatConstant>>(proto_node)) {
-    VisualShaderNodeEmbedLineEditFloat* embed_widget =
-        new VisualShaderNodeEmbedLineEditFloat(visual_shader_model, nodes_model, n_id, proto_node, VisualShaderNodeFloatConstant::kValueFieldNumber);
-    layout->addWidget(embed_widget);
-    QObject::connect(embed_widget, &QLineEdit::textChanged, this,
-                     &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
-    QObject::connect(embed_widget, &VisualShaderNodeEmbedLineEditFloat::node_update_requested, scene, &VisualShaderGraphicsScene::update_node_in_model);
-    embed_widgets[VisualShaderNodeFloatConstant::kValueFieldNumber] = embed_widget;
-    embed_widget->setPlaceholderText("Value");
-  } else if (auto int_constant_node = std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNodeIntConstant>>(proto_node)) {
-    VisualShaderNodeEmbedLineEditInt* embed_widget =
-        new VisualShaderNodeEmbedLineEditInt(visual_shader_model, nodes_model, n_id, proto_node, VisualShaderNodeIntConstant::kValueFieldNumber);
-    layout->addWidget(embed_widget);
-    QObject::connect(embed_widget, &QLineEdit::textChanged, this,
-                     &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
-    QObject::connect(embed_widget, &VisualShaderNodeEmbedLineEditInt::node_update_requested, scene, &VisualShaderGraphicsScene::update_node_in_model);
-    embed_widgets[VisualShaderNodeIntConstant::kValueFieldNumber] = embed_widget;
-    embed_widget->setPlaceholderText("Value");
-  } else if (auto uint_constant_node = std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNodeUIntConstant>>(proto_node)) {
-    VisualShaderNodeEmbedLineEditUInt* embed_widget =
-        new VisualShaderNodeEmbedLineEditUInt(visual_shader_model, nodes_model, n_id, proto_node, VisualShaderNodeUIntConstant::kValueFieldNumber);
-    layout->addWidget(embed_widget);
-    QObject::connect(embed_widget, &QLineEdit::textChanged, this,
-                     &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
-    QObject::connect(embed_widget, &VisualShaderNodeEmbedLineEditUInt::node_update_requested, scene, &VisualShaderGraphicsScene::update_node_in_model);
-    embed_widgets[VisualShaderNodeUIntConstant::kValueFieldNumber] = embed_widget;
-    embed_widget->setPlaceholderText("Value");
-  } else if (auto boolean_constant_node =
-                 std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNodeBooleanConstant>>(proto_node)) {
-    VisualShaderNodeEmbedCheckBox* embed_widget =
-        new VisualShaderNodeEmbedCheckBox(visual_shader_model, nodes_model, n_id, proto_node, VisualShaderNodeBooleanConstant::kValueFieldNumber);
-    layout->addWidget(embed_widget);
-    QObject::connect(embed_widget, &QCheckBox::stateChanged, this,
-                     &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
-    QObject::connect(embed_widget, &VisualShaderNodeEmbedCheckBox::node_update_requested, scene, &VisualShaderGraphicsScene::update_node_in_model);
-    embed_widgets[VisualShaderNodeBooleanConstant::kValueFieldNumber] = embed_widget;
-  } else if (auto color_constant_node =
-                 std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNodeColorConstant>>(proto_node)) {
-    VisualShaderNodeEmbedColorPicker* embed_widget =
-        new VisualShaderNodeEmbedColorPicker(visual_shader_model, nodes_model, n_id, proto_node);
-    layout->addWidget(embed_widget);
-    QObject::connect(embed_widget, &VisualShaderNodeEmbedColorPicker::color_changed, this,
-                     &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
-    QObject::connect(embed_widget, &VisualShaderNodeEmbedColorPicker::node_update_requested, scene, &VisualShaderGraphicsScene::update_node_in_model);
-    embed_widgets[VisualShaderNodeColorConstant::kRFieldNumber] = embed_widget;
-    embed_widgets[VisualShaderNodeColorConstant::kGFieldNumber] = embed_widget;
-    embed_widgets[VisualShaderNodeColorConstant::kBFieldNumber] = embed_widget;
-    embed_widgets[VisualShaderNodeColorConstant::kAFieldNumber] = embed_widget;
-  } else if (auto vec2_constant_node = std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNodeVec2Constant>>(proto_node)) {
-    VisualShaderNodeEmbedLineEditFloat* embed_widget =
-        new VisualShaderNodeEmbedLineEditFloat(visual_shader_model, nodes_model, n_id, proto_node, VisualShaderNodeVec2Constant::kXFieldNumber);
-    layout->addWidget(embed_widget);
-    VisualShaderNodeEmbedLineEditFloat* embed_widget2 =
-        new VisualShaderNodeEmbedLineEditFloat(visual_shader_model, nodes_model, n_id, proto_node, VisualShaderNodeVec2Constant::kYFieldNumber);
-    layout->addWidget(embed_widget2);
-    QObject::connect(embed_widget, &QLineEdit::textChanged, this,
-                     &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
-    QObject::connect(embed_widget, &VisualShaderNodeEmbedLineEditFloat::node_update_requested, scene, &VisualShaderGraphicsScene::update_node_in_model);
-    embed_widgets[VisualShaderNodeVec2Constant::kXFieldNumber] = embed_widget;
-    QObject::connect(embed_widget2, &QLineEdit::textChanged, this,
+  switch (proto_node->get_oneof_value_field_number()) {
+    case VisualShader::VisualShaderNode::kInputFieldNumber: {
+      VisualShaderNodeEmbedComboBox* embed_widget =
+          new VisualShaderNodeEmbedComboBox(visual_shader_model, nodes_model, n_id, proto_node, 
+                                            VisualShaderNodeInputType_descriptor(), 
+                                            VisualShaderNodeInput::kTypeFieldNumber);
+      layout->addWidget(embed_widget);
+      QObject::connect(embed_widget, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
                       &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
-    QObject::connect(embed_widget2, &VisualShaderNodeEmbedLineEditFloat::node_update_requested, scene, &VisualShaderGraphicsScene::update_node_in_model);
-    embed_widgets[VisualShaderNodeVec2Constant::kYFieldNumber] = embed_widget2;
-    embed_widget->setPlaceholderText("X");
-    embed_widget2->setPlaceholderText("Y");
-  } else if (auto vec3_constant_node = std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNodeVec3Constant>>(proto_node)) {
-    VisualShaderNodeEmbedLineEditFloat* embed_widget 
-        = new VisualShaderNodeEmbedLineEditFloat(visual_shader_model, nodes_model, n_id, proto_node, VisualShaderNodeVec3Constant::kXFieldNumber);
-    layout->addWidget(embed_widget);
-    VisualShaderNodeEmbedLineEditFloat* embed_widget2 
-        = new VisualShaderNodeEmbedLineEditFloat(visual_shader_model, nodes_model, n_id, proto_node, VisualShaderNodeVec3Constant::kYFieldNumber);
-    layout->addWidget(embed_widget2);
-    VisualShaderNodeEmbedLineEditFloat* embed_widget3 
-        = new VisualShaderNodeEmbedLineEditFloat(visual_shader_model, nodes_model, n_id, proto_node, VisualShaderNodeVec3Constant::kZFieldNumber);
-    layout->addWidget(embed_widget3);
-    QObject::connect(embed_widget, &QLineEdit::textChanged, this,
-                     &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
-    QObject::connect(embed_widget, &VisualShaderNodeEmbedLineEditFloat::node_update_requested, scene, &VisualShaderGraphicsScene::update_node_in_model);
-    embed_widgets[VisualShaderNodeVec3Constant::kXFieldNumber] = embed_widget;
-    QObject::connect(embed_widget2, &QLineEdit::textChanged, this,
+      QObject::connect(embed_widget, &VisualShaderNodeEmbedComboBox::node_update_requested, scene, &VisualShaderGraphicsScene::update_node_in_model);
+      embed_widgets[VisualShaderNodeInput::kTypeFieldNumber] = embed_widget;
+      break;
+    }
+    case VisualShader::VisualShaderNode::kFloatConstantFieldNumber: {
+      VisualShaderNodeEmbedLineEditFloat* embed_widget =
+          new VisualShaderNodeEmbedLineEditFloat(visual_shader_model, nodes_model, n_id, proto_node, VisualShaderNodeFloatConstant::kValueFieldNumber);
+      layout->addWidget(embed_widget);
+      QObject::connect(embed_widget, &QLineEdit::textChanged, this,
                       &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
-    QObject::connect(embed_widget2, &VisualShaderNodeEmbedLineEditFloat::node_update_requested, scene, &VisualShaderGraphicsScene::update_node_in_model);
-    embed_widgets[VisualShaderNodeVec3Constant::kYFieldNumber] = embed_widget2;
-    QObject::connect(embed_widget3, &QLineEdit::textChanged, this,
+      QObject::connect(embed_widget, &VisualShaderNodeEmbedLineEditFloat::node_update_requested, scene, &VisualShaderGraphicsScene::update_node_in_model);
+      embed_widgets[VisualShaderNodeFloatConstant::kValueFieldNumber] = embed_widget;
+      embed_widget->setPlaceholderText("Value");
+      break;
+    }
+    case VisualShader::VisualShaderNode::kIntConstantFieldNumber: {
+      VisualShaderNodeEmbedLineEditInt* embed_widget =
+          new VisualShaderNodeEmbedLineEditInt(visual_shader_model, nodes_model, n_id, proto_node, VisualShaderNodeIntConstant::kValueFieldNumber);
+      layout->addWidget(embed_widget);
+      QObject::connect(embed_widget, &QLineEdit::textChanged, this,
                       &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
-    QObject::connect(embed_widget3, &VisualShaderNodeEmbedLineEditFloat::node_update_requested, scene, &VisualShaderGraphicsScene::update_node_in_model);
-    embed_widgets[VisualShaderNodeVec3Constant::kZFieldNumber] = embed_widget3;
-    embed_widget->setPlaceholderText("X");
-    embed_widget2->setPlaceholderText("Y");
-    embed_widget3->setPlaceholderText("Z");
-  } else if (auto vec4_constant_node = std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNodeVec4Constant>>(proto_node)) {
-    VisualShaderNodeEmbedLineEditFloat* embed_widget 
-        = new VisualShaderNodeEmbedLineEditFloat(visual_shader_model, nodes_model, n_id, proto_node, VisualShaderNodeVec4Constant::kXFieldNumber);
-    layout->addWidget(embed_widget);
-    VisualShaderNodeEmbedLineEditFloat* embed_widget2 
-        = new VisualShaderNodeEmbedLineEditFloat(visual_shader_model, nodes_model, n_id, proto_node, VisualShaderNodeVec4Constant::kYFieldNumber);
-    layout->addWidget(embed_widget2);
-    VisualShaderNodeEmbedLineEditFloat* embed_widget3 
-        = new VisualShaderNodeEmbedLineEditFloat(visual_shader_model, nodes_model, n_id, proto_node, VisualShaderNodeVec4Constant::kZFieldNumber);
-    layout->addWidget(embed_widget3);
-    VisualShaderNodeEmbedLineEditFloat* embed_widget4 
-        = new VisualShaderNodeEmbedLineEditFloat(visual_shader_model, nodes_model, n_id, proto_node, VisualShaderNodeVec4Constant::kWFieldNumber);
-    layout->addWidget(embed_widget4);
-    QObject::connect(embed_widget, &QLineEdit::textChanged, this,
-                     &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
-    QObject::connect(embed_widget, &VisualShaderNodeEmbedLineEditFloat::node_update_requested, scene, &VisualShaderGraphicsScene::update_node_in_model);
-    embed_widgets[VisualShaderNodeVec4Constant::kXFieldNumber] = embed_widget;
-    QObject::connect(embed_widget2, &QLineEdit::textChanged, this,
+      QObject::connect(embed_widget, &VisualShaderNodeEmbedLineEditInt::node_update_requested, scene, &VisualShaderGraphicsScene::update_node_in_model);
+      embed_widgets[VisualShaderNodeIntConstant::kValueFieldNumber] = embed_widget;
+      embed_widget->setPlaceholderText("Value");
+      break;
+    }
+    case VisualShader::VisualShaderNode::kUintConstantFieldNumber: {
+      VisualShaderNodeEmbedLineEditUInt* embed_widget =
+          new VisualShaderNodeEmbedLineEditUInt(visual_shader_model, nodes_model, n_id, proto_node, VisualShaderNodeUIntConstant::kValueFieldNumber);
+      layout->addWidget(embed_widget);
+      QObject::connect(embed_widget, &QLineEdit::textChanged, this,
                       &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
-    QObject::connect(embed_widget2, &VisualShaderNodeEmbedLineEditFloat::node_update_requested, scene, &VisualShaderGraphicsScene::update_node_in_model);
-    embed_widgets[VisualShaderNodeVec4Constant::kYFieldNumber] = embed_widget2;
-    QObject::connect(embed_widget3, &QLineEdit::textChanged, this,
+      QObject::connect(embed_widget, &VisualShaderNodeEmbedLineEditUInt::node_update_requested, scene, &VisualShaderGraphicsScene::update_node_in_model);
+      embed_widgets[VisualShaderNodeUIntConstant::kValueFieldNumber] = embed_widget;
+      embed_widget->setPlaceholderText("Value");
+      break;
+    }
+    case VisualShader::VisualShaderNode::kBooleanConstantFieldNumber: {
+      VisualShaderNodeEmbedCheckBox* embed_widget =
+          new VisualShaderNodeEmbedCheckBox(visual_shader_model, nodes_model, n_id, proto_node, VisualShaderNodeBooleanConstant::kValueFieldNumber);
+      layout->addWidget(embed_widget);
+      QObject::connect(embed_widget, &QCheckBox::stateChanged, this,
                       &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
-    QObject::connect(embed_widget3, &VisualShaderNodeEmbedLineEditFloat::node_update_requested, scene, &VisualShaderGraphicsScene::update_node_in_model);
-    embed_widgets[VisualShaderNodeVec4Constant::kZFieldNumber] = embed_widget3;
-    QObject::connect(embed_widget4, &QLineEdit::textChanged, this,
+      QObject::connect(embed_widget, &VisualShaderNodeEmbedCheckBox::node_update_requested, scene, &VisualShaderGraphicsScene::update_node_in_model);
+      embed_widgets[VisualShaderNodeBooleanConstant::kValueFieldNumber] = embed_widget;
+      break;
+    }
+    case VisualShader::VisualShaderNode::kColorConstantFieldNumber: {
+      VisualShaderNodeEmbedColorPicker* embed_widget =
+          new VisualShaderNodeEmbedColorPicker(visual_shader_model, nodes_model, n_id, proto_node);
+      layout->addWidget(embed_widget);
+      QObject::connect(embed_widget, &VisualShaderNodeEmbedColorPicker::color_changed, this,
                       &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
-    QObject::connect(embed_widget4, &VisualShaderNodeEmbedLineEditFloat::node_update_requested, scene, &VisualShaderGraphicsScene::update_node_in_model);
-    embed_widgets[VisualShaderNodeVec4Constant::kWFieldNumber] = embed_widget4;
-    embed_widget->setPlaceholderText("X");
-    embed_widget2->setPlaceholderText("Y");
-    embed_widget3->setPlaceholderText("Z");
-    embed_widget4->setPlaceholderText("W");
-  } else if (auto float_op_node = std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNodeFloatOp>>(proto_node)) {
-    VisualShaderNodeEmbedComboBox* embed_widget =
-        new VisualShaderNodeEmbedComboBox(visual_shader_model, nodes_model, n_id, proto_node, 
-                                          VisualShaderNodeFloatOp::VisualShaderNodeFloatOpType_descriptor(), 
-                                          VisualShaderNodeFloatOp::kOpFieldNumber);
-    layout->addWidget(embed_widget);
-    QObject::connect(embed_widget, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
-                     &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
-    QObject::connect(embed_widget, &VisualShaderNodeEmbedComboBox::node_update_requested, scene, &VisualShaderGraphicsScene::update_node_in_model);
-    embed_widgets[VisualShaderNodeFloatOp::kOpFieldNumber] = embed_widget;
-  } else if (auto int_op_node = std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNodeIntOp>>(proto_node)) {
-    VisualShaderNodeEmbedComboBox* embed_widget =
-        new VisualShaderNodeEmbedComboBox(visual_shader_model, nodes_model, n_id, proto_node, 
-                                          VisualShaderNodeIntOp::VisualShaderNodeIntOpType_descriptor(), 
-                                          VisualShaderNodeIntOp::kOpFieldNumber);
-    layout->addWidget(embed_widget);
-    QObject::connect(embed_widget, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
-                     &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
-    QObject::connect(embed_widget, &VisualShaderNodeEmbedComboBox::node_update_requested, scene, &VisualShaderGraphicsScene::update_node_in_model);
-    embed_widgets[VisualShaderNodeIntOp::kOpFieldNumber] = embed_widget;
-  } else if (auto uint_op_node = std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNodeUIntOp>>(proto_node)) {
-    VisualShaderNodeEmbedComboBox* embed_widget =
-        new VisualShaderNodeEmbedComboBox(visual_shader_model, nodes_model, n_id, proto_node, 
-                                          VisualShaderNodeUIntOp::VisualShaderNodeUIntOpType_descriptor(), 
-                                          VisualShaderNodeUIntOp::kOpFieldNumber);
-    layout->addWidget(embed_widget);
-    QObject::connect(embed_widget, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
-                     &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
-    QObject::connect(embed_widget, &VisualShaderNodeEmbedComboBox::node_update_requested, scene, &VisualShaderGraphicsScene::update_node_in_model);
-    embed_widgets[VisualShaderNodeUIntOp::kOpFieldNumber] = embed_widget;
-  } else if (auto vector_op_node = std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNodeVectorOp>>(proto_node)) {
-    VisualShaderNodeEmbedComboBox* embed_widget =
-        new VisualShaderNodeEmbedComboBox(visual_shader_model, nodes_model, n_id, proto_node, 
-                                          VisualShaderNodeVectorType_descriptor(), 
-                                          VisualShaderNodeVectorOp::kTypeFieldNumber);
-    layout->addWidget(embed_widget);
-    VisualShaderNodeEmbedComboBox* embed_widget2 =
-        new VisualShaderNodeEmbedComboBox(visual_shader_model, nodes_model, n_id, proto_node, 
-                                          VisualShaderNodeVectorOp::VisualShaderNodeVectorOpType_descriptor(), 
-                                          VisualShaderNodeVectorOp::kOpFieldNumber);
-    layout->addWidget(embed_widget2);
-    QObject::connect(embed_widget, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
-                     &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
-    QObject::connect(embed_widget, &VisualShaderNodeEmbedComboBox::node_update_requested, scene, &VisualShaderGraphicsScene::update_node_in_model);
-    embed_widgets[VisualShaderNodeVectorOp::kTypeFieldNumber] = embed_widget;
-    QObject::connect(embed_widget2, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
-                     &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
-    QObject::connect(embed_widget2, &VisualShaderNodeEmbedComboBox::node_update_requested, scene, &VisualShaderGraphicsScene::update_node_in_model);
-    embed_widgets[VisualShaderNodeVectorOp::kOpFieldNumber] = embed_widget2;
-  } else if (auto float_func_node = std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNodeFloatFunc>>(proto_node)) {
-    VisualShaderNodeEmbedComboBox* embed_widget =
-        new VisualShaderNodeEmbedComboBox(visual_shader_model, nodes_model, n_id, proto_node, 
-                                          VisualShaderNodeFloatFunc::VisualShaderNodeFloatFuncType_descriptor(), 
-                                          VisualShaderNodeFloatFunc::kFuncFieldNumber);
-    layout->addWidget(embed_widget);
-    QObject::connect(embed_widget, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
-                     &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
-    QObject::connect(embed_widget, &VisualShaderNodeEmbedComboBox::node_update_requested, scene, &VisualShaderGraphicsScene::update_node_in_model);
-    embed_widgets[VisualShaderNodeFloatFunc::kFuncFieldNumber] = embed_widget;
-  } else if (auto int_func_node = std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNodeIntFunc>>(proto_node)) {
-    VisualShaderNodeEmbedComboBox* embed_widget =
-        new VisualShaderNodeEmbedComboBox(visual_shader_model, nodes_model, n_id, proto_node, 
-                                          VisualShaderNodeIntFunc::VisualShaderNodeIntFuncType_descriptor(), 
-                                          VisualShaderNodeIntFunc::kFuncFieldNumber);
-    layout->addWidget(embed_widget);
-    QObject::connect(embed_widget, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
-                     &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
-    QObject::connect(embed_widget, &VisualShaderNodeEmbedComboBox::node_update_requested, scene, &VisualShaderGraphicsScene::update_node_in_model);
-    embed_widgets[VisualShaderNodeIntFunc::kFuncFieldNumber] = embed_widget;
-  } else if (auto uint_func_node = std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNodeUIntFunc>>(proto_node)) {
-    VisualShaderNodeEmbedComboBox* embed_widget =
-        new VisualShaderNodeEmbedComboBox(visual_shader_model, nodes_model, n_id, proto_node, 
-                                          VisualShaderNodeUIntFunc::VisualShaderNodeUIntFuncType_descriptor(), 
-                                          VisualShaderNodeUIntFunc::kFuncFieldNumber);
-    layout->addWidget(embed_widget);
-    QObject::connect(embed_widget, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
-                     &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
-    QObject::connect(embed_widget, &VisualShaderNodeEmbedComboBox::node_update_requested, scene, &VisualShaderGraphicsScene::update_node_in_model);
-    embed_widgets[VisualShaderNodeUIntFunc::kFuncFieldNumber] = embed_widget;
-  } else if (auto vector_func_node = std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNodeVectorFunc>>(proto_node)) {
-    VisualShaderNodeEmbedComboBox* embed_widget =
-        new VisualShaderNodeEmbedComboBox(visual_shader_model, nodes_model, n_id, proto_node, 
-                                          VisualShaderNodeVectorType_descriptor(), 
-                                          VisualShaderNodeVectorFunc::kTypeFieldNumber);
-    layout->addWidget(embed_widget);
-    VisualShaderNodeEmbedComboBox* embed_widget2 =
-        new VisualShaderNodeEmbedComboBox(visual_shader_model, nodes_model, n_id, proto_node, 
-                                          VisualShaderNodeVectorFunc::VisualShaderNodeVectorFuncType_descriptor(), 
-                                          VisualShaderNodeVectorFunc::kFuncFieldNumber);
-    layout->addWidget(embed_widget2);
-    QObject::connect(embed_widget, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
-                     &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
-    QObject::connect(embed_widget, &VisualShaderNodeEmbedComboBox::node_update_requested, scene, &VisualShaderGraphicsScene::update_node_in_model);
-    embed_widgets[VisualShaderNodeVectorFunc::kTypeFieldNumber] = embed_widget;
-    QObject::connect(embed_widget2, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
-                     &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
-    QObject::connect(embed_widget2, &VisualShaderNodeEmbedComboBox::node_update_requested, scene, &VisualShaderGraphicsScene::update_node_in_model);
-    embed_widgets[VisualShaderNodeVectorFunc::kFuncFieldNumber] = embed_widget2;
-  } else if (auto value_noise_node = std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNodeValueNoise>>(proto_node)) {
-    VisualShaderNodeEmbedLineEditFloat* embed_widget =
-        new VisualShaderNodeEmbedLineEditFloat(visual_shader_model, nodes_model, n_id, proto_node, VisualShaderNodeValueNoise::kScaleFieldNumber);
-    layout->addWidget(embed_widget);
-    QObject::connect(embed_widget, &QLineEdit::textChanged, this,
-                     &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
-    QObject::connect(embed_widget, &VisualShaderNodeEmbedLineEditFloat::node_update_requested, scene, &VisualShaderGraphicsScene::update_node_in_model);
-    embed_widgets[VisualShaderNodeValueNoise::kScaleFieldNumber] = embed_widget;
-    embed_widget->setPlaceholderText("Scale");
-  } else if (auto perlin_noise_node = std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNodePerlinNoise>>(proto_node)) {
-    VisualShaderNodeEmbedLineEditFloat* embed_widget =
-        new VisualShaderNodeEmbedLineEditFloat(visual_shader_model, nodes_model, n_id, proto_node, VisualShaderNodePerlinNoise::kScaleFieldNumber);
-    layout->addWidget(embed_widget);
-    QObject::connect(embed_widget, &QLineEdit::textChanged, this,
-                     &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
-    QObject::connect(embed_widget, &VisualShaderNodeEmbedLineEditFloat::node_update_requested, scene, &VisualShaderGraphicsScene::update_node_in_model);
-    embed_widgets[VisualShaderNodePerlinNoise::kScaleFieldNumber] = embed_widget;
-    embed_widget->setPlaceholderText("Scale");
-  } else if (auto voronoi_noise_node = std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNodeVoronoiNoise>>(proto_node)) {
-    VisualShaderNodeEmbedLineEditFloat* embed_widget =
-        new VisualShaderNodeEmbedLineEditFloat(visual_shader_model, nodes_model, n_id, proto_node, VisualShaderNodeVoronoiNoise::kAngleOffsetFieldNumber);
-    VisualShaderNodeEmbedLineEditFloat* embed_widget2 =
-        new VisualShaderNodeEmbedLineEditFloat(visual_shader_model, nodes_model, n_id, proto_node, VisualShaderNodeVoronoiNoise::kCellDensityFieldNumber);
-    layout->addWidget(embed_widget);
-    layout->addWidget(embed_widget2);
-    QObject::connect(embed_widget, &QLineEdit::textChanged, this,
-                     &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
-    QObject::connect(embed_widget, &VisualShaderNodeEmbedLineEditFloat::node_update_requested, scene, &VisualShaderGraphicsScene::update_node_in_model);
-    embed_widgets[VisualShaderNodeVoronoiNoise::kAngleOffsetFieldNumber] = embed_widget;
-    QObject::connect(embed_widget2, &QLineEdit::textChanged, this,
-                     &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
-    QObject::connect(embed_widget2, &VisualShaderNodeEmbedLineEditFloat::node_update_requested, scene, &VisualShaderGraphicsScene::update_node_in_model);
-    embed_widgets[VisualShaderNodeVoronoiNoise::kCellDensityFieldNumber] = embed_widget2;
-    embed_widget->setPlaceholderText("Angle Offset");
-    embed_widget2->setPlaceholderText("Cell Density");
-  } else if (auto dot_product_node = std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNodeDotProduct>>(proto_node)) {
-  } else if (auto vector_len_node = std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNodeVectorLen>>(proto_node)) {
-  } else if (auto clamp_node = std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNodeClamp>>(proto_node)) {
-  } else if (auto step_node = std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNodeStep>>(proto_node)) {
-  } else if (auto smooth_step_node = std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNodeSmoothStep>>(proto_node)) {
-  } else if (auto vector_distance_node =
-                 std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNodeVectorDistance>>(proto_node)) {
-  } else if (auto mix_node = std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNodeMix>>(proto_node)) {
-  } else if (auto vector_compose_2d_node =
-                 std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNode2dVectorCompose>>(proto_node)) {
-  } else if (auto vector_compose_3d_node =
-                 std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNode3dVectorCompose>>(proto_node)) {
-  } else if (auto vector_compose_4d_node =
-                 std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNode4dVectorCompose>>(proto_node)) {
-  } else if (auto vector_decompose_2d_node =
-                 std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNode2dVectorDecompose>>(proto_node)) {
-  } else if (auto vector_decompose_3d_node =
-                 std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNode3dVectorDecompose>>(proto_node)) {
-  } else if (auto vector_decompose_4d_node =
-                 std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNode4dVectorDecompose>>(proto_node)) {
-  } else if (auto if_node = std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNodeIf>>(proto_node)) {
-  } else if (auto switch_node = std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNodeSwitch>>(proto_node)) {
-    
-  } else if (auto is_node = std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNodeIs>>(proto_node)) {
-    VisualShaderNodeEmbedComboBox* embed_widget =
-        new VisualShaderNodeEmbedComboBox(visual_shader_model, nodes_model, n_id, proto_node, 
-                                          VisualShaderNodeIs::Function_descriptor(), 
-                                          VisualShaderNodeIs::kFuncFieldNumber);
-    layout->addWidget(embed_widget);
-    QObject::connect(embed_widget, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
-                     &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
-    QObject::connect(embed_widget, &VisualShaderNodeEmbedComboBox::node_update_requested, scene, &VisualShaderGraphicsScene::update_node_in_model);
-    embed_widgets[VisualShaderNodeIs::kFuncFieldNumber] = embed_widget;
-  } else if (auto compare_node = std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNodeCompare>>(proto_node)) {
-    VisualShaderNodeEmbedComboBox* embed_widget =
-        new VisualShaderNodeEmbedComboBox(visual_shader_model, nodes_model, n_id, proto_node, 
-                                          VisualShaderNodeCompare::ComparisonType_descriptor(), 
-                                          VisualShaderNodeCompare::kTypeFieldNumber);
-    layout->addWidget(embed_widget);
-    VisualShaderNodeEmbedComboBox* embed_widget2 =
-        new VisualShaderNodeEmbedComboBox(visual_shader_model, nodes_model, n_id, proto_node, 
-                                          VisualShaderNodeCompare::Function_descriptor(), 
-                                          VisualShaderNodeCompare::kFuncFieldNumber);
-    layout->addWidget(embed_widget2);
-    VisualShaderNodeEmbedComboBox* embed_widget3 =
-        new VisualShaderNodeEmbedComboBox(visual_shader_model, nodes_model, n_id, proto_node, 
-                                          VisualShaderNodeCompare::Condition_descriptor(), 
-                                          VisualShaderNodeCompare::kCondFieldNumber);
-    layout->addWidget(embed_widget3);
-    QObject::connect(embed_widget, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
-                     &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
-    QObject::connect(embed_widget, &VisualShaderNodeEmbedComboBox::node_update_requested, scene, &VisualShaderGraphicsScene::update_node_in_model);
-    embed_widgets[VisualShaderNodeCompare::kTypeFieldNumber] = embed_widget;
-    QObject::connect(embed_widget2, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
+      QObject::connect(embed_widget, &VisualShaderNodeEmbedColorPicker::node_update_requested, scene, &VisualShaderGraphicsScene::update_node_in_model);
+      embed_widgets[VisualShaderNodeColorConstant::kRFieldNumber] = embed_widget;
+      embed_widgets[VisualShaderNodeColorConstant::kGFieldNumber] = embed_widget;
+      embed_widgets[VisualShaderNodeColorConstant::kBFieldNumber] = embed_widget;
+      embed_widgets[VisualShaderNodeColorConstant::kAFieldNumber] = embed_widget;
+      break;
+    }
+    case VisualShader::VisualShaderNode::kVec2ConstantFieldNumber: {
+      VisualShaderNodeEmbedLineEditFloat* embed_widget =
+          new VisualShaderNodeEmbedLineEditFloat(visual_shader_model, nodes_model, n_id, proto_node, VisualShaderNodeVec2Constant::kXFieldNumber);
+      layout->addWidget(embed_widget);
+      VisualShaderNodeEmbedLineEditFloat* embed_widget2 =
+          new VisualShaderNodeEmbedLineEditFloat(visual_shader_model, nodes_model, n_id, proto_node, VisualShaderNodeVec2Constant::kYFieldNumber);
+      layout->addWidget(embed_widget2);
+      QObject::connect(embed_widget, &QLineEdit::textChanged, this,
                       &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
-    QObject::connect(embed_widget2, &VisualShaderNodeEmbedComboBox::node_update_requested, scene, &VisualShaderGraphicsScene::update_node_in_model);
-    embed_widgets[VisualShaderNodeCompare::kFuncFieldNumber] = embed_widget2;
-    QObject::connect(embed_widget3, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
+      QObject::connect(embed_widget, &VisualShaderNodeEmbedLineEditFloat::node_update_requested, scene, &VisualShaderGraphicsScene::update_node_in_model);
+      embed_widgets[VisualShaderNodeVec2Constant::kXFieldNumber] = embed_widget;
+      QObject::connect(embed_widget2, &QLineEdit::textChanged, this,
+                        &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
+      QObject::connect(embed_widget2, &VisualShaderNodeEmbedLineEditFloat::node_update_requested, scene, &VisualShaderGraphicsScene::update_node_in_model);
+      embed_widgets[VisualShaderNodeVec2Constant::kYFieldNumber] = embed_widget2;
+      embed_widget->setPlaceholderText("X");
+      embed_widget2->setPlaceholderText("Y");
+      break;
+    }
+    case VisualShader::VisualShaderNode::kVec3ConstantFieldNumber: {
+      VisualShaderNodeEmbedLineEditFloat* embed_widget 
+          = new VisualShaderNodeEmbedLineEditFloat(visual_shader_model, nodes_model, n_id, proto_node, VisualShaderNodeVec3Constant::kXFieldNumber);
+      layout->addWidget(embed_widget);
+      VisualShaderNodeEmbedLineEditFloat* embed_widget2 
+          = new VisualShaderNodeEmbedLineEditFloat(visual_shader_model, nodes_model, n_id, proto_node, VisualShaderNodeVec3Constant::kYFieldNumber);
+      layout->addWidget(embed_widget2);
+      VisualShaderNodeEmbedLineEditFloat* embed_widget3 
+          = new VisualShaderNodeEmbedLineEditFloat(visual_shader_model, nodes_model, n_id, proto_node, VisualShaderNodeVec3Constant::kZFieldNumber);
+      layout->addWidget(embed_widget3);
+      QObject::connect(embed_widget, &QLineEdit::textChanged, this,
                       &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
-    QObject::connect(embed_widget3, &VisualShaderNodeEmbedComboBox::node_update_requested, scene, &VisualShaderGraphicsScene::update_node_in_model);
-    embed_widgets[VisualShaderNodeCompare::kCondFieldNumber] = embed_widget3;
-  } else {
-    FAIL_AND_RETURN("Unknown node type");
+      QObject::connect(embed_widget, &VisualShaderNodeEmbedLineEditFloat::node_update_requested, scene, &VisualShaderGraphicsScene::update_node_in_model);
+      embed_widgets[VisualShaderNodeVec3Constant::kXFieldNumber] = embed_widget;
+      QObject::connect(embed_widget2, &QLineEdit::textChanged, this,
+                        &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
+      QObject::connect(embed_widget2, &VisualShaderNodeEmbedLineEditFloat::node_update_requested, scene, &VisualShaderGraphicsScene::update_node_in_model);
+      embed_widgets[VisualShaderNodeVec3Constant::kYFieldNumber] = embed_widget2;
+      QObject::connect(embed_widget3, &QLineEdit::textChanged, this,
+                        &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
+      QObject::connect(embed_widget3, &VisualShaderNodeEmbedLineEditFloat::node_update_requested, scene, &VisualShaderGraphicsScene::update_node_in_model);
+      embed_widgets[VisualShaderNodeVec3Constant::kZFieldNumber] = embed_widget3;
+      embed_widget->setPlaceholderText("X");
+      embed_widget2->setPlaceholderText("Y");
+      embed_widget3->setPlaceholderText("Z");
+      break;
+    }
+    case VisualShader::VisualShaderNode::kVec4ConstantFieldNumber: {
+      VisualShaderNodeEmbedLineEditFloat* embed_widget 
+          = new VisualShaderNodeEmbedLineEditFloat(visual_shader_model, nodes_model, n_id, proto_node, VisualShaderNodeVec4Constant::kXFieldNumber);
+      layout->addWidget(embed_widget);
+      VisualShaderNodeEmbedLineEditFloat* embed_widget2 
+          = new VisualShaderNodeEmbedLineEditFloat(visual_shader_model, nodes_model, n_id, proto_node, VisualShaderNodeVec4Constant::kYFieldNumber);
+      layout->addWidget(embed_widget2);
+      VisualShaderNodeEmbedLineEditFloat* embed_widget3 
+          = new VisualShaderNodeEmbedLineEditFloat(visual_shader_model, nodes_model, n_id, proto_node, VisualShaderNodeVec4Constant::kZFieldNumber);
+      layout->addWidget(embed_widget3);
+      VisualShaderNodeEmbedLineEditFloat* embed_widget4 
+          = new VisualShaderNodeEmbedLineEditFloat(visual_shader_model, nodes_model, n_id, proto_node, VisualShaderNodeVec4Constant::kWFieldNumber);
+      layout->addWidget(embed_widget4);
+      QObject::connect(embed_widget, &QLineEdit::textChanged, this,
+                      &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
+      QObject::connect(embed_widget, &VisualShaderNodeEmbedLineEditFloat::node_update_requested, scene, &VisualShaderGraphicsScene::update_node_in_model);
+      embed_widgets[VisualShaderNodeVec4Constant::kXFieldNumber] = embed_widget;
+      QObject::connect(embed_widget2, &QLineEdit::textChanged, this,
+                        &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
+      QObject::connect(embed_widget2, &VisualShaderNodeEmbedLineEditFloat::node_update_requested, scene, &VisualShaderGraphicsScene::update_node_in_model);
+      embed_widgets[VisualShaderNodeVec4Constant::kYFieldNumber] = embed_widget2;
+      QObject::connect(embed_widget3, &QLineEdit::textChanged, this,
+                        &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
+      QObject::connect(embed_widget3, &VisualShaderNodeEmbedLineEditFloat::node_update_requested, scene, &VisualShaderGraphicsScene::update_node_in_model);
+      embed_widgets[VisualShaderNodeVec4Constant::kZFieldNumber] = embed_widget3;
+      QObject::connect(embed_widget4, &QLineEdit::textChanged, this,
+                        &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
+      QObject::connect(embed_widget4, &VisualShaderNodeEmbedLineEditFloat::node_update_requested, scene, &VisualShaderGraphicsScene::update_node_in_model);
+      embed_widgets[VisualShaderNodeVec4Constant::kWFieldNumber] = embed_widget4;
+      embed_widget->setPlaceholderText("X");
+      embed_widget2->setPlaceholderText("Y");
+      embed_widget3->setPlaceholderText("Z");
+      embed_widget4->setPlaceholderText("W");
+      break;
+    }
+    case VisualShader::VisualShaderNode::kFloatOpFieldNumber: {
+      VisualShaderNodeEmbedComboBox* embed_widget =
+          new VisualShaderNodeEmbedComboBox(visual_shader_model, nodes_model, n_id, proto_node, 
+                                            VisualShaderNodeFloatOp::VisualShaderNodeFloatOpType_descriptor(), 
+                                            VisualShaderNodeFloatOp::kOpFieldNumber);
+      layout->addWidget(embed_widget);
+      QObject::connect(embed_widget, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
+                      &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
+      QObject::connect(embed_widget, &VisualShaderNodeEmbedComboBox::node_update_requested, scene, &VisualShaderGraphicsScene::update_node_in_model);
+      embed_widgets[VisualShaderNodeFloatOp::kOpFieldNumber] = embed_widget;
+      break;
+    }
+    case VisualShader::VisualShaderNode::kIntOpFieldNumber: {
+      VisualShaderNodeEmbedComboBox* embed_widget =
+          new VisualShaderNodeEmbedComboBox(visual_shader_model, nodes_model, n_id, proto_node, 
+                                            VisualShaderNodeIntOp::VisualShaderNodeIntOpType_descriptor(), 
+                                            VisualShaderNodeIntOp::kOpFieldNumber);
+      layout->addWidget(embed_widget);
+      QObject::connect(embed_widget, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
+                      &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
+      QObject::connect(embed_widget, &VisualShaderNodeEmbedComboBox::node_update_requested, scene, &VisualShaderGraphicsScene::update_node_in_model);
+      embed_widgets[VisualShaderNodeIntOp::kOpFieldNumber] = embed_widget;
+      break;
+    }
+    case VisualShader::VisualShaderNode::kUintOpFieldNumber: {
+      VisualShaderNodeEmbedComboBox* embed_widget =
+          new VisualShaderNodeEmbedComboBox(visual_shader_model, nodes_model, n_id, proto_node, 
+                                            VisualShaderNodeUIntOp::VisualShaderNodeUIntOpType_descriptor(), 
+                                            VisualShaderNodeUIntOp::kOpFieldNumber);
+      layout->addWidget(embed_widget);
+      QObject::connect(embed_widget, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
+                      &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
+      QObject::connect(embed_widget, &VisualShaderNodeEmbedComboBox::node_update_requested, scene, &VisualShaderGraphicsScene::update_node_in_model);
+      embed_widgets[VisualShaderNodeUIntOp::kOpFieldNumber] = embed_widget;
+      break;
+    }
+    case VisualShader::VisualShaderNode::kVectorOpFieldNumber: {
+      VisualShaderNodeEmbedComboBox* embed_widget =
+          new VisualShaderNodeEmbedComboBox(visual_shader_model, nodes_model, n_id, proto_node, 
+                                            VisualShaderNodeVectorType_descriptor(), 
+                                            VisualShaderNodeVectorOp::kTypeFieldNumber);
+      layout->addWidget(embed_widget);
+      VisualShaderNodeEmbedComboBox* embed_widget2 =
+          new VisualShaderNodeEmbedComboBox(visual_shader_model, nodes_model, n_id, proto_node, 
+                                            VisualShaderNodeVectorOp::VisualShaderNodeVectorOpType_descriptor(), 
+                                            VisualShaderNodeVectorOp::kOpFieldNumber);
+      layout->addWidget(embed_widget2);
+      QObject::connect(embed_widget, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
+                      &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
+      QObject::connect(embed_widget, &VisualShaderNodeEmbedComboBox::node_update_requested, scene, &VisualShaderGraphicsScene::update_node_in_model);
+      embed_widgets[VisualShaderNodeVectorOp::kTypeFieldNumber] = embed_widget;
+      QObject::connect(embed_widget2, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
+                      &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
+      QObject::connect(embed_widget2, &VisualShaderNodeEmbedComboBox::node_update_requested, scene, &VisualShaderGraphicsScene::update_node_in_model);
+      embed_widgets[VisualShaderNodeVectorOp::kOpFieldNumber] = embed_widget2;
+      break;
+    }
+    case VisualShader::VisualShaderNode::kFloatFuncFieldNumber: {
+      VisualShaderNodeEmbedComboBox* embed_widget =
+          new VisualShaderNodeEmbedComboBox(visual_shader_model, nodes_model, n_id, proto_node, 
+                                            VisualShaderNodeFloatFunc::VisualShaderNodeFloatFuncType_descriptor(), 
+                                            VisualShaderNodeFloatFunc::kFuncFieldNumber);
+      layout->addWidget(embed_widget);
+      QObject::connect(embed_widget, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
+                      &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
+      QObject::connect(embed_widget, &VisualShaderNodeEmbedComboBox::node_update_requested, scene, &VisualShaderGraphicsScene::update_node_in_model);
+      embed_widgets[VisualShaderNodeFloatFunc::kFuncFieldNumber] = embed_widget;
+      break;
+    }
+    case VisualShader::VisualShaderNode::kIntFuncFieldNumber: {
+      VisualShaderNodeEmbedComboBox* embed_widget =
+          new VisualShaderNodeEmbedComboBox(visual_shader_model, nodes_model, n_id, proto_node, 
+                                            VisualShaderNodeIntFunc::VisualShaderNodeIntFuncType_descriptor(), 
+                                            VisualShaderNodeIntFunc::kFuncFieldNumber);
+      layout->addWidget(embed_widget);
+      QObject::connect(embed_widget, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
+                      &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
+      QObject::connect(embed_widget, &VisualShaderNodeEmbedComboBox::node_update_requested, scene, &VisualShaderGraphicsScene::update_node_in_model);
+      embed_widgets[VisualShaderNodeIntFunc::kFuncFieldNumber] = embed_widget;
+      break;
+    }
+    case VisualShader::VisualShaderNode::kUintFuncFieldNumber: {
+      VisualShaderNodeEmbedComboBox* embed_widget =
+          new VisualShaderNodeEmbedComboBox(visual_shader_model, nodes_model, n_id, proto_node, 
+                                            VisualShaderNodeUIntFunc::VisualShaderNodeUIntFuncType_descriptor(), 
+                                            VisualShaderNodeUIntFunc::kFuncFieldNumber);
+      layout->addWidget(embed_widget);
+      QObject::connect(embed_widget, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
+                      &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
+      QObject::connect(embed_widget, &VisualShaderNodeEmbedComboBox::node_update_requested, scene, &VisualShaderGraphicsScene::update_node_in_model);
+      embed_widgets[VisualShaderNodeUIntFunc::kFuncFieldNumber] = embed_widget;
+      break;
+    }
+    case VisualShader::VisualShaderNode::kVectorFuncFieldNumber: {
+      VisualShaderNodeEmbedComboBox* embed_widget =
+          new VisualShaderNodeEmbedComboBox(visual_shader_model, nodes_model, n_id, proto_node, 
+                                            VisualShaderNodeVectorType_descriptor(), 
+                                            VisualShaderNodeVectorFunc::kTypeFieldNumber);
+      layout->addWidget(embed_widget);
+      VisualShaderNodeEmbedComboBox* embed_widget2 =
+          new VisualShaderNodeEmbedComboBox(visual_shader_model, nodes_model, n_id, proto_node, 
+                                            VisualShaderNodeVectorFunc::VisualShaderNodeVectorFuncType_descriptor(), 
+                                            VisualShaderNodeVectorFunc::kFuncFieldNumber);
+      layout->addWidget(embed_widget2);
+      QObject::connect(embed_widget, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
+                      &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
+      QObject::connect(embed_widget, &VisualShaderNodeEmbedComboBox::node_update_requested, scene, &VisualShaderGraphicsScene::update_node_in_model);
+      embed_widgets[VisualShaderNodeVectorFunc::kTypeFieldNumber] = embed_widget;
+      QObject::connect(embed_widget2, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
+                      &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
+      QObject::connect(embed_widget2, &VisualShaderNodeEmbedComboBox::node_update_requested, scene, &VisualShaderGraphicsScene::update_node_in_model);
+      embed_widgets[VisualShaderNodeVectorFunc::kFuncFieldNumber] = embed_widget2;
+      break;
+    }
+    case VisualShader::VisualShaderNode::kValueNoiseFieldNumber: {
+      VisualShaderNodeEmbedLineEditFloat* embed_widget =
+          new VisualShaderNodeEmbedLineEditFloat(visual_shader_model, nodes_model, n_id, proto_node, VisualShaderNodeValueNoise::kScaleFieldNumber);
+      layout->addWidget(embed_widget);
+      QObject::connect(embed_widget, &QLineEdit::textChanged, this,
+                      &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
+      QObject::connect(embed_widget, &VisualShaderNodeEmbedLineEditFloat::node_update_requested, scene, &VisualShaderGraphicsScene::update_node_in_model);
+      embed_widgets[VisualShaderNodeValueNoise::kScaleFieldNumber] = embed_widget;
+      embed_widget->setPlaceholderText("Scale");
+      break;
+    }
+    case VisualShader::VisualShaderNode::kPerlinNoiseFieldNumber: {
+      VisualShaderNodeEmbedLineEditFloat* embed_widget =
+          new VisualShaderNodeEmbedLineEditFloat(visual_shader_model, nodes_model, n_id, proto_node, VisualShaderNodePerlinNoise::kScaleFieldNumber);
+      layout->addWidget(embed_widget);
+      QObject::connect(embed_widget, &QLineEdit::textChanged, this,
+                      &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
+      QObject::connect(embed_widget, &VisualShaderNodeEmbedLineEditFloat::node_update_requested, scene, &VisualShaderGraphicsScene::update_node_in_model);
+      embed_widgets[VisualShaderNodePerlinNoise::kScaleFieldNumber] = embed_widget;
+      embed_widget->setPlaceholderText("Scale");
+      break;
+    }
+    case VisualShader::VisualShaderNode::kVoronoiNoiseFieldNumber: {
+      VisualShaderNodeEmbedLineEditFloat* embed_widget =
+          new VisualShaderNodeEmbedLineEditFloat(visual_shader_model, nodes_model, n_id, proto_node, VisualShaderNodeVoronoiNoise::kAngleOffsetFieldNumber);
+      VisualShaderNodeEmbedLineEditFloat* embed_widget2 =
+          new VisualShaderNodeEmbedLineEditFloat(visual_shader_model, nodes_model, n_id, proto_node, VisualShaderNodeVoronoiNoise::kCellDensityFieldNumber);
+      layout->addWidget(embed_widget);
+      layout->addWidget(embed_widget2);
+      QObject::connect(embed_widget, &QLineEdit::textChanged, this,
+                      &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
+      QObject::connect(embed_widget, &VisualShaderNodeEmbedLineEditFloat::node_update_requested, scene, &VisualShaderGraphicsScene::update_node_in_model);
+      embed_widgets[VisualShaderNodeVoronoiNoise::kAngleOffsetFieldNumber] = embed_widget;
+      QObject::connect(embed_widget2, &QLineEdit::textChanged, this,
+                      &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
+      QObject::connect(embed_widget2, &VisualShaderNodeEmbedLineEditFloat::node_update_requested, scene, &VisualShaderGraphicsScene::update_node_in_model);
+      embed_widgets[VisualShaderNodeVoronoiNoise::kCellDensityFieldNumber] = embed_widget2;
+      embed_widget->setPlaceholderText("Angle Offset");
+      embed_widget2->setPlaceholderText("Cell Density");
+      break;
+    }
+    case VisualShader::VisualShaderNode::kDotProductFieldNumber:
+    case VisualShader::VisualShaderNode::kVectorLenFieldNumber:
+    case VisualShader::VisualShaderNode::kClampFieldNumber:
+    case VisualShader::VisualShaderNode::kStepFieldNumber:
+    case VisualShader::VisualShaderNode::kSmoothStepFieldNumber:
+    case VisualShader::VisualShaderNode::kVectorDistanceFieldNumber:
+    case VisualShader::VisualShaderNode::kMixFieldNumber:
+    case VisualShader::VisualShaderNode::kVector2DComposeFieldNumber:
+    case VisualShader::VisualShaderNode::kVector3DComposeFieldNumber:
+    case VisualShader::VisualShaderNode::kVector4DComposeFieldNumber:
+    case VisualShader::VisualShaderNode::kVector2DDecomposeFieldNumber:
+    case VisualShader::VisualShaderNode::kVector3DDecomposeFieldNumber:
+    case VisualShader::VisualShaderNode::kVector4DDecomposeFieldNumber:
+    case VisualShader::VisualShaderNode::kIfNodeFieldNumber:
+    case VisualShader::VisualShaderNode::kSwitchNodeFieldNumber: break;
+    case VisualShader::VisualShaderNode::kIsFieldNumber: {
+      VisualShaderNodeEmbedComboBox* embed_widget =
+          new VisualShaderNodeEmbedComboBox(visual_shader_model, nodes_model, n_id, proto_node, 
+                                            VisualShaderNodeIs::Function_descriptor(), 
+                                            VisualShaderNodeIs::kFuncFieldNumber);
+      layout->addWidget(embed_widget);
+      QObject::connect(embed_widget, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
+                      &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
+      QObject::connect(embed_widget, &VisualShaderNodeEmbedComboBox::node_update_requested, scene, &VisualShaderGraphicsScene::update_node_in_model);
+      embed_widgets[VisualShaderNodeIs::kFuncFieldNumber] = embed_widget;
+      break;
+    }
+    case VisualShader::VisualShaderNode::kCompareFieldNumber: {
+      VisualShaderNodeEmbedComboBox* embed_widget =
+          new VisualShaderNodeEmbedComboBox(visual_shader_model, nodes_model, n_id, proto_node, 
+                                            VisualShaderNodeCompare::ComparisonType_descriptor(), 
+                                            VisualShaderNodeCompare::kTypeFieldNumber);
+      layout->addWidget(embed_widget);
+      VisualShaderNodeEmbedComboBox* embed_widget2 =
+          new VisualShaderNodeEmbedComboBox(visual_shader_model, nodes_model, n_id, proto_node, 
+                                            VisualShaderNodeCompare::Function_descriptor(), 
+                                            VisualShaderNodeCompare::kFuncFieldNumber);
+      layout->addWidget(embed_widget2);
+      VisualShaderNodeEmbedComboBox* embed_widget3 =
+          new VisualShaderNodeEmbedComboBox(visual_shader_model, nodes_model, n_id, proto_node, 
+                                            VisualShaderNodeCompare::Condition_descriptor(), 
+                                            VisualShaderNodeCompare::kCondFieldNumber);
+      layout->addWidget(embed_widget3);
+      QObject::connect(embed_widget, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
+                      &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
+      QObject::connect(embed_widget, &VisualShaderNodeEmbedComboBox::node_update_requested, scene, &VisualShaderGraphicsScene::update_node_in_model);
+      embed_widgets[VisualShaderNodeCompare::kTypeFieldNumber] = embed_widget;
+      QObject::connect(embed_widget2, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
+                        &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
+      QObject::connect(embed_widget2, &VisualShaderNodeEmbedComboBox::node_update_requested, scene, &VisualShaderGraphicsScene::update_node_in_model);
+      embed_widgets[VisualShaderNodeCompare::kFuncFieldNumber] = embed_widget2;
+      QObject::connect(embed_widget3, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
+                        &VisualShaderNodeEmbedWidget::on_shader_preview_update_requested);
+      QObject::connect(embed_widget3, &VisualShaderNodeEmbedComboBox::node_update_requested, scene, &VisualShaderGraphicsScene::update_node_in_model);
+      embed_widgets[VisualShaderNodeCompare::kCondFieldNumber] = embed_widget3;
+      break;
+    }
+    default:
+      FAIL_AND_RETURN("Unknown node type");
+      break;
   }
 
   // Create the button that will show/hide the shader previewer
