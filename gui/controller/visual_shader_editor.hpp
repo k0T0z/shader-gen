@@ -332,7 +332,7 @@ class VisualShaderGraphicsScene : public QGraphicsScene {
   void set_connections_model(ProtoModel* connections_model) { this->connections_model = connections_model; }
 
   VisualShaderEditor* get_editor() const { return editor; }
-  void set_editor(VisualShaderEditor* editor) const { this->editor = editor; }
+  void set_editor(VisualShaderEditor* editor) { this->editor = editor; }
 
   bool add_connection_to_model(const int& c_id, const int& from_node_id, const int& from_port_index, const int& to_node_id,
                                const int& to_port_index);
@@ -417,13 +417,15 @@ class VisualShaderGraphicsScene : public QGraphicsScene {
   void on_out_port_remove_requested(VisualShaderOutputPortGraphicsObject* out_port);
 
  private:
-  // VisualShader* vs;
-  mutable VisualShaderEditor* editor;
+  VisualShaderEditor* editor;
 
   std::unordered_map<int, VisualShaderNodeGraphicsObject*> node_graphics_objects;
   std::unordered_map<int, VisualShaderConnectionGraphicsObject*> connection_graphics_objects;
 
   VisualShaderConnectionGraphicsObject* temporary_connection_graphics_object;
+
+  // n_id -> field number -> QWidget*
+  std::unordered_map<int, std::unordered_map<int, QWidget*>> node_field_widgets;
 
   // Main Model
   ProtoModel* visual_shader_model;
@@ -547,8 +549,8 @@ class VisualShaderNodeGraphicsObject : public QGraphicsObject {
   VisualShaderInputPortGraphicsObject* get_input_port_graphics_object(const int& p_index) const;
   VisualShaderOutputPortGraphicsObject* get_output_port_graphics_object(const int& p_index) const;
 
-  VisualShaderNodeEmbedWidget* get_embed_widget() const { return embed_widget; }
-  void set_embed_widget(VisualShaderNodeEmbedWidget* embed_widget) { this->embed_widget = embed_widget; }
+  QWidget* get_embed_widget() const { return embed_widget; }
+  void set_embed_widget(QWidget* embed_widget) { this->embed_widget = embed_widget; }
 
   RendererWidget* get_renderer_widget() const { return renderer_widget; }
 
@@ -688,7 +690,7 @@ class VisualShaderNodeGraphicsObject : public QGraphicsObject {
   float caption_font_size = 18.0f;
   float port_caption_font_size = 8.0f;
 
-  VisualShaderNodeEmbedWidget* embed_widget;
+  QWidget* embed_widget;
   QPointF embed_widget_coordinate;  // Calculated in update_layout()
   float embed_widget_h_margin = 15.0f;
   float embed_widget_v_margin = 5.0f;
@@ -945,55 +947,20 @@ class VisualShaderConnectionGraphicsObject : public QGraphicsObject {
 /**********************************************************************/
 /**********************************************************************/
 /*****                                                            *****/
-/*****                 Embed Widgets                              *****/
+/*****                 Field Widgets                              *****/
 /*****                                                            *****/
 /**********************************************************************/
 /**********************************************************************/
 /**********************************************************************/
 
-class VisualShaderNodeEmbedWidget : public QWidget {
+class VisualShaderNodeFieldComboBox : public QComboBox {
   Q_OBJECT
 
  public:
-  VisualShaderNodeEmbedWidget(VisualShaderGraphicsScene* scene, ProtoModel* visual_shader_model, ProtoModel* nodes_model, const int& n_id,
-                              const std::shared_ptr<IVisualShaderProtoNode>& proto_node, QWidget* parent = nullptr);
-  ~VisualShaderNodeEmbedWidget() = default;
-
-  QPushButton* get_preview_shader_button() const { return preview_shader_button; }
-
-  QWidget* get_embed_widget(const int& field_number) const {
-    auto it = embed_widgets.find(field_number);
-    if (it != embed_widgets.end()) {
-      return it->second;
-    }
-    return nullptr;
-  }
-
- Q_SIGNALS:
-  void shader_preview_update_requested();
-  void node_update_requested();
-
- private Q_SLOTS:
-  void on_shader_preview_update_requested() { Q_EMIT shader_preview_update_requested(); }
-
-  void on_node_update_requested() { Q_EMIT node_update_requested(); }
-
- private:
-  QVBoxLayout* layout;
-
-  QPushButton* preview_shader_button;
-
-  std::unordered_map<int, QWidget*> embed_widgets; // Key: field_number
-};
-
-class VisualShaderNodeEmbedComboBox : public QComboBox {
-  Q_OBJECT
-
- public:
-  VisualShaderNodeEmbedComboBox(ProtoModel* visual_shader_model, ProtoModel* nodes_model, const int& n_id,
+  VisualShaderNodeFieldComboBox(const QVariant& initial_value, const int& n_id,
                                    const std::shared_ptr<IVisualShaderProtoNode>& proto_node,
-                                    const EnumDescriptor* enum_descriptor, const int& field_number);
-  ~VisualShaderNodeEmbedComboBox() = default;
+                                    const EnumDescriptor* enum_descriptor, const int& field_number, QWidget* parent = nullptr);
+  ~VisualShaderNodeFieldComboBox() = default;
 
   void set_current_index(const int& index) { this->setCurrentIndex(index); }
 
@@ -1004,20 +971,18 @@ class VisualShaderNodeEmbedComboBox : public QComboBox {
   void on_current_index_changed(const int& index);
 
  private:
-  ProtoModel* visual_shader_model;
-  ProtoModel* nodes_model;
   int n_id;
   std::shared_ptr<IVisualShaderProtoNode> proto_node;
   int field_number;
 };
 
-class VisualShaderNodeEmbedLineEditFloat : public QLineEdit {
+class VisualShaderNodeFieldLineEditFloat : public QLineEdit {
   Q_OBJECT
 
  public:
-  VisualShaderNodeEmbedLineEditFloat(ProtoModel* visual_shader_model, ProtoModel* nodes_model, const int& n_id,
-                                           const std::shared_ptr<IVisualShaderProtoNode>& proto_node, const int& field_number);
-  ~VisualShaderNodeEmbedLineEditFloat() = default;
+  VisualShaderNodeFieldLineEditFloat(const QVariant& initial_value, const int& n_id,
+                                           const std::shared_ptr<IVisualShaderProtoNode>& proto_node, const int& field_number, QWidget* parent = nullptr);
+  ~VisualShaderNodeFieldLineEditFloat() = default;
 
   void set_current_text(const std::string& text) { this->setText(QString::fromStdString(text)); }
 
@@ -1028,20 +993,18 @@ class VisualShaderNodeEmbedLineEditFloat : public QLineEdit {
   void on_text_changed(const QString& text);
 
  private:
-  ProtoModel* visual_shader_model;
-  ProtoModel* nodes_model;
   int n_id;
   std::shared_ptr<IVisualShaderProtoNode> proto_node;
   int field_number;
 };
 
-class VisualShaderNodeEmbedLineEditInt : public QLineEdit {
+class VisualShaderNodeFieldLineEditInt : public QLineEdit {
   Q_OBJECT
 
  public:
-  VisualShaderNodeEmbedLineEditInt(ProtoModel* visual_shader_model, ProtoModel* nodes_model, const int& n_id,
-                                           const std::shared_ptr<IVisualShaderProtoNode>& proto_node, const int& field_number);
-  ~VisualShaderNodeEmbedLineEditInt() = default;
+  VisualShaderNodeFieldLineEditInt(const QVariant& initial_value, const int& n_id,
+                                           const std::shared_ptr<IVisualShaderProtoNode>& proto_node, const int& field_number, QWidget* parent = nullptr);
+  ~VisualShaderNodeFieldLineEditInt() = default;
 
   void set_current_text(const std::string& text) { this->setText(QString::fromStdString(text)); }
 
@@ -1052,20 +1015,18 @@ class VisualShaderNodeEmbedLineEditInt : public QLineEdit {
   void on_text_changed(const QString& text);
 
  private:
-  ProtoModel* visual_shader_model;
-  ProtoModel* nodes_model;
   int n_id;
   std::shared_ptr<IVisualShaderProtoNode> proto_node;
   int field_number;
 };
 
-class VisualShaderNodeEmbedLineEditUInt : public QLineEdit {
+class VisualShaderNodeFieldLineEditUInt : public QLineEdit {
   Q_OBJECT
 
  public:
-  VisualShaderNodeEmbedLineEditUInt(ProtoModel* visual_shader_model, ProtoModel* nodes_model, const int& n_id,
-                                           const std::shared_ptr<IVisualShaderProtoNode>& proto_node, const int& field_number);
-  ~VisualShaderNodeEmbedLineEditUInt() = default;
+  VisualShaderNodeFieldLineEditUInt(const QVariant& initial_value, const int& n_id,
+                                           const std::shared_ptr<IVisualShaderProtoNode>& proto_node, const int& field_number, QWidget* parent = nullptr);
+  ~VisualShaderNodeFieldLineEditUInt() = default;
 
   void set_current_text(const std::string& text) { this->setText(QString::fromStdString(text)); }
 
@@ -1076,20 +1037,18 @@ class VisualShaderNodeEmbedLineEditUInt : public QLineEdit {
   void on_text_changed(const QString& text);
 
  private:
-  ProtoModel* visual_shader_model;
-  ProtoModel* nodes_model;
   int n_id;
   std::shared_ptr<IVisualShaderProtoNode> proto_node;
   int field_number;
 };
 
-class VisualShaderNodeEmbedCheckBox : public QCheckBox {
+class VisualShaderNodeFieldCheckBox : public QCheckBox {
   Q_OBJECT
 
  public:
-  VisualShaderNodeEmbedCheckBox(ProtoModel* visual_shader_model, ProtoModel* nodes_model, const int& n_id,
-                                             const std::shared_ptr<IVisualShaderProtoNode>& proto_node, const int& field_number);
-  ~VisualShaderNodeEmbedCheckBox() = default;
+  VisualShaderNodeFieldCheckBox(const QVariant& initial_value, const int& n_id,
+                                             const std::shared_ptr<IVisualShaderProtoNode>& proto_node, const int& field_number, QWidget* parent = nullptr);
+  ~VisualShaderNodeFieldCheckBox() = default;
 
   void set_checked(const bool& checked) { this->setChecked(checked); }
 
@@ -1100,55 +1059,92 @@ class VisualShaderNodeEmbedCheckBox : public QCheckBox {
   void on_state_changed(const int& state);
 
  private:
-  ProtoModel* visual_shader_model;
-  ProtoModel* nodes_model;
   int n_id;
   std::shared_ptr<IVisualShaderProtoNode> proto_node;
   int field_number;
 };
 
-class VisualShaderNodeEmbedColorPicker : public QPushButton {
-  Q_OBJECT
+#define REGISTER_NODE_FIELD_COMBO_BOX(enum_descriptor, field_number) \
+  if (true) { \
+    QVariant initial_value{visual_shader_model->data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), \
+      FieldPath::RepeatedAt(row_entry), \
+      FieldPath::FieldNumber(node_type_field_number), \
+      FieldPath::FieldNumber(field_number)))}; \
+    VisualShaderNodeFieldComboBox* node_field_widget = new VisualShaderNodeFieldComboBox(initial_value, n_id, proto_node, enum_descriptor, field_number, embed_widget); \
+    node_field_widget->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum); \
+    node_field_widget->setContentsMargins(0, 0, 0, 0);  \
+    embed_widget_layout->addWidget(node_field_widget); \
+    QObject::connect(node_field_widget, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &VisualShaderGraphicsScene::on_update_renderer_widgets_requested); \
+    QObject::connect(node_field_widget, &VisualShaderNodeFieldComboBox::node_update_requested, this, &VisualShaderGraphicsScene::update_node_in_model); \
+    node_field_widgets[n_id][field_number] = node_field_widget; \
+  } else                                                                                                        \
+    ((void)0)
 
- public:
-  VisualShaderNodeEmbedColorPicker(ProtoModel* visual_shader_model, ProtoModel* nodes_model, const int& n_id,
-                                           const std::shared_ptr<IVisualShaderProtoNode>& proto_node);
-  ~VisualShaderNodeEmbedColorPicker() = default;
+#define REGISTER_NODE_FIELD_LINE_EDIT_FLOAT(field_number, placeholder) \
+  if (true) { \
+    QVariant initial_value{visual_shader_model->data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), \
+      FieldPath::RepeatedAt(row_entry), \
+      FieldPath::FieldNumber(node_type_field_number), \
+      FieldPath::FieldNumber(field_number)))}; \
+    VisualShaderNodeFieldLineEditFloat* node_field_widget = new VisualShaderNodeFieldLineEditFloat(initial_value, n_id, proto_node, field_number, embed_widget); \
+    node_field_widget->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum); \
+    node_field_widget->setContentsMargins(0, 0, 0, 0);  \
+    embed_widget_layout->addWidget(node_field_widget); \
+    node_field_widget->setPlaceholderText(placeholder); \
+    QObject::connect(node_field_widget, &QLineEdit::textChanged, this, &VisualShaderGraphicsScene::on_update_renderer_widgets_requested); \
+    QObject::connect(node_field_widget, &VisualShaderNodeFieldLineEditFloat::node_update_requested, this, &VisualShaderGraphicsScene::update_node_in_model); \
+    node_field_widgets[n_id][field_number] = node_field_widget; \
+  } else                                                                                                        \
+    ((void)0)
 
-  void set_r(const int& r) {
-    this->color.setRed(r);
-    Q_EMIT color_changed();
-  }
+#define REGISTER_NODE_FIELD_LINE_EDIT_INT(field_number, placeholder) \
+  if (true) { \
+    QVariant initial_value{visual_shader_model->data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), \
+      FieldPath::RepeatedAt(row_entry), \
+      FieldPath::FieldNumber(node_type_field_number), \
+      FieldPath::FieldNumber(field_number)))}; \
+    VisualShaderNodeFieldLineEditInt* node_field_widget = new VisualShaderNodeFieldLineEditInt(initial_value, n_id, proto_node, field_number, embed_widget); \
+    node_field_widget->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum); \
+    node_field_widget->setContentsMargins(0, 0, 0, 0);  \
+    embed_widget_layout->addWidget(node_field_widget); \
+    node_field_widget->setPlaceholderText(placeholder); \
+    QObject::connect(node_field_widget, &QLineEdit::textChanged, this, &VisualShaderGraphicsScene::on_update_renderer_widgets_requested); \
+    QObject::connect(node_field_widget, &VisualShaderNodeFieldLineEditInt::node_update_requested, this, &VisualShaderGraphicsScene::update_node_in_model); \
+    node_field_widgets[n_id][field_number] = node_field_widget; \
+  } else                                                                                                        \
+    ((void)0)
 
-  void set_g(const int& g) {
-    this->color.setGreen(g);
-    Q_EMIT color_changed();
-  }
+#define REGISTER_NODE_FIELD_LINE_EDIT_UINT(field_number, placeholder) \
+  if (true) { \
+    QVariant initial_value{visual_shader_model->data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), \
+      FieldPath::RepeatedAt(row_entry), \
+      FieldPath::FieldNumber(node_type_field_number), \
+      FieldPath::FieldNumber(field_number)))}; \
+    VisualShaderNodeFieldLineEditUInt* node_field_widget = new VisualShaderNodeFieldLineEditUInt(initial_value, n_id, proto_node, field_number, embed_widget); \
+    node_field_widget->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum); \
+    node_field_widget->setContentsMargins(0, 0, 0, 0);  \
+    embed_widget_layout->addWidget(node_field_widget); \
+    node_field_widget->setPlaceholderText(placeholder); \
+    QObject::connect(node_field_widget, &QLineEdit::textChanged, this, &VisualShaderGraphicsScene::on_update_renderer_widgets_requested); \
+    QObject::connect(node_field_widget, &VisualShaderNodeFieldLineEditUInt::node_update_requested, this, &VisualShaderGraphicsScene::update_node_in_model); \
+    node_field_widgets[n_id][field_number] = node_field_widget; \
+  } else                                                                                                        \
+    ((void)0)
 
-  void set_b(const int& b) {
-    this->color.setBlue(b);
-    Q_EMIT color_changed();
-  }
-
-  void set_a(const int& a) {
-    this->color.setAlpha(a);
-    Q_EMIT color_changed();
-  }
-
- Q_SIGNALS:
-  void color_changed();
-  void node_update_requested(const int& n_id, const int& field_number, const QVariant& value);
-
- private Q_SLOTS:
-  void on_color_changed();
-  void on_pressed();
-
- private:
-  ProtoModel* visual_shader_model;
-  ProtoModel* nodes_model;
-  int n_id;
-  std::shared_ptr<IVisualShaderProtoNode> proto_node;
-  QColor color;
-};
+#define REGISTER_NODE_FIELD_CHECK_BOX(field_number) \
+  if (true) { \
+    QVariant initial_value{visual_shader_model->data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), \
+      FieldPath::RepeatedAt(row_entry), \
+      FieldPath::FieldNumber(node_type_field_number), \
+      FieldPath::FieldNumber(field_number)))}; \
+    VisualShaderNodeFieldCheckBox* node_field_widget = new VisualShaderNodeFieldCheckBox(initial_value, n_id, proto_node, field_number, embed_widget); \
+    node_field_widget->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum); \
+    node_field_widget->setContentsMargins(0, 0, 0, 0);  \
+    embed_widget_layout->addWidget(node_field_widget); \
+    QObject::connect(node_field_widget, &QCheckBox::stateChanged, this, &VisualShaderGraphicsScene::on_update_renderer_widgets_requested); \
+    QObject::connect(node_field_widget, &VisualShaderNodeFieldCheckBox::node_update_requested, this, &VisualShaderGraphicsScene::update_node_in_model); \
+    node_field_widgets[n_id][field_number] = node_field_widget; \
+  } else                                                                                                        \
+    ((void)0)
 
 #endif  // ENIGMA_VISUAL_SHADER_EDITOR_HPP

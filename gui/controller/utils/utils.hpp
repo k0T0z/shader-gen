@@ -123,7 +123,7 @@ inline static bool is_valid_connection(const VisualShaderNodePortType& source_po
           return false;
       }
     default:
-      return false;
+      break;
   }
 
   return false;

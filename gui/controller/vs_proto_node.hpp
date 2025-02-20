@@ -206,9 +206,10 @@ class VisualShaderProtoNode : public IVisualShaderProtoNode {
     else if constexpr (std::is_same_v<Proto, VisualShaderNodeSwitch>) return VisualShader::VisualShaderNode::kSwitchNodeFieldNumber;
     else if constexpr (std::is_same_v<Proto, VisualShaderNodeIs>) return VisualShader::VisualShaderNode::kIsFieldNumber;
     else if constexpr (std::is_same_v<Proto, VisualShaderNodeCompare>) return VisualShader::VisualShaderNode::kCompareFieldNumber;
-    else static_assert(false, "Unsupported proto type!");
-
-    return -1;
+    else {
+      static_assert(false, "Unsupported proto type!");
+      return -1;
+    }
   }
 };
 
