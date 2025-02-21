@@ -130,8 +130,10 @@ void RendererWidget::init_buffers() {
 }
 
 void RendererWidget::update_shader_program() {
+  makeCurrent();  // Ensure OpenGL context is current for shader operations
+  
   auto new_program = std::make_unique<QOpenGLShaderProgram>();
-
+  
   const char* vertex_shader_source = R"(
       #version 330 core
       layout(location = 0) in vec2 aPos;
@@ -155,19 +157,32 @@ void RendererWidget::update_shader_program() {
       void main() {
         FragColor = vec4(0.0, 0.0, 0.0, 1.0);
       }
-  )"
-                                                  : "#version 330 core\n\n" + code};
+  )" : "#version 330 core\n\n" + code};
 
-  CHECK_CONDITION_TRUE(!shader_program->addShaderFromSourceCode(QOpenGLShader::Vertex, vertex_shader_source), "Vertex shader compilation failed:" + shader_program->log().toStdString());
-  CHECK_CONDITION_TRUE(!shader_program->addShaderFromSourceCode(QOpenGLShader::Fragment, fragment_shader_source.c_str()), "Fragment shader compilation failed:" + shader_program->log().toStdString());
-  CHECK_CONDITION_TRUE(!shader_program->link(), "Shader program linking failed:" + shader_program->log().toStdString());
+  // Add shaders to new_program instead of shader_program
+  if (!new_program->addShaderFromSourceCode(QOpenGLShader::Vertex, vertex_shader_source)) {
+    WARN_PRINT("Vertex shader compilation failed:" + new_program->log().toStdString());
+    doneCurrent();
+    return;
+  }
   
-  // Atomic swap only if successful
-  makeCurrent();
+  if (!new_program->addShaderFromSourceCode(QOpenGLShader::Fragment, fragment_shader_source.c_str())) {
+    WARN_PRINT("Fragment shader compilation failed:" + new_program->log().toStdString());
+    doneCurrent();
+    return;
+  }
+  
+  if (!new_program->link()) {
+    WARN_PRINT("Shader program linking failed:" + new_program->log().toStdString());
+    doneCurrent();
+    return;
+  }
+  
+  // Swap only if all operations succeed
   shader_program.swap(new_program);
-  doneCurrent();
-  
   shader_needs_update = false;
+  
+  doneCurrent();  // Release the context
 }
 
 void RendererWidget::init_shaders() { update_shader_program(); }
