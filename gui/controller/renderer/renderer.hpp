@@ -25,66 +25,55 @@
 /*                                                                               */
 /*********************************************************************************/
 
-#include "main.hpp"
+#ifndef SHADER_GEN_RENDERER_HPP
+#define SHADER_GEN_RENDERER_HPP
 
-#include <QApplication>
-#include <QCommandLineOption>
-#include <QCommandLineParser>
-#include <filesystem>
+#include <QtOpenGLWidgets/QOpenGLWidget>
+// #include <QOpenGLFunctions>
+#include <QElapsedTimer>
+#include <QtOpenGL/QOpenGLFunctions_4_3_Core>  // https://stackoverflow.com/a/64288966/14629018 explains why we need this.
+#include <QtOpenGL/QOpenGLShaderProgram>
 
-#include "gui/model/schema/visual_shader.pb.h"
+/**
+ * @brief This class is meant to be a temporary solution to preview the shader
+ *        code. We should preview the shader code using ENIGMA's Graphics System.
+ * 
+ * @todo Replace this class with ENIGMA's Graphics System.
+ * 
+ */
+class RendererWidget : public QOpenGLWidget, protected QOpenGLFunctions_4_3_Core {
+    Q_OBJECT
+  
+   public:
+    RendererWidget(QWidget* parent = nullptr);
+    ~RendererWidget() override;
+  
+    void set_code(const std::string& code);
+  
+   Q_SIGNALS:
+    void scene_update_requested();
+  
+   protected:
+    void initializeGL() override;
+    void resizeGL(int w, int h) override;
+    void paintGL() override;
+  
+    void showEvent(QShowEvent* event) override;
+    void hideEvent(QHideEvent* event) override;
+  
+   private:
+    std::unique_ptr<QOpenGLShaderProgram> shader_program;
+    GLuint VAO, VBO;
+    QElapsedTimer timer;
+  
+    std::string code;
+    bool shader_needs_update{false};
+  
+    void init_shaders();
+    void init_buffers();
+    void update_shader_program();
+  
+    void cleanup();
+  };
 
-#include "gui/controller/visual_shader_editor.hpp"
-#include "gui/model/message_model.hpp"
-
-#if defined(SHADER_GEN_DEBUG) && defined(_MSC_VER)
-#include <crtdbg.h>
-#endif  // SHADER_GEN_DEBUG && _MSC_VER
-
-using VisualShader = gui::model::schema::VisualShader;
-
-int main(int argc, char** argv) {
-  // Verify that the version of the library that we linked against is
-  // compatible with the version of the headers we compiled against.
-  GOOGLE_PROTOBUF_VERIFY_VERSION;
-
-#if defined(SHADER_GEN_DEBUG) && defined(_MSC_VER)
-  // Enable run-time memory check for debug builds in MSVC
-  _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
-#endif  // SHADER_GEN_DEBUG && _MSC_VER
-
-#ifdef SHADER_GEN_DEBUG
-qputenv("QT_DEBUG_PLUGINS", "1");  // Enable plugin diagnostics
-#endif  // SHADER_GEN_DEBUG
-
-  QApplication shader_gen_app(argc, argv);
-  QCoreApplication::setOrganizationName(ENIGMA_ORG_NAME);
-  QCoreApplication::setApplicationName(SHADER_GEN_PROJECT_NAME);
-  QCoreApplication::setApplicationVersion(SHADER_GEN_PROJECT_VERSION);
-  QCommandLineParser parser;
-  parser.setApplicationDescription(QCoreApplication::applicationName());
-  parser.addHelpOption();
-  parser.addVersionOption();
-  parser.process(shader_gen_app);
-
-  VisualShader visual_shader;
-
-  MessageModel* root_model = new MessageModel(&visual_shader);
-  bool load_result = dynamic_cast<ProtoModel*>(root_model)->loadFromJson("model.json");
-  if (!load_result) {
-  	ERROR_PRINT("Failed to load model from JSON");
-  }
-  root_model->build_sub_models();
-
-  VisualShaderEditor* w = new VisualShaderEditor(root_model);
-
-  w->resize(1440, 720);
-  w->show();
-
-  int result{shader_gen_app.exec()};
-
-  delete w;
-  delete root_model;
-
-  return result;
-}
+#endif // SHADER_GEN_RENDERER_HPP
