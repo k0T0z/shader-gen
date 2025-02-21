@@ -844,6 +844,52 @@ bool VisualShaderGraphicsScene::add_node_to_scene(const int& n_id, const std::sh
         break;
       }
       case VisualShader::VisualShaderNode::kColorConstantFieldNumber: {
+        REGISTER_NODE_FIELD_SPIN_BOX(VisualShaderNodeColorConstant::kRFieldNumber, 0, 255);
+        REGISTER_NODE_FIELD_SPIN_BOX(VisualShaderNodeColorConstant::kGFieldNumber, 0, 255);
+        REGISTER_NODE_FIELD_SPIN_BOX(VisualShaderNodeColorConstant::kBFieldNumber, 0, 255);
+        REGISTER_NODE_FIELD_SPIN_BOX(VisualShaderNodeColorConstant::kAFieldNumber, 0, 255);
+
+        // Retrieve the RGBA spin boxes
+        QWidget* r_spin = node_field_widgets[n_id][VisualShaderNodeColorConstant::kRFieldNumber];
+        QWidget* g_spin = node_field_widgets[n_id][VisualShaderNodeColorConstant::kGFieldNumber];
+        QWidget* b_spin = node_field_widgets[n_id][VisualShaderNodeColorConstant::kBFieldNumber];
+        QWidget* a_spin = node_field_widgets[n_id][VisualShaderNodeColorConstant::kAFieldNumber];
+
+        VisualShaderNodeFieldSpinBox* typed_r_spin = dynamic_cast<VisualShaderNodeFieldSpinBox*>(r_spin);
+        VisualShaderNodeFieldSpinBox* typed_g_spin = dynamic_cast<VisualShaderNodeFieldSpinBox*>(g_spin);
+        VisualShaderNodeFieldSpinBox* typed_b_spin = dynamic_cast<VisualShaderNodeFieldSpinBox*>(b_spin);
+        VisualShaderNodeFieldSpinBox* typed_a_spin = dynamic_cast<VisualShaderNodeFieldSpinBox*>(a_spin);
+
+        // Create a color preview label
+        QLabel* color_preview = new QLabel(embed_widget);
+        color_preview->setFixedHeight(20);
+        color_preview->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Fixed);
+        color_preview->setContentsMargins(0, 0, 0, 0);
+
+        // Function to update the color preview
+        auto update_color_preview = [=]() {
+            QColor color(
+                typed_r_spin->value(),
+                typed_g_spin->value(),
+                typed_b_spin->value(),
+                typed_a_spin->value()
+            );
+            QPixmap pixmap(color_preview->size());
+            pixmap.fill(color);
+            color_preview->setPixmap(pixmap);
+        };
+
+        // Set initial color
+        update_color_preview();
+
+        // Connect each spin box to update the color preview
+        QObject::connect(typed_r_spin, QOverload<int>::of(&QSpinBox::valueChanged), this, [=](int) { update_color_preview(); });
+        QObject::connect(typed_g_spin, QOverload<int>::of(&QSpinBox::valueChanged), this, [=](int) { update_color_preview(); });
+        QObject::connect(typed_b_spin, QOverload<int>::of(&QSpinBox::valueChanged), this, [=](int) { update_color_preview(); });
+        QObject::connect(typed_a_spin, QOverload<int>::of(&QSpinBox::valueChanged), this, [=](int) { update_color_preview(); });
+
+        // Add the color preview to the layout
+        embed_widget_layout->addWidget(color_preview);
         break;
       }
       case VisualShader::VisualShaderNode::kVec2ConstantFieldNumber: {
@@ -1091,6 +1137,8 @@ bool VisualShaderGraphicsScene::update_node_in_scene(const int& n_id, const int&
     line_edit_uint->set_current_text(value.toString().toStdString());
   } else if (auto check_box{dynamic_cast<VisualShaderNodeFieldCheckBox*>(widget)}) {
     check_box->set_checked(value.toBool());
+  } else if (auto spin_box{dynamic_cast<VisualShaderNodeFieldSpinBox*>(widget)}) {
+    spin_box->set_value(value.toInt());
   } else {
     FAIL_AND_RETURN_NON_VOID(false, "Unknown widget type");
   }
@@ -3140,3 +3188,15 @@ VisualShaderNodeFieldCheckBox::VisualShaderNodeFieldCheckBox(const QVariant& ini
 void VisualShaderNodeFieldCheckBox::on_state_changed(const int& state) {
   Q_EMIT node_update_requested(n_id, field_number, state);
 }
+
+VisualShaderNodeFieldSpinBox::VisualShaderNodeFieldSpinBox(const QVariant& initial_value, const int& min_value, const int& max_value, const int& n_id, const int& field_number, QWidget* parent)
+      : QSpinBox(parent), n_id(n_id), field_number(field_number) {
+  setRange(min_value, max_value);
+  setValue(initial_value.toInt());
+  connect(this, QOverload<int>::of(&QSpinBox::valueChanged), this, &VisualShaderNodeFieldSpinBox::on_value_changed);
+}
+
+void VisualShaderNodeFieldSpinBox::on_value_changed(const int& value) {
+  Q_EMIT node_update_requested(n_id, field_number, value);
+}
+

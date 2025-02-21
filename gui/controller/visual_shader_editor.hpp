@@ -48,6 +48,7 @@
 #include <QtWidgets/QTextEdit>
 #include <QtWidgets/QTreeWidget>
 #include <QtWidgets/QVBoxLayout>
+#include <QtWidgets/QSpinBox>
 // #include <QOpenGLFunctions>
 #include <QCheckBox>
 #include <QColorDialog>
@@ -1072,6 +1073,25 @@ class VisualShaderNodeFieldCheckBox : public QCheckBox {
   int field_number;
 };
 
+class VisualShaderNodeFieldSpinBox : public QSpinBox {
+  Q_OBJECT
+public:
+  VisualShaderNodeFieldSpinBox(const QVariant& initial_value, const int& min_value, const int& max_value, const int& n_id, const int& field_number, QWidget* parent = nullptr);
+  ~VisualShaderNodeFieldSpinBox() = default;
+
+  void set_value(const int& value) { this->setValue(value); }
+
+Q_SIGNALS:
+  void node_update_requested(const int& n_id, const int& field_number, const QVariant& value);
+
+private Q_SLOTS:
+  void on_value_changed(const int& value);
+
+private:
+  int n_id;
+  int field_number;
+};
+
 #define REGISTER_NODE_FIELD_COMBO_BOX(enum_descriptor, field_number) \
   if (true) { \
     QVariant initial_value{visual_shader_model->data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), \
@@ -1156,6 +1176,22 @@ class VisualShaderNodeFieldCheckBox : public QCheckBox {
     embed_widget_layout->addWidget(node_field_widget); \
     QObject::connect(node_field_widget, &QCheckBox::stateChanged, this, &VisualShaderGraphicsScene::on_update_renderer_widgets_requested); \
     QObject::connect(node_field_widget, &VisualShaderNodeFieldCheckBox::node_update_requested, this, &VisualShaderGraphicsScene::update_node_in_model); \
+    node_field_widgets[n_id][field_number] = node_field_widget; \
+  } else                                                                                                        \
+    ((void)0)
+
+#define REGISTER_NODE_FIELD_SPIN_BOX(field_number, min_value, max_value) \
+  if (true) { \
+    QVariant initial_value{visual_shader_model->data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), \
+      FieldPath::RepeatedAt(row_entry), \
+      FieldPath::FieldNumber(node_type_field_number), \
+      FieldPath::FieldNumber(field_number)))}; \
+    VisualShaderNodeFieldSpinBox* node_field_widget = new VisualShaderNodeFieldSpinBox(initial_value, min_value, max_value, n_id, field_number, embed_widget); \
+    node_field_widget->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Fixed); \
+    node_field_widget->setContentsMargins(0, 0, 0, 0);  \
+    embed_widget_layout->addWidget(node_field_widget); \
+    QObject::connect(node_field_widget, QOverload<int>::of(&QSpinBox::valueChanged), this, &VisualShaderGraphicsScene::on_update_renderer_widgets_requested); \
+    QObject::connect(node_field_widget, &VisualShaderNodeFieldSpinBox::node_update_requested, this, &VisualShaderGraphicsScene::update_node_in_model); \
     node_field_widgets[n_id][field_number] = node_field_widget; \
   } else                                                                                                        \
     ((void)0)
