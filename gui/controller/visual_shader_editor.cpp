@@ -800,6 +800,11 @@ bool VisualShaderGraphicsScene::add_node_to_scene(const int& n_id, const std::sh
 
   // If not the output node
   if (n_id != 0) {
+    QObject::connect(n_o, &VisualShaderNodeGraphicsObject::node_deleted, this,
+      &VisualShaderGraphicsScene::on_node_deleted);
+  }
+
+  if (n_id != 0) {
     QGraphicsProxyWidget* embed_widget_proxy{new QGraphicsProxyWidget(n_o)};
     embed_widget_proxy->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
     embed_widget_proxy->setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
@@ -811,8 +816,8 @@ bool VisualShaderGraphicsScene::add_node_to_scene(const int& n_id, const std::sh
     embed_widget->setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
 
     QVBoxLayout* embed_widget_layout = new QVBoxLayout(embed_widget);
-    embed_widget_layout->setContentsMargins(5, 10, 5, 10);  // Left, top, right, bottom
-    embed_widget_layout->setSizeConstraint(QLayout::SetMinimumSize);
+    embed_widget_layout->setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
+    embed_widget_layout->setSizeConstraint(QLayout::SetNoConstraint);
     embed_widget_layout->setSpacing(2);
     embed_widget_layout->setAlignment(Qt::AlignVCenter | Qt::AlignHCenter);
 
@@ -943,17 +948,16 @@ bool VisualShaderGraphicsScene::add_node_to_scene(const int& n_id, const std::sh
     QPushButton* preview_shader_button = new QPushButton("Show Preview", embed_widget);
     preview_shader_button->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
     preview_shader_button->setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
-    preview_shader_button->setToolTip("Create a new node");
+    preview_shader_button->setToolTip("Show generated shader at this node");
+    QObject::connect(preview_shader_button, &QPushButton::pressed, n_o,
+      &VisualShaderNodeGraphicsObject::on_preview_shader_button_pressed);
 
     embed_widget_layout->addWidget(preview_shader_button);
 
-    embed_widget->setContentsMargins(10, 10, 10, 10);  // Left, top, right, bottom
+    embed_widget->setContentsMargins(2, 1, 2, 1);  // Left, top, right, bottom
     embed_widget->setLayout(embed_widget_layout);
 
     n_o->set_embed_widget(embed_widget); // Set the embed widget to the node graphics object
-
-    QObject::connect(preview_shader_button, &QPushButton::pressed, n_o,
-      &VisualShaderNodeGraphicsObject::on_preview_shader_button_pressed);
 
     if (RendererWidget* spw{n_o->get_renderer_widget()}) {
       QObject::connect(spw, &RendererWidget::scene_update_requested, this,
@@ -962,9 +966,6 @@ bool VisualShaderGraphicsScene::add_node_to_scene(const int& n_id, const std::sh
   }
 
   n_o->update_layout(); // Update the layout of the node
-
-  QObject::connect(n_o, &VisualShaderNodeGraphicsObject::node_deleted, this,
-                   &VisualShaderGraphicsScene::on_node_deleted);
 
   node_graphics_objects[n_id] = n_o;
 
