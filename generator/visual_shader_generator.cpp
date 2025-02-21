@@ -38,6 +38,28 @@
 #include "gui/model/utils/utils.hpp"
 
 namespace shadergen_visual_shader_generator {
+// Global variable holding the license notice.
+static const std::string license_notices = R"(/***********************************************************************************/
+/*  ShaderGen, a visual shader editor that can generate GLSL code using            */
+/*  Artificial Intelligence.                                                       */
+/*  Copyright (C) 2024 - present  Seif Kandil (k0T0z) (https://k0t0z.github.io/)   */
+/*                                                                                 */
+/*  This program is free software: you can redistribute it and/or modify           */
+/*  it under the terms of the GNU General Public License as published by           */
+/*  the Free Software Foundation, either version 3 of the License, or              */
+/*  (at your option) any later version.                                            */
+/*                                                                                 */
+/*  This program is distributed in the hope that it will be useful,                */
+/*  but WITHOUT ANY WARRANTY; without even the implied warranty of                 */
+/*  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the                  */
+/*  GNU General Public License for more details.                                   */
+/*                                                                                 */
+/*  You should have received a copy of the GNU General Public License              */
+/*  along with this program.  If not, see <https://www.gnu.org/licenses/>.         */
+/***********************************************************************************/
+
+)";
+
 std::unordered_map<int, std::shared_ptr<IVisualShaderProtoNode>> to_proto_nodes(const ProtoModel* nodes) noexcept {
   int size{nodes->rowCount()};
   std::unordered_map<int, std::shared_ptr<IVisualShaderProtoNode>> proto_nodes;
@@ -450,7 +472,8 @@ bool generate_shader(const std::unordered_map<int, std::shared_ptr<IVisualShader
   func_code += std::string("}") + "\n\n";
   shader_code += func_code;
 
-  std::string generated_code{global_code};
+  std::string generated_code{license_notices};
+  generated_code += global_code;
   generated_code += global_code_per_node;
 
   generated_code += shader_code;
@@ -544,7 +567,8 @@ std::string generate_preview_shader(const std::unordered_map<int, std::shared_pt
 
   shader_code += std::string("}") + "\n\n";
 
-  std::string generated_code{global_code};
+  std::string generated_code{license_notices};
+  generated_code += global_code;
   generated_code += global_code_per_node;
 
   generated_code += shader_code;
@@ -630,7 +654,7 @@ static inline bool generate_shader_for_each_node(std::string& global_code, std::
       VisualShaderNodePortType to_port_type{proto_node->get_input_port_type(i)};
       VisualShaderNodePortType from_port_type{VisualShaderNodePortType::PORT_TYPE_UNSPECIFIED};
 
-      if (proto_node->get_oneof_value_field_number() == VisualShader::VisualShaderNode::kInputFieldNumber) {
+      if (proto_nodes.at(from_node)->get_oneof_value_field_number() == VisualShader::VisualShaderNode::kInputFieldNumber) {
         // For Input node, type is by input type
         const std::shared_ptr<VisualShaderNodeGenerator> t_generator{generators.at(from_node)};
         from_port_type = shadergen_utils::get_enum_value_port_type_by_value(VisualShaderNodeInputType_descriptor(), t_generator->get_input_type());

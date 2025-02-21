@@ -287,6 +287,9 @@ void VisualShaderEditor::init() {
   code_previewer->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
   code_previewer->setTabChangesFocus(true);
   code_previewer->setMinimumSize(800, 600);
+  QFont monoFont("Courier New");
+  monoFont.setStyleHint(QFont::Monospace);
+  code_previewer->setFont(monoFont);
 
   code_previewer_layout->addWidget(code_previewer);
 
@@ -804,25 +807,20 @@ bool VisualShaderGraphicsScene::add_node_to_scene(const int& n_id, const std::sh
       &VisualShaderGraphicsScene::on_node_deleted);
   }
 
-  if (n_id != 0) {
-    QGraphicsProxyWidget* embed_widget_proxy{new QGraphicsProxyWidget(n_o)};
-    embed_widget_proxy->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
-    embed_widget_proxy->setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
+  int row_entry{VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, n_id)};
+  int node_type_field_number{VisualShaderGraphicsScene::get_node_type_field_number(nodes_model, row_entry)};
 
+  if (n_id != 0) {
     QWidget* embed_widget{new QWidget()};
-    embed_widget_proxy->setWidget(embed_widget);
 
     embed_widget->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
-    embed_widget->setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
+    embed_widget->setContentsMargins(2, 2, 2, 2);  // Left, top, right, bottom
 
     QVBoxLayout* embed_widget_layout = new QVBoxLayout(embed_widget);
     embed_widget_layout->setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
-    embed_widget_layout->setSizeConstraint(QLayout::SetNoConstraint);
+    embed_widget_layout->setSizeConstraint(QLayout::SetMinimumSize);
     embed_widget_layout->setSpacing(2);
     embed_widget_layout->setAlignment(Qt::AlignVCenter | Qt::AlignHCenter);
-
-    int row_entry{VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, n_id)};
-    int node_type_field_number{VisualShaderGraphicsScene::get_node_type_field_number(nodes_model, row_entry)};
 
     switch (proto_node->get_oneof_value_field_number()) {
       case VisualShader::VisualShaderNode::kInputFieldNumber: {
@@ -946,7 +944,7 @@ bool VisualShaderGraphicsScene::add_node_to_scene(const int& n_id, const std::sh
 
     // Create the button that will show/hide the shader previewer
     QPushButton* preview_shader_button = new QPushButton("Show Preview", embed_widget);
-    preview_shader_button->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
+    preview_shader_button->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Fixed);
     preview_shader_button->setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
     preview_shader_button->setToolTip("Show generated shader at this node");
     QObject::connect(preview_shader_button, &QPushButton::pressed, n_o,
@@ -954,8 +952,14 @@ bool VisualShaderGraphicsScene::add_node_to_scene(const int& n_id, const std::sh
 
     embed_widget_layout->addWidget(preview_shader_button);
 
-    embed_widget->setContentsMargins(2, 1, 2, 1);  // Left, top, right, bottom
     embed_widget->setLayout(embed_widget_layout);
+
+    // This must be done after the widget's layout is complete
+    // https://doc.qt.io/qt-6/qgraphicsproxywidget.html#setWidget
+    QGraphicsProxyWidget* embed_widget_proxy{new QGraphicsProxyWidget(n_o)};
+    embed_widget_proxy->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
+    embed_widget_proxy->setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
+    embed_widget_proxy->setWidget(embed_widget);
 
     n_o->set_embed_widget(embed_widget); // Set the embed widget to the node graphics object
 
@@ -966,6 +970,16 @@ bool VisualShaderGraphicsScene::add_node_to_scene(const int& n_id, const std::sh
   }
 
   n_o->update_layout(); // Update the layout of the node
+
+  // Now the update_layout function has been called and our ports are ready, let's update the current
+  // index if the node is input so that our ports gets the correct type
+  if (proto_node->get_oneof_value_field_number() == VisualShader::VisualShaderNode::kInputFieldNumber) {
+    QVariant current_index{visual_shader_model->data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
+      FieldPath::RepeatedAt(row_entry),
+      FieldPath::FieldNumber(node_type_field_number),
+      FieldPath::FieldNumber(VisualShaderNodeInput::kTypeFieldNumber)))};
+    n_o->on_input_node_out_port_type_changed(current_index.toInt());
+  }
 
   node_graphics_objects[n_id] = n_o;
 
@@ -1227,7 +1241,7 @@ int VisualShaderGraphicsScene::get_node_type_field_number(ProtoModel* nodes_mode
 bool VisualShaderGraphicsScene::add_connection_to_model(const int& c_id, const int& from_node_id, const int& from_port_index, const int& to_node_id,
                               const int& to_port_index) {
   CHECK_CONDITION_TRUE_NON_VOID(find_connection_entry(visual_shader_model, connections_model, c_id) != -1, false, "Connection already exists");
-  // CHECK_CONDITION_TRUE_NON_VOID(!is_valid_connection(from_node_id, from_port_index, to_node_id, to_port_index), false, "Invalid connection");
+  CHECK_CONDITION_TRUE_NON_VOID(!is_valid_connection(from_node_id, from_port_index, to_node_id, to_port_index), false, "Invalid connection");
 
   int row_entry{connections_model->append_row()};
 
@@ -1289,7 +1303,7 @@ bool VisualShaderGraphicsScene::add_connection_to_scene(const int& from_node_id,
   VisualShaderOutputPortGraphicsObject* from_o_port{from_n_o->get_output_port_graphics_object(from_port_index)};
   CHECK_PARAM_NULLPTR_NON_VOID(from_o_port, false, "Failed to get from output port graphics object");
 
-  // CHECK_CONDITION_TRUE_NON_VOID(!is_valid_connection(from_node_id, from_port_index, to_node_id, to_port_index), false, "Invalid connection");
+  CHECK_CONDITION_TRUE_NON_VOID(!is_valid_connection(from_node_id, from_port_index, to_node_id, to_port_index), false, "Invalid connection");
 
   CHECK_CONDITION_TRUE_NON_VOID(!check_if_connection_out_of_bounds(from_o_port, to_i_port), false, "Connection is out of bounds");
 
@@ -1325,7 +1339,7 @@ bool VisualShaderGraphicsScene::add_connection_to_scene(const int& c_id, const i
   VisualShaderInputPortGraphicsObject* to_i_port{to_n_o->get_input_port_graphics_object(to_port_index)};
   CHECK_PARAM_NULLPTR_NON_VOID(to_i_port, false, "Failed to get to input port graphics object");
 
-  // CHECK_CONDITION_TRUE_NON_VOID(!is_valid_connection(from_node_id, from_port_index, to_node_id, to_port_index), false, "Invalid connection");
+  CHECK_CONDITION_TRUE_NON_VOID(!is_valid_connection(from_node_id, from_port_index, to_node_id, to_port_index), false, "Invalid connection");
 
   CHECK_CONDITION_TRUE_NON_VOID(!check_if_connection_out_of_bounds(from_o_port, to_i_port), false, "Connection is out of bounds");
   CHECK_CONDITION_TRUE_NON_VOID(to_i_port->is_connected(), false, "Connection is already connected");
@@ -1370,6 +1384,45 @@ bool VisualShaderGraphicsScene::is_valid_connection(const int& from_node_id, con
   CHECK_PARAM_NULLPTR_NON_VOID(to_i_port, false, "Failed to get to input port graphics object");
 
   return controller_utils::is_valid_connection(from_o_port->get_port_type(), to_i_port->get_port_type());
+}
+
+void VisualShaderGraphicsScene::revalidate_connections(const int& n_id) {
+  VisualShaderNodeGraphicsObject* n_o{this->get_node_graphics_object(n_id)};
+  CHECK_PARAM_NULLPTR(n_o, "Node graphics object is null");
+
+  int in_port_count{n_o->get_input_port_count()};
+
+  for (int i{0}; i < in_port_count; i++) {
+    VisualShaderInputPortGraphicsObject* i_port{n_o->get_input_port_graphics_object(i)};
+    SILENT_CONTINUE_IF_TRUE(!i_port || !i_port->is_connected());
+
+    // Get the output port of the connection
+    const int c_id{i_port->get_c_id()};
+    VisualShaderConnectionGraphicsObject* c_o{get_connection_graphics_object(c_id)};
+    SILENT_CONTINUE_IF_TRUE(!c_o);
+
+    if (!is_valid_connection(c_o->get_from_node_id(), c_o->get_from_port_index(), n_id, i)) {
+      CONTINUE_IF_TRUE(!this->delete_connection(c_o->get_id(), c_o->get_from_node_id(), c_o->get_from_port_index(), n_id, i), "Failed to delete connection");
+    }
+  }
+
+  int out_port_count{n_o->get_output_port_count()};
+
+  for (int i{0}; i < out_port_count; i++) {
+    VisualShaderOutputPortGraphicsObject* o_port{n_o->get_output_port_graphics_object(i)};
+    SILENT_CONTINUE_IF_TRUE(!o_port || !o_port->is_connected());
+
+    std::unordered_set<int> c_ids{o_port->get_c_ids()};
+
+    for (const int& c_id : c_ids) {
+      VisualShaderConnectionGraphicsObject* c_o{get_connection_graphics_object(c_id)};
+      SILENT_CONTINUE_IF_TRUE(!c_o);
+
+      if (!is_valid_connection(n_id, i, c_o->get_to_node_id(), c_o->get_to_port_index())) {
+        CONTINUE_IF_TRUE(!this->delete_connection(c_o->get_id(), n_id, i, c_o->get_to_node_id(), c_o->get_to_port_index()), "Failed to delete connection");
+      }
+    }
+  }
 }
 
 bool VisualShaderGraphicsScene::delete_connection_from_model(const int& c_id) {
@@ -2173,6 +2226,12 @@ VisualShaderNodeGraphicsObject::~VisualShaderNodeGraphicsObject() {
   if (context_menu) delete context_menu;
 }
 
+void VisualShaderNodeGraphicsObject::on_input_node_out_port_type_changed(const int& new_index) {
+  VALIDATE_INDEX(0, out_port_count, "Invalid input port index");
+  out_port_types.at(0) = shadergen_utils::get_enum_value_port_type_by_value(VisualShaderNodeInputType_descriptor(), new_index);
+  out_port_graphics_objects.at(0)->set_port_type(out_port_types.at(0));
+}
+
 void VisualShaderNodeGraphicsObject::on_delete_node_action_triggered() {
   Q_EMIT node_deleted(n_id, in_port_count, out_port_count);
 }
@@ -2974,12 +3033,11 @@ std::pair<QPointF, QPointF> VisualShaderConnectionGraphicsObject::calculate_cont
 /**********************************************************************/
 
 VisualShaderNodeFieldComboBox::VisualShaderNodeFieldComboBox(const QVariant& initial_value, const int& n_id,
-                                                             const std::shared_ptr<IVisualShaderProtoNode>& proto_node,
-                                                             const EnumDescriptor* enum_descriptor, const int& field_number, QWidget* parent)
+                                                             const EnumDescriptor* enum_descriptor, const int& field_number, const bool& is_input_node, QWidget* parent)
     : QComboBox(parent),
       n_id(n_id),
-      proto_node(proto_node),
-      field_number(field_number) {
+      field_number(field_number),
+      is_input_node(is_input_node) {
   setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
   setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
 
@@ -2998,12 +3056,16 @@ VisualShaderNodeFieldComboBox::VisualShaderNodeFieldComboBox(const QVariant& ini
 
 void VisualShaderNodeFieldComboBox::on_current_index_changed(const int& index) {
   Q_EMIT node_update_requested(n_id, field_number, index);
+
+  if (is_input_node) {
+    Q_EMIT input_node_out_port_type_changed(index);
+    Q_EMIT revalidate_connections_requested(n_id);
+  }
 }
 
 VisualShaderNodeFieldLineEditFloat::VisualShaderNodeFieldLineEditFloat(const QVariant& initial_value, const int& n_id,
-    const std::shared_ptr<IVisualShaderProtoNode>& proto_node, const int& field_number, QWidget* parent)
-    : QLineEdit(parent), n_id(n_id), proto_node(proto_node),
-      field_number(field_number) {
+                                                                        const int& field_number, QWidget* parent)
+    : QLineEdit(parent), n_id(n_id), field_number(field_number) {
   setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
   setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
 
@@ -3024,9 +3086,7 @@ void VisualShaderNodeFieldLineEditFloat::on_text_changed(const QString& text) {
 }
 
 VisualShaderNodeFieldLineEditInt::VisualShaderNodeFieldLineEditInt(const QVariant& initial_value, const int& n_id,
-    const std::shared_ptr<IVisualShaderProtoNode>& proto_node, const int& field_number, QWidget* parent)
-    : QLineEdit(parent), n_id(n_id), proto_node(proto_node),
-      field_number(field_number) {
+   const int& field_number, QWidget* parent) : QLineEdit(parent), n_id(n_id), field_number(field_number) {
   setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
   setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
 
@@ -3047,9 +3107,7 @@ void VisualShaderNodeFieldLineEditInt::on_text_changed(const QString& text) {
 }
 
 VisualShaderNodeFieldLineEditUInt::VisualShaderNodeFieldLineEditUInt(const QVariant& initial_value, const int& n_id,
-    const std::shared_ptr<IVisualShaderProtoNode>& proto_node, const int& field_number, QWidget* parent)
-    : QLineEdit(parent), n_id(n_id), proto_node(proto_node),
-      field_number(field_number) {
+     const int& field_number, QWidget* parent) : QLineEdit(parent), n_id(n_id), field_number(field_number) {
   setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
   setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
 
@@ -3070,9 +3128,7 @@ void VisualShaderNodeFieldLineEditUInt::on_text_changed(const QString& text) {
 }
 
 VisualShaderNodeFieldCheckBox::VisualShaderNodeFieldCheckBox(const QVariant& initial_value, const int& n_id,
-    const std::shared_ptr<IVisualShaderProtoNode>& proto_node, const int& field_number, QWidget* parent)
-    : QCheckBox(parent), n_id(n_id), proto_node(proto_node),
-      field_number(field_number) {
+     const int& field_number, QWidget* parent) : QCheckBox(parent), n_id(n_id), field_number(field_number) {
   setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
   setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
 
