@@ -30,6 +30,7 @@
 
 #include <QtOpenGLWidgets/QOpenGLWidget>
 // #include <QOpenGLFunctions>
+#include <QTimer>
 #include <QElapsedTimer>
 #include <QtOpenGL/QOpenGLFunctions_4_3_Core>  // https://stackoverflow.com/a/64288966/14629018 explains why we need this.
 #include <QtOpenGL/QOpenGLShaderProgram>
@@ -64,12 +65,20 @@ class RendererWidget : public QOpenGLWidget, protected QOpenGLFunctions_4_3_Core
    private:
     std::unique_ptr<QOpenGLShaderProgram> shader_program;
     GLuint VAO, VBO;
+
+    QTimer render_timer;
     QElapsedTimer timer;
+
+    /**
+     * @brief We use this timer to debounce the compilation of 
+     *        the shader code. Too fast changes in the graph 
+     *        editor aren't worth compiling.
+     * 
+     */
+    QTimer compile_debounce_timer;
   
     std::string code;
-    bool shader_needs_update{false};
   
-    void init_shaders();
     void init_buffers();
     void update_shader_program();
   

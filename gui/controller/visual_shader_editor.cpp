@@ -1688,6 +1688,30 @@ VisualShaderConnectionGraphicsObject* VisualShaderGraphicsScene::get_connection_
   return c_o;
 }
 
+QImage VisualShaderGraphicsScene::get_output_shader_image() {
+  // Find the node connected to the output node
+  VisualShaderNodeGraphicsObject* n_o{get_node_graphics_object(0)};
+  CHECK_PARAM_NULLPTR_NON_VOID(n_o, QImage(), "Failed to get output node graphics object");
+
+  VisualShaderInputPortGraphicsObject* i_port{n_o->get_input_port_graphics_object(0)};
+  CHECK_PARAM_NULLPTR_NON_VOID(i_port, QImage(), "Failed to get output node input port graphics object");
+
+  CHECK_CONDITION_TRUE_NON_VOID(!i_port->is_connected(), QImage(), "Output node is not connected");
+
+  const int c_id{i_port->get_c_id()};
+
+  VisualShaderConnectionGraphicsObject* c_o{get_connection_graphics_object(c_id)};
+  CHECK_PARAM_NULLPTR_NON_VOID(c_o, QImage(), "Failed to get connection graphics object");
+
+  VisualShaderNodeGraphicsObject* from_n_o{get_node_graphics_object(c_o->get_from_node_id())};
+  CHECK_PARAM_NULLPTR_NON_VOID(from_n_o, QImage(), "Failed to get from node graphics object");
+
+  RendererWidget* spw{from_n_o->get_renderer_widget()};
+  CHECK_PARAM_NULLPTR_NON_VOID(spw, QImage(), "Failed to get shader preview widget");
+
+  return spw->grabFramebuffer();
+}
+
 void VisualShaderGraphicsScene::on_scene_update_requested() { update(); }
 
 void VisualShaderGraphicsScene::on_node_deleted(const int& n_id, const int& in_port_count, const int& out_port_count) {
@@ -2221,7 +2245,6 @@ VisualShaderNodeGraphicsObject::VisualShaderNodeGraphicsObject(const int& n_id, 
 
   setCacheMode(QGraphicsItem::DeviceCoordinateCache);
 
-  setVisible(true);
   setOpacity(this->opacity);
 
   setZValue(0);
@@ -2256,7 +2279,6 @@ VisualShaderNodeGraphicsObject::VisualShaderNodeGraphicsObject(const int& n_id, 
     // Create the shader previewer widget
     QGraphicsProxyWidget* renderer_widget_proxy{new QGraphicsProxyWidget(this)};
     renderer_widget = new RendererWidget();
-    renderer_widget->setVisible(false);
     renderer_widget_proxy->setWidget(renderer_widget);
   }
 
@@ -2711,7 +2733,6 @@ VisualShaderInputPortGraphicsObject::VisualShaderInputPortGraphicsObject(const Q
 
   setCacheMode(QGraphicsItem::DeviceCoordinateCache);
 
-  setVisible(true);
   setOpacity(this->opacity);
 
   setZValue(0);
@@ -2759,7 +2780,6 @@ VisualShaderOutputPortGraphicsObject::VisualShaderOutputPortGraphicsObject(const
 
   setCacheMode(QGraphicsItem::DeviceCoordinateCache);
 
-  setVisible(true);
   setOpacity(this->opacity);
 
   setZValue(0);

@@ -30,31 +30,35 @@
 #include "error_macros.hpp"
 
 RendererWidget::RendererWidget(QWidget* parent)
-    : QOpenGLWidget(parent), shader_program(nullptr), VAO(0), VBO(0) {}
+    : QOpenGLWidget(parent), shader_program(nullptr), VAO(0), VBO(0) {
+  setVisible(false);
+  
+  render_timer.setInterval(16); // ~60 FPS
+  connect(&render_timer, &QTimer::timeout, this, QOverload<>::of(&RendererWidget::update));
+  connect(&render_timer, &QTimer::timeout, this, &RendererWidget::scene_update_requested);
+
+  compile_debounce_timer.setSingleShot(true);
+  compile_debounce_timer.setInterval(300); // 300ms delay
+  connect(&compile_debounce_timer, &QTimer::timeout, this, &RendererWidget::update_shader_program);
+}
 
 RendererWidget::~RendererWidget() {
-  cleanup(); 
+  cleanup();
 }
 
 void RendererWidget::set_code(const std::string& new_code) {
-  if (new_code == code) return;
+  SILENT_CHECK_CONDITION_TRUE(this->code == new_code);
 
-  code = new_code;
-  shader_needs_update = true;
-  if (isVisible()) {
-    update_shader_program();
-    timer.restart();
-  }
+  this->code = new_code;
+
+  if (!compile_debounce_timer.isActive()) compile_debounce_timer.start();
 }
 
 void RendererWidget::initializeGL() {
-  CHECK_CONDITION_TRUE(!context() || !initializeOpenGLFunctions(), "Failed to initialize OpenGL functions");
+  CHECK_CONDITION_TRUE(!initializeOpenGLFunctions(), "Failed to initialize OpenGL functions");
 
-  glClearColor(0.0f, 0.0f, 0.0f, 1.0f);  // Black background
   init_buffers();
-  init_shaders();
-
-  timer.start();
+  update_shader_program();
 
   connect(context(), &QOpenGLContext::aboutToBeDestroyed, this, &RendererWidget::cleanup);
 }
@@ -62,54 +66,43 @@ void RendererWidget::initializeGL() {
 void RendererWidget::resizeGL(int w, int h) { glViewport(0, 0, w, h); }
 
 void RendererWidget::paintGL() {
-  if (!isVisible()) return;
-
-  // Ensure we have working shaders
-  if (!shader_program || !shader_program->isLinked()) {
-    glClearColor(1.0f, 0.0f, 1.0f, 1.0f);  // Error magenta
-    glClear(GL_COLOR_BUFFER_BIT);
-    return;
-  }
-
-  if (shader_needs_update) {
-    update_shader_program();
-  }
-
-  float time_value = timer.elapsed() * 0.001f;
+  SILENT_CHECK_CONDITION_TRUE(!isVisible());
 
   glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
   glClear(GL_COLOR_BUFFER_BIT);
 
-  shader_program->bind();
-  shader_program->setUniformValue("uTime", time_value);
+  CHECK_PARAM_NULLPTR(shader_program, "Shader program is null");
+  
+  CHECK_CONDITION_TRUE(!shader_program->bind(), "Failed to bind shader program");
+  
+  float time_value = timer.elapsed() * 0.001f; // Convert ms to seconds
+  int utime_location = shader_program->uniformLocation("uTime");
+  CHECK_CONDITION_TRUE(utime_location == -1, "Failed to get uniform location for uTime");
+  shader_program->setUniformValue(utime_location, time_value);
 
   glBindVertexArray(VAO);
   glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
   glBindVertexArray(0);
 
   shader_program->release();
-
-  if (isVisible()) {
-    update();  // Request a repaint
-    Q_EMIT scene_update_requested();
-  }
 }
 
 void RendererWidget::cleanup() {
-  if (!context() || !context()->isValid()) return;
-
   makeCurrent();
   glDeleteVertexArrays(1, &VAO);
   glDeleteBuffers(1, &VBO);
   VAO = VBO = 0;
-  shader_program.reset();  // Destroy shader program while context is valid
   doneCurrent();
+  disconnect(context(), &QOpenGLContext::aboutToBeDestroyed, this, &RendererWidget::cleanup);
 }
 
 void RendererWidget::init_buffers() {
-  float vertices[] = {
-      // coordinates    // frag coords
-      -1.0f, 1.0f, 0.0f, 1.0f, -1.0f, -1.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, -1.0f, 1.0f, 0.0f};
+  const float vertices[] = {
+    -1.0f,  1.0f,  0.0f,  1.0f,
+    -1.0f, -1.0f,  0.0f,  0.0f,
+     1.0f,  1.0f,  1.0f,  1.0f,
+     1.0f, -1.0f,  1.0f,  0.0f
+  };
 
   glGenVertexArrays(1, &VAO);
   glGenBuffers(1, &VBO);
@@ -132,10 +125,10 @@ void RendererWidget::init_buffers() {
 void RendererWidget::update_shader_program() {
   makeCurrent();  // Ensure OpenGL context is current for shader operations
   
-  auto new_program = std::make_unique<QOpenGLShaderProgram>();
+  std::unique_ptr<QOpenGLShaderProgram> new_program = std::make_unique<QOpenGLShaderProgram>(this);
   
   const char* vertex_shader_source = R"(
-      #version 330 core
+      #version 430 core
       layout(location = 0) in vec2 aPos;
       layout(location = 1) in vec2 aFragCoord;
 
@@ -147,17 +140,22 @@ void RendererWidget::update_shader_program() {
       }
   )";
 
-  std::string fragment_shader_source{code.empty() ? R"(
-      #version 330 core
-      out vec4 FragColor;
-      in vec2 FragCoord;
+  std::string fragment_shader_source;
+  if (code.empty()) {
+    fragment_shader_source = R"(
+        #version 430 core
+        out vec4 FragColor;
+        in vec2 FragCoord;
 
-      uniform float uTime;
+        uniform float uTime;
 
-      void main() {
-        FragColor = vec4(0.0, 0.0, 0.0, 1.0);
-      }
-  )" : "#version 330 core\n\n" + code};
+        void main() {
+          FragColor = vec4(0.0, 0.0, 0.0, 1.0);
+        }
+    )";
+  } else {
+    fragment_shader_source = "#version 430 core\n\n" + code;
+  }
 
   // Add shaders to new_program instead of shader_program
   if (!new_program->addShaderFromSourceCode(QOpenGLShader::Vertex, vertex_shader_source)) {
@@ -178,25 +176,19 @@ void RendererWidget::update_shader_program() {
     return;
   }
   
-  // Swap only if all operations succeed
   shader_program.swap(new_program);
-  shader_needs_update = false;
   
   doneCurrent();  // Release the context
 }
 
-void RendererWidget::init_shaders() { update_shader_program(); }
-
 void RendererWidget::showEvent(QShowEvent* event) {
   QOpenGLWidget::showEvent(event);
-  if (!timer.isValid()) {
-    timer.start();  // Start the timer on first show
-    update();
-  }
+  render_timer.start();
+  if (!timer.isValid()) timer.start();
 }
 
 void RendererWidget::hideEvent(QHideEvent* event) {
   QOpenGLWidget::hideEvent(event);
-  timer.invalidate();
-  cleanup();
+  if (timer.isValid()) timer.invalidate();
+  render_timer.stop();
 }

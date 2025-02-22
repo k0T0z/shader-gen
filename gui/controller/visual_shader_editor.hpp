@@ -372,6 +372,8 @@ class VisualShaderGraphicsScene : public QGraphicsScene {
   VisualShaderNodeGraphicsObject* get_node_graphics_object(const int& n_id) const;
   VisualShaderConnectionGraphicsObject* get_connection_graphics_object(const int& c_id) const;
 
+  QImage get_output_shader_image();
+
   static int get_new_node_id(ProtoModel* visual_shader_model, ProtoModel* nodes_model);
   static int get_new_connection_id(ProtoModel* visual_shader_model, ProtoModel* connections_model);
   static int find_node_entry(ProtoModel* visual_shader_model, ProtoModel* nodes_model, const int& n_id);
