@@ -30,9 +30,9 @@
 #include "error_macros.hpp"
 
 RendererWidget::RendererWidget(QWidget* parent)
-    : QOpenGLWidget(parent), shader_program(nullptr), VAO(0), VBO(0) {
+    : QOpenGLWidget(parent), shader_program(nullptr), VAO(0), VBO(0), render_timer(this), compile_debounce_timer(this) {
   setVisible(false);
-  
+
   render_timer.setInterval(16); // ~60 FPS
   connect(&render_timer, &QTimer::timeout, this, QOverload<>::of(&RendererWidget::update));
   connect(&render_timer, &QTimer::timeout, this, &RendererWidget::scene_update_requested);
