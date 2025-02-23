@@ -94,6 +94,7 @@ void AIAgentFitnessCalculator::init() {
   current_output_renderer->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
   current_output_renderer->setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
   current_output_renderer->setToolTip("The current output");
+  current_output_renderer->setFixedSize(256, 256);
 
   curent_output_renderer_layout->addWidget(current_output_renderer);
 
@@ -116,6 +117,7 @@ void AIAgentFitnessCalculator::init() {
   target_output->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
   target_output->setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
   target_output->setToolTip("The target output");
+  target_output->setFixedSize(256, 256);
 
   target_output_layout->addWidget(target_output);
 
