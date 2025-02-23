@@ -66,6 +66,18 @@ std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>> to_generator
 
 std::pair<std::map<ConnectionKey, std::shared_ptr<Connection>>, std::map<ConnectionKey, std::shared_ptr<Connection>>> to_input_output_connections_by_key(const ProtoModel* connections) noexcept;
 
+/**
+ * @brief This function generates the shader code from the visual shader graph.
+ * 
+ * @note @c compile_graph is another good name for this function.
+ * 
+ * @param proto_nodes 
+ * @param generators 
+ * @param input_output_connections_by_key 
+ * @param code_buffer 
+ * @return true 
+ * @return false 
+ */
 bool generate_shader(
   const std::unordered_map<int, std::shared_ptr<IVisualShaderProtoNode>>& proto_nodes, 
   const std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>>& generators, 
