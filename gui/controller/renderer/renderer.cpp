@@ -31,8 +31,6 @@
 
 RendererWidget::RendererWidget(QWidget* parent)
     : QOpenGLWidget(parent), shader_program(nullptr), VAO(0), VBO(0), render_timer(this), compile_debounce_timer(this) {
-  setVisible(false);
-
   render_timer.setInterval(32); // ~30 FPS
   connect(&render_timer, &QTimer::timeout, this, QOverload<>::of(&RendererWidget::update));
   connect(&render_timer, &QTimer::timeout, this, &RendererWidget::scene_update_requested);
@@ -66,8 +64,6 @@ void RendererWidget::initializeGL() {
 void RendererWidget::resizeGL(int w, int h) { glViewport(0, 0, w, h); }
 
 void RendererWidget::paintGL() {
-  SILENT_CHECK_CONDITION_TRUE(!isVisible());
-
   glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
   glClear(GL_COLOR_BUFFER_BIT);
 
@@ -196,12 +192,20 @@ void main() {
 
 void RendererWidget::showEvent(QShowEvent* event) {
   QOpenGLWidget::showEvent(event);
-  render_timer.start();
+
+  if (!render_timer.isActive()) render_timer.start();
+  else {
+    render_timer.stop();
+    render_timer.start();
+  }
+
   if (!timer.isValid()) timer.start();
 }
 
 void RendererWidget::hideEvent(QHideEvent* event) {
   QOpenGLWidget::hideEvent(event);
+  
   if (timer.isValid()) timer.invalidate();
-  render_timer.stop();
+
+  if (render_timer.isActive()) render_timer.stop();
 }

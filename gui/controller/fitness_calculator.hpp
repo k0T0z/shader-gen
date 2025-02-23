@@ -25,67 +25,59 @@
 /*                                                                               */
 /*********************************************************************************/
 
-#include "main.hpp"
+#ifndef SHADER_GEN_AI_AGENT_FITNESS_CALCULATOR_HPP
+#define SHADER_GEN_AI_AGENT_FITNESS_CALCULATOR_HPP
 
-#include <QApplication>
-#include <QCommandLineOption>
-#include <QCommandLineParser>
-#include <filesystem>
+#include <QWidget>
+#include <QVBoxLayout>
+#include <QPushButton>
+#include <QLabel>
 
-#include "gui/model/schema/visual_shader.pb.h"
+#include "gui/controller/renderer/renderer.hpp"
 
-#include "gui/controller/visual_shader_editor.hpp"
-#include "gui/model/message_model.hpp"
+class CurrentOutputRenderer;
 
-// The leak reports are not enough, it is better to use UMDH
-// https://learn.microsoft.com/en-us/windows-hardware/drivers/debugger/umdh
-#if defined(SHADER_GEN_DEBUG) && defined(_MSC_VER)
-#include <crtdbg.h>
-#endif  // SHADER_GEN_DEBUG && _MSC_VER
+class AIAgentFitnessCalculator : public QWidget {
+  Q_OBJECT
 
-using VisualShader = gui::model::schema::VisualShader;
+ public:
+  AIAgentFitnessCalculator(QWidget* parent = nullptr);
+  ~AIAgentFitnessCalculator() override = default;
 
-int main(int argc, char** argv) {
-  // Verify that the version of the library that we linked against is
-  // compatible with the version of the headers we compiled against.
-  GOOGLE_PROTOBUF_VERIFY_VERSION;
+ private Q_SLOTS:
+  void on_load_image_button_pressed();
 
-#if defined(SHADER_GEN_DEBUG) && defined(_MSC_VER)
-  // Enable run-time memory check for debug builds in MSVC
-  _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
-#endif  // SHADER_GEN_DEBUG && _MSC_VER
+ private:
+  QVBoxLayout* layout;
 
-#ifdef SHADER_GEN_DEBUG
-  qputenv("QT_DEBUG_PLUGINS", "1");  // Enable plugin diagnostics
-#endif  // SHADER_GEN_DEBUG
+  QHBoxLayout* menu_bar;
+  QPushButton* load_image_button;
 
-  QApplication shader_gen_app(argc, argv);
-  QCoreApplication::setOrganizationName(ENIGMA_ORG_NAME);
-  QCoreApplication::setApplicationName(SHADER_GEN_PROJECT_NAME);
-  QCoreApplication::setApplicationVersion(SHADER_GEN_PROJECT_VERSION);
-  QCommandLineParser parser;
-  parser.setApplicationDescription(QCoreApplication::applicationName());
-  parser.addHelpOption();
-  parser.addVersionOption();
-  parser.process(shader_gen_app);
+  QHBoxLayout* outputs_layout;
 
-  VisualShader visual_shader;
+  QVBoxLayout* curent_output_renderer_layout;
+  QLabel* current_output_renderer_label;
+  CurrentOutputRenderer* current_output_renderer;
 
-  MessageModel* root_model = new MessageModel(&visual_shader);
-  bool load_result = dynamic_cast<ProtoModel*>(root_model)->loadFromJson("model.json");
-  if (!load_result) {
-  	ERROR_PRINT("Failed to load model from JSON");
-  }
-  root_model->build_sub_models();
+  QVBoxLayout* target_output_layout;
+  QLabel* target_output_label;
+  QWidget* target_output;
 
-  VisualShaderEditor* w = new VisualShaderEditor(root_model);
 
-  w->show();
+  /**
+   * @brief Initializes the UI
+   * 
+   */
+  void init();
+};
 
-  int result{shader_gen_app.exec()};
+class CurrentOutputRenderer : public RendererWidget {
+  Q_OBJECT
 
-  delete w;
-  delete root_model;
+ public:
+  CurrentOutputRenderer(QWidget* parent = nullptr);
+  ~CurrentOutputRenderer() override = default;
+};
 
-  return result;
-}
+#endif  // SHADER_GEN_AI_AGENT_FITNESS_CALCULATOR_HPP
+  

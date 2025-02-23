@@ -78,8 +78,15 @@ VisualShaderEditor::VisualShaderEditor(MessageModel* model, QWidget* parent)
       create_node_dialog(nullptr),
       visual_shader_model(model),
       nodes_model(nullptr),
-      connections_model(nullptr) {
+      connections_model(nullptr),
+      fitness_calculator(nullptr) {
+  resize(1440, 720);
+
   VisualShaderEditor::init();
+}
+
+VisualShaderEditor::~VisualShaderEditor() {
+  delete fitness_calculator;
 }
 
 void VisualShaderEditor::init() {
@@ -150,7 +157,7 @@ void VisualShaderEditor::init() {
   scene_layer_layout->setSizeConstraint(QLayout::SetNoConstraint);
   scene_layer_layout->setAlignment(Qt::AlignVCenter | Qt::AlignHCenter);
 
-  scene = new VisualShaderGraphicsScene();
+  scene = new VisualShaderGraphicsScene(scene_layer);
   scene->set_editor(this);
 
   view = new VisualShaderGraphicsView(scene, scene_layer);
@@ -240,12 +247,12 @@ void VisualShaderEditor::init() {
   menu_bar->addWidget(zoom_out_button);
   QObject::connect(zoom_out_button, &QPushButton::pressed, view, &VisualShaderGraphicsView::zoom_out);
 
-  load_image_button = new QPushButton("Load Image", scene_layer);
-  load_image_button->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
-  load_image_button->setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
-  load_image_button->setToolTip("Load an image to match");
-  menu_bar->addWidget(load_image_button);
-  QObject::connect(load_image_button, &QPushButton::pressed, this, &VisualShaderEditor::on_load_image_button_pressed);
+  // load_image_button = new QPushButton("Load Image", scene_layer);
+  // load_image_button->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
+  // load_image_button->setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
+  // load_image_button->setToolTip("Load an image to match");
+  // menu_bar->addWidget(load_image_button);
+  // QObject::connect(load_image_button, &QPushButton::pressed, this, &VisualShaderEditor::on_load_image_button_pressed);
 
   match_image_button = new QPushButton("Match Image", scene_layer);
   match_image_button->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
@@ -253,6 +260,8 @@ void VisualShaderEditor::init() {
   match_image_button->setToolTip("Match the shader to the loaded image");
   menu_bar->addWidget(match_image_button);
   QObject::connect(match_image_button, &QPushButton::pressed, this, &VisualShaderEditor::on_match_image_button_pressed);
+
+  fitness_calculator = new AIAgentFitnessCalculator();
 
   // Set the top layer layout.
   top_layer->setLayout(menu_bar);
@@ -559,7 +568,9 @@ void VisualShaderEditor::on_load_image_button_pressed() {
   // sprites have multiple frames, which is a headache for this project because it's a lot more behavior we need to define
 }
 
-void VisualShaderEditor::on_match_image_button_pressed() {}
+void VisualShaderEditor::on_match_image_button_pressed() {
+  fitness_calculator->show();
+}
 
 std::vector<std::string> VisualShaderEditor::parse_node_category_path(const std::string& n_category_path) {
   std::vector<std::string> tokens;
@@ -2274,11 +2285,18 @@ VisualShaderNodeGraphicsObject::VisualShaderNodeGraphicsObject(const int& n_id, 
   if (n_id == 0) {
     QGraphicsProxyWidget* matching_image_widget_proxy{new QGraphicsProxyWidget(this)};
     matching_image_widget = new OriginalMatchingImageWidget();
+    matching_image_widget->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
+    matching_image_widget->setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
+
     matching_image_widget_proxy->setWidget(matching_image_widget);
   } else {
     // Create the shader previewer widget
     QGraphicsProxyWidget* renderer_widget_proxy{new QGraphicsProxyWidget(this)};
     renderer_widget = new RendererWidget();
+    renderer_widget->setVisible(false);
+    renderer_widget->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
+    renderer_widget->setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
+    
     renderer_widget_proxy->setWidget(renderer_widget);
   }
 

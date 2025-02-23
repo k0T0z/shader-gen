@@ -71,6 +71,7 @@
 #include "gui/controller/vs_proto_node.hpp"
 
 #include "gui/controller/renderer/renderer.hpp"
+#include "gui/controller/fitness_calculator.hpp"
 
 using EnumDescriptor = google::protobuf::EnumDescriptor;
 
@@ -104,7 +105,7 @@ class VisualShaderEditor : public QWidget {
   };
 
   VisualShaderEditor(MessageModel* model, QWidget* parent = nullptr);
-  ~VisualShaderEditor() override = default;
+  ~VisualShaderEditor() override;
 
   VisualShaderGraphicsScene* get_scene() const { return scene; }
   VisualShaderGraphicsView* get_view() const { return view; }
@@ -203,6 +204,8 @@ class VisualShaderEditor : public QWidget {
   // Sub-Models
   ProtoModel* nodes_model;
   ProtoModel* connections_model;
+
+  AIAgentFitnessCalculator* fitness_calculator;
 
   /**
    * @brief Initializes the UI
