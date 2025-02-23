@@ -53,14 +53,9 @@ class RendererWidget : public QOpenGLWidget, protected QOpenGLFunctions_4_3_Core
   
    Q_SIGNALS:
     void scene_update_requested();
-  
-   protected:
-    void initializeGL() override;
-    void resizeGL(int w, int h) override;
-    void paintGL() override;
-  
-    void showEvent(QShowEvent* event) override;
-    void hideEvent(QHideEvent* event) override;
+
+   private Q_SLOTS:
+    void update_shader_program();
   
    private:
     std::unique_ptr<QOpenGLShaderProgram> shader_program;
@@ -78,9 +73,15 @@ class RendererWidget : public QOpenGLWidget, protected QOpenGLFunctions_4_3_Core
     QTimer compile_debounce_timer;
   
     std::string code;
+
+    void initializeGL() override;
+    void resizeGL(int w, int h) override;
+    void paintGL() override;
+  
+    void showEvent(QShowEvent* event) override;
+    void hideEvent(QHideEvent* event) override;
   
     void init_buffers();
-    void update_shader_program();
   
     void cleanup();
   };

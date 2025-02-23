@@ -33,7 +33,7 @@ RendererWidget::RendererWidget(QWidget* parent)
     : QOpenGLWidget(parent), shader_program(nullptr), VAO(0), VBO(0), render_timer(this), compile_debounce_timer(this) {
   setVisible(false);
 
-  render_timer.setInterval(16); // ~60 FPS
+  render_timer.setInterval(32); // ~30 FPS
   connect(&render_timer, &QTimer::timeout, this, QOverload<>::of(&RendererWidget::update));
   connect(&render_timer, &QTimer::timeout, this, &RendererWidget::scene_update_requested);
 
@@ -75,10 +75,11 @@ void RendererWidget::paintGL() {
   
   CHECK_CONDITION_TRUE(!shader_program->bind(), "Failed to bind shader program");
   
-  float time_value = timer.elapsed() * 0.001f; // Convert ms to seconds
   int utime_location = shader_program->uniformLocation("uTime");
-  CHECK_CONDITION_TRUE(utime_location == -1, "Failed to get uniform location for uTime");
-  shader_program->setUniformValue(utime_location, time_value);
+  if (utime_location != -1) {
+    float time_value = timer.elapsed() * 0.001f; // Convert ms to seconds
+    shader_program->setUniformValue(utime_location, time_value);
+  }
 
   glBindVertexArray(VAO);
   glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
@@ -98,10 +99,10 @@ void RendererWidget::cleanup() {
 
 void RendererWidget::init_buffers() {
   const float vertices[] = {
-    -1.0f,  1.0f,  0.0f,  1.0f,
-    -1.0f, -1.0f,  0.0f,  0.0f,
-     1.0f,  1.0f,  1.0f,  1.0f,
-     1.0f, -1.0f,  1.0f,  0.0f
+    -1.0f,  1.0f,  0.0f,  1.0f,  // Vertex 1: Position (x,y), FragCoord (u,v)
+    -1.0f, -1.0f,  0.0f,  0.0f,  // Vertex 2: Position (x,y), FragCoord (u,v)
+     1.0f,  1.0f,  1.0f,  1.0f,  // Vertex 3: Position (x,y), FragCoord (u,v)
+     1.0f, -1.0f,  1.0f,  0.0f   // Vertex 4: Position (x,y), FragCoord (u,v)
   };
 
   glGenVertexArrays(1, &VAO);
@@ -123,35 +124,45 @@ void RendererWidget::init_buffers() {
 }
 
 void RendererWidget::update_shader_program() {
+  SILENT_CHECK_CONDITION_TRUE(!isInitialized());
+
   makeCurrent();  // Ensure OpenGL context is current for shader operations
   
   std::unique_ptr<QOpenGLShaderProgram> new_program = std::make_unique<QOpenGLShaderProgram>(this);
   
   const char* vertex_shader_source = R"(
-      #version 430 core
-      layout(location = 0) in vec2 aPos;
-      layout(location = 1) in vec2 aFragCoord;
 
-      out vec2 FragCoord;
+#version 430 core
 
-      void main() {
-        gl_Position = vec4(aPos, 0.0, 1.0);
-        FragCoord = aFragCoord;
-      }
+#line 0  // Reset line numbers for better error messages
+layout(location = 0) in vec2 aPos;
+layout(location = 1) in vec2 aFragCoord;
+
+out vec2 FragCoord;
+
+void main() {
+  gl_Position = vec4(aPos, 0.0, 1.0);
+  FragCoord = aFragCoord;
+}
+
   )";
 
   std::string fragment_shader_source;
   if (code.empty()) {
     fragment_shader_source = R"(
-        #version 430 core
-        out vec4 FragColor;
-        in vec2 FragCoord;
 
-        uniform float uTime;
+#version 430 core
 
-        void main() {
-          FragColor = vec4(0.0, 0.0, 0.0, 1.0);
-        }
+#line 0  // Reset line numbers for better error messages
+out vec4 FragColor;
+in vec2 FragCoord;
+
+uniform float uTime;
+
+void main() {
+  FragColor = vec4(0.0, 0.0, 0.0, 1.0);
+}
+
     )";
   } else {
     fragment_shader_source = "#version 430 core\n\n" + code;
