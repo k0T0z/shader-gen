@@ -89,6 +89,8 @@ void RendererWidget::paintGL() {
 }
 
 void RendererWidget::cleanup() {
+  SILENT_CHECK_CONDITION_TRUE(!isInitialized());
+
   makeCurrent();
   glDeleteVertexArrays(1, &VAO);
   glDeleteBuffers(1, &VBO);
