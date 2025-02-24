@@ -221,6 +221,7 @@ void CurrentOutputRenderer::initializeGL() {
   update_shader_program();
 
   // Since update_shader_program() releases the context, we need to make it current again
+  // https://doc.qt.io/qt-6/qopenglframebufferobject.html#details
   makeCurrent();
 
   // Initialize FBO for rendering at 256x256
