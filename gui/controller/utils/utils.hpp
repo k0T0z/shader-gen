@@ -128,6 +128,26 @@ inline static bool is_valid_connection(const VisualShaderNodePortType& source_po
 
   return false;
 }
+
+inline static bool is_node_field_affects_port_type(const int& node_type_field_number, const int& field_number) noexcept {
+  switch (node_type_field_number) {
+    case VisualShader::VisualShaderNode::kInputFieldNumber:
+    case VisualShader::VisualShaderNode::kVectorOpFieldNumber:
+    case VisualShader::VisualShaderNode::kVectorFuncFieldNumber:
+    case VisualShader::VisualShaderNode::kVectorLenFieldNumber:
+      if (field_number == VisualShaderNodeInput::kTypeFieldNumber ||
+          field_number == VisualShaderNodeVectorOp::kTypeFieldNumber ||
+          field_number == VisualShaderNodeVectorFunc::kTypeFieldNumber ||
+          field_number == VisualShaderNodeVectorLen::kTypeFieldNumber) {
+        return true;
+      }
+      break;
+    default:
+      break;
+  }
+
+  return false;
+}
 }  // namespace controller_utils
 
 #endif  // CONTROLLER_UTILS_HPP

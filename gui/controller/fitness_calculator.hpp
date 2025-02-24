@@ -95,9 +95,6 @@ class CurrentOutputRenderer : public QOpenGLWidget, protected QOpenGLFunctions_4
   
   QImage get_pixel_data() const;
 
- Q_SIGNALS:
-  void scene_update_requested();
-
  private Q_SLOTS:
   void update_shader_program();
 

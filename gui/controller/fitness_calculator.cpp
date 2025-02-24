@@ -191,7 +191,6 @@ CurrentOutputRenderer::CurrentOutputRenderer(QWidget* parent)
     : QOpenGLWidget(parent), fbo(nullptr), texture_shader_program(nullptr), VAO(0), VBO(0), render_timer(this), compile_debounce_timer(this) {
   render_timer.setInterval(32); // ~30 FPS
   connect(&render_timer, &QTimer::timeout, this, QOverload<>::of(&CurrentOutputRenderer::update));
-  connect(&render_timer, &QTimer::timeout, this, &CurrentOutputRenderer::scene_update_requested);
 
   compile_debounce_timer.setSingleShot(true);
   compile_debounce_timer.setInterval(300); // 300ms delay

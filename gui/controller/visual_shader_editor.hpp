@@ -611,10 +611,11 @@ class VisualShaderNodeGraphicsObject : public QGraphicsObject {
   void in_port_remove_requested(VisualShaderInputPortGraphicsObject* in_port);
   void out_port_remove_requested(VisualShaderOutputPortGraphicsObject* out_port);
 
+  void port_type_changed(const VisualShaderNodePortType& p_type);
+
  public Q_SLOTS:
   void on_preview_shader_button_pressed();
-
-  void on_input_node_out_port_type_changed(const int& new_index);
+  void on_port_type_changed(const VisualShaderNodePortType& p_type);
 
  private Q_SLOTS:
   /**
@@ -767,6 +768,9 @@ class VisualShaderInputPortGraphicsObject : public QGraphicsObject {
   }
   bool is_connected() const { return this->c_id != -1; }
 
+ public Q_SLOTS:
+  void on_port_type_changed(const VisualShaderNodePortType& p_type) { this->port_type = p_type; }
+
  Q_SIGNALS:
   /**
    * @brief Called when the an interaction with the port is made.
@@ -785,7 +789,7 @@ class VisualShaderInputPortGraphicsObject : public QGraphicsObject {
   QRectF rect;
   const int n_id;
   const int p_index;
-  const VisualShaderNodePortType port_type;
+  VisualShaderNodePortType port_type;
 
   int c_id;
 
@@ -834,6 +838,9 @@ class VisualShaderOutputPortGraphicsObject : public QGraphicsObject {
     return true;
   }
   bool is_connected() const { return c_ids.size() > 0; }
+
+ public Q_SLOTS:
+  void on_port_type_changed(const VisualShaderNodePortType& p_type) { this->port_type = p_type; }
 
  Q_SIGNALS:
   /**
@@ -977,14 +984,14 @@ class VisualShaderNodeFieldComboBox : public QComboBox {
 
  public:
   VisualShaderNodeFieldComboBox(const QVariant& initial_value, const int& n_id,
-                                    const EnumDescriptor* enum_descriptor, const int& field_number, const bool& is_input_node, QWidget* parent = nullptr);
+                                    const EnumDescriptor* enum_descriptor, const int& field_number, QWidget* parent = nullptr);
   ~VisualShaderNodeFieldComboBox() = default;
 
   void set_current_index(const int& index) { this->setCurrentIndex(index); }
 
  Q_SIGNALS:
   void node_update_requested(const int& n_id, const int& field_number, const QVariant& value);
-  void input_node_out_port_type_changed(const int& new_index);
+  void port_type_changed(const VisualShaderNodePortType& p_type);
   void revalidate_connections_requested(const int& n_id);
 
  private Q_SLOTS:
@@ -992,8 +999,8 @@ class VisualShaderNodeFieldComboBox : public QComboBox {
 
  private:
   int n_id;
+  const EnumDescriptor* enum_descriptor;
   int field_number;
-  bool is_input_node;
 };
 
 class VisualShaderNodeFieldLineEditFloat : public QLineEdit {
@@ -1101,16 +1108,16 @@ private:
       FieldPath::RepeatedAt(row_entry), \
       FieldPath::FieldNumber(node_type_field_number), \
       FieldPath::FieldNumber(field_number)))}; \
-    const bool is_input_node = proto_node->get_oneof_value_field_number() == VisualShader::VisualShaderNode::kInputFieldNumber; \
-    VisualShaderNodeFieldComboBox* node_field_widget = new VisualShaderNodeFieldComboBox(initial_value, n_id, enum_descriptor, field_number, is_input_node, embed_widget); \
+    VisualShaderNodeFieldComboBox* node_field_widget = new VisualShaderNodeFieldComboBox(initial_value, n_id, enum_descriptor, field_number, embed_widget); \
     node_field_widget->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Fixed); \
     node_field_widget->setContentsMargins(0, 0, 0, 0);  \
     embed_widget_layout->addWidget(node_field_widget); \
     QObject::connect(node_field_widget, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &VisualShaderGraphicsScene::on_update_renderer_widgets_requested); \
     QObject::connect(node_field_widget, &VisualShaderNodeFieldComboBox::node_update_requested, this, &VisualShaderGraphicsScene::update_node_in_model); \
-    if (is_input_node) { \
-      QObject::connect(node_field_widget, &VisualShaderNodeFieldComboBox::input_node_out_port_type_changed, n_o, &VisualShaderNodeGraphicsObject::on_input_node_out_port_type_changed); \
+    if (controller_utils::is_node_field_affects_port_type(node_type_field_number, field_number)) { \
+      QObject::connect(node_field_widget, &VisualShaderNodeFieldComboBox::port_type_changed, n_o, &VisualShaderNodeGraphicsObject::port_type_changed); \
       QObject::connect(node_field_widget, &VisualShaderNodeFieldComboBox::revalidate_connections_requested, this, &VisualShaderGraphicsScene::revalidate_connections); \
+      Q_EMIT node_field_widget->port_type_changed(shadergen_utils::get_enum_value_port_type_by_value(enum_descriptor, initial_value.toInt())); \
     } \
     node_field_widgets[n_id][field_number] = node_field_widget; \
   } else                                                                                                        \

@@ -30,6 +30,13 @@ package gui.model.schema;
 
 import "google/protobuf/descriptor.proto";
 
+extend google.protobuf.EnumValueOptions {
+    optional string eo_id_start = 70000;
+    optional string value_caption = 70001;
+    optional VisualShaderNodePortType value_port_type = 70002;
+    optional string value_name = 70003;
+}
+
 // https://protobuf.dev/programming-guides/proto3/#enum-default
 enum VisualShaderNodePortType {
     PORT_TYPE_UNSPECIFIED = 0;
@@ -54,10 +61,10 @@ enum VisualShaderNodeCategory {
 };
 
 enum VisualShaderNodeVectorType {
-    TYPE_VECTOR_UNSPECIFIED = 0 [(value_caption) = "UNSPECIFIED"];
-    TYPE_VECTOR_2D = 1 [(value_caption) = "Vector2D"];
-    TYPE_VECTOR_3D = 2 [(value_caption) = "Vector3D"];
-    TYPE_VECTOR_4D = 3 [(value_caption) = "Vector4D"];
+    TYPE_VECTOR_UNSPECIFIED = 0 [(value_caption) = "UNSPECIFIED", (value_port_type) = PORT_TYPE_UNSPECIFIED];
+    TYPE_VECTOR_2D = 1 [(value_caption) = "Vector2D", (value_port_type) = PORT_TYPE_VECTOR_2D];
+    TYPE_VECTOR_3D = 2 [(value_caption) = "Vector3D", (value_port_type) = PORT_TYPE_VECTOR_3D];
+    TYPE_VECTOR_4D = 3 [(value_caption) = "Vector4D", (value_port_type) = PORT_TYPE_VECTOR_4D];
 };
 
 // See:
@@ -82,13 +89,6 @@ extend google.protobuf.MessageOptions {
     VisualShaderNodeCategory node_category = 60009;
 
     string node_description = 60010;
-}
-
-extend google.protobuf.EnumValueOptions {
-    optional string eo_id_start = 70000;
-    optional string value_caption = 70001;
-    optional VisualShaderNodePortType value_port_type = 70002;
-    optional string value_name = 70003;
 }
 
 /*************************************/
