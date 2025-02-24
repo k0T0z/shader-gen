@@ -569,7 +569,30 @@ void VisualShaderEditor::on_load_image_button_pressed() {
 }
 
 void VisualShaderEditor::on_match_image_button_pressed() {
-  fitness_calculator->show();
+  if (!fitness_calculator->isVisible()) {
+    fitness_calculator->show();
+  }
+
+  // Find the node connected to the output node and generate the shader code at it
+  VisualShaderNodeGraphicsObject* n_o{scene->get_node_graphics_object(0)};
+  CHECK_PARAM_NULLPTR(n_o, "Failed to get output node graphics object");
+
+  VisualShaderInputPortGraphicsObject* i_port{n_o->get_input_port_graphics_object(0)};
+  CHECK_PARAM_NULLPTR(i_port, "Failed to get output node input port graphics object");
+
+  CHECK_CONDITION_TRUE(!i_port->is_connected(), "Output node is not connected");
+
+  const int c_id{i_port->get_c_id()};
+
+  VisualShaderConnectionGraphicsObject* c_o{scene->get_connection_graphics_object(c_id)};
+  CHECK_PARAM_NULLPTR(c_o, "Failed to get connection graphics object");
+
+  fitness_calculator->update_current_output(shadergen_visual_shader_generator::generate_preview_shader(shadergen_visual_shader_generator::to_proto_nodes(nodes_model),
+                                            shadergen_visual_shader_generator::to_generators(nodes_model), 
+                                            shadergen_visual_shader_generator::to_input_output_connections_by_key(connections_model), c_o->get_from_node_id(), 0));  // 0 is the output port index
+
+  // Open the parameters editor
+  
 }
 
 std::vector<std::string> VisualShaderEditor::parse_node_category_path(const std::string& n_category_path) {
@@ -1697,30 +1720,6 @@ VisualShaderConnectionGraphicsObject* VisualShaderGraphicsScene::get_connection_
   }
 
   return c_o;
-}
-
-QImage VisualShaderGraphicsScene::get_output_shader_image() {
-  // Find the node connected to the output node
-  VisualShaderNodeGraphicsObject* n_o{get_node_graphics_object(0)};
-  CHECK_PARAM_NULLPTR_NON_VOID(n_o, QImage(), "Failed to get output node graphics object");
-
-  VisualShaderInputPortGraphicsObject* i_port{n_o->get_input_port_graphics_object(0)};
-  CHECK_PARAM_NULLPTR_NON_VOID(i_port, QImage(), "Failed to get output node input port graphics object");
-
-  CHECK_CONDITION_TRUE_NON_VOID(!i_port->is_connected(), QImage(), "Output node is not connected");
-
-  const int c_id{i_port->get_c_id()};
-
-  VisualShaderConnectionGraphicsObject* c_o{get_connection_graphics_object(c_id)};
-  CHECK_PARAM_NULLPTR_NON_VOID(c_o, QImage(), "Failed to get connection graphics object");
-
-  VisualShaderNodeGraphicsObject* from_n_o{get_node_graphics_object(c_o->get_from_node_id())};
-  CHECK_PARAM_NULLPTR_NON_VOID(from_n_o, QImage(), "Failed to get from node graphics object");
-
-  RendererWidget* spw{from_n_o->get_renderer_widget()};
-  CHECK_PARAM_NULLPTR_NON_VOID(spw, QImage(), "Failed to get shader preview widget");
-
-  return spw->grabFramebuffer();
 }
 
 void VisualShaderGraphicsScene::on_scene_update_requested() { update(); }
