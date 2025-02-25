@@ -42,6 +42,4 @@
 #error "No project version defined"
 #endif  // SHADER_GEN_PROJECT_VERSION
 
-extern const std::string license_notices;
-
 #endif  // MAIN_HPP

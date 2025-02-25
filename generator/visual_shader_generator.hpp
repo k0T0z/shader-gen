@@ -38,6 +38,8 @@
 #include "generator/utils/utils.hpp"
 #include "gui/controller/vs_proto_node.hpp"
 
+extern const std::string license_notices;
+
 namespace shadergen_visual_shader_generator {
 /**
   * @brief This union is a 64-bit integer that can be treated as

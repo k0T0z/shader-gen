@@ -36,6 +36,7 @@
 
 #include "gui/controller/visual_shader_editor.hpp"
 #include "gui/model/message_model.hpp"
+#include "generator/visual_shader_generator.hpp"
 
 // The leak reports are not enough, it is better to use UMDH
 // https://learn.microsoft.com/en-us/windows-hardware/drivers/debugger/umdh
@@ -44,28 +45,6 @@
 #endif  // SHADER_GEN_DEBUG && _MSC_VER
 
 using VisualShader = gui::model::schema::VisualShader;
-
-// Global variable holding the license notice.
-const std::string license_notices = 
-"/***********************************************************************************/\n"
-"/*  ShaderGen, a visual shader editor that can generate GLSL code using            */\n"
-"/*  Artificial Intelligence.                                                       */\n"
-"/*  Copyright (C) 2024 - present  Seif Kandil (k0T0z) (https://k0t0z.github.io/)   */\n"
-"/*                                                                                 */\n"
-"/*  This program is free software: you can redistribute it and/or modify           */\n"
-"/*  it under the terms of the GNU General Public License as published by           */\n"
-"/*  the Free Software Foundation, either version 3 of the License, or              */\n"
-"/*  (at your option) any later version.                                            */\n"
-"/*                                                                                 */\n"
-"/*  This program is distributed in the hope that it will be useful,                */\n"
-"/*  but WITHOUT ANY WARRANTY; without even the implied warranty of                 */\n"
-"/*  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the                  */\n"
-"/*  GNU General Public License for more details.                                   */\n"
-"/*                                                                                 */\n"
-"/*  You should have received a copy of the GNU General Public License              */\n"
-"/*  along with this program.  If not, see <https://www.gnu.org/licenses/>.         */\n"
-"/***********************************************************************************/\n"
-"\n";
 
 int main(int argc, char** argv) {
   DEBUG_PRINT(license_notices);

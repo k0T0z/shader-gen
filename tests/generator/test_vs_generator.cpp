@@ -34,7 +34,7 @@
 #include "generator/vs_node_noise_generators.hpp"
 #include "gui/model/schema/visual_shader_nodes.pb.h"
 #include "gui/controller/vs_proto_node.hpp"
-#include "main.hpp"
+#include "generator/visual_shader_generator.hpp"
 
 TEST(VisualShaderGeneratorTest, TestGenerateShader) {
 
