@@ -652,6 +652,7 @@ class VisualShaderNodeGraphicsObject : public QGraphicsObject {
  private:
   int n_id;
   QPointF coordinate;
+  const std::shared_ptr<IVisualShaderProtoNode> proto_node;
 
   std::string caption;
   int in_port_count;

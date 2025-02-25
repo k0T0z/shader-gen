@@ -35,6 +35,8 @@
 namespace controller_utils {
 inline static bool is_valid_connection(const VisualShaderNodePortType& source_port,
                                        const VisualShaderNodePortType& target_port) noexcept {
+  SILENT_CHECK_CONDITION_TRUE_NON_VOID(source_port == VisualShaderNodePortType::PORT_TYPE_UNSPECIFIED, false);
+  SILENT_CHECK_CONDITION_TRUE_NON_VOID(target_port == VisualShaderNodePortType::PORT_TYPE_UNSPECIFIED, false);
   SILENT_CHECK_CONDITION_TRUE_NON_VOID(source_port == target_port, true);
 
   switch (source_port) {

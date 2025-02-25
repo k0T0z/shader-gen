@@ -712,7 +712,7 @@ message VisualShaderNodeVectorLen {
     option (node_caption) = "VectorLen";
     option (node_input_port_count) = 1;
     option (node_input_port_caption) = "";
-    option (node_input_port_type) = PORT_TYPE_VECTOR_3D;
+    option (node_input_port_type) = PORT_TYPE_UNSPECIFIED;
     
     option (node_output_port_count) = 1;
     option (node_output_port_caption) = "len";

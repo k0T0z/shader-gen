@@ -126,7 +126,11 @@ std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>> to_generator
 
         const VisualShaderNodeInputType input_type{input_model->get_sub_model(FieldPath::Of<VisualShaderNodeInput>(
             FieldPath::FieldNumber(VisualShaderNodeInput::kTypeFieldNumber)))->data().toInt()};
-        generators[n_id] = std::make_shared<VisualShaderNodeGeneratorInput>(input_type);
+
+        // As the port type depend on the input type, we need to send it to the generator
+        const VisualShaderNodePortType ports_type = shadergen_utils::get_enum_value_port_type_by_value(VisualShaderNodeInputType_descriptor(), input_type);
+
+        generators[n_id] = std::make_shared<VisualShaderNodeGeneratorInput>(input_type, ports_type);
         break;
       }
       case VisualShader::VisualShaderNode::kOutputFieldNumber: {
@@ -237,7 +241,10 @@ std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>> to_generator
           const VisualShaderNodeVectorType type {vector_op_model->get_sub_model(FieldPath::Of<VisualShaderNodeVectorOp>(FieldPath::FieldNumber(VisualShaderNodeVectorOp::kTypeFieldNumber)))->data().toInt()};
           const VisualShaderNodeVectorOp::VisualShaderNodeVectorOpType op_type {vector_op_model->get_sub_model(FieldPath::Of<VisualShaderNodeVectorOp>(FieldPath::FieldNumber(VisualShaderNodeVectorOp::kOpFieldNumber)))->data().toInt()};
 
-          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorVectorOp>(type, op_type);
+          // As the port type depend on the type of the vector, we need to send it to the generator
+          const VisualShaderNodePortType ports_type = shadergen_utils::get_enum_value_port_type_by_value(VisualShaderNodeVectorType_descriptor(), type);
+
+          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorVectorOp>(type, op_type, ports_type);
           break;
       }
       case VisualShader::VisualShaderNode::kFloatFuncFieldNumber: {
@@ -271,7 +278,10 @@ std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>> to_generator
           const VisualShaderNodeVectorType type {vector_func_model->get_sub_model(FieldPath::Of<VisualShaderNodeVectorFunc>(FieldPath::FieldNumber(VisualShaderNodeVectorFunc::kTypeFieldNumber)))->data().toInt()};
           const VisualShaderNodeVectorFunc::VisualShaderNodeVectorFuncType func_type {vector_func_model->get_sub_model(FieldPath::Of<VisualShaderNodeVectorFunc>(FieldPath::FieldNumber(VisualShaderNodeVectorFunc::kFuncFieldNumber)))->data().toInt()};
 
-          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorVectorFunc>(type, func_type);
+          // As the port type depend on the type of the vector, we need to send it to the generator
+          const VisualShaderNodePortType ports_type = shadergen_utils::get_enum_value_port_type_by_value(VisualShaderNodeVectorType_descriptor(), type);
+
+          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorVectorFunc>(type, func_type, ports_type);
           break;
       }
       case VisualShader::VisualShaderNode::kValueNoiseFieldNumber: {
@@ -521,15 +531,8 @@ std::string generate_preview_shader(const std::unordered_map<int, std::shared_pt
 
   global_code += "out vec4 " + output_var + ";" + std::string("\n");
 
-  VisualShaderNodePortType from_port_type{VisualShaderNodePortType::PORT_TYPE_UNSPECIFIED};
-
-  if (proto_node->get_oneof_value_field_number() == VisualShader::VisualShaderNode::kInputFieldNumber) {
-    // For Input node, type is by input type
-    const std::shared_ptr<VisualShaderNodeGenerator> generator{generators.at(node_id)};
-    from_port_type = shadergen_utils::get_enum_value_port_type_by_value(VisualShaderNodeInputType_descriptor(), generator->get_input_type());
-  } else {
-    from_port_type = proto_node->get_output_port_type(port);
-  }
+  VisualShaderNodePortType from_port_type{proto_node->get_output_port_type(port)};
+  if (from_port_type == VisualShaderNodePortType::PORT_TYPE_UNSPECIFIED) from_port_type = generators.at(node_id)->get_ports_type();
 
   switch (from_port_type) {
     case VisualShaderNodePortType::PORT_TYPE_SCALAR:
@@ -562,6 +565,7 @@ std::string generate_preview_shader(const std::unordered_map<int, std::shared_pt
       break;
     default:
       shader_code += std::string("\t") + output_var + " = vec4(vec3(0.0), 1.0);" + std::string("\n");
+      WARN_PRINT("Unsupported port type: " + std::to_string(from_port_type));
       break;
   }
 
@@ -652,15 +656,10 @@ static inline bool generate_shader_for_each_node(std::string& global_code, std::
       int from_port{(int)c->from.f_key.port};
 
       VisualShaderNodePortType to_port_type{proto_node->get_input_port_type(i)};
-      VisualShaderNodePortType from_port_type{VisualShaderNodePortType::PORT_TYPE_UNSPECIFIED};
+      if (to_port_type == VisualShaderNodePortType::PORT_TYPE_UNSPECIFIED) to_port_type = generators.at(node_id)->get_ports_type();
 
-      if (proto_nodes.at(from_node)->get_oneof_value_field_number() == VisualShader::VisualShaderNode::kInputFieldNumber) {
-        // For Input node, type is by input type
-        const std::shared_ptr<VisualShaderNodeGenerator> t_generator{generators.at(from_node)};
-        from_port_type = shadergen_utils::get_enum_value_port_type_by_value(VisualShaderNodeInputType_descriptor(), t_generator->get_input_type());
-      } else {
-        from_port_type = proto_nodes.at(from_node)->get_output_port_type(from_port);
-      }
+      VisualShaderNodePortType from_port_type{proto_nodes.at(from_node)->get_output_port_type(from_port)};
+      if (from_port_type == VisualShaderNodePortType::PORT_TYPE_UNSPECIFIED) from_port_type = generators.at(from_node)->get_ports_type();
 
       std::string from_var{"var_from_n" + std::to_string(from_node) + "_p" + std::to_string(from_port)};
 
@@ -688,8 +687,10 @@ static inline bool generate_shader_for_each_node(std::string& global_code, std::
               case VisualShaderNodePortType::PORT_TYPE_VECTOR_4D: {
                 input_vars.at(i) = from_var + ".x";
               } break;
-              default:
-                break;
+              default: {
+                input_vars.at(i) = "0.0";
+                WARN_PRINT("Unsupported port type: " + std::to_string(from_port_type));
+              } break;
             }
           } break;
           case VisualShaderNodePortType::PORT_TYPE_SCALAR_INT: {
@@ -712,8 +713,10 @@ static inline bool generate_shader_for_each_node(std::string& global_code, std::
               case VisualShaderNodePortType::PORT_TYPE_VECTOR_4D: {
                 input_vars.at(i) = "int(" + from_var + ".x)";
               } break;
-              default:
-                break;
+              default: {
+                input_vars.at(i) = "0";
+                WARN_PRINT("Unsupported port type: " + std::to_string(from_port_type));
+              } break;
             }
           } break;
           case VisualShaderNodePortType::PORT_TYPE_SCALAR_UINT: {
@@ -736,8 +739,10 @@ static inline bool generate_shader_for_each_node(std::string& global_code, std::
               case VisualShaderNodePortType::PORT_TYPE_VECTOR_4D: {
                 input_vars.at(i) = "uint(" + from_var + ".x)";
               } break;
-              default:
-                break;
+              default: {
+                input_vars.at(i) = "0u";
+                WARN_PRINT("Unsupported port type: " + std::to_string(from_port_type));
+              } break;
             }
           } break;
           case VisualShaderNodePortType::PORT_TYPE_BOOLEAN: {
@@ -760,8 +765,10 @@ static inline bool generate_shader_for_each_node(std::string& global_code, std::
               case VisualShaderNodePortType::PORT_TYPE_VECTOR_4D: {
                 input_vars.at(i) = "all(bvec4(" + from_var + "))";
               } break;
-              default:
-                break;
+              default:{
+                input_vars.at(i) = "false";
+                WARN_PRINT("Unsupported port type: " + std::to_string(from_port_type));
+              } break;
             }
           } break;
           case VisualShaderNodePortType::PORT_TYPE_VECTOR_2D: {
@@ -782,8 +789,10 @@ static inline bool generate_shader_for_each_node(std::string& global_code, std::
               case VisualShaderNodePortType::PORT_TYPE_VECTOR_4D: {
                 input_vars.at(i) = "vec2(" + from_var + ".xy)";
               } break;
-              default:
-                break;
+              default: {
+                input_vars.at(i) = "vec2(0.0)";
+                WARN_PRINT("Unsupported port type: " + std::to_string(from_port_type));
+              } break;
             }
           } break;
           case VisualShaderNodePortType::PORT_TYPE_VECTOR_3D: {
@@ -806,8 +815,10 @@ static inline bool generate_shader_for_each_node(std::string& global_code, std::
               case VisualShaderNodePortType::PORT_TYPE_VECTOR_4D: {
                 input_vars.at(i) = "vec3(" + from_var + ".xyz)";
               } break;
-              default:
-                break;
+              default: {
+                input_vars.at(i) = "vec3(0.0)";
+                WARN_PRINT("Unsupported port type: " + std::to_string(from_port_type));
+              } break;
             }
           } break;
           case VisualShaderNodePortType::PORT_TYPE_VECTOR_4D: {
@@ -830,12 +841,16 @@ static inline bool generate_shader_for_each_node(std::string& global_code, std::
               case VisualShaderNodePortType::PORT_TYPE_VECTOR_3D: {
                 input_vars.at(i) = "vec4(" + from_var + ", 1.0)";
               } break;
-              default:
-                break;
+              default: {
+                input_vars.at(i) = "vec4(vec3(0.0), 1.0)";
+                WARN_PRINT("Unsupported port type: " + std::to_string(from_port_type));
+              } break;
             }
           } break;
-          default:
-            break;
+          default: {
+            input_vars.at(i) = "0.0";
+            WARN_PRINT("Unsupported port type: " + std::to_string(to_port_type));
+          } break;
         }  // end of switch (to_port_type)
       }  // end of if (to_port_type == from_port_type)
     } else {
@@ -909,14 +924,8 @@ static inline bool generate_shader_for_each_node(std::string& global_code, std::
     for (int i{0}; i < output_port_count; i++) {
       std::string from_var{"var_from_n" + std::to_string(node_id) + "_p" + std::to_string(i)};
 
-      VisualShaderNodePortType from_port_type{VisualShaderNodePortType::PORT_TYPE_UNSPECIFIED};
-
-      if (proto_node->get_oneof_value_field_number() == VisualShader::VisualShaderNode::kInputFieldNumber) {
-        // For Input node, type is by input type
-        from_port_type = shadergen_utils::get_enum_value_port_type_by_value(VisualShaderNodeInputType_descriptor(), generator->get_input_type());
-      } else {
-        from_port_type = proto_node->get_output_port_type(i);
-      }
+      VisualShaderNodePortType from_port_type{proto_node->get_output_port_type(i)};
+      if (from_port_type == VisualShaderNodePortType::PORT_TYPE_UNSPECIFIED) from_port_type = generators.at(node_id)->get_ports_type();
 
       switch (from_port_type) {
         case VisualShaderNodePortType::PORT_TYPE_SCALAR:
@@ -948,14 +957,8 @@ static inline bool generate_shader_for_each_node(std::string& global_code, std::
     for (int i{0}; i < output_port_count; i++) {
       output_vars.at(i) = "var_from_n" + std::to_string(node_id) + "_p" + std::to_string(i);
 
-      VisualShaderNodePortType from_port_type{VisualShaderNodePortType::PORT_TYPE_UNSPECIFIED};
-
-      if (proto_node->get_oneof_value_field_number() == VisualShader::VisualShaderNode::kInputFieldNumber) {
-        // For Input node, type is by input type
-        from_port_type = shadergen_utils::get_enum_value_port_type_by_value(VisualShaderNodeInputType_descriptor(), generator->get_input_type());
-      } else {
-        from_port_type = proto_node->get_output_port_type(i);
-      }
+      VisualShaderNodePortType from_port_type{proto_node->get_output_port_type(i)};
+      if (from_port_type == VisualShaderNodePortType::PORT_TYPE_UNSPECIFIED) from_port_type = generators.at(node_id)->get_ports_type();
 
       switch (from_port_type) {
         case VisualShaderNodePortType::PORT_TYPE_SCALAR:

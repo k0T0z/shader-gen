@@ -2225,6 +2225,7 @@ VisualShaderNodeGraphicsObject::VisualShaderNodeGraphicsObject(const int& n_id, 
     : QGraphicsObject(parent),
       n_id(n_id),
       coordinate(coordinate),
+      proto_node(proto_node),
       in_port_count(0),
       out_port_count(0),
       context_menu(nullptr),
@@ -2517,7 +2518,8 @@ void VisualShaderNodeGraphicsObject::update_layout() {
                        &VisualShaderNodeGraphicsObject::on_in_port_dragged);
       QObject::connect(p_o, &VisualShaderInputPortGraphicsObject::port_dropped, this,
                        &VisualShaderNodeGraphicsObject::on_in_port_dropped);
-      QObject::connect(this, &VisualShaderNodeGraphicsObject::port_type_changed, p_o, &VisualShaderInputPortGraphicsObject::on_port_type_changed);
+      if (proto_node->get_input_port_type(i) == VisualShaderNodePortType::PORT_TYPE_UNSPECIFIED)
+        QObject::connect(this, &VisualShaderNodeGraphicsObject::port_type_changed, p_o, &VisualShaderInputPortGraphicsObject::on_port_type_changed);
     }
   }
 
@@ -2572,7 +2574,8 @@ void VisualShaderNodeGraphicsObject::update_layout() {
                        &VisualShaderNodeGraphicsObject::on_out_port_dragged);
       QObject::connect(p_o, &VisualShaderOutputPortGraphicsObject::port_dropped, this,
                        &VisualShaderNodeGraphicsObject::on_out_port_dropped);
-      QObject::connect(this, &VisualShaderNodeGraphicsObject::port_type_changed, p_o, &VisualShaderOutputPortGraphicsObject::on_port_type_changed);
+      if (proto_node->get_output_port_type(i) == VisualShaderNodePortType::PORT_TYPE_UNSPECIFIED)
+        QObject::connect(this, &VisualShaderNodeGraphicsObject::port_type_changed, p_o, &VisualShaderOutputPortGraphicsObject::on_port_type_changed);
     }
   }
 
@@ -2615,8 +2618,19 @@ void VisualShaderNodeGraphicsObject::on_preview_shader_button_pressed() {
 }
 
 void VisualShaderNodeGraphicsObject::on_port_type_changed(const VisualShaderNodePortType& p_type) {
-  for (int i {0}; i < in_port_count; ++i) in_port_types.at(i) = p_type;
-  for (int i {0}; i < out_port_count; ++i) out_port_types.at(i) = p_type;
+  for (int i {0}; i < in_port_count; ++i) {
+    /*
+      Here we only update any unspecified port type in the proto file ONLY. This is 
+      so important because we don't want to change the port type of the node in the
+      proto file if it is already specified.
+    */
+    SILENT_CONTINUE_IF_TRUE(proto_node->get_input_port_type(i) != VisualShaderNodePortType::PORT_TYPE_UNSPECIFIED);
+    in_port_types.at(i) = p_type;
+  }
+  for (int i {0}; i < out_port_count; ++i) {
+    SILENT_CONTINUE_IF_TRUE(proto_node->get_output_port_type(i) != VisualShaderNodePortType::PORT_TYPE_UNSPECIFIED);
+    out_port_types.at(i) = p_type;
+  }
 }
 
 QRectF VisualShaderNodeGraphicsObject::boundingRect() const {
