@@ -27,6 +27,8 @@
 
 #include "gui/controller/fitness_calculator.hpp"
 
+#include "ai-agent/fitness.hpp"
+
 #include "error_macros.hpp"
 
 AIAgentFitnessCalculator::AIAgentFitnessCalculator(QWidget* parent)
@@ -70,6 +72,14 @@ void AIAgentFitnessCalculator::init() {
   QObject::connect(load_image_button, &QPushButton::pressed, this, &AIAgentFitnessCalculator::on_load_image_button_pressed);
 
   menu_bar->addWidget(load_image_button);
+
+  calculate_fitness_button = new QPushButton("Calculate Fitness", this);
+  calculate_fitness_button->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
+  calculate_fitness_button->setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
+  calculate_fitness_button->setToolTip("Calculate the fitness value (only for preview)");
+  QObject::connect(calculate_fitness_button, &QPushButton::pressed, this, &AIAgentFitnessCalculator::on_calculate_fitness_button_pressed);
+
+  menu_bar->addWidget(calculate_fitness_button);
   
   matching_type_combo_box = new QComboBox(this);
   matching_type_combo_box->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
@@ -80,7 +90,30 @@ void AIAgentFitnessCalculator::init() {
 
   menu_bar->addWidget(matching_type_combo_box);
 
-  layout->addLayout(menu_bar);
+  layout->addLayout(menu_bar, 1);
+
+  // Create a H layout for printing the fitness value
+  status_layout = new QHBoxLayout(this);
+  status_layout->setContentsMargins(10, 10, 10, 10);  // Left, top, right, bottom
+  status_layout->setSpacing(5);                       // Adjust spacing as needed
+  status_layout->setAlignment(Qt::AlignTop | Qt::AlignLeft);
+  status_layout->setSizeConstraint(QLayout::SetNoConstraint);
+
+  fitness_value_label = new QLabel("Fitness Value: ", this);
+  fitness_value_label->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
+  fitness_value_label->setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
+  fitness_value_label->setToolTip("The fitness value label");
+
+  status_layout->addWidget(fitness_value_label);
+
+  fitness_value = new QLabel("0", this);
+  fitness_value->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
+  fitness_value->setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
+  fitness_value->setToolTip("The fitness value");
+
+  status_layout->addWidget(fitness_value);
+
+  layout->addLayout(status_layout, 1);
 
   outputs_layout = new QHBoxLayout(this);
   outputs_layout->setContentsMargins(10, 10, 10, 10);  // Left, top, right, bottom
@@ -134,7 +167,7 @@ void AIAgentFitnessCalculator::init() {
 
   outputs_layout->addLayout(target_output_layout);
 
-  layout->addLayout(outputs_layout);
+  layout->addLayout(outputs_layout, 3);
 
   //////////////// Start of Footer ////////////////
 
@@ -152,48 +185,46 @@ void AIAgentFitnessCalculator::update_current_output(const std::string& code) {
   current_output_renderer->set_code(code);
 }
 
-double AIAgentFitnessCalculator::get_fitness_value() const {
-  CHECK_CONDITION_TRUE_NON_VOID(target_image.isNull(), -1.0, "No target image loaded");
+unsigned long AIAgentFitnessCalculator::get_fitness_value() const {
+  CHECK_CONDITION_TRUE_NON_VOID(target_image.isNull(), -1, "No target image loaded");
 
   QImage current_image = current_output_renderer->get_pixel_data();
 
-  CHECK_CONDITION_TRUE_NON_VOID(current_image.size() != QSize(256, 256) || target_image.size() != QSize(256, 256), -1.0, "Size mismatch");
+  CHECK_CONDITION_TRUE_NON_VOID(current_image.size() != target_image.size(), -1, "Size mismatch");
 
-  const uchar* current_bits = current_image.constBits();
-  const uchar* target_bits = target_image.constBits();
-  double sum = 0.0;
+  // Retrieve pointers to the pixel data.
+  // QImage::bits() returns a pointer to the first pixel, and since our format is ARGB32,
+  // we can safely reinterpret_cast to a uint32_t pointer.
+  const uint32_t* pixels1 = reinterpret_cast<const uint32_t*>(current_image.bits());
+  const uint32_t* pixels2 = reinterpret_cast<const uint32_t*>(target_image.bits());
+  int width = current_image.width();
+  int height = current_image.height();
 
-  for (int y = 0; y < 256; ++y) {
-      for (int x = 0; x < 256; ++x) {
-          int index = (y * 256 + x) * 3; // 3 bytes per pixel (RGB888)
-          sum += std::abs(static_cast<int>(current_bits[index]) -
-                          static_cast<int>(target_bits[index]));       // R
-          sum += std::abs(static_cast<int>(current_bits[index + 1]) -
-                          static_cast<int>(target_bits[index + 1]));   // G
-          sum += std::abs(static_cast<int>(current_bits[index + 2]) -
-                          static_cast<int>(target_bits[index + 2]));   // B
-      }
-  }
-
-  return sum;
+  return ai_agent_fitness::calculate_fitness(pixels1, pixels2, width, height);
 }
 
 void AIAgentFitnessCalculator::on_load_image_button_pressed() {
-  QString file_name = QFileDialog::getOpenFileName(this, "Load Image", "",
-      "Images (*.png *.jpg *.bmp)");
+  QString file_name = QFileDialog::getOpenFileName(this, "Load Target Image", "",
+      "Images (*.png *.jpg *.jpeg *.bmp)");
 
   CHECK_CONDITION_TRUE(file_name.isEmpty(), "No file selected");
 
   QImage loaded_image;
   if (loaded_image.load(file_name)) {
     target_image = loaded_image.scaled(256, 256, Qt::IgnoreAspectRatio)
-        .convertToFormat(QImage::Format_RGB888);
+        .convertToFormat(QImage::Format_ARGB32);
     target_output->clear();
     target_output->setPixmap(QPixmap::fromImage(target_image));
   } else {
     target_output->clear();
     target_output->setText("Failed to load image.");
   }
+}
+
+void AIAgentFitnessCalculator::on_calculate_fitness_button_pressed() {
+  unsigned long val = get_fitness_value();
+  CHECK_CONDITION_TRUE(val == -1, "Failed to calculate fitness value");
+  fitness_value->setText(QString::number(val));
 }
 
 CurrentOutputRenderer::CurrentOutputRenderer(QWidget* parent)
@@ -219,7 +250,7 @@ void CurrentOutputRenderer::set_code(const std::string& new_code) {
 }
 
 QImage CurrentOutputRenderer::get_pixel_data() const {
-  return fbo->toImage().convertToFormat(QImage::Format_RGB888);
+  return fbo->toImage().convertToFormat(QImage::Format_ARGB32);
 }
 
 void CurrentOutputRenderer::initializeGL() {

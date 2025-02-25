@@ -25,12 +25,43 @@
 /*                                                                               */
 /*********************************************************************************/
 
-#ifndef AI_AGENT_PARAMETERS_HPP
-#define AI_AGENT_PARAMETERS_HPP
+#ifndef AI_AGENT_FITNESS_HPP
+#define AI_AGENT_FITNESS_HPP
 
-extern float mutation_probability;
-extern float crossover_probability;
-extern float elitism_ratio;
-extern float maximum_iterations;
+#include <cstdint>
+#include <cstdlib> // for std::abs
 
-#endif // AI_AGENT_PARAMETERS_HPP
+namespace ai_agent_fitness {
+// Calculates the sum of per-channel absolute differences between two images.
+// Each pixel is expected to be in ARGB32 (0xAARRGGBB) format.
+inline static unsigned long calculate_fitness(const uint32_t* pixels1, const uint32_t* pixels2, int width, int height) {
+    unsigned long total_fitness{0};
+    int num_pixels{width * height};
+    
+    for (int i {0}; i < num_pixels; ++i) {
+        uint32_t p1 = pixels1[i];
+        uint32_t p2 = pixels2[i];
+
+        // Extract ARGB components from each pixel.
+        unsigned char a1 = (p1 >> 24) & 0xFF;
+        unsigned char r1 = (p1 >> 16) & 0xFF;
+        unsigned char g1 = (p1 >> 8)  & 0xFF;
+        unsigned char b1 = p1 & 0xFF;
+        
+        unsigned char a2 = (p2 >> 24) & 0xFF;
+        unsigned char r2 = (p2 >> 16) & 0xFF;
+        unsigned char g2 = (p2 >> 8)  & 0xFF;
+        unsigned char b2 = p2 & 0xFF;
+        
+        // Add up differences for all channels.
+        total_fitness += std::abs(int(a1) - int(a2));
+        total_fitness += std::abs(int(r1) - int(r2));
+        total_fitness += std::abs(int(g1) - int(g2));
+        total_fitness += std::abs(int(b1) - int(b2));
+    }
+    
+    return total_fitness;
+}
+}  // namespace ai_agent_fitness
+
+#endif // AI_AGENT_FITNESS_HPP

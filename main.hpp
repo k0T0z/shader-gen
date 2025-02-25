@@ -28,6 +28,8 @@
 #ifndef MAIN_HPP
 #define MAIN_HPP
 
+#include <string>
+
 #ifndef ENIGMA_ORG_NAME
 #error "No organization name defined"
 #endif  // ENIGMA_ORG_NAME
@@ -39,5 +41,7 @@
 #ifndef SHADER_GEN_PROJECT_VERSION
 #error "No project version defined"
 #endif  // SHADER_GEN_PROJECT_VERSION
+
+extern const std::string license_notices;
 
 #endif  // MAIN_HPP

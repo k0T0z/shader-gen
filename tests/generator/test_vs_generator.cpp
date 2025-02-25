@@ -34,6 +34,7 @@
 #include "generator/vs_node_noise_generators.hpp"
 #include "gui/model/schema/visual_shader_nodes.pb.h"
 #include "gui/controller/vs_proto_node.hpp"
+#include "main.hpp"
 
 TEST(VisualShaderGeneratorTest, TestGenerateShader) {
 
@@ -51,10 +52,10 @@ TEST(VisualShaderGeneratorTest, TestGenerateShader) {
 
   std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>> generators;
   generators[output_node_id] = std::make_shared<VisualShaderNodeGeneratorOutput>(); // Create an output node
-  generators[time_node_id] = std::make_shared<VisualShaderNodeGeneratorInput>(VisualShaderNodeInputType::INPUT_TYPE_TIME); // Create a time input
+  generators[time_node_id] = std::make_shared<VisualShaderNodeGeneratorInput>(VisualShaderNodeInputType::INPUT_TYPE_TIME, VisualShaderNodePortType::PORT_TYPE_SCALAR); // Create a time input
   generators[sin_node_id] = std::make_shared<VisualShaderNodeGeneratorFloatFunc>(VisualShaderNodeFloatFunc::FUNC_SIN); // Create a sin func
   generators[div_node_id] = std::make_shared<VisualShaderNodeGeneratorFloatOp>(VisualShaderNodeFloatOp::OP_DIV); // Create a divide operator
-  generators[uv_node_id] = std::make_shared<VisualShaderNodeGeneratorInput>(VisualShaderNodeInputType::INPUT_TYPE_UV); // Create a UV input
+  generators[uv_node_id] = std::make_shared<VisualShaderNodeGeneratorInput>(VisualShaderNodeInputType::INPUT_TYPE_UV, VisualShaderNodePortType::PORT_TYPE_VECTOR_2D); // Create a UV input
   generators[value_noise_node_id] = std::make_shared<VisualShaderNodeGeneratorValueNoise>(100.0f); // Create a Value Noise node
   generators[sub_node_id] = std::make_shared<VisualShaderNodeGeneratorFloatOp>(VisualShaderNodeFloatOp::OP_SUB); // Create a subtract operator
   generators[round_node_id] = std::make_shared<VisualShaderNodeGeneratorFloatFunc>(VisualShaderNodeFloatFunc::FUNC_ROUND); // Create a float func
@@ -187,7 +188,8 @@ TEST(VisualShaderGeneratorTest, TestGenerateShader) {
   // ASSERT_LE(duration, 5000);
 
   // Get the shader.
-  std::string expected_code{
+  std::string expected_code{license_notices +
+
     "in vec2 FragCoord;\n"
 
     "uniform float uTime;\n"
@@ -272,7 +274,7 @@ TEST(VisualShaderGeneratorTest, TestGenerateShader) {
                                                                  generators,
                                                                  std::make_pair(input_connections, output_connections),
                                                                  time_node_id, 0);
-  expected_code = 
+  expected_code = license_notices +
     "in vec2 FragCoord;\n"
     "uniform float uTime;\n"
     "out vec4 FragColor;\n"
@@ -288,7 +290,7 @@ TEST(VisualShaderGeneratorTest, TestGenerateShader) {
                                                                  generators,
                                                                  std::make_pair(input_connections, output_connections),
                                                                  sin_node_id, 0);
-  expected_code = 
+  expected_code = license_notices +
     "in vec2 FragCoord;\n"
     "uniform float uTime;\n"
     "out vec4 FragColor;\n"
@@ -306,7 +308,7 @@ TEST(VisualShaderGeneratorTest, TestGenerateShader) {
                                                                  generators,
                                                                  std::make_pair(input_connections, output_connections),
                                                                  value_noise_node_id, 0);
-  expected_code = 
+  expected_code = license_notices +
     "in vec2 FragCoord;\n"
     "uniform float uTime;\n"
 

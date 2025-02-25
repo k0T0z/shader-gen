@@ -25,12 +25,40 @@
 /*                                                                               */
 /*********************************************************************************/
 
-#ifndef AI_AGENT_PARAMETERS_HPP
-#define AI_AGENT_PARAMETERS_HPP
+#include <gtest/gtest.h>
 
-extern float mutation_probability;
-extern float crossover_probability;
-extern float elitism_ratio;
-extern float maximum_iterations;
+#include "ai-agent/fitness.hpp"
 
-#endif // AI_AGENT_PARAMETERS_HPP
+TEST(AIAgentTest, TestFitnessForIdenticalImages2x2) {
+    // Simulate a 2x2 image with the same pixel data.
+    const int width = 2;
+    const int height = 2;
+    static const uint32_t pixels1[width * height] = {
+        0xFF112233, 0xFF445566,
+        0xFF778899, 0xFFAABBCC
+    };
+    static const uint32_t pixels2[width * height] = {
+        0xFF112233, 0xFF445566,
+        0xFF778899, 0xFFAABBCC
+    };
+    
+    unsigned long diff = ai_agent_fitness::calculate_fitness(pixels1, pixels2, width, height);
+    ASSERT_EQ(diff, 0);
+}
+
+TEST(AIAgentTest, TestFitnessForDifferentImages2x2) {
+    // Simulate a 2x2 image with different pixel data.
+    const int width = 2;
+    const int height = 2;
+    static const uint32_t pixels1[width * height] = {
+        0xFF112233, 0xFF445566,
+        0xFF778899, 0xFFAABBCC
+    };
+    static const uint32_t pixels2[width * height] = {
+        0xFF112233, 0xFF445566,
+        0xFF778899, 0xFFAABBDD
+    };
+    
+    unsigned long diff = ai_agent_fitness::calculate_fitness(pixels1, pixels2, width, height);
+    ASSERT_EQ(diff, 17);
+}

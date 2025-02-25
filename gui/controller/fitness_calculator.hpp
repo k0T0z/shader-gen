@@ -54,17 +54,23 @@ class AIAgentFitnessCalculator : public QWidget {
 
   void update_current_output(const std::string& code);
 
-  double get_fitness_value() const;
+  unsigned long get_fitness_value() const;
 
  private Q_SLOTS:
   void on_load_image_button_pressed();
+  void on_calculate_fitness_button_pressed();
 
  private:
   QVBoxLayout* layout;
 
   QHBoxLayout* menu_bar;
   QPushButton* load_image_button;
+  QPushButton* calculate_fitness_button;
   QComboBox* matching_type_combo_box;
+
+  QHBoxLayout* status_layout;
+  QLabel* fitness_value_label;
+  QLabel* fitness_value;
 
   QHBoxLayout* outputs_layout;
 

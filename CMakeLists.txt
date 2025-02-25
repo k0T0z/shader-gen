@@ -136,6 +136,7 @@ set(SHADER_GEN_MAIN_ENTRY
 )
 
 set(SHADER_GEN_HPP_FILES 
+    ${CMAKE_CURRENT_SOURCE_DIR}/ai-agent/fitness.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/generator/visual_shader_generator.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/generator/visual_shader_node_generators.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/generator/vs_node_noise_generators.hpp
@@ -251,6 +252,7 @@ if(SHADER_GEN_BUILD_TESTS)
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/gui/model/utils/test_field_path.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/generator/test_vs_generator.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/generator/test_vs_node_generators.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/ai-agent/test_fitness.cpp
     )
 
     set(SHADER_GEN_TESTS_PROTO_FILES 
