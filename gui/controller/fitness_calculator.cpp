@@ -186,11 +186,11 @@ void AIAgentFitnessCalculator::update_current_output(const std::string& code) {
 }
 
 unsigned long AIAgentFitnessCalculator::get_fitness_value() const {
-  CHECK_CONDITION_TRUE_NON_VOID(target_image.isNull(), -1, "No target image loaded");
+  CHECK_CONDITION_TRUE_NON_VOID(target_image.isNull(), 0UL, "No target image loaded");
 
   QImage current_image = current_output_renderer->get_pixel_data();
 
-  CHECK_CONDITION_TRUE_NON_VOID(current_image.size() != target_image.size(), -1, "Size mismatch");
+  CHECK_CONDITION_TRUE_NON_VOID(current_image.size() != target_image.size(), 0UL, "Size mismatch");
 
   // Retrieve pointers to the pixel data.
   // QImage::bits() returns a pointer to the first pixel, and since our format is ARGB32,
@@ -223,7 +223,6 @@ void AIAgentFitnessCalculator::on_load_image_button_pressed() {
 
 void AIAgentFitnessCalculator::on_calculate_fitness_button_pressed() {
   unsigned long val = get_fitness_value();
-  CHECK_CONDITION_TRUE(val == -1, "Failed to calculate fitness value");
   fitness_value->setText(QString::number(val));
 }
 
