@@ -70,6 +70,15 @@ void AIAgentFitnessCalculator::init() {
   QObject::connect(load_image_button, &QPushButton::pressed, this, &AIAgentFitnessCalculator::on_load_image_button_pressed);
 
   menu_bar->addWidget(load_image_button);
+  
+  matching_type_combo_box = new QComboBox(this);
+  matching_type_combo_box->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
+  matching_type_combo_box->setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
+  matching_type_combo_box->setToolTip("Select the matching type");
+  matching_type_combo_box->addItem("Static");
+  matching_type_combo_box->addItem("Dynamic");
+
+  menu_bar->addWidget(matching_type_combo_box);
 
   layout->addLayout(menu_bar);
 

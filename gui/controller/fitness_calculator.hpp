@@ -32,6 +32,7 @@
 #include <QVBoxLayout>
 #include <QPushButton>
 #include <QLabel>
+#include <QComboBox>
 #include <QFileDialog>
 #include <QImage>
 #include <QtOpenGLWidgets/QOpenGLWidget>
@@ -63,6 +64,7 @@ class AIAgentFitnessCalculator : public QWidget {
 
   QHBoxLayout* menu_bar;
   QPushButton* load_image_button;
+  QComboBox* matching_type_combo_box;
 
   QHBoxLayout* outputs_layout;
 
