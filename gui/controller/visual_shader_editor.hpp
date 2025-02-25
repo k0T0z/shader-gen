@@ -70,7 +70,13 @@
 
 #include "gui/controller/vs_proto_node.hpp"
 
+#ifdef _WIN32
+#include "gui/controller/renderer/win_renderer.hpp"
+#else
 #include "gui/controller/renderer/renderer.hpp"
+#endif  // _WIN32
+
+
 #include "gui/controller/fitness_calculator.hpp"
 
 using EnumDescriptor = google::protobuf::EnumDescriptor;
@@ -568,7 +574,11 @@ class VisualShaderNodeGraphicsObject : public QGraphicsObject {
   QWidget* get_embed_widget() const { return embed_widget; }
   void set_embed_widget(QWidget* embed_widget) { this->embed_widget = embed_widget; }
 
+#ifdef _WIN32
+  WinRendererWidget* get_renderer_widget() const { return renderer_widget; }
+#else
   RendererWidget* get_renderer_widget() const { return renderer_widget; }
+#endif // _WIN32
 
   void update_layout();
 
@@ -719,7 +729,11 @@ class VisualShaderNodeGraphicsObject : public QGraphicsObject {
   QPointF matching_image_widget_coordinate; // Calculated in update_layout()
   float spacing_between_output_node_and_matching_image = 10.0f;
 
+#ifdef _WIN32
+  WinRendererWidget* renderer_widget;
+#else
   RendererWidget* renderer_widget;
+#endif // _WIN32
   QPointF renderer_widget_coordinate;  // Calculated in update_layout()
   float spacing_between_current_node_and_shader_previewer = 10.0f;
 

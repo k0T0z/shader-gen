@@ -1043,10 +1043,17 @@ bool VisualShaderGraphicsScene::add_node_to_scene(const int& n_id, const std::sh
 
     n_o->set_embed_widget(embed_widget); // Set the embed widget to the node graphics object
 
+#ifdef _WIN32
+    if (WinRendererWidget* spw{n_o->get_renderer_widget()}) {
+      QObject::connect(spw, &WinRendererWidget::scene_update_requested, this,
+                      &VisualShaderGraphicsScene::on_scene_update_requested);
+    }
+#else
     if (RendererWidget* spw{n_o->get_renderer_widget()}) {
       QObject::connect(spw, &RendererWidget::scene_update_requested, this,
                       &VisualShaderGraphicsScene::on_scene_update_requested);
     }
+#endif // _WIN32
   }
 
   n_o->update_layout(); // Update the layout of the node
@@ -1181,7 +1188,12 @@ void VisualShaderGraphicsScene::on_update_renderer_widgets_requested() {
   for (auto& [n_id, n_o] : node_graphics_objects) {
     SILENT_CONTINUE_IF_TRUE(n_id == 0);  // Skip the output node
 
+#ifdef _WIN32
+    WinRendererWidget* spw{n_o->get_renderer_widget()};
+#else
     RendererWidget* spw{n_o->get_renderer_widget()};
+#endif // _WIN32
+
     if (!spw) {
       continue;
     }
@@ -2282,7 +2294,13 @@ VisualShaderNodeGraphicsObject::VisualShaderNodeGraphicsObject(const int& n_id, 
   } else {
     // Create the shader previewer widget
     QGraphicsProxyWidget* renderer_widget_proxy{new QGraphicsProxyWidget(this)};
+    
+#ifdef _WIN32
+    renderer_widget = new WinRendererWidget();
+#else
     renderer_widget = new RendererWidget();
+#endif // _WIN32
+
     renderer_widget->setVisible(false);
     renderer_widget->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
     renderer_widget->setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom

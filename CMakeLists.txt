@@ -149,7 +149,6 @@ set(SHADER_GEN_HPP_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/gui/model/repeated_primitive_model.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/gui/model/oneof_model.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/gui/controller/visual_shader_editor.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/gui/controller/renderer/renderer.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/gui/controller/fitness_calculator.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/gui/model/utils/field_path.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/gui/model/utils/utils.hpp
@@ -169,10 +168,32 @@ set(SHADER_GEN_CPP_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/gui/model/repeated_primitive_model.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/gui/model/oneof_model.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/gui/controller/visual_shader_editor.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/gui/controller/renderer/renderer.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/gui/controller/fitness_calculator.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/gui/model/utils/field_path.cpp
 )
+
+# Add Renderer sources depending on the platform
+if (WIN32)
+    set(SHADER_GEN_HPP_FILES 
+        ${SHADER_GEN_HPP_FILES}
+        ${CMAKE_CURRENT_SOURCE_DIR}/gui/controller/renderer/win_renderer.hpp
+    )
+
+    set(SHADER_GEN_CPP_FILES 
+        ${SHADER_GEN_CPP_FILES}
+        ${CMAKE_CURRENT_SOURCE_DIR}/gui/controller/renderer/win_renderer.cpp
+    )
+else()
+    set(SHADER_GEN_HPP_FILES 
+        ${SHADER_GEN_HPP_FILES}
+        ${CMAKE_CURRENT_SOURCE_DIR}/gui/controller/renderer/renderer.hpp
+    )
+
+    set(SHADER_GEN_CPP_FILES 
+        ${SHADER_GEN_CPP_FILES}
+        ${CMAKE_CURRENT_SOURCE_DIR}/gui/controller/renderer/renderer.cpp
+    )
+endif()
 
 set(SHADER_GEN_PROTO_FILES 
     ${CMAKE_CURRENT_SOURCE_DIR}/gui/model/schema/visual_shader.proto
@@ -203,7 +224,11 @@ else()
 endif()
 
 # OpenGLWidgets not required for Qt5 LTS
-find_package(Qt${SHADER_GEN_QT_VERSION} CONFIG REQUIRED COMPONENTS Widgets OpenGLWidgets Test)
+if (WIN32)
+    find_package(Qt${SHADER_GEN_QT_VERSION} CONFIG REQUIRED COMPONENTS Widgets OpenGLWidgets Test)
+else()
+    find_package(Qt${SHADER_GEN_QT_VERSION} CONFIG REQUIRED COMPONENTS Widgets OpenGLWidgets Test)
+endif()
 
 # Find Protobuf
 find_package(Protobuf CONFIG REQUIRED)
@@ -224,9 +249,20 @@ protobuf_generate(
 
 target_link_libraries(${SHADER_GEN_EXECUTABLE_NAME} PRIVATE 
     Qt${SHADER_GEN_QT_VERSION}::Widgets 
-    Qt${SHADER_GEN_QT_VERSION}::OpenGLWidgets 
     protobuf::libprotobuf
 )
+
+if(WIN32)
+    target_link_libraries(${SHADER_GEN_EXECUTABLE_NAME} PRIVATE 
+        d3d11 
+        d3dcompiler 
+        Qt${SHADER_GEN_QT_VERSION}::OpenGLWidgets 
+    )
+else()
+    target_link_libraries(${SHADER_GEN_EXECUTABLE_NAME} PRIVATE 
+        Qt${SHADER_GEN_QT_VERSION}::OpenGLWidgets 
+    )
+endif()
 
 target_include_directories(${SHADER_GEN_EXECUTABLE_NAME} PRIVATE 
     "${CMAKE_CURRENT_SOURCE_DIR}/" 
@@ -321,10 +357,21 @@ if(SHADER_GEN_BUILD_TESTS)
         GTest::gtest 
         GTest::gtest_main 
         Qt${SHADER_GEN_QT_VERSION}::Widgets 
-        Qt${SHADER_GEN_QT_VERSION}::OpenGLWidgets 
         Qt${SHADER_GEN_QT_VERSION}::Test
         protobuf::libprotobuf 
     )
+
+    if(WIN32)
+        target_link_libraries(${SHADER_GEN_TESTS_EXECUTABLE_NAME} PRIVATE 
+            d3d11 
+            d3dcompiler 
+            Qt${SHADER_GEN_QT_VERSION}::OpenGLWidgets 
+        )
+    else()
+        target_link_libraries(${SHADER_GEN_TESTS_EXECUTABLE_NAME} PRIVATE 
+            Qt${SHADER_GEN_QT_VERSION}::OpenGLWidgets 
+        )
+    endif()
 
     target_include_directories(${SHADER_GEN_TESTS_EXECUTABLE_NAME} PRIVATE 
         "${CMAKE_CURRENT_SOURCE_DIR}/"

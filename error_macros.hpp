@@ -75,6 +75,16 @@ inline static void print_debug(const char* function, const char* file, const int
 #endif  // SHADER_GEN_DEBUG
 }
 
+#ifdef _WIN32
+inline static void win_renderer_debug_print(const char* function, const char* file, const int& line, const long& hr,
+                                            const std::string& msg) noexcept {
+#ifdef SHADER_GEN_DEBUG
+  std::cerr << "DEBUG at: " << function << " (" << file << ":" << line << ")" << "\n";
+  std::cerr << msg << " (HRESULT: " << std::hex << hr << ")" << std::endl; return;
+#endif  // SHADER_GEN_DEBUG
+}
+#endif  // _WIN32
+
 inline static void flush_stdout() noexcept {
 #ifdef SHADER_GEN_DEBUG
   fflush(stdout);
