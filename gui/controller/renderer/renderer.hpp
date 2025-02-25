@@ -25,23 +25,65 @@
 /*                                                                               */
 /*********************************************************************************/
 
-#ifndef MAIN_HPP
-#define MAIN_HPP
+#ifndef SHADER_GEN_RENDERER_HPP
+#define SHADER_GEN_RENDERER_HPP
 
-#include <string>
+#include <QtOpenGLWidgets/QOpenGLWidget>
+// #include <QOpenGLFunctions>
+#include <QTimer>
+#include <QElapsedTimer>
+#include <QtOpenGL/QOpenGLFunctions_4_3_Core>  // https://stackoverflow.com/a/64288966/14629018 explains why we need this.
+#include <QtOpenGL/QOpenGLShaderProgram>
 
-#ifndef ENIGMA_ORG_NAME
-#error "No organization name defined"
-#endif  // ENIGMA_ORG_NAME
+/**
+ * @brief This class is meant to be a temporary solution to preview the shader
+ *        code. We should preview the shader code using ENIGMA's Graphics System.
+ * 
+ * @todo Replace this class with ENIGMA's Graphics System.
+ * 
+ */
+class RendererWidget : public QOpenGLWidget, protected QOpenGLFunctions_4_3_Core {
+    Q_OBJECT
+  
+   public:
+    RendererWidget(QWidget* parent = nullptr);
+    ~RendererWidget() override;
+  
+    void set_code(const std::string& code);
+  
+   Q_SIGNALS:
+    void scene_update_requested();
 
-#ifndef SHADER_GEN_PROJECT_NAME
-#error "No project name defined"
-#endif  // SHADER_GEN_PROJECT_NAME
+   private Q_SLOTS:
+    void update_shader_program();
+  
+   private:
+    std::unique_ptr<QOpenGLShaderProgram> shader_program;
+    GLuint VAO, VBO;
 
-#ifndef SHADER_GEN_PROJECT_VERSION
-#error "No project version defined"
-#endif  // SHADER_GEN_PROJECT_VERSION
+    QTimer render_timer;
+    QElapsedTimer timer;
 
-extern const std::string license_notices;
+    /**
+     * @brief We use this timer to debounce the compilation of 
+     *        the shader code. Too fast changes in the graph 
+     *        editor aren't worth compiling.
+     * 
+     */
+    QTimer compile_debounce_timer;
+  
+    std::string code;
 
-#endif  // MAIN_HPP
+    void initializeGL() override;
+    void resizeGL(int w, int h) override;
+    void paintGL() override;
+  
+    void showEvent(QShowEvent* event) override;
+    void hideEvent(QHideEvent* event) override;
+  
+    void init_buffers();
+  
+    void cleanup();
+  };
+
+#endif // SHADER_GEN_RENDERER_HPP

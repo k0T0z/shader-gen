@@ -159,7 +159,7 @@ std::string VisualShaderNodeGeneratorColorConstant::generate_code(
     [[maybe_unused]] const std::vector<std::string>& output_vars) const {
   std::ostringstream oss;
   oss << "\t" << output_vars.at(0) << " = vec4(" << std::fixed << std::setprecision(6) << r << ", "
-      << g << ", " << b << ", " << a << ");" << std::string("\n");
+      << g << ", " << b << ", " << a << ") / " << 255.0f << ";" << std::string("\n");
   return oss.str();
 }
 

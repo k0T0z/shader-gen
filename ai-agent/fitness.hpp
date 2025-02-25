@@ -25,23 +25,43 @@
 /*                                                                               */
 /*********************************************************************************/
 
-#ifndef MAIN_HPP
-#define MAIN_HPP
+#ifndef AI_AGENT_FITNESS_HPP
+#define AI_AGENT_FITNESS_HPP
 
-#include <string>
+#include <cstdint>
+#include <cstdlib> // for std::abs
 
-#ifndef ENIGMA_ORG_NAME
-#error "No organization name defined"
-#endif  // ENIGMA_ORG_NAME
+namespace ai_agent_fitness {
+// Calculates the sum of per-channel absolute differences between two images.
+// Each pixel is expected to be in ARGB32 (0xAARRGGBB) format.
+inline static unsigned long calculate_fitness(const uint32_t* pixels1, const uint32_t* pixels2, int width, int height) {
+    unsigned long total_fitness{0};
+    int num_pixels{width * height};
+    
+    for (int i {0}; i < num_pixels; ++i) {
+        uint32_t p1 = pixels1[i];
+        uint32_t p2 = pixels2[i];
 
-#ifndef SHADER_GEN_PROJECT_NAME
-#error "No project name defined"
-#endif  // SHADER_GEN_PROJECT_NAME
+        // Extract ARGB components from each pixel.
+        unsigned char a1 = (p1 >> 24) & 0xFF;
+        unsigned char r1 = (p1 >> 16) & 0xFF;
+        unsigned char g1 = (p1 >> 8)  & 0xFF;
+        unsigned char b1 = p1 & 0xFF;
+        
+        unsigned char a2 = (p2 >> 24) & 0xFF;
+        unsigned char r2 = (p2 >> 16) & 0xFF;
+        unsigned char g2 = (p2 >> 8)  & 0xFF;
+        unsigned char b2 = p2 & 0xFF;
+        
+        // Add up differences for all channels.
+        total_fitness += std::abs(int(a1) - int(a2));
+        total_fitness += std::abs(int(r1) - int(r2));
+        total_fitness += std::abs(int(g1) - int(g2));
+        total_fitness += std::abs(int(b1) - int(b2));
+    }
+    
+    return total_fitness;
+}
+}  // namespace ai_agent_fitness
 
-#ifndef SHADER_GEN_PROJECT_VERSION
-#error "No project version defined"
-#endif  // SHADER_GEN_PROJECT_VERSION
-
-extern const std::string license_notices;
-
-#endif  // MAIN_HPP
+#endif // AI_AGENT_FITNESS_HPP

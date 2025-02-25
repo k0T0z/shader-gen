@@ -136,9 +136,11 @@ set(SHADER_GEN_MAIN_ENTRY
 )
 
 set(SHADER_GEN_HPP_FILES 
+    ${CMAKE_CURRENT_SOURCE_DIR}/ai-agent/fitness.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/generator/visual_shader_generator.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/generator/visual_shader_node_generators.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/generator/vs_node_noise_generators.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/generator/utils/utils.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/gui/model/proto_model.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/gui/model/message_model.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/gui/model/repeated_message_model.hpp
@@ -147,8 +149,11 @@ set(SHADER_GEN_HPP_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/gui/model/repeated_primitive_model.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/gui/model/oneof_model.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/gui/controller/visual_shader_editor.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/gui/controller/renderer/renderer.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/gui/controller/fitness_calculator.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/gui/model/utils/field_path.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/gui/model/utils/utils.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/gui/controller/utils/utils.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/error_macros.hpp
 )
 
@@ -164,6 +169,8 @@ set(SHADER_GEN_CPP_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/gui/model/repeated_primitive_model.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/gui/model/oneof_model.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/gui/controller/visual_shader_editor.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/gui/controller/renderer/renderer.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/gui/controller/fitness_calculator.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/gui/model/utils/field_path.cpp
 )
 
@@ -245,6 +252,7 @@ if(SHADER_GEN_BUILD_TESTS)
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/gui/model/utils/test_field_path.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/generator/test_vs_generator.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/generator/test_vs_node_generators.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/ai-agent/test_fitness.cpp
     )
 
     set(SHADER_GEN_TESTS_PROTO_FILES 

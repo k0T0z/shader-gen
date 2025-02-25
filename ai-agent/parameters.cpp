@@ -25,23 +25,9 @@
 /*                                                                               */
 /*********************************************************************************/
 
-#ifndef MAIN_HPP
-#define MAIN_HPP
+#include "ai-agent/parameters.hpp"
 
-#include <string>
-
-#ifndef ENIGMA_ORG_NAME
-#error "No organization name defined"
-#endif  // ENIGMA_ORG_NAME
-
-#ifndef SHADER_GEN_PROJECT_NAME
-#error "No project name defined"
-#endif  // SHADER_GEN_PROJECT_NAME
-
-#ifndef SHADER_GEN_PROJECT_VERSION
-#error "No project version defined"
-#endif  // SHADER_GEN_PROJECT_VERSION
-
-extern const std::string license_notices;
-
-#endif  // MAIN_HPP
+float mutation_probability = 0.1;
+float crossover_probability = 0.8;
+float elitism_ratio = 0.2;
+int maximum_iterations = 1000;

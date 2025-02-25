@@ -25,23 +25,40 @@
 /*                                                                               */
 /*********************************************************************************/
 
-#ifndef MAIN_HPP
-#define MAIN_HPP
+#include <gtest/gtest.h>
 
-#include <string>
+#include "ai-agent/fitness.hpp"
 
-#ifndef ENIGMA_ORG_NAME
-#error "No organization name defined"
-#endif  // ENIGMA_ORG_NAME
+TEST(AIAgentTest, TestFitnessForIdenticalImages2x2) {
+    // Simulate a 2x2 image with the same pixel data.
+    const int width = 2;
+    const int height = 2;
+    static const uint32_t pixels1[width * height] = {
+        0xFF112233, 0xFF445566,
+        0xFF778899, 0xFFAABBCC
+    };
+    static const uint32_t pixels2[width * height] = {
+        0xFF112233, 0xFF445566,
+        0xFF778899, 0xFFAABBCC
+    };
+    
+    unsigned long diff = ai_agent_fitness::calculate_fitness(pixels1, pixels2, width, height);
+    ASSERT_EQ(diff, 0);
+}
 
-#ifndef SHADER_GEN_PROJECT_NAME
-#error "No project name defined"
-#endif  // SHADER_GEN_PROJECT_NAME
-
-#ifndef SHADER_GEN_PROJECT_VERSION
-#error "No project version defined"
-#endif  // SHADER_GEN_PROJECT_VERSION
-
-extern const std::string license_notices;
-
-#endif  // MAIN_HPP
+TEST(AIAgentTest, TestFitnessForDifferentImages2x2) {
+    // Simulate a 2x2 image with different pixel data.
+    const int width = 2;
+    const int height = 2;
+    static const uint32_t pixels1[width * height] = {
+        0xFF112233, 0xFF445566,
+        0xFF778899, 0xFFAABBCC
+    };
+    static const uint32_t pixels2[width * height] = {
+        0xFF112233, 0xFF445566,
+        0xFF778899, 0xFFAABBDD
+    };
+    
+    unsigned long diff = ai_agent_fitness::calculate_fitness(pixels1, pixels2, width, height);
+    ASSERT_EQ(diff, 17);
+}
