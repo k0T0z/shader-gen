@@ -137,6 +137,7 @@ set(SHADER_GEN_MAIN_ENTRY
 
 set(SHADER_GEN_HPP_FILES 
     ${CMAKE_CURRENT_SOURCE_DIR}/ai-agent/fitness.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/ai-agent/utils/utils.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/generator/visual_shader_generator.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/generator/visual_shader_node_generators.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/generator/vs_node_noise_generators.hpp
