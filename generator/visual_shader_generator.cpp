@@ -127,10 +127,7 @@ std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>> to_generator
         const VisualShaderNodeInputType input_type{input_model->get_sub_model(FieldPath::Of<VisualShaderNodeInput>(
             FieldPath::FieldNumber(VisualShaderNodeInput::kTypeFieldNumber)))->data().toInt()};
 
-        // As the port type depend on the input type, we need to send it to the generator
-        const VisualShaderNodePortType ports_type = shadergen_utils::get_enum_value_port_type_by_value(VisualShaderNodeInputType_descriptor(), input_type);
-
-        generators[n_id] = std::make_shared<VisualShaderNodeGeneratorInput>(input_type, ports_type);
+        generators[n_id] = std::make_shared<VisualShaderNodeGeneratorInput>(input_type);
         break;
       }
       case VisualShader::VisualShaderNode::kOutputFieldNumber: {
@@ -241,10 +238,7 @@ std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>> to_generator
           const VisualShaderNodeVectorType type {vector_op_model->get_sub_model(FieldPath::Of<VisualShaderNodeVectorOp>(FieldPath::FieldNumber(VisualShaderNodeVectorOp::kTypeFieldNumber)))->data().toInt()};
           const VisualShaderNodeVectorOp::VisualShaderNodeVectorOpType op_type {vector_op_model->get_sub_model(FieldPath::Of<VisualShaderNodeVectorOp>(FieldPath::FieldNumber(VisualShaderNodeVectorOp::kOpFieldNumber)))->data().toInt()};
 
-          // As the port type depend on the type of the vector, we need to send it to the generator
-          const VisualShaderNodePortType ports_type = shadergen_utils::get_enum_value_port_type_by_value(VisualShaderNodeVectorType_descriptor(), type);
-
-          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorVectorOp>(type, op_type, ports_type);
+          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorVectorOp>(type, op_type);
           break;
       }
       case VisualShader::VisualShaderNode::kFloatFuncFieldNumber: {
@@ -278,10 +272,7 @@ std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>> to_generator
           const VisualShaderNodeVectorType type {vector_func_model->get_sub_model(FieldPath::Of<VisualShaderNodeVectorFunc>(FieldPath::FieldNumber(VisualShaderNodeVectorFunc::kTypeFieldNumber)))->data().toInt()};
           const VisualShaderNodeVectorFunc::VisualShaderNodeVectorFuncType func_type {vector_func_model->get_sub_model(FieldPath::Of<VisualShaderNodeVectorFunc>(FieldPath::FieldNumber(VisualShaderNodeVectorFunc::kFuncFieldNumber)))->data().toInt()};
 
-          // As the port type depend on the type of the vector, we need to send it to the generator
-          const VisualShaderNodePortType ports_type = shadergen_utils::get_enum_value_port_type_by_value(VisualShaderNodeVectorType_descriptor(), type);
-
-          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorVectorFunc>(type, func_type, ports_type);
+          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorVectorFunc>(type, func_type);
           break;
       }
       case VisualShader::VisualShaderNode::kValueNoiseFieldNumber: {

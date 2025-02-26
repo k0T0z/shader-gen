@@ -33,6 +33,10 @@
 #include <iomanip>
 #include <sstream>
 
+VisualShaderNodeGeneratorInput::VisualShaderNodeGeneratorInput(const VisualShaderNodeInputType& input_type) : VisualShaderNodeGenerator(), input_type(input_type) {
+  this->ports_type = shadergen_utils::get_enum_value_port_type_by_value(VisualShaderNodeInputType_descriptor(), input_type);
+}
+
 std::string VisualShaderNodeGeneratorInput::generate_global([[maybe_unused]] const int& id) const {
   std::string code;
 
@@ -331,6 +335,11 @@ std::string VisualShaderNodeGeneratorUIntOp::generate_code(
   return code;
 }
 
+VisualShaderNodeGeneratorVectorOp::VisualShaderNodeGeneratorVectorOp(const VisualShaderNodeVectorType& type,
+    const VisualShaderNodeVectorOp::VisualShaderNodeVectorOpType& op) : VisualShaderNodeGenerator(), type(type), op(op) {
+  this->ports_type = shadergen_utils::get_enum_value_port_type_by_value(VisualShaderNodeVectorType_descriptor(), type);
+}
+
 std::string VisualShaderNodeGeneratorVectorOp::generate_code(
     [[maybe_unused]] const int& id, [[maybe_unused]] const std::vector<std::string>& input_vars,
     [[maybe_unused]] const std::vector<std::string>& output_vars) const {
@@ -541,6 +550,11 @@ std::string VisualShaderNodeGeneratorUIntFunc::generate_code(
       break;
   }
   return code;
+}
+
+VisualShaderNodeGeneratorVectorFunc::VisualShaderNodeGeneratorVectorFunc(const VisualShaderNodeVectorType& type,
+    const VisualShaderNodeVectorFunc::VisualShaderNodeVectorFuncType& func) : VisualShaderNodeGenerator(), type(type), func(func) {
+  ports_type = shadergen_utils::get_enum_value_port_type_by_value(VisualShaderNodeVectorType_descriptor(), type);
 }
 
 std::string VisualShaderNodeGeneratorVectorFunc::generate_code(

@@ -52,10 +52,10 @@ TEST(VisualShaderGeneratorTest, TestGenerateShader) {
 
   std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>> generators;
   generators[output_node_id] = std::make_shared<VisualShaderNodeGeneratorOutput>(); // Create an output node
-  generators[time_node_id] = std::make_shared<VisualShaderNodeGeneratorInput>(VisualShaderNodeInputType::INPUT_TYPE_TIME, VisualShaderNodePortType::PORT_TYPE_SCALAR); // Create a time input
+  generators[time_node_id] = std::make_shared<VisualShaderNodeGeneratorInput>(VisualShaderNodeInputType::INPUT_TYPE_TIME); // Create a time input
   generators[sin_node_id] = std::make_shared<VisualShaderNodeGeneratorFloatFunc>(VisualShaderNodeFloatFunc::FUNC_SIN); // Create a sin func
   generators[div_node_id] = std::make_shared<VisualShaderNodeGeneratorFloatOp>(VisualShaderNodeFloatOp::OP_DIV); // Create a divide operator
-  generators[uv_node_id] = std::make_shared<VisualShaderNodeGeneratorInput>(VisualShaderNodeInputType::INPUT_TYPE_UV, VisualShaderNodePortType::PORT_TYPE_VECTOR_2D); // Create a UV input
+  generators[uv_node_id] = std::make_shared<VisualShaderNodeGeneratorInput>(VisualShaderNodeInputType::INPUT_TYPE_UV); // Create a UV input
   generators[value_noise_node_id] = std::make_shared<VisualShaderNodeGeneratorValueNoise>(100.0f); // Create a Value Noise node
   generators[sub_node_id] = std::make_shared<VisualShaderNodeGeneratorFloatOp>(VisualShaderNodeFloatOp::OP_SUB); // Create a subtract operator
   generators[round_node_id] = std::make_shared<VisualShaderNodeGeneratorFloatFunc>(VisualShaderNodeFloatFunc::FUNC_ROUND); // Create a float func
