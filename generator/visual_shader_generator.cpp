@@ -647,7 +647,7 @@ static inline bool generate_shader_for_each_node(std::string& global_code, std::
       int from_port{(int)c->from.f_key.port};
 
       VisualShaderNodePortType to_port_type{proto_node->get_input_port_type(i)};
-      if (to_port_type == VisualShaderNodePortType::PORT_TYPE_UNSPECIFIED) to_port_type = generators.at(node_id)->get_ports_type();
+      if (to_port_type == VisualShaderNodePortType::PORT_TYPE_UNSPECIFIED) to_port_type = generator->get_ports_type();
 
       VisualShaderNodePortType from_port_type{proto_nodes.at(from_node)->get_output_port_type(from_port)};
       if (from_port_type == VisualShaderNodePortType::PORT_TYPE_UNSPECIFIED) from_port_type = generators.at(from_node)->get_ports_type();
@@ -847,8 +847,11 @@ static inline bool generate_shader_for_each_node(std::string& global_code, std::
     } else {
       // Add the default value.
 
+      VisualShaderNodePortType in_port_type{proto_node->get_input_port_type(i)};
+      if (in_port_type == VisualShaderNodePortType::PORT_TYPE_UNSPECIFIED) in_port_type = generator->get_ports_type();
+
       // For Output node, type is by port
-      switch (proto_node->get_input_port_type(i)) {
+      switch (in_port_type) {
         case VisualShaderNodePortType::PORT_TYPE_SCALAR: {
           float val{0.0f};
           input_vars.at(i) = "var_to_n" + std::to_string(node_id) + "_p" + std::to_string(i);
@@ -916,7 +919,7 @@ static inline bool generate_shader_for_each_node(std::string& global_code, std::
       std::string from_var{"var_from_n" + std::to_string(node_id) + "_p" + std::to_string(i)};
 
       VisualShaderNodePortType from_port_type{proto_node->get_output_port_type(i)};
-      if (from_port_type == VisualShaderNodePortType::PORT_TYPE_UNSPECIFIED) from_port_type = generators.at(node_id)->get_ports_type();
+      if (from_port_type == VisualShaderNodePortType::PORT_TYPE_UNSPECIFIED) from_port_type = generator->get_ports_type();
 
       switch (from_port_type) {
         case VisualShaderNodePortType::PORT_TYPE_SCALAR:
@@ -949,7 +952,7 @@ static inline bool generate_shader_for_each_node(std::string& global_code, std::
       output_vars.at(i) = "var_from_n" + std::to_string(node_id) + "_p" + std::to_string(i);
 
       VisualShaderNodePortType from_port_type{proto_node->get_output_port_type(i)};
-      if (from_port_type == VisualShaderNodePortType::PORT_TYPE_UNSPECIFIED) from_port_type = generators.at(node_id)->get_ports_type();
+      if (from_port_type == VisualShaderNodePortType::PORT_TYPE_UNSPECIFIED) from_port_type = generator->get_ports_type();
 
       switch (from_port_type) {
         case VisualShaderNodePortType::PORT_TYPE_SCALAR:
