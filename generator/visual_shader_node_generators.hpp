@@ -327,8 +327,7 @@ class VisualShaderNodeGeneratorDotProduct : public VisualShaderNodeGenerator {
 
 class VisualShaderNodeGeneratorVectorLen : public VisualShaderNodeGenerator {
  public:
-  VisualShaderNodeGeneratorVectorLen()
-      : VisualShaderNodeGenerator() {}
+  VisualShaderNodeGeneratorVectorLen(const VisualShaderNodeVectorType& vec_type);
 
   virtual std::string generate_code([[maybe_unused]] const int& id,
                                     [[maybe_unused]] const std::vector<std::string>& input_vars,
@@ -337,8 +336,7 @@ class VisualShaderNodeGeneratorVectorLen : public VisualShaderNodeGenerator {
 
 class VisualShaderNodeGeneratorClamp : public VisualShaderNodeGenerator {
  public:
-  VisualShaderNodeGeneratorClamp()
-      : VisualShaderNodeGenerator() {}
+  VisualShaderNodeGeneratorClamp(const VisualShaderNodeClamp::VisualShaderNodeClampType& type);
 
   virtual std::string generate_code([[maybe_unused]] const int& id,
                                     [[maybe_unused]] const std::vector<std::string>& input_vars,
@@ -347,8 +345,7 @@ class VisualShaderNodeGeneratorClamp : public VisualShaderNodeGenerator {
 
 class VisualShaderNodeGeneratorVectorDistance : public VisualShaderNodeGenerator {
  public:
-  VisualShaderNodeGeneratorVectorDistance()
-      : VisualShaderNodeGenerator() {}
+  VisualShaderNodeGeneratorVectorDistance(const VisualShaderNodeVectorType& vec_type);
 
   virtual std::string generate_code([[maybe_unused]] const int& id,
                                     [[maybe_unused]] const std::vector<std::string>& input_vars,
@@ -397,15 +394,14 @@ class VisualShaderNodeGeneratorIf : public VisualShaderNodeGenerator {
 
 class VisualShaderNodeGeneratorSwitch : public VisualShaderNodeGenerator {
  public:
-  VisualShaderNodeGeneratorSwitch(const VisualShaderNodeSwitch::VisualShaderNodeSwitchType& op)
-      : VisualShaderNodeGenerator(), op(op) { simple_decl = false; }
+  VisualShaderNodeGeneratorSwitch(const VisualShaderNodeSwitch::VisualShaderNodeSwitchType& type);
 
   virtual std::string generate_code([[maybe_unused]] const int& id,
                                     [[maybe_unused]] const std::vector<std::string>& input_vars,
                                     [[maybe_unused]] const std::vector<std::string>& output_vars) const override;
 
   private:
-  const VisualShaderNodeSwitch::VisualShaderNodeSwitchType op;
+  const VisualShaderNodeSwitch::VisualShaderNodeSwitchType type;
 };
 
 class VisualShaderNodeGeneratorIs : public VisualShaderNodeGenerator {

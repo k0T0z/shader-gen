@@ -305,15 +305,30 @@ std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>> to_generator
           break;
       }
       case VisualShader::VisualShaderNode::kVectorLenFieldNumber: {
-          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorVectorLen>();
+          const ProtoModel* vector_len_model{oneof_model->get_sub_model(FieldPath::Of<VisualShader::VisualShaderNode>(
+            FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVectorLenFieldNumber)))};
+
+          const VisualShaderNodeVectorType type {vector_len_model->get_sub_model(FieldPath::Of<VisualShaderNodeVectorLen>(FieldPath::FieldNumber(VisualShaderNodeVectorLen::kVecTypeFieldNumber)))->data().toInt()};
+
+          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorVectorLen>(type);
           break;
       }
       case VisualShader::VisualShaderNode::kClampFieldNumber: {
-          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorClamp>();
+          const ProtoModel* clamp_model{oneof_model->get_sub_model(FieldPath::Of<VisualShader::VisualShaderNode>(
+            FieldPath::FieldNumber(VisualShader::VisualShaderNode::kClampFieldNumber)))};
+
+          const VisualShaderNodeClamp::VisualShaderNodeClampType type {clamp_model->get_sub_model(FieldPath::Of<VisualShaderNodeClamp>(FieldPath::FieldNumber(VisualShaderNodeClamp::kTypeFieldNumber)))->data().toInt()};
+
+          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorClamp>(type);
           break;
       }
       case VisualShader::VisualShaderNode::kVectorDistanceFieldNumber: {
-          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorVectorDistance>();
+          const ProtoModel* vector_distance_model{oneof_model->get_sub_model(FieldPath::Of<VisualShader::VisualShaderNode>(
+            FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVectorDistanceFieldNumber)))};
+
+          const VisualShaderNodeVectorType type {vector_distance_model->get_sub_model(FieldPath::Of<VisualShaderNodeVectorDistance>(FieldPath::FieldNumber(VisualShaderNodeVectorDistance::kVecTypeFieldNumber)))->data().toInt()};
+
+          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorVectorDistance>(type);
           break;
       }
       case VisualShader::VisualShaderNode::kVector2DComposeFieldNumber: {

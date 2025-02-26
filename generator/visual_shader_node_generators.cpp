@@ -708,10 +708,20 @@ std::string VisualShaderNodeGeneratorDotProduct::generate_code(
          std::string("\n");
 }
 
+VisualShaderNodeGeneratorVectorLen::VisualShaderNodeGeneratorVectorLen(const VisualShaderNodeVectorType& vec_type)
+      : VisualShaderNodeGenerator() {
+  this->ports_type = shadergen_utils::get_enum_value_port_type_by_value(VisualShaderNodeVectorType_descriptor(), vec_type);
+}
+
 std::string VisualShaderNodeGeneratorVectorLen::generate_code(
     [[maybe_unused]] const int& id, [[maybe_unused]] const std::vector<std::string>& input_vars,
     [[maybe_unused]] const std::vector<std::string>& output_vars) const {
   return std::string("\t") + output_vars.at(0) + " = length(" + input_vars.at(0) + ");" + std::string("\n");
+}
+
+VisualShaderNodeGeneratorClamp::VisualShaderNodeGeneratorClamp(const VisualShaderNodeClamp::VisualShaderNodeClampType& type)
+      : VisualShaderNodeGenerator() {
+  this->ports_type = shadergen_utils::get_enum_value_port_type_by_value(VisualShaderNodeClamp::VisualShaderNodeClampType_descriptor(), type);
 }
 
 std::string VisualShaderNodeGeneratorClamp::generate_code(
@@ -719,6 +729,11 @@ std::string VisualShaderNodeGeneratorClamp::generate_code(
     [[maybe_unused]] const std::vector<std::string>& output_vars) const {
   return std::string("\t") + output_vars.at(0) + " = clamp(" + input_vars.at(0) + ", " + input_vars.at(1) + ", " +
          input_vars.at(2) + ");" + std::string("\n");
+}
+
+VisualShaderNodeGeneratorVectorDistance::VisualShaderNodeGeneratorVectorDistance(const VisualShaderNodeVectorType& vec_type)
+      : VisualShaderNodeGenerator() {
+  this->ports_type = shadergen_utils::get_enum_value_port_type_by_value(VisualShaderNodeVectorType_descriptor(), vec_type);
 }
 
 std::string VisualShaderNodeGeneratorVectorDistance::generate_code(
@@ -802,12 +817,18 @@ std::string VisualShaderNodeGeneratorIf::generate_code(
   return code;
 }
 
+VisualShaderNodeGeneratorSwitch::VisualShaderNodeGeneratorSwitch(const VisualShaderNodeSwitch::VisualShaderNodeSwitchType& type)
+      : VisualShaderNodeGenerator(), type(type) {
+  simple_decl = false;
+  this->ports_type = shadergen_utils::get_enum_value_port_type_by_value(VisualShaderNodeSwitch::VisualShaderNodeSwitchType_descriptor(), type);
+}
+
 std::string VisualShaderNodeGeneratorSwitch::generate_code(
     [[maybe_unused]] const int& id, [[maybe_unused]] const std::vector<std::string>& input_vars,
     const std::vector<std::string>& output_vars) const {
   bool use_mix{false};
 
-  switch (op) {
+  switch (type) {
     case VisualShaderNodeSwitch::TYPE_FLOAT:
     case VisualShaderNodeSwitch::TYPE_VECTOR_2D:
     case VisualShaderNodeSwitch::TYPE_VECTOR_3D:
@@ -870,6 +891,7 @@ VisualShaderNodeGeneratorCompare::VisualShaderNodeGeneratorCompare(const VisualS
     default:
       break;
   }
+  this->ports_type = shadergen_utils::get_enum_value_port_type_by_value(VisualShaderNodeCompare::VisualShaderNodeCompareType_descriptor(), comp);
 }
 
 std::string VisualShaderNodeGeneratorCompare::generate_code(
