@@ -134,23 +134,28 @@ inline static bool is_valid_connection(const VisualShaderNodePortType& source_po
 inline static bool is_node_field_affects_port_type(const int& node_type_field_number, const int& field_number) noexcept {
   switch (node_type_field_number) {
     case VisualShader::VisualShaderNode::kInputFieldNumber:
+      if (field_number == VisualShaderNodeInput::kTypeFieldNumber) return true;
+      break;
     case VisualShader::VisualShaderNode::kVectorOpFieldNumber:
+      if (field_number == VisualShaderNodeVectorOp::kVecTypeFieldNumber) return true;
+      break;
     case VisualShader::VisualShaderNode::kVectorFuncFieldNumber:
+      if (field_number == VisualShaderNodeVectorFunc::kVecTypeFieldNumber) return true;
+      break;
     case VisualShader::VisualShaderNode::kVectorLenFieldNumber:
+      if (field_number == VisualShaderNodeVectorLen::kVecTypeFieldNumber) return true;
+      break;
     case VisualShader::VisualShaderNode::kClampFieldNumber:
+      if (field_number == VisualShaderNodeClamp::kTypeFieldNumber) return true;
+      break;
     case VisualShader::VisualShaderNode::kVectorDistanceFieldNumber:
+      if (field_number == VisualShaderNodeVectorDistance::kVecTypeFieldNumber) return true;
+      break;
     case VisualShader::VisualShaderNode::kSwitchNodeFieldNumber:
+      if (field_number == VisualShaderNodeSwitch::kTypeFieldNumber) return true;
+      break;
     case VisualShader::VisualShaderNode::kCompareFieldNumber:
-      if (field_number == VisualShaderNodeInput::kTypeFieldNumber ||
-          field_number == VisualShaderNodeVectorOp::kVecTypeFieldNumber ||
-          field_number == VisualShaderNodeVectorFunc::kVecTypeFieldNumber ||
-          field_number == VisualShaderNodeVectorLen::kVecTypeFieldNumber ||
-          field_number == VisualShaderNodeClamp::kTypeFieldNumber ||
-          field_number == VisualShaderNodeVectorDistance::kVecTypeFieldNumber ||
-          field_number == VisualShaderNodeSwitch::kTypeFieldNumber ||
-          field_number == VisualShaderNodeCompare::kTypeFieldNumber) {
-        return true;
-      }
+      if (field_number == VisualShaderNodeCompare::kTypeFieldNumber) return true;
       break;
     default:
       break;
