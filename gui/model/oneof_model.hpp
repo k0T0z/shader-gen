@@ -73,6 +73,8 @@ class OneofModel : public ProtoModel {
   bool set_oneof(const int& field_number);
   int get_oneof_field_number() const;
 
+  int get_column_index(const FieldDescriptor* field_desc) const;
+
  private:
   Message* m_message_buffer;
   const OneofDescriptor* m_oneof_desc;
