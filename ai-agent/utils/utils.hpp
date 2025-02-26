@@ -34,6 +34,8 @@
 
 #include "error_macros.hpp"
 
+using VisualShader = gui::model::schema::VisualShader;
+
 namespace ai_agent_utils {
 inline static std::vector<int> get_node_type_population() {
     std::vector<int> node_type_population;
@@ -41,7 +43,7 @@ inline static std::vector<int> get_node_type_population() {
     node_type_population.emplace_back(VisualShader::VisualShaderNode::kInputFieldNumber);
     node_type_population.emplace_back(VisualShader::VisualShaderNode::kFloatConstantFieldNumber);
     node_type_population.emplace_back(VisualShader::VisualShaderNode::kIntConstantFieldNumber);
-    node_type_population.emplace_back(VisualShader::VisualShaderNode::kUIntConstantFieldNumber);
+    node_type_population.emplace_back(VisualShader::VisualShaderNode::kUintConstantFieldNumber);
     node_type_population.emplace_back(VisualShader::VisualShaderNode::kBooleanConstantFieldNumber);
     node_type_population.emplace_back(VisualShader::VisualShaderNode::kColorConstantFieldNumber);
     node_type_population.emplace_back(VisualShader::VisualShaderNode::kVec2ConstantFieldNumber);
@@ -49,11 +51,11 @@ inline static std::vector<int> get_node_type_population() {
     node_type_population.emplace_back(VisualShader::VisualShaderNode::kVec4ConstantFieldNumber);
     node_type_population.emplace_back(VisualShader::VisualShaderNode::kFloatOpFieldNumber);
     node_type_population.emplace_back(VisualShader::VisualShaderNode::kIntOpFieldNumber);
-    node_type_population.emplace_back(VisualShader::VisualShaderNode::kUIntOpFieldNumber);
+    node_type_population.emplace_back(VisualShader::VisualShaderNode::kUintOpFieldNumber);
     node_type_population.emplace_back(VisualShader::VisualShaderNode::kVectorOpFieldNumber);
     node_type_population.emplace_back(VisualShader::VisualShaderNode::kFloatFuncFieldNumber);
     node_type_population.emplace_back(VisualShader::VisualShaderNode::kIntFuncFieldNumber);
-    node_type_population.emplace_back(VisualShader::VisualShaderNode::kUIntFuncFieldNumber);
+    node_type_population.emplace_back(VisualShader::VisualShaderNode::kUintFuncFieldNumber);
     node_type_population.emplace_back(VisualShader::VisualShaderNode::kVectorFuncFieldNumber);
     node_type_population.emplace_back(VisualShader::VisualShaderNode::kValueNoiseFieldNumber);
     node_type_population.emplace_back(VisualShader::VisualShaderNode::kPerlinNoiseFieldNumber);
@@ -68,7 +70,7 @@ inline static std::vector<int> get_node_type_population() {
     node_type_population.emplace_back(VisualShader::VisualShaderNode::kVector2DDecomposeFieldNumber);
     node_type_population.emplace_back(VisualShader::VisualShaderNode::kVector3DDecomposeFieldNumber);
     node_type_population.emplace_back(VisualShader::VisualShaderNode::kVector4DDecomposeFieldNumber);
-    node_type_population.emplace_back(VisualShader::VisualShaderNode::kIfFieldNumber);
+    node_type_population.emplace_back(VisualShader::VisualShaderNode::kIfNodeFieldNumber);
     node_type_population.emplace_back(VisualShader::VisualShaderNode::kSwitchNodeFieldNumber);
     node_type_population.emplace_back(VisualShader::VisualShaderNode::kIsFieldNumber);
     node_type_population.emplace_back(VisualShader::VisualShaderNode::kCompareFieldNumber);
