@@ -140,4 +140,3 @@ class CurrentOutputRenderer : public QOpenGLWidget, protected QOpenGLFunctions_4
 };
 
 #endif  // SHADER_GEN_AI_AGENT_FITNESS_CALCULATOR_HPP
-  

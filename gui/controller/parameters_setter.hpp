@@ -25,12 +25,34 @@
 /*                                                                               */
 /*********************************************************************************/
 
-#ifndef AI_AGENT_PARAMETERS_HPP
-#define AI_AGENT_PARAMETERS_HPP
+#ifndef SHADER_GEN_AI_AGENT_PARAMETERS_SETTER_HPP
+#define SHADER_GEN_AI_AGENT_PARAMETERS_SETTER_HPP
 
-extern float mutation_probability;
-extern float crossover_probability;
-extern float elitism_ratio;
-extern int maximum_iterations;
+#include <QWidget>
+#include <QVBoxLayout>
+#include <QHBoxLayout>
+#include <QPushButton>
+#include <QLabel>
+#include <QLineEdit>
+#include <QCheckBox>
 
-#endif // AI_AGENT_PARAMETERS_HPP
+class AIAgentParametersSetter : public QWidget {
+  Q_OBJECT
+
+ public:
+  AIAgentParametersSetter(QWidget* parent = nullptr);
+  ~AIAgentParametersSetter() override = default;
+
+ private:
+  QVBoxLayout* layout;
+
+  QPushButton* match_button;
+
+  /**
+   * @brief Initializes the UI
+   * 
+   */
+  void init();
+};
+
+#endif  // SHADER_GEN_AI_AGENT_PARAMETERS_SETTER_HPP

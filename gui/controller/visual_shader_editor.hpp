@@ -72,6 +72,7 @@
 
 #include "gui/controller/renderer/renderer.hpp"
 #include "gui/controller/fitness_calculator.hpp"
+#include "gui/controller/parameters_setter.hpp"
 
 using EnumDescriptor = google::protobuf::EnumDescriptor;
 
@@ -206,6 +207,7 @@ class VisualShaderEditor : public QWidget {
   ProtoModel* connections_model;
 
   AIAgentFitnessCalculator* fitness_calculator;
+  AIAgentParametersSetter* parameters_setter;
 
   /**
    * @brief Initializes the UI

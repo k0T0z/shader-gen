@@ -138,6 +138,7 @@ set(SHADER_GEN_MAIN_ENTRY
 set(SHADER_GEN_HPP_FILES 
     ${CMAKE_CURRENT_SOURCE_DIR}/ai-agent/fitness.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/ai-agent/utils/utils.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/ai-agent/parameters.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/generator/visual_shader_generator.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/generator/visual_shader_node_generators.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/generator/vs_node_noise_generators.hpp
@@ -152,6 +153,7 @@ set(SHADER_GEN_HPP_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/gui/controller/visual_shader_editor.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/gui/controller/renderer/renderer.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/gui/controller/fitness_calculator.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/gui/controller/parameters_setter.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/gui/model/utils/field_path.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/gui/model/utils/utils.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/gui/controller/utils/utils.hpp
@@ -159,6 +161,7 @@ set(SHADER_GEN_HPP_FILES
 )
 
 set(SHADER_GEN_CPP_FILES 
+    ${CMAKE_CURRENT_SOURCE_DIR}/ai-agent/parameters.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/generator/visual_shader_generator.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/generator/visual_shader_node_generators.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/generator/vs_node_noise_generators.cpp
@@ -172,6 +175,7 @@ set(SHADER_GEN_CPP_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/gui/controller/visual_shader_editor.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/gui/controller/renderer/renderer.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/gui/controller/fitness_calculator.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/gui/controller/parameters_setter.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/gui/model/utils/field_path.cpp
 )
 

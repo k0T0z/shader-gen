@@ -79,7 +79,8 @@ VisualShaderEditor::VisualShaderEditor(MessageModel* model, QWidget* parent)
       visual_shader_model(model),
       nodes_model(nullptr),
       connections_model(nullptr),
-      fitness_calculator(nullptr) {
+      fitness_calculator(nullptr),
+      parameters_setter(nullptr) {
   resize(1440, 720);
 
   VisualShaderEditor::init();
@@ -87,6 +88,7 @@ VisualShaderEditor::VisualShaderEditor(MessageModel* model, QWidget* parent)
 
 VisualShaderEditor::~VisualShaderEditor() {
   delete fitness_calculator;
+  delete parameters_setter;
 }
 
 void VisualShaderEditor::init() {
@@ -262,6 +264,7 @@ void VisualShaderEditor::init() {
   QObject::connect(match_image_button, &QPushButton::pressed, this, &VisualShaderEditor::on_match_image_button_pressed);
 
   fitness_calculator = new AIAgentFitnessCalculator();
+  parameters_setter = new AIAgentParametersSetter();
 
   // Set the top layer layout.
   top_layer->setLayout(menu_bar);
@@ -566,9 +569,8 @@ void VisualShaderEditor::on_load_image_button_pressed() {
 }
 
 void VisualShaderEditor::on_match_image_button_pressed() {
-  if (!fitness_calculator->isVisible()) {
-    fitness_calculator->show();
-  }
+  SILENT_CHECK_CONDITION_TRUE(fitness_calculator->isVisible());
+  SILENT_CHECK_CONDITION_TRUE(parameters_setter->isVisible());
 
   // Find the node connected to the output node and generate the shader code at it
   VisualShaderNodeGraphicsObject* n_o{scene->get_node_graphics_object(0)};
@@ -588,8 +590,10 @@ void VisualShaderEditor::on_match_image_button_pressed() {
                                             shadergen_visual_shader_generator::to_generators(nodes_model), 
                                             shadergen_visual_shader_generator::to_input_output_connections_by_key(connections_model), c_o->get_from_node_id(), 0));  // 0 is the output port index
 
-  // Open the parameters editor
+  if (!fitness_calculator->isVisible()) fitness_calculator->show();
   
+  // Open the parameters editor
+  if (!parameters_setter->isVisible()) parameters_setter->show();
 }
 
 std::vector<std::string> VisualShaderEditor::parse_node_category_path(const std::string& n_category_path) {
