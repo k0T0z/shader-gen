@@ -202,17 +202,8 @@ inline static std::shared_ptr<IVisualShaderProtoNode> get_proto_node_by_oneof_va
     case VisualShader::VisualShaderNode::kClampFieldNumber: {
       return std::make_shared<VisualShaderProtoNode<VisualShaderNodeClamp>>();
     }
-    case VisualShader::VisualShaderNode::kStepFieldNumber: {
-      return std::make_shared<VisualShaderProtoNode<VisualShaderNodeStep>>();
-    }
-    case VisualShader::VisualShaderNode::kSmoothStepFieldNumber: {
-      return std::make_shared<VisualShaderProtoNode<VisualShaderNodeSmoothStep>>();
-    }
     case VisualShader::VisualShaderNode::kVectorDistanceFieldNumber: {
       return std::make_shared<VisualShaderProtoNode<VisualShaderNodeVectorDistance>>();
-    }
-    case VisualShader::VisualShaderNode::kMixFieldNumber: {
-      return std::make_shared<VisualShaderProtoNode<VisualShaderNodeMix>>();
     }
     case VisualShader::VisualShaderNode::kVector2DComposeFieldNumber: {
       return std::make_shared<VisualShaderProtoNode<VisualShaderNode2dVectorCompose>>();

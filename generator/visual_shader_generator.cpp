@@ -211,7 +211,7 @@ std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>> to_generator
           const ProtoModel* float_op_model{oneof_model->get_sub_model(FieldPath::Of<VisualShader::VisualShaderNode>(
             FieldPath::FieldNumber(VisualShader::VisualShaderNode::kFloatOpFieldNumber)))};
 
-          const VisualShaderNodeFloatOp::VisualShaderNodeFloatOpType op_type {float_op_model->get_sub_model(FieldPath::Of<VisualShaderNodeFloatOp>(FieldPath::FieldNumber(VisualShaderNodeFloatOp::kOpFieldNumber)))->data().toInt()};
+          const VisualShaderNodeFloatOp::VisualShaderNodeFloatOpType op_type {float_op_model->get_sub_model(FieldPath::Of<VisualShaderNodeFloatOp>(FieldPath::FieldNumber(VisualShaderNodeFloatOp::kOpTypeFieldNumber)))->data().toInt()};
           generators[n_id] = std::make_shared<VisualShaderNodeGeneratorFloatOp>(op_type);
           break;
       }
@@ -219,7 +219,7 @@ std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>> to_generator
           const ProtoModel* int_op_model{oneof_model->get_sub_model(FieldPath::Of<VisualShader::VisualShaderNode>(
             FieldPath::FieldNumber(VisualShader::VisualShaderNode::kIntOpFieldNumber)))};
 
-          const VisualShaderNodeIntOp::VisualShaderNodeIntOpType op_type {int_op_model->get_sub_model(FieldPath::Of<VisualShaderNodeIntOp>(FieldPath::FieldNumber(VisualShaderNodeIntOp::kOpFieldNumber)))->data().toInt()};
+          const VisualShaderNodeIntOp::VisualShaderNodeIntOpType op_type {int_op_model->get_sub_model(FieldPath::Of<VisualShaderNodeIntOp>(FieldPath::FieldNumber(VisualShaderNodeIntOp::kOpTypeFieldNumber)))->data().toInt()};
           generators[n_id] = std::make_shared<VisualShaderNodeGeneratorIntOp>(op_type);
           break;
       }
@@ -227,7 +227,7 @@ std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>> to_generator
           const ProtoModel* uint_op_model{oneof_model->get_sub_model(FieldPath::Of<VisualShader::VisualShaderNode>(
             FieldPath::FieldNumber(VisualShader::VisualShaderNode::kUintOpFieldNumber)))};
 
-          const VisualShaderNodeUIntOp::VisualShaderNodeUIntOpType op_type {uint_op_model->get_sub_model(FieldPath::Of<VisualShaderNodeUIntOp>(FieldPath::FieldNumber(VisualShaderNodeUIntOp::kOpFieldNumber)))->data().toInt()};
+          const VisualShaderNodeUIntOp::VisualShaderNodeUIntOpType op_type {uint_op_model->get_sub_model(FieldPath::Of<VisualShaderNodeUIntOp>(FieldPath::FieldNumber(VisualShaderNodeUIntOp::kOpTypeFieldNumber)))->data().toInt()};
           generators[n_id] = std::make_shared<VisualShaderNodeGeneratorUIntOp>(op_type);
           break;
       }
@@ -235,8 +235,8 @@ std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>> to_generator
           const ProtoModel* vector_op_model{oneof_model->get_sub_model(FieldPath::Of<VisualShader::VisualShaderNode>(
             FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVectorOpFieldNumber)))};
 
-          const VisualShaderNodeVectorType type {vector_op_model->get_sub_model(FieldPath::Of<VisualShaderNodeVectorOp>(FieldPath::FieldNumber(VisualShaderNodeVectorOp::kTypeFieldNumber)))->data().toInt()};
-          const VisualShaderNodeVectorOp::VisualShaderNodeVectorOpType op_type {vector_op_model->get_sub_model(FieldPath::Of<VisualShaderNodeVectorOp>(FieldPath::FieldNumber(VisualShaderNodeVectorOp::kOpFieldNumber)))->data().toInt()};
+          const VisualShaderNodeVectorType type {vector_op_model->get_sub_model(FieldPath::Of<VisualShaderNodeVectorOp>(FieldPath::FieldNumber(VisualShaderNodeVectorOp::kVecTypeFieldNumber)))->data().toInt()};
+          const VisualShaderNodeVectorOp::VisualShaderNodeVectorOpType op_type {vector_op_model->get_sub_model(FieldPath::Of<VisualShaderNodeVectorOp>(FieldPath::FieldNumber(VisualShaderNodeVectorOp::kOpTypeFieldNumber)))->data().toInt()};
 
           generators[n_id] = std::make_shared<VisualShaderNodeGeneratorVectorOp>(type, op_type);
           break;
@@ -245,7 +245,7 @@ std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>> to_generator
           const ProtoModel* float_func_model{oneof_model->get_sub_model(FieldPath::Of<VisualShader::VisualShaderNode>(
             FieldPath::FieldNumber(VisualShader::VisualShaderNode::kFloatFuncFieldNumber)))};
 
-          const VisualShaderNodeFloatFunc::VisualShaderNodeFloatFuncType func_type {float_func_model->get_sub_model(FieldPath::Of<VisualShaderNodeFloatFunc>(FieldPath::FieldNumber(VisualShaderNodeFloatFunc::kFuncFieldNumber)))->data().toInt()};
+          const VisualShaderNodeFloatFunc::VisualShaderNodeFloatFuncType func_type {float_func_model->get_sub_model(FieldPath::Of<VisualShaderNodeFloatFunc>(FieldPath::FieldNumber(VisualShaderNodeFloatFunc::kFuncTypeFieldNumber)))->data().toInt()};
           generators[n_id] = std::make_shared<VisualShaderNodeGeneratorFloatFunc>(func_type);
           break;
       }
@@ -253,7 +253,7 @@ std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>> to_generator
           const ProtoModel* int_func_model{oneof_model->get_sub_model(FieldPath::Of<VisualShader::VisualShaderNode>(
             FieldPath::FieldNumber(VisualShader::VisualShaderNode::kIntFuncFieldNumber)))};
 
-          const VisualShaderNodeIntFunc::VisualShaderNodeIntFuncType func_type {int_func_model->get_sub_model(FieldPath::Of<VisualShaderNodeIntFunc>(FieldPath::FieldNumber(VisualShaderNodeIntFunc::kFuncFieldNumber)))->data().toInt()};
+          const VisualShaderNodeIntFunc::VisualShaderNodeIntFuncType func_type {int_func_model->get_sub_model(FieldPath::Of<VisualShaderNodeIntFunc>(FieldPath::FieldNumber(VisualShaderNodeIntFunc::kFuncTypeFieldNumber)))->data().toInt()};
           generators[n_id] = std::make_shared<VisualShaderNodeGeneratorIntFunc>(func_type);
           break;
       }
@@ -261,7 +261,7 @@ std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>> to_generator
           const ProtoModel* uint_func_model{oneof_model->get_sub_model(FieldPath::Of<VisualShader::VisualShaderNode>(
             FieldPath::FieldNumber(VisualShader::VisualShaderNode::kUintFuncFieldNumber)))};
 
-          const VisualShaderNodeUIntFunc::VisualShaderNodeUIntFuncType func_type {uint_func_model->get_sub_model(FieldPath::Of<VisualShaderNodeUIntFunc>(FieldPath::FieldNumber(VisualShaderNodeUIntFunc::kFuncFieldNumber)))->data().toInt()};
+          const VisualShaderNodeUIntFunc::VisualShaderNodeUIntFuncType func_type {uint_func_model->get_sub_model(FieldPath::Of<VisualShaderNodeUIntFunc>(FieldPath::FieldNumber(VisualShaderNodeUIntFunc::kFuncTypeFieldNumber)))->data().toInt()};
           generators[n_id] = std::make_shared<VisualShaderNodeGeneratorUIntFunc>(func_type);
           break;
       }
@@ -269,8 +269,8 @@ std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>> to_generator
           const ProtoModel* vector_func_model{oneof_model->get_sub_model(FieldPath::Of<VisualShader::VisualShaderNode>(
             FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVectorFuncFieldNumber)))};
 
-          const VisualShaderNodeVectorType type {vector_func_model->get_sub_model(FieldPath::Of<VisualShaderNodeVectorFunc>(FieldPath::FieldNumber(VisualShaderNodeVectorFunc::kTypeFieldNumber)))->data().toInt()};
-          const VisualShaderNodeVectorFunc::VisualShaderNodeVectorFuncType func_type {vector_func_model->get_sub_model(FieldPath::Of<VisualShaderNodeVectorFunc>(FieldPath::FieldNumber(VisualShaderNodeVectorFunc::kFuncFieldNumber)))->data().toInt()};
+          const VisualShaderNodeVectorType type {vector_func_model->get_sub_model(FieldPath::Of<VisualShaderNodeVectorFunc>(FieldPath::FieldNumber(VisualShaderNodeVectorFunc::kVecTypeFieldNumber)))->data().toInt()};
+          const VisualShaderNodeVectorFunc::VisualShaderNodeVectorFuncType func_type {vector_func_model->get_sub_model(FieldPath::Of<VisualShaderNodeVectorFunc>(FieldPath::FieldNumber(VisualShaderNodeVectorFunc::kFuncTypeFieldNumber)))->data().toInt()};
 
           generators[n_id] = std::make_shared<VisualShaderNodeGeneratorVectorFunc>(type, func_type);
           break;
@@ -312,20 +312,8 @@ std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>> to_generator
           generators[n_id] = std::make_shared<VisualShaderNodeGeneratorClamp>();
           break;
       }
-      case VisualShader::VisualShaderNode::kStepFieldNumber: {
-          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorStep>();
-          break;
-      }
-      case VisualShader::VisualShaderNode::kSmoothStepFieldNumber: {
-          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorSmoothStep>();
-          break;
-      }
       case VisualShader::VisualShaderNode::kVectorDistanceFieldNumber: {
           generators[n_id] = std::make_shared<VisualShaderNodeGeneratorVectorDistance>();
-          break;
-      }
-      case VisualShader::VisualShaderNode::kMixFieldNumber: {
-          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorMix>();
           break;
       }
       case VisualShader::VisualShaderNode::kVector2DComposeFieldNumber: {
@@ -360,7 +348,7 @@ std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>> to_generator
           const ProtoModel* switch_model{oneof_model->get_sub_model(FieldPath::Of<VisualShader::VisualShaderNode>(
             FieldPath::FieldNumber(VisualShader::VisualShaderNode::kSwitchNodeFieldNumber)))};
 
-          const VisualShaderNodeSwitch::VisualShaderNodeSwitchOpType type {switch_model->get_sub_model(FieldPath::Of<VisualShaderNodeSwitch>(FieldPath::FieldNumber(VisualShaderNodeSwitch::kTypeFieldNumber)))->data().toInt()};
+          const VisualShaderNodeSwitch::VisualShaderNodeSwitchType type {switch_model->get_sub_model(FieldPath::Of<VisualShaderNodeSwitch>(FieldPath::FieldNumber(VisualShaderNodeSwitch::kTypeFieldNumber)))->data().toInt()};
           generators[n_id] = std::make_shared<VisualShaderNodeGeneratorSwitch>(type);
           break;
       }
@@ -368,7 +356,7 @@ std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>> to_generator
           const ProtoModel* is_model{oneof_model->get_sub_model(FieldPath::Of<VisualShader::VisualShaderNode>(
             FieldPath::FieldNumber(VisualShader::VisualShaderNode::kIsFieldNumber)))};
 
-          const VisualShaderNodeIs::Function func {is_model->get_sub_model(FieldPath::Of<VisualShaderNodeIs>(FieldPath::FieldNumber(VisualShaderNodeIs::kFuncFieldNumber)))->data().toInt()};
+          const VisualShaderNodeIs::VisualShaderNodeIsFunction func {is_model->get_sub_model(FieldPath::Of<VisualShaderNodeIs>(FieldPath::FieldNumber(VisualShaderNodeIs::kFuncFieldNumber)))->data().toInt()};
           generators[n_id] = std::make_shared<VisualShaderNodeGeneratorIs>(func);
           break;
       }
@@ -376,9 +364,9 @@ std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>> to_generator
           const ProtoModel* compare_model{oneof_model->get_sub_model(FieldPath::Of<VisualShader::VisualShaderNode>(
             FieldPath::FieldNumber(VisualShader::VisualShaderNode::kCompareFieldNumber)))};
 
-          const VisualShaderNodeCompare::ComparisonType type {compare_model->get_sub_model(FieldPath::Of<VisualShaderNodeCompare>(FieldPath::FieldNumber(VisualShaderNodeCompare::kTypeFieldNumber)))->data().toInt()};
-            const VisualShaderNodeCompare::Function func {compare_model->get_sub_model(FieldPath::Of<VisualShaderNodeCompare>(FieldPath::FieldNumber(VisualShaderNodeCompare::kFuncFieldNumber)))->data().toInt()};
-            const VisualShaderNodeCompare::Condition cond {compare_model->get_sub_model(FieldPath::Of<VisualShaderNodeCompare>(FieldPath::FieldNumber(VisualShaderNodeCompare::kCondFieldNumber)))->data().toInt()};
+          const VisualShaderNodeCompare::VisualShaderNodeCompareType type {compare_model->get_sub_model(FieldPath::Of<VisualShaderNodeCompare>(FieldPath::FieldNumber(VisualShaderNodeCompare::kTypeFieldNumber)))->data().toInt()};
+          const VisualShaderNodeCompare::VisualShaderNodeCompareFunction func {compare_model->get_sub_model(FieldPath::Of<VisualShaderNodeCompare>(FieldPath::FieldNumber(VisualShaderNodeCompare::kFuncFieldNumber)))->data().toInt()};
+          const VisualShaderNodeCompare::VisualShaderNodeCompareCondition cond {compare_model->get_sub_model(FieldPath::Of<VisualShaderNodeCompare>(FieldPath::FieldNumber(VisualShaderNodeCompare::kCondFieldNumber)))->data().toInt()};
           generators[n_id] = std::make_shared<VisualShaderNodeGeneratorCompare>(type, func, cond);
           break;
       }

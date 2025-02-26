@@ -137,10 +137,18 @@ inline static bool is_node_field_affects_port_type(const int& node_type_field_nu
     case VisualShader::VisualShaderNode::kVectorOpFieldNumber:
     case VisualShader::VisualShaderNode::kVectorFuncFieldNumber:
     case VisualShader::VisualShaderNode::kVectorLenFieldNumber:
+    case VisualShader::VisualShaderNode::kClampFieldNumber:
+    case VisualShader::VisualShaderNode::kVectorDistanceFieldNumber:
+    case VisualShader::VisualShaderNode::kSwitchNodeFieldNumber:
+    case VisualShader::VisualShaderNode::kCompareFieldNumber:
       if (field_number == VisualShaderNodeInput::kTypeFieldNumber ||
-          field_number == VisualShaderNodeVectorOp::kTypeFieldNumber ||
-          field_number == VisualShaderNodeVectorFunc::kTypeFieldNumber ||
-          field_number == VisualShaderNodeVectorLen::kTypeFieldNumber) {
+          field_number == VisualShaderNodeVectorOp::kVecTypeFieldNumber ||
+          field_number == VisualShaderNodeVectorFunc::kVecTypeFieldNumber ||
+          field_number == VisualShaderNodeVectorLen::kVecTypeFieldNumber ||
+          field_number == VisualShaderNodeClamp::kTypeFieldNumber ||
+          field_number == VisualShaderNodeVectorDistance::kVecTypeFieldNumber ||
+          field_number == VisualShaderNodeSwitch::kTypeFieldNumber ||
+          field_number == VisualShaderNodeCompare::kTypeFieldNumber) {
         return true;
       }
       break;

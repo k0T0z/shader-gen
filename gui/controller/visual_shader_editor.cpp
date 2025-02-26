@@ -346,10 +346,7 @@ void VisualShaderEditor::init() {
   t_nodes.emplace_back(std::make_shared<VisualShaderProtoNode<VisualShaderNodeDotProduct>>());
   t_nodes.emplace_back(std::make_shared<VisualShaderProtoNode<VisualShaderNodeVectorLen>>());
   t_nodes.emplace_back(std::make_shared<VisualShaderProtoNode<VisualShaderNodeClamp>>());
-  t_nodes.emplace_back(std::make_shared<VisualShaderProtoNode<VisualShaderNodeStep>>());
-  t_nodes.emplace_back(std::make_shared<VisualShaderProtoNode<VisualShaderNodeSmoothStep>>());
   t_nodes.emplace_back(std::make_shared<VisualShaderProtoNode<VisualShaderNodeVectorDistance>>());
-  t_nodes.emplace_back(std::make_shared<VisualShaderProtoNode<VisualShaderNodeMix>>());
   t_nodes.emplace_back(std::make_shared<VisualShaderProtoNode<VisualShaderNode2dVectorCompose>>());
   t_nodes.emplace_back(std::make_shared<VisualShaderProtoNode<VisualShaderNode3dVectorCompose>>());
   t_nodes.emplace_back(std::make_shared<VisualShaderProtoNode<VisualShaderNode4dVectorCompose>>());
@@ -945,37 +942,37 @@ bool VisualShaderGraphicsScene::add_node_to_scene(const int& n_id, const std::sh
         break;
       }
       case VisualShader::VisualShaderNode::kFloatOpFieldNumber: {
-        REGISTER_NODE_FIELD_COMBO_BOX(VisualShaderNodeFloatOp::VisualShaderNodeFloatOpType_descriptor(), VisualShaderNodeFloatOp::kOpFieldNumber);
+        REGISTER_NODE_FIELD_COMBO_BOX(VisualShaderNodeFloatOp::VisualShaderNodeFloatOpType_descriptor(), VisualShaderNodeFloatOp::kOpTypeFieldNumber);
         break;
       }
       case VisualShader::VisualShaderNode::kIntOpFieldNumber: {
-        REGISTER_NODE_FIELD_COMBO_BOX(VisualShaderNodeIntOp::VisualShaderNodeIntOpType_descriptor(), VisualShaderNodeIntOp::kOpFieldNumber);
+        REGISTER_NODE_FIELD_COMBO_BOX(VisualShaderNodeIntOp::VisualShaderNodeIntOpType_descriptor(), VisualShaderNodeIntOp::kOpTypeFieldNumber);
         break;
       }
       case VisualShader::VisualShaderNode::kUintOpFieldNumber: {
-        REGISTER_NODE_FIELD_COMBO_BOX(VisualShaderNodeUIntOp::VisualShaderNodeUIntOpType_descriptor(), VisualShaderNodeUIntOp::kOpFieldNumber);
+        REGISTER_NODE_FIELD_COMBO_BOX(VisualShaderNodeUIntOp::VisualShaderNodeUIntOpType_descriptor(), VisualShaderNodeUIntOp::kOpTypeFieldNumber);
         break;
       }
       case VisualShader::VisualShaderNode::kVectorOpFieldNumber: {
-        REGISTER_NODE_FIELD_COMBO_BOX(VisualShaderNodeVectorType_descriptor(), VisualShaderNodeVectorOp::kTypeFieldNumber);
-        REGISTER_NODE_FIELD_COMBO_BOX(VisualShaderNodeVectorOp::VisualShaderNodeVectorOpType_descriptor(), VisualShaderNodeVectorOp::kOpFieldNumber);
+        REGISTER_NODE_FIELD_COMBO_BOX(VisualShaderNodeVectorType_descriptor(), VisualShaderNodeVectorOp::kVecTypeFieldNumber);
+        REGISTER_NODE_FIELD_COMBO_BOX(VisualShaderNodeVectorOp::VisualShaderNodeVectorOpType_descriptor(), VisualShaderNodeVectorOp::kOpTypeFieldNumber);
         break;
       }
       case VisualShader::VisualShaderNode::kFloatFuncFieldNumber: {
-        REGISTER_NODE_FIELD_COMBO_BOX(VisualShaderNodeFloatFunc::VisualShaderNodeFloatFuncType_descriptor(), VisualShaderNodeFloatFunc::kFuncFieldNumber);
+        REGISTER_NODE_FIELD_COMBO_BOX(VisualShaderNodeFloatFunc::VisualShaderNodeFloatFuncType_descriptor(), VisualShaderNodeFloatFunc::kFuncTypeFieldNumber);
         break;
       }
       case VisualShader::VisualShaderNode::kIntFuncFieldNumber: {
-        REGISTER_NODE_FIELD_COMBO_BOX(VisualShaderNodeIntFunc::VisualShaderNodeIntFuncType_descriptor(), VisualShaderNodeIntFunc::kFuncFieldNumber);
+        REGISTER_NODE_FIELD_COMBO_BOX(VisualShaderNodeIntFunc::VisualShaderNodeIntFuncType_descriptor(), VisualShaderNodeIntFunc::kFuncTypeFieldNumber);
         break;
       }
       case VisualShader::VisualShaderNode::kUintFuncFieldNumber: {
-        REGISTER_NODE_FIELD_COMBO_BOX(VisualShaderNodeUIntFunc::VisualShaderNodeUIntFuncType_descriptor(), VisualShaderNodeUIntFunc::kFuncFieldNumber);
+        REGISTER_NODE_FIELD_COMBO_BOX(VisualShaderNodeUIntFunc::VisualShaderNodeUIntFuncType_descriptor(), VisualShaderNodeUIntFunc::kFuncTypeFieldNumber);
         break;
       }
       case VisualShader::VisualShaderNode::kVectorFuncFieldNumber: {
-        REGISTER_NODE_FIELD_COMBO_BOX(VisualShaderNodeVectorType_descriptor(), VisualShaderNodeVectorFunc::kTypeFieldNumber);
-        REGISTER_NODE_FIELD_COMBO_BOX(VisualShaderNodeVectorFunc::VisualShaderNodeVectorFuncType_descriptor(), VisualShaderNodeVectorFunc::kFuncFieldNumber);
+        REGISTER_NODE_FIELD_COMBO_BOX(VisualShaderNodeVectorType_descriptor(), VisualShaderNodeVectorFunc::kVecTypeFieldNumber);
+        REGISTER_NODE_FIELD_COMBO_BOX(VisualShaderNodeVectorFunc::VisualShaderNodeVectorFuncType_descriptor(), VisualShaderNodeVectorFunc::kFuncTypeFieldNumber);
         break;
       }
       case VisualShader::VisualShaderNode::kValueNoiseFieldNumber: {
@@ -992,22 +989,32 @@ bool VisualShaderGraphicsScene::add_node_to_scene(const int& n_id, const std::sh
         break;
       }
       case VisualShader::VisualShaderNode::kIsFieldNumber: {
-        REGISTER_NODE_FIELD_COMBO_BOX(VisualShaderNodeIs::Function_descriptor(), VisualShaderNodeIs::kFuncFieldNumber);
+        REGISTER_NODE_FIELD_COMBO_BOX(VisualShaderNodeIs::VisualShaderNodeIsFunction_descriptor(), VisualShaderNodeIs::kFuncFieldNumber);
         break;
       }
       case VisualShader::VisualShaderNode::kCompareFieldNumber: {
-        REGISTER_NODE_FIELD_COMBO_BOX(VisualShaderNodeCompare::ComparisonType_descriptor(), VisualShaderNodeCompare::kTypeFieldNumber);
-        REGISTER_NODE_FIELD_COMBO_BOX(VisualShaderNodeCompare::Function_descriptor(), VisualShaderNodeCompare::kFuncFieldNumber);
-        REGISTER_NODE_FIELD_COMBO_BOX(VisualShaderNodeCompare::Condition_descriptor(), VisualShaderNodeCompare::kCondFieldNumber);
+        REGISTER_NODE_FIELD_COMBO_BOX(VisualShaderNodeCompare::VisualShaderNodeCompareType_descriptor(), VisualShaderNodeCompare::kTypeFieldNumber);
+        REGISTER_NODE_FIELD_COMBO_BOX(VisualShaderNodeCompare::VisualShaderNodeCompareFunction_descriptor(), VisualShaderNodeCompare::kFuncFieldNumber);
+        REGISTER_NODE_FIELD_COMBO_BOX(VisualShaderNodeCompare::VisualShaderNodeCompareCondition_descriptor(), VisualShaderNodeCompare::kCondFieldNumber);
+        break;
+      }
+      case VisualShader::VisualShaderNode::kClampFieldNumber: {
+        REGISTER_NODE_FIELD_COMBO_BOX(VisualShaderNodeClamp::VisualShaderNodeClampType_descriptor(), VisualShaderNodeClamp::kTypeFieldNumber);
+        break;
+      }
+      case VisualShader::VisualShaderNode::kSwitchNodeFieldNumber: {
+        REGISTER_NODE_FIELD_COMBO_BOX(VisualShaderNodeSwitch::VisualShaderNodeSwitchType_descriptor(), VisualShaderNodeSwitch::kTypeFieldNumber);
+        break;
+      }
+      case VisualShader::VisualShaderNode::kVectorLenFieldNumber: {
+        REGISTER_NODE_FIELD_COMBO_BOX(VisualShaderNodeVectorType_descriptor(), VisualShaderNodeVectorLen::kVecTypeFieldNumber);
+        break;
+      }
+      case VisualShader::VisualShaderNode::kVectorDistanceFieldNumber: {
+        REGISTER_NODE_FIELD_COMBO_BOX(VisualShaderNodeVectorType_descriptor(), VisualShaderNodeVectorDistance::kVecTypeFieldNumber);
         break;
       }
       case VisualShader::VisualShaderNode::kDotProductFieldNumber:
-      case VisualShader::VisualShaderNode::kVectorLenFieldNumber:
-      case VisualShader::VisualShaderNode::kClampFieldNumber:
-      case VisualShader::VisualShaderNode::kStepFieldNumber:
-      case VisualShader::VisualShaderNode::kSmoothStepFieldNumber:
-      case VisualShader::VisualShaderNode::kVectorDistanceFieldNumber:
-      case VisualShader::VisualShaderNode::kMixFieldNumber:
       case VisualShader::VisualShaderNode::kVector2DComposeFieldNumber:
       case VisualShader::VisualShaderNode::kVector3DComposeFieldNumber:
       case VisualShader::VisualShaderNode::kVector4DComposeFieldNumber:
@@ -1015,7 +1022,6 @@ bool VisualShaderGraphicsScene::add_node_to_scene(const int& n_id, const std::sh
       case VisualShader::VisualShaderNode::kVector3DDecomposeFieldNumber:
       case VisualShader::VisualShaderNode::kVector4DDecomposeFieldNumber:
       case VisualShader::VisualShaderNode::kIfNodeFieldNumber:
-      case VisualShader::VisualShaderNode::kSwitchNodeFieldNumber:
         break;
       default:
         FAIL_AND_RETURN_NON_VOID(false, "Unknown node type");
