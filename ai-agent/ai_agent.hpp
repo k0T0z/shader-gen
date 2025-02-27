@@ -25,34 +25,33 @@
 /*                                                                               */
 /*********************************************************************************/
 
-#ifndef SHADER_GEN_AI_AGENT_PARAMETERS_SETTER_HPP
-#define SHADER_GEN_AI_AGENT_PARAMETERS_SETTER_HPP
+#ifndef AI_AGENT_HPP
+#define AI_AGENT_HPP
 
-#include <QWidget>
-#include <QVBoxLayout>
-#include <QHBoxLayout>
-#include <QPushButton>
-#include <QLabel>
-#include <QLineEdit>
-#include <QCheckBox>
+#include <thread>
+#include <mutex>
+#include <condition_variable>
+#include <chrono>
 
-class AIAgentParametersSetter : public QWidget {
-  Q_OBJECT
+class AIAgentWorker {
+public:
+    AIAgentWorker();
+    ~AIAgentWorker();
 
- public:
-  AIAgentParametersSetter(QWidget* parent = nullptr);
-  ~AIAgentParametersSetter() override = default;
+    void start_matching();
+    void stop_matching();
 
- private:
-  QVBoxLayout* layout;
+    void worker_main();
+    
+private:
+    std::thread worker;
+    
+    std::mutex mtx;
+    std::condition_variable cv;
+    int process_counter;
+    bool exit_requested;
 
-  QPushButton* match_button;
-
-  /**
-   * @brief Initializes the UI
-   * 
-   */
-  void init();
+    void stop_thread();
 };
 
-#endif  // SHADER_GEN_AI_AGENT_PARAMETERS_SETTER_HPP
+#endif // AI_AGENT_HPP

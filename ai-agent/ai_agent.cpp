@@ -25,41 +25,65 @@
 /*                                                                               */
 /*********************************************************************************/
 
-#include "gui/controller/parameters_setter.hpp"
+#include "ai-agent/ai_agent.hpp"
 
-#include "ai-agent/parameters.hpp"
+#include <sstream>
 
-AIAgentParametersSetter::AIAgentParametersSetter(QWidget* parent)
-    : QWidget(parent), layout(new QVBoxLayout(this)) {
-  init();
+#include "error_macros.hpp"
+
+AIAgentWorker::AIAgentWorker() : process_counter(0), exit_requested(false) {
+    worker = std::thread(&AIAgentWorker::worker_main, this);
 }
 
-void AIAgentParametersSetter::init() {
-  // Helper lambda to create a horizontal layout for a parameter.
-  auto create_parameter_row = [this](const QString& param_name, const float& default_value) {
-    QHBoxLayout* param_row_layout = new QHBoxLayout(this);
-    QLabel* param_row_label = new QLabel(param_name + ":", this);
-    QLineEdit* param_row_line_edit = new QLineEdit(QString::number(default_value), this);
-    param_row_line_edit->setEnabled(false);
-    QCheckBox* param_row_check_box = new QCheckBox(this);
-    param_row_check_box->setToolTip("Check to change the default value");
-    param_row_check_box->setChecked(false);
-    connect(param_row_check_box, &QCheckBox::toggled, param_row_line_edit, &QLineEdit::setEnabled);
-
-    param_row_layout->addWidget(param_row_label);
-    param_row_layout->addWidget(param_row_line_edit);
-    param_row_layout->addWidget(param_row_check_box);
-
-    layout->addLayout(param_row_layout);
-  };
-
-  // Create rows for each parameter
-  create_parameter_row("mutation_probability", mutation_probability);
-  create_parameter_row("crossover_probability", crossover_probability);
-  create_parameter_row("elitism_ratio", elitism_ratio);
-  create_parameter_row("maximum_iterations", maximum_iterations);
-
-  match_button = new QPushButton("Match", this);
-  layout->addWidget(match_button);
+AIAgentWorker::~AIAgentWorker() {
+    stop_thread();
+    worker.join();
 }
 
+void AIAgentWorker::start_matching() {
+    {
+        std::lock_guard<std::mutex> lock(mtx);
+        process_counter++;
+    }
+    cv.notify_one();
+}
+
+void AIAgentWorker::stop_matching() {}
+
+void AIAgentWorker::worker_main() {
+    std::unique_lock<std::mutex> lock(mtx);
+    while (true) {
+        // Wait for either start command or exit request
+        cv.wait(lock, [this]() {
+            return process_counter > 0 || exit_requested;
+        });
+
+        // Exit condition check
+        if (exit_requested) break;
+
+        // Process all pending requests
+        while (process_counter > 0) {
+            process_counter--;
+            lock.unlock();
+            
+            // Main processing block
+            std::ostringstream oss;
+            oss << std::this_thread::get_id();
+            DEBUG_PRINT("Processing (" + oss.str() + ")...");
+                    
+            std::this_thread::sleep_for(
+                std::chrono::milliseconds(500)); // Simulate work
+            
+            lock.lock();
+        }
+    }
+    DEBUG_PRINT("Worker thread exiting cleanly");
+}
+
+void AIAgentWorker::stop_thread() {
+    {
+        std::lock_guard<std::mutex> lock(mtx);
+        exit_requested = true;
+    }
+    cv.notify_one();
+}

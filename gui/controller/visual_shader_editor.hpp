@@ -71,11 +71,15 @@
 #include "gui/controller/vs_proto_node.hpp"
 
 #include "gui/controller/renderer/renderer.hpp"
+
+#include "ai-agent/ai_agent.hpp"
 #include "gui/controller/fitness_calculator.hpp"
-#include "gui/controller/parameters_setter.hpp"
+#include "gui/controller/parameters_editor.hpp"
 
 using EnumDescriptor = google::protobuf::EnumDescriptor;
 
+class StartMatchingButton;
+class StopMatchingButton;
 class VisualShaderGraphicsScene;
 class VisualShaderGraphicsView;
 class VisualShaderNodeGraphicsObject;
@@ -206,8 +210,11 @@ class VisualShaderEditor : public QWidget {
   ProtoModel* nodes_model;
   ProtoModel* connections_model;
 
+  AIAgentWorker* ai_agent_worker;
   AIAgentFitnessCalculator* fitness_calculator;
-  AIAgentParametersSetter* parameters_setter;
+  AIAgentParametersEditor* parameters_editor;
+  StartMatchingButton* start_matching_button;
+  StopMatchingButton* stop_matching_button;
 
   /**
    * @brief Initializes the UI
@@ -229,6 +236,86 @@ class VisualShaderEditor : public QWidget {
                                                 const std::string& category_path,
                                                 QTreeWidget* create_node_dialog_nodes_tree,
                                                 std::unordered_map<std::string, QTreeWidgetItem*>& category_path_map);
+};
+
+class StartMatchingButton : public QPushButton
+{
+  Q_OBJECT
+
+public:
+  StartMatchingButton(QWidget* parent = nullptr) : QPushButton(parent) {
+    this->setFixedWidth(25);
+  }
+
+private:
+  void paintEvent(QPaintEvent *event) override {
+    QPushButton::paintEvent(event);
+
+    QPainter painter = QPainter(this);
+    painter.setRenderHint(QPainter::Antialiasing);
+
+    int w {this->width()};
+    int h {this->height()};
+
+    float min_side {(float)qMin(w, h)};
+    
+    QPointF center {w * 0.5f, h * 0.5f};
+
+    float vc_length {min_side * 0.25f}; // Length from each triangle's vertex to the center of the widget
+
+    // Calculate the vertices of the triangle based on the center of the widget
+    QPointF top_v {center + QPointF(vc_length, 0)};
+    QPointF bottom_left_v {center - QPointF(vc_length, vc_length)};
+    QPointF bottom_right_v {center - QPointF(vc_length, -vc_length)};
+
+    // Draw the triangle
+    painter.setBrush(Qt::green);
+    painter.setPen(Qt::NoPen); // Set the pen to Qt::NoPen to remove the stroke
+    painter.drawPolygon(QPolygonF() << top_v << bottom_left_v << bottom_right_v);
+
+    // Draw an outline around the triangle
+    painter.setBrush(Qt::NoBrush);
+    painter.setPen(Qt::black);
+    painter.drawPolygon(QPolygonF() << top_v << bottom_left_v << bottom_right_v);
+  }
+};
+
+class StopMatchingButton : public QPushButton {
+  Q_OBJECT
+
+public:
+  StopMatchingButton(QWidget* parent = nullptr) : QPushButton(parent) {
+    this->setFixedWidth(25);
+  }
+
+private:
+  void paintEvent(QPaintEvent *event) override {
+    QPushButton::paintEvent(event);
+
+    QPainter painter = QPainter(this);
+    painter.setRenderHint(QPainter::Antialiasing);
+
+    int w {this->width()};
+    int h {this->height()};
+
+    float min_side {(float)qMin(w, h)};
+
+    QPointF center {w * 0.5f, h * 0.5f};
+
+    float square_side_length {min_side * 0.4f}; // Side length of the square
+
+    // Draw the square
+    painter.setBrush(Qt::red);
+    painter.setPen(Qt::NoPen); // Set the pen to Qt::NoPen to remove the stroke
+    
+    QRectF square {center - QPointF(square_side_length * 0.5f, square_side_length * 0.5f), QSizeF(square_side_length, square_side_length)};
+    painter.drawRect(square);
+
+    // Draw an outline around the square
+    painter.setBrush(Qt::NoBrush);
+    painter.setPen(Qt::black);
+    painter.drawRect(square);
+  }
 };
 
 /**********************************************************************/

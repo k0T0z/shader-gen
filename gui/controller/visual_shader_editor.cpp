@@ -79,16 +79,20 @@ VisualShaderEditor::VisualShaderEditor(MessageModel* model, QWidget* parent)
       visual_shader_model(model),
       nodes_model(nullptr),
       connections_model(nullptr),
+      ai_agent_worker(nullptr),
       fitness_calculator(nullptr),
-      parameters_setter(nullptr) {
+      parameters_editor(nullptr),
+      start_matching_button(nullptr),
+      stop_matching_button(nullptr) {
   resize(1440, 720);
 
   VisualShaderEditor::init();
 }
 
 VisualShaderEditor::~VisualShaderEditor() {
+  delete ai_agent_worker;
   delete fitness_calculator;
-  delete parameters_setter;
+  delete parameters_editor;
 }
 
 void VisualShaderEditor::init() {
@@ -263,8 +267,20 @@ void VisualShaderEditor::init() {
   menu_bar->addWidget(match_image_button);
   QObject::connect(match_image_button, &QPushButton::pressed, this, &VisualShaderEditor::on_match_image_button_pressed);
 
+  ai_agent_worker = new AIAgentWorker();
   fitness_calculator = new AIAgentFitnessCalculator();
-  parameters_setter = new AIAgentParametersSetter();
+  parameters_editor = new AIAgentParametersEditor();
+  start_matching_button = new StartMatchingButton(scene_layer);
+  start_matching_button->setToolTip("Start matching the shader to the loaded image");
+  start_matching_button->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
+  start_matching_button->setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
+  stop_matching_button = new StopMatchingButton(scene_layer);
+  stop_matching_button->setToolTip("Stop matching the shader to the loaded image");
+  stop_matching_button->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
+  stop_matching_button->setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
+  stop_matching_button->setEnabled(false);
+  menu_bar->addWidget(start_matching_button);
+  menu_bar->addWidget(stop_matching_button);
 
   // Set the top layer layout.
   top_layer->setLayout(menu_bar);
@@ -570,7 +586,7 @@ void VisualShaderEditor::on_load_image_button_pressed() {
 
 void VisualShaderEditor::on_match_image_button_pressed() {
   SILENT_CHECK_CONDITION_TRUE(fitness_calculator->isVisible());
-  SILENT_CHECK_CONDITION_TRUE(parameters_setter->isVisible());
+  SILENT_CHECK_CONDITION_TRUE(parameters_editor->isVisible());
 
   // Find the node connected to the output node and generate the shader code at it
   VisualShaderNodeGraphicsObject* n_o{scene->get_node_graphics_object(0)};
@@ -590,10 +606,9 @@ void VisualShaderEditor::on_match_image_button_pressed() {
                                             shadergen_visual_shader_generator::to_generators(nodes_model), 
                                             shadergen_visual_shader_generator::to_input_output_connections_by_key(connections_model), c_o->get_from_node_id(), 0));  // 0 is the output port index
 
-  if (!fitness_calculator->isVisible()) fitness_calculator->show();
   
-  // Open the parameters editor
-  if (!parameters_setter->isVisible()) parameters_setter->show();
+  if (!fitness_calculator->isVisible()) fitness_calculator->show();
+  if (!parameters_editor->isVisible()) parameters_editor->show();
 }
 
 std::vector<std::string> VisualShaderEditor::parse_node_category_path(const std::string& n_category_path) {
