@@ -31,7 +31,15 @@
 
 #include "error_macros.hpp"
 
-AIAgentWorker::AIAgentWorker() : process_counter(0), exit_requested(false) {
+AIAgentWorker::AIAgentWorker() : process_counter(0), 
+                                 exit_requested(false),
+                                 stop_requested(false),
+                                 mutation_probability(0.0f), 
+                                 crossover_probability(0.0f), 
+                                 elitism_ratio(0.0f), 
+                                 maximum_iterations(0),
+                                 fitness_calculator(nullptr),
+                                 scene(nullptr) {
     worker = std::thread(&AIAgentWorker::worker_main, this);
 }
 
@@ -48,7 +56,13 @@ void AIAgentWorker::start_matching() {
     cv.notify_one();
 }
 
-void AIAgentWorker::stop_matching() {}
+void AIAgentWorker::stop_matching() {
+    {
+        std::lock_guard<std::mutex> lock(mtx);
+        stop_requested = true;
+    }
+    cv.notify_one();
+}
 
 void AIAgentWorker::worker_main() {
     std::unique_lock<std::mutex> lock(mtx);
@@ -61,20 +75,48 @@ void AIAgentWorker::worker_main() {
         // Exit condition check
         if (exit_requested) break;
 
+        if (stop_requested.load()) stop_requested.store(false);
+
+        CONTINUE_IF_TRUE(fitness_calculator == nullptr, "Fitness calculator is not set");
+
         // Process all pending requests
         while (process_counter > 0) {
             process_counter--;
             lock.unlock();
+
+            // Process with interrupt checks
+            bool completed = false;
+            auto start = std::chrono::steady_clock::now();
             
-            // Main processing block
-            std::ostringstream oss;
-            oss << std::this_thread::get_id();
-            DEBUG_PRINT("Processing (" + oss.str() + ")...");
-                    
-            std::this_thread::sleep_for(
-                std::chrono::milliseconds(500)); // Simulate work
-            
+            // Work simulation with interrupt checks
+            while (!completed) {
+                // Do chunk of work
+                DEBUG_PRINT("Processing...");
+                
+                // Check for stop every 100ms
+                std::this_thread::sleep_for(std::chrono::milliseconds(100));
+                
+                // Check completion condition
+                auto now = std::chrono::steady_clock::now();
+                if (now - start > std::chrono::milliseconds(500)) {
+                    completed = true;
+                }
+
+                // Check for stop request
+                if (stop_requested.load()) {
+                    DEBUG_PRINT("Interrupting current work");
+                    completed = true;
+                }
+            }
+
             lock.lock();
+            
+            // Exit processing loop if stop requested
+            if (stop_requested.load()) {
+                stop_requested.store(false);
+                process_counter = 0; // Clear remaining tasks
+                break;
+            }
         }
     }
     DEBUG_PRINT("Worker thread exiting cleanly");

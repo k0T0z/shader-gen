@@ -37,7 +37,7 @@ AIAgentParametersEditor::AIAgentParametersEditor(QWidget* parent)
 void AIAgentParametersEditor::init() {
   // Create the main layout.
   layout = new QVBoxLayout(this);
-  layout->setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
+  layout->setContentsMargins(10, 10, 10, 10);  // Left, top, right, bottom
   layout->setSizeConstraint(QLayout::SetNoConstraint);
   layout->setSpacing(5);
   layout->setAlignment(Qt::AlignVCenter | Qt::AlignHCenter);
@@ -46,7 +46,7 @@ void AIAgentParametersEditor::init() {
 
   // Helper lambda to create a horizontal layout for a parameter.
   auto create_parameter_row = [this](const QString& param_name, const float& default_value) {
-    QHBoxLayout* param_row_layout = new QHBoxLayout(this);
+    QHBoxLayout* param_row_layout = new QHBoxLayout();
     QLabel* param_row_label = new QLabel(param_name + ":", this);
     QLineEdit* param_row_line_edit = new QLineEdit(QString::number(default_value), this);
     param_row_line_edit->setEnabled(false);
@@ -54,6 +54,8 @@ void AIAgentParametersEditor::init() {
     param_row_check_box->setToolTip("Check to change the default value");
     param_row_check_box->setChecked(false);
     connect(param_row_check_box, &QCheckBox::toggled, param_row_line_edit, &QLineEdit::setEnabled);
+
+    parameter_line_edits.emplace_back(param_row_line_edit);
 
     param_row_layout->addWidget(param_row_label);
     param_row_layout->addWidget(param_row_line_edit);

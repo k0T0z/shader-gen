@@ -43,8 +43,15 @@ class AIAgentParametersEditor : public QWidget {
   AIAgentParametersEditor(QWidget* parent = nullptr);
   ~AIAgentParametersEditor() override = default;
 
+  float get_mutation_probability() const { return parameter_line_edits[0]->text().toFloat(); }
+  float get_crossover_probability() const { return parameter_line_edits[1]->text().toFloat(); }
+  float get_elitism_ratio() const { return parameter_line_edits[2]->text().toFloat(); }
+  int get_maximum_iterations() const { return parameter_line_edits[3]->text().toInt(); }
+
  private:
   QVBoxLayout* layout;
+
+  std::vector<QLineEdit*> parameter_line_edits;
 
   /**
    * @brief Initializes the UI

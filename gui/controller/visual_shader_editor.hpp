@@ -146,6 +146,8 @@ class VisualShaderEditor : public QWidget {
   void on_menu_button_pressed();
   void on_load_image_button_pressed();
   void on_match_image_button_pressed();
+  void on_start_matching_button_pressed();
+  void on_stop_matching_button_pressed();
 
  private:
   QHBoxLayout* layout;

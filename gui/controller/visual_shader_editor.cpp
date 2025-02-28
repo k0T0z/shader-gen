@@ -274,11 +274,12 @@ void VisualShaderEditor::init() {
   start_matching_button->setToolTip("Start matching the shader to the loaded image");
   start_matching_button->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
   start_matching_button->setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
+  QObject::connect(start_matching_button, &QPushButton::pressed, this, &VisualShaderEditor::on_start_matching_button_pressed);
   stop_matching_button = new StopMatchingButton(scene_layer);
   stop_matching_button->setToolTip("Stop matching the shader to the loaded image");
   stop_matching_button->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
   stop_matching_button->setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
-  stop_matching_button->setEnabled(false);
+  QObject::connect(stop_matching_button, &QPushButton::pressed, this, &VisualShaderEditor::on_stop_matching_button_pressed);
   menu_bar->addWidget(start_matching_button);
   menu_bar->addWidget(stop_matching_button);
 
@@ -609,6 +610,29 @@ void VisualShaderEditor::on_match_image_button_pressed() {
   
   if (!fitness_calculator->isVisible()) fitness_calculator->show();
   if (!parameters_editor->isVisible()) parameters_editor->show();
+}
+
+void VisualShaderEditor::on_start_matching_button_pressed() {
+  CHECK_PARAM_NULLPTR(ai_agent_worker, "AI agent worker is null");
+  CHECK_PARAM_NULLPTR(fitness_calculator, "Fitness calculator is null");
+  CHECK_PARAM_NULLPTR(parameters_editor, "Parameters editor is null");
+
+  ai_agent_worker->set_mutation_probability(parameters_editor->get_mutation_probability());
+  ai_agent_worker->set_crossover_probability(parameters_editor->get_crossover_probability());
+  ai_agent_worker->set_elitism_ratio(parameters_editor->get_elitism_ratio());
+  ai_agent_worker->set_maximum_iterations(parameters_editor->get_maximum_iterations());
+
+  ai_agent_worker->set_fitness_calculator(fitness_calculator);
+
+  ai_agent_worker->set_scene(scene);
+  
+  ai_agent_worker->start_matching();
+}
+
+void VisualShaderEditor::on_stop_matching_button_pressed() {
+  CHECK_PARAM_NULLPTR(ai_agent_worker, "AI agent worker is null");
+
+  ai_agent_worker->stop_matching();
 }
 
 std::vector<std::string> VisualShaderEditor::parse_node_category_path(const std::string& n_category_path) {

@@ -59,7 +59,7 @@ void AIAgentFitnessCalculator::init() {
   //////////////// End of Header ////////////////
 
   // Create the menu bar layout.
-  menu_bar = new QHBoxLayout(this);
+  menu_bar = new QHBoxLayout();
   menu_bar->setContentsMargins(10, 10, 10, 10);  // Left, top, right, bottom
   menu_bar->setSpacing(5);                       // Adjust spacing as needed
   menu_bar->setAlignment(Qt::AlignTop | Qt::AlignLeft);
@@ -93,7 +93,7 @@ void AIAgentFitnessCalculator::init() {
   layout->addLayout(menu_bar, 1);
 
   // Create a H layout for printing the fitness value
-  status_layout = new QHBoxLayout(this);
+  status_layout = new QHBoxLayout();
   status_layout->setContentsMargins(10, 10, 10, 10);  // Left, top, right, bottom
   status_layout->setSpacing(5);                       // Adjust spacing as needed
   status_layout->setAlignment(Qt::AlignTop | Qt::AlignLeft);
@@ -115,13 +115,13 @@ void AIAgentFitnessCalculator::init() {
 
   layout->addLayout(status_layout, 1);
 
-  outputs_layout = new QHBoxLayout(this);
+  outputs_layout = new QHBoxLayout();
   outputs_layout->setContentsMargins(10, 10, 10, 10);  // Left, top, right, bottom
   outputs_layout->setSpacing(5);                       // Adjust spacing as needed
   outputs_layout->setAlignment(Qt::AlignTop | Qt::AlignLeft);
   outputs_layout->setSizeConstraint(QLayout::SetNoConstraint);
 
-  curent_output_renderer_layout = new QVBoxLayout(this);
+  curent_output_renderer_layout = new QVBoxLayout();
   curent_output_renderer_layout->setContentsMargins(10, 10, 10, 10);  // Left, top, right, bottom
   curent_output_renderer_layout->setSpacing(5);                       // Adjust spacing as needed
   curent_output_renderer_layout->setAlignment(Qt::AlignTop | Qt::AlignLeft);
@@ -144,7 +144,7 @@ void AIAgentFitnessCalculator::init() {
 
   outputs_layout->addLayout(curent_output_renderer_layout);
 
-  target_output_layout = new QVBoxLayout(this);
+  target_output_layout = new QVBoxLayout();
   target_output_layout->setContentsMargins(10, 10, 10, 10);  // Left, top, right, bottom
   target_output_layout->setSpacing(5);                       // Adjust spacing as needed
   target_output_layout->setAlignment(Qt::AlignTop | Qt::AlignLeft);

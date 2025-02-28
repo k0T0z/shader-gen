@@ -33,6 +33,10 @@
 #include <condition_variable>
 #include <chrono>
 
+#include <QGraphicsScene>
+
+#include "gui/controller/fitness_calculator.hpp"
+
 class AIAgentWorker {
 public:
     AIAgentWorker();
@@ -42,6 +46,15 @@ public:
     void stop_matching();
 
     void worker_main();
+
+    void set_mutation_probability(const float& mutation_probability) { this->mutation_probability = mutation_probability; }
+    void set_crossover_probability(const float& crossover_probability) { this->crossover_probability = crossover_probability; }
+    void set_elitism_ratio(const float& elitism_ratio) { this->elitism_ratio = elitism_ratio; }
+    void set_maximum_iterations(const int& maximum_iterations) { this->maximum_iterations = maximum_iterations; }
+
+    void set_fitness_calculator(AIAgentFitnessCalculator* fitness_calculator) { this->fitness_calculator = fitness_calculator; }
+
+    void set_scene(QGraphicsScene* scene) { this->scene = scene; }
     
 private:
     std::thread worker;
@@ -50,6 +63,16 @@ private:
     std::condition_variable cv;
     int process_counter;
     bool exit_requested;
+    std::atomic<bool> stop_requested;
+
+    float mutation_probability;
+    float crossover_probability;
+    float elitism_ratio;
+    int maximum_iterations;
+
+    AIAgentFitnessCalculator* fitness_calculator;
+
+    QGraphicsScene* scene;
 
     void stop_thread();
 };
