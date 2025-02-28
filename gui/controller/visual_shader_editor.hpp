@@ -218,6 +218,8 @@ class VisualShaderEditor : public QWidget {
   StartMatchingButton* start_matching_button;
   StopMatchingButton* stop_matching_button;
 
+  QComboBox* matching_type_combo_box;
+
   /**
    * @brief Initializes the UI
    * 

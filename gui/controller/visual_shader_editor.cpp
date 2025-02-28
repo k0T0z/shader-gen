@@ -83,7 +83,8 @@ VisualShaderEditor::VisualShaderEditor(MessageModel* model, QWidget* parent)
       fitness_calculator(nullptr),
       parameters_editor(nullptr),
       start_matching_button(nullptr),
-      stop_matching_button(nullptr) {
+      stop_matching_button(nullptr),
+      matching_type_combo_box(nullptr) {
   resize(1440, 720);
 
   VisualShaderEditor::init();
@@ -282,6 +283,16 @@ void VisualShaderEditor::init() {
   QObject::connect(stop_matching_button, &QPushButton::pressed, this, &VisualShaderEditor::on_stop_matching_button_pressed);
   menu_bar->addWidget(start_matching_button);
   menu_bar->addWidget(stop_matching_button);
+
+  matching_type_combo_box = new QComboBox(scene_layer);
+  matching_type_combo_box->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
+  matching_type_combo_box->setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
+  matching_type_combo_box->setToolTip("Select the type of matching to perform");
+  matching_type_combo_box->addItem("Parameters Only", static_cast<int>(AIAgentWorker::MatchingType::PARAMETERS_ONLY));
+  matching_type_combo_box->addItem("Parameters and Connections", static_cast<int>(AIAgentWorker::MatchingType::PARAMETERS_AND_CONNECTIONS));
+  matching_type_combo_box->addItem("Full Graph", static_cast<int>(AIAgentWorker::MatchingType::FULL_GRAPH));
+  matching_type_combo_box->setCurrentIndex(0);
+  menu_bar->addWidget(matching_type_combo_box);
 
   // Set the top layer layout.
   top_layer->setLayout(menu_bar);
@@ -623,6 +634,9 @@ void VisualShaderEditor::on_start_matching_button_pressed() {
   ai_agent_worker->set_maximum_iterations(parameters_editor->get_maximum_iterations());
 
   ai_agent_worker->set_fitness_calculator(fitness_calculator);
+
+  AIAgentWorker::MatchingType matching_type{static_cast<AIAgentWorker::MatchingType>(matching_type_combo_box->currentData().toInt())};
+  ai_agent_worker->set_matching_type(matching_type);
 
   ai_agent_worker->set_scene(scene);
   

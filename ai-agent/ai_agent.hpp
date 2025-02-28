@@ -39,6 +39,12 @@
 
 class AIAgentWorker {
 public:
+    enum class MatchingType {
+        PARAMETERS_ONLY,
+        PARAMETERS_AND_CONNECTIONS,
+        FULL_GRAPH,
+    };
+
     AIAgentWorker();
     ~AIAgentWorker();
 
@@ -53,6 +59,8 @@ public:
     void set_maximum_iterations(const int& maximum_iterations) { this->maximum_iterations = maximum_iterations; }
 
     void set_fitness_calculator(AIAgentFitnessCalculator* fitness_calculator) { this->fitness_calculator = fitness_calculator; }
+
+    void set_matching_type(const MatchingType& matching_type) { this->matching_type = matching_type; }
 
     void set_scene(QGraphicsScene* scene) { this->scene = scene; }
     
@@ -71,6 +79,8 @@ private:
     int maximum_iterations;
 
     AIAgentFitnessCalculator* fitness_calculator;
+
+    MatchingType matching_type;
 
     QGraphicsScene* scene;
 

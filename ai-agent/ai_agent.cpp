@@ -39,6 +39,7 @@ AIAgentWorker::AIAgentWorker() : process_counter(0),
                                  elitism_ratio(0.0f), 
                                  maximum_iterations(0),
                                  fitness_calculator(nullptr),
+                                 matching_type(MatchingType::PARAMETERS_ONLY),
                                  scene(nullptr) {
     worker = std::thread(&AIAgentWorker::worker_main, this);
 }
