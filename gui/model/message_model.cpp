@@ -157,6 +157,14 @@ bool MessageModel::set_data([[maybe_unused]] const QVariant& value) {
   FAIL_AND_RETURN_NON_VOID(false, "Cannot set data in a MessageModel.");
 }
 
+const ProtoModel* MessageModel::get_sub_model_by_index(const int& field_index) const {
+  CHECK_PARAM_NULLPTR_NON_VOID(m_desc, nullptr, "Message descriptor is null.");
+  VALIDATE_INDEX_NON_VOID(field_index, columnCount(), nullptr,
+                          "Requesting sub-model of invalid field index " + std::to_string(field_index) +
+                              " of MessageModel " + m_desc->full_name());
+  return m_sub_models_by_field_number.at(m_desc->field(field_index)->number());
+}
+
 const ProtoModel* MessageModel::get_sub_model(const int& field_number) const {
   CHECK_PARAM_NULLPTR_NON_VOID(m_desc, nullptr, "Message descriptor is null.");
   const FieldDescriptor* field_desc{m_desc->FindFieldByNumber(field_number)};

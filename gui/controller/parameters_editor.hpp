@@ -47,6 +47,7 @@ class AIAgentParametersEditor : public QWidget {
   float get_crossover_probability() const { return parameter_line_edits[1]->text().toFloat(); }
   float get_elitism_ratio() const { return parameter_line_edits[2]->text().toFloat(); }
   int get_maximum_iterations() const { return parameter_line_edits[3]->text().toInt(); }
+  int get_maximum_nodes_per_graph() const { return parameter_line_edits[4]->text().toInt(); }
 
  private:
   QVBoxLayout* layout;

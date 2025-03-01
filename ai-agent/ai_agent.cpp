@@ -30,6 +30,7 @@
 #include <sstream>
 
 #include "error_macros.hpp"
+#include "ai-agent/utils/utils.hpp"
 
 AIAgentWorker::AIAgentWorker() : process_counter(0), 
                                  exit_requested(false),
@@ -76,6 +77,7 @@ void AIAgentWorker::worker_main() {
         // Exit condition check
         if (exit_requested) break;
 
+        // It doesn't make sense to stop before even starting
         if (stop_requested.load()) stop_requested.store(false);
 
         CONTINUE_IF_TRUE(fitness_calculator == nullptr, "Fitness calculator is not set");

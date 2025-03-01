@@ -54,6 +54,7 @@ class OneofModel : public ProtoModel {
   QVariant data() const override;
   bool set_data(const QVariant& value) override;
 
+  const ProtoModel* get_sub_model() const;
   const ProtoModel* get_sub_model(const int& field_number) const;
   const ProtoModel* get_sub_model(const FieldPath& path, const bool& for_set_data = false,
                                   const bool& for_get_oneof = false) const override;

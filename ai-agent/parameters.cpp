@@ -31,3 +31,4 @@ float mutation_probability = 0.1f;
 float crossover_probability = 0.8f;
 float elitism_ratio = 0.2f;
 int maximum_iterations = 1000;
+int maximum_nodes_per_graph = 100; // If the matching type is FULL_GRAPH, we need to limit the number of nodes

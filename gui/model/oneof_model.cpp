@@ -113,6 +113,12 @@ bool OneofModel::set_data([[maybe_unused]] const QVariant& value) {
   FAIL_AND_RETURN_NON_VOID(false, "Cannot set data in a MessageModel.");
 }
 
+const ProtoModel* OneofModel::get_sub_model() const {
+  const Reflection* refl{m_message_buffer->GetReflection()};
+  SILENT_CHECK_CONDITION_TRUE_NON_VOID(!is_set() && !refl->HasOneof(*m_message_buffer, m_oneof_desc), nullptr);
+  return m_sub_model;
+}
+
 const ProtoModel* OneofModel::get_sub_model(const int& field_number) const {
   const Reflection* refl{m_message_buffer->GetReflection()};
   SILENT_CHECK_CONDITION_TRUE_NON_VOID(!is_set() && !refl->HasOneof(*m_message_buffer, m_oneof_desc), nullptr);

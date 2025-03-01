@@ -408,7 +408,7 @@ class VisualShaderGraphicsScene : public QGraphicsScene {
  public:
   VisualShaderGraphicsScene(QObject* parent = nullptr);
 
-  ~VisualShaderGraphicsScene() override = default;
+  ~VisualShaderGraphicsScene() override;
 
   bool add_node_to_model(const int& n_id, const std::shared_ptr<IVisualShaderProtoNode>& proto_node,
                          const QPointF& coordinate);
@@ -539,6 +539,8 @@ class VisualShaderGraphicsScene : public QGraphicsScene {
   // Sub-Models
   ProtoModel* nodes_model;
   ProtoModel* connections_model;
+
+  VisualShaderNodeGraphicsObject* newest_node_graphics_object;
 
   void remove_item(QGraphicsItem* item);
   bool check_if_connection_out_of_bounds(VisualShaderOutputPortGraphicsObject* from_o_port, VisualShaderInputPortGraphicsObject* to_i_port);
@@ -1196,12 +1198,18 @@ private:
   int field_number;
 };
 
-#define REGISTER_NODE_FIELD_COMBO_BOX(enum_descriptor, field_number) \
+#define REGISTER_NODE_FIELD_COMBO_BOX(field_number) \
   if (true) { \
     QVariant initial_value{visual_shader_model->data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), \
       FieldPath::RepeatedAt(row_entry), \
       FieldPath::FieldNumber(node_type_field_number), \
       FieldPath::FieldNumber(field_number)))}; \
+    const ProtoModel* node_field_model = visual_shader_model->get_sub_model(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), \
+      FieldPath::RepeatedAt(row_entry), \
+      FieldPath::FieldNumber(node_type_field_number), \
+      FieldPath::FieldNumber(field_number))); \
+    const EnumDescriptor* enum_descriptor = node_field_model->get_column_descriptor(field_number)->enum_type(); \
+    CHECK_PARAM_NULLPTR_NON_VOID(enum_descriptor, false, "EnumDescriptor is nullptr."); \
     VisualShaderNodeFieldComboBox* node_field_widget = new VisualShaderNodeFieldComboBox(initial_value, n_id, enum_descriptor, field_number, embed_widget); \
     node_field_widget->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Fixed); \
     node_field_widget->setContentsMargins(0, 0, 0, 0);  \

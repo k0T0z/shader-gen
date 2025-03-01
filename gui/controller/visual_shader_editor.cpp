@@ -809,8 +809,15 @@ void CreateNodeDialog::update_selected_item() {
 //////////////////////////////
 
 VisualShaderGraphicsScene::VisualShaderGraphicsScene(QObject* parent)
-    : QGraphicsScene(parent), temporary_connection_graphics_object(nullptr) {
+    : QGraphicsScene(parent), temporary_connection_graphics_object(nullptr), newest_node_graphics_object(nullptr) {
   setItemIndexMethod(QGraphicsScene::NoIndex);  // https://doc.qt.io/qt-6/qgraphicsscene.html#ItemIndexMethod-enum
+}
+
+VisualShaderGraphicsScene::~VisualShaderGraphicsScene() {
+  if (newest_node_graphics_object) {
+    delete newest_node_graphics_object;
+    newest_node_graphics_object = nullptr;
+  }
 }
 
 bool VisualShaderGraphicsScene::add_node_to_model(const int& n_id, const std::shared_ptr<IVisualShaderProtoNode>& proto_node, const QPointF& coordinate) {
@@ -868,6 +875,14 @@ bool VisualShaderGraphicsScene::add_node_to_scene(const int& n_id, const std::sh
 
   VisualShaderNodeGraphicsObject* n_o{new VisualShaderNodeGraphicsObject(n_id, coordinate, proto_node)};
 
+  if (newest_node_graphics_object) {
+    delete newest_node_graphics_object;
+    newest_node_graphics_object = nullptr;
+  }
+
+  // We save the node graphics object so that we can delete it later in case of failure
+  newest_node_graphics_object = n_o;
+
   QObject::connect(n_o, &VisualShaderNodeGraphicsObject::node_moved, this, &VisualShaderGraphicsScene::on_node_moved);
   QObject::connect(n_o, &VisualShaderNodeGraphicsObject::in_port_pressed, this,
                    &VisualShaderGraphicsScene::on_port_pressed);
@@ -912,7 +927,7 @@ bool VisualShaderGraphicsScene::add_node_to_scene(const int& n_id, const std::sh
 
     switch (proto_node->get_oneof_value_field_number()) {
       case VisualShader::VisualShaderNode::kInputFieldNumber: {
-        REGISTER_NODE_FIELD_COMBO_BOX(VisualShaderNodeInputType_descriptor(), VisualShaderNodeInput::kTypeFieldNumber);
+        REGISTER_NODE_FIELD_COMBO_BOX(VisualShaderNodeInput::kTypeFieldNumber);
         break;
       }
       case VisualShader::VisualShaderNode::kFloatConstantFieldNumber: {
@@ -999,37 +1014,37 @@ bool VisualShaderGraphicsScene::add_node_to_scene(const int& n_id, const std::sh
         break;
       }
       case VisualShader::VisualShaderNode::kFloatOpFieldNumber: {
-        REGISTER_NODE_FIELD_COMBO_BOX(VisualShaderNodeFloatOp::VisualShaderNodeFloatOpType_descriptor(), VisualShaderNodeFloatOp::kOpTypeFieldNumber);
+        REGISTER_NODE_FIELD_COMBO_BOX(VisualShaderNodeFloatOp::kOpTypeFieldNumber);
         break;
       }
       case VisualShader::VisualShaderNode::kIntOpFieldNumber: {
-        REGISTER_NODE_FIELD_COMBO_BOX(VisualShaderNodeIntOp::VisualShaderNodeIntOpType_descriptor(), VisualShaderNodeIntOp::kOpTypeFieldNumber);
+        REGISTER_NODE_FIELD_COMBO_BOX(VisualShaderNodeIntOp::kOpTypeFieldNumber);
         break;
       }
       case VisualShader::VisualShaderNode::kUintOpFieldNumber: {
-        REGISTER_NODE_FIELD_COMBO_BOX(VisualShaderNodeUIntOp::VisualShaderNodeUIntOpType_descriptor(), VisualShaderNodeUIntOp::kOpTypeFieldNumber);
+        REGISTER_NODE_FIELD_COMBO_BOX(VisualShaderNodeUIntOp::kOpTypeFieldNumber);
         break;
       }
       case VisualShader::VisualShaderNode::kVectorOpFieldNumber: {
-        REGISTER_NODE_FIELD_COMBO_BOX(VisualShaderNodeVectorType_descriptor(), VisualShaderNodeVectorOp::kVecTypeFieldNumber);
-        REGISTER_NODE_FIELD_COMBO_BOX(VisualShaderNodeVectorOp::VisualShaderNodeVectorOpType_descriptor(), VisualShaderNodeVectorOp::kOpTypeFieldNumber);
+        REGISTER_NODE_FIELD_COMBO_BOX(VisualShaderNodeVectorOp::kVecTypeFieldNumber);
+        REGISTER_NODE_FIELD_COMBO_BOX(VisualShaderNodeVectorOp::kOpTypeFieldNumber);
         break;
       }
       case VisualShader::VisualShaderNode::kFloatFuncFieldNumber: {
-        REGISTER_NODE_FIELD_COMBO_BOX(VisualShaderNodeFloatFunc::VisualShaderNodeFloatFuncType_descriptor(), VisualShaderNodeFloatFunc::kFuncTypeFieldNumber);
+        REGISTER_NODE_FIELD_COMBO_BOX(VisualShaderNodeFloatFunc::kFuncTypeFieldNumber);
         break;
       }
       case VisualShader::VisualShaderNode::kIntFuncFieldNumber: {
-        REGISTER_NODE_FIELD_COMBO_BOX(VisualShaderNodeIntFunc::VisualShaderNodeIntFuncType_descriptor(), VisualShaderNodeIntFunc::kFuncTypeFieldNumber);
+        REGISTER_NODE_FIELD_COMBO_BOX(VisualShaderNodeIntFunc::kFuncTypeFieldNumber);
         break;
       }
       case VisualShader::VisualShaderNode::kUintFuncFieldNumber: {
-        REGISTER_NODE_FIELD_COMBO_BOX(VisualShaderNodeUIntFunc::VisualShaderNodeUIntFuncType_descriptor(), VisualShaderNodeUIntFunc::kFuncTypeFieldNumber);
+        REGISTER_NODE_FIELD_COMBO_BOX(VisualShaderNodeUIntFunc::kFuncTypeFieldNumber);
         break;
       }
       case VisualShader::VisualShaderNode::kVectorFuncFieldNumber: {
-        REGISTER_NODE_FIELD_COMBO_BOX(VisualShaderNodeVectorType_descriptor(), VisualShaderNodeVectorFunc::kVecTypeFieldNumber);
-        REGISTER_NODE_FIELD_COMBO_BOX(VisualShaderNodeVectorFunc::VisualShaderNodeVectorFuncType_descriptor(), VisualShaderNodeVectorFunc::kFuncTypeFieldNumber);
+        REGISTER_NODE_FIELD_COMBO_BOX(VisualShaderNodeVectorFunc::kVecTypeFieldNumber);
+        REGISTER_NODE_FIELD_COMBO_BOX(VisualShaderNodeVectorFunc::kFuncTypeFieldNumber);
         break;
       }
       case VisualShader::VisualShaderNode::kValueNoiseFieldNumber: {
@@ -1046,29 +1061,29 @@ bool VisualShaderGraphicsScene::add_node_to_scene(const int& n_id, const std::sh
         break;
       }
       case VisualShader::VisualShaderNode::kIsFieldNumber: {
-        REGISTER_NODE_FIELD_COMBO_BOX(VisualShaderNodeIs::VisualShaderNodeIsFunction_descriptor(), VisualShaderNodeIs::kFuncFieldNumber);
+        REGISTER_NODE_FIELD_COMBO_BOX(VisualShaderNodeIs::kFuncFieldNumber);
         break;
       }
       case VisualShader::VisualShaderNode::kCompareFieldNumber: {
-        REGISTER_NODE_FIELD_COMBO_BOX(VisualShaderNodeCompare::VisualShaderNodeCompareType_descriptor(), VisualShaderNodeCompare::kTypeFieldNumber);
-        REGISTER_NODE_FIELD_COMBO_BOX(VisualShaderNodeCompare::VisualShaderNodeCompareFunction_descriptor(), VisualShaderNodeCompare::kFuncFieldNumber);
-        REGISTER_NODE_FIELD_COMBO_BOX(VisualShaderNodeCompare::VisualShaderNodeCompareCondition_descriptor(), VisualShaderNodeCompare::kCondFieldNumber);
+        REGISTER_NODE_FIELD_COMBO_BOX(VisualShaderNodeCompare::kTypeFieldNumber);
+        REGISTER_NODE_FIELD_COMBO_BOX(VisualShaderNodeCompare::kFuncFieldNumber);
+        REGISTER_NODE_FIELD_COMBO_BOX(VisualShaderNodeCompare::kCondFieldNumber);
         break;
       }
       case VisualShader::VisualShaderNode::kClampFieldNumber: {
-        REGISTER_NODE_FIELD_COMBO_BOX(VisualShaderNodeClamp::VisualShaderNodeClampType_descriptor(), VisualShaderNodeClamp::kTypeFieldNumber);
+        REGISTER_NODE_FIELD_COMBO_BOX(VisualShaderNodeClamp::kTypeFieldNumber);
         break;
       }
       case VisualShader::VisualShaderNode::kSwitchNodeFieldNumber: {
-        REGISTER_NODE_FIELD_COMBO_BOX(VisualShaderNodeSwitch::VisualShaderNodeSwitchType_descriptor(), VisualShaderNodeSwitch::kTypeFieldNumber);
+        REGISTER_NODE_FIELD_COMBO_BOX(VisualShaderNodeSwitch::kTypeFieldNumber);
         break;
       }
       case VisualShader::VisualShaderNode::kVectorLenFieldNumber: {
-        REGISTER_NODE_FIELD_COMBO_BOX(VisualShaderNodeVectorType_descriptor(), VisualShaderNodeVectorLen::kVecTypeFieldNumber);
+        REGISTER_NODE_FIELD_COMBO_BOX(VisualShaderNodeVectorLen::kVecTypeFieldNumber);
         break;
       }
       case VisualShader::VisualShaderNode::kVectorDistanceFieldNumber: {
-        REGISTER_NODE_FIELD_COMBO_BOX(VisualShaderNodeVectorType_descriptor(), VisualShaderNodeVectorDistance::kVecTypeFieldNumber);
+        REGISTER_NODE_FIELD_COMBO_BOX(VisualShaderNodeVectorDistance::kVecTypeFieldNumber);
         break;
       }
       case VisualShader::VisualShaderNode::kDotProductFieldNumber:
@@ -1115,6 +1130,8 @@ bool VisualShaderGraphicsScene::add_node_to_scene(const int& n_id, const std::sh
   n_o->update_layout(); // Update the layout of the node
 
   node_graphics_objects[n_id] = n_o;
+
+  newest_node_graphics_object = nullptr; // We don't need to delete the temporary node graphics object
 
   addItem(n_o);
 

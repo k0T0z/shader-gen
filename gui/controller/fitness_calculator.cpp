@@ -185,6 +185,10 @@ void AIAgentFitnessCalculator::update_current_output(const std::string& code) {
   current_output_renderer->set_code(code);
 }
 
+unsigned long AIAgentFitnessCalculator::get_fitness_value(const std::unordered_map<int, std::string>& encoded_nodes, const std::unordered_map<int, std::string>& encoded_connections) const {
+  return get_fitness_value();
+}
+
 unsigned long AIAgentFitnessCalculator::get_fitness_value() const {
   CHECK_CONDITION_TRUE_NON_VOID(target_image.isNull(), 0UL, "No target image loaded");
 

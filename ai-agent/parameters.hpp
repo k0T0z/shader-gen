@@ -32,5 +32,6 @@ extern float mutation_probability;
 extern float crossover_probability;
 extern float elitism_ratio;
 extern int maximum_iterations;
+extern int maximum_nodes_per_graph;
 
 #endif // AI_AGENT_PARAMETERS_HPP

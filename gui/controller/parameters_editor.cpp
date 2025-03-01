@@ -69,6 +69,7 @@ void AIAgentParametersEditor::init() {
   create_parameter_row("Crossover Probability", crossover_probability);
   create_parameter_row("Elitism Ratio", elitism_ratio);
   create_parameter_row("Maximum Iterations", maximum_iterations);
+  create_parameter_row("Maximum Nodes Per Graph", maximum_nodes_per_graph);
 
   //////////////// Start of Footer ////////////////
 

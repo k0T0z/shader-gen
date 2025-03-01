@@ -54,6 +54,7 @@ class AIAgentFitnessCalculator : public QWidget {
 
   void update_current_output(const std::string& code);
 
+  unsigned long get_fitness_value(const std::unordered_map<int, std::string>& encoded_nodes, const std::unordered_map<int, std::string>& encoded_connections) const;
   unsigned long get_fitness_value() const;
 
  private Q_SLOTS:
