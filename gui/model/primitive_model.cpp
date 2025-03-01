@@ -85,7 +85,7 @@ const ProtoModel* PrimitiveModel::get_sub_model([[maybe_unused]] const FieldPath
 }
 
 const FieldDescriptor* PrimitiveModel::get_column_descriptor([[maybe_unused]] const int& column) const {
-  CHECK_CONDITION_TRUE_NON_VOID(column != 1, nullptr, "A primitive model should have only one column.");
+  CHECK_CONDITION_TRUE_NON_VOID(column > 0, nullptr, "A primitive model should have only one column.");
   return m_field_desc;
 }
 

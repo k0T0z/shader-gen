@@ -1208,7 +1208,7 @@ private:
       FieldPath::RepeatedAt(row_entry), \
       FieldPath::FieldNumber(node_type_field_number), \
       FieldPath::FieldNumber(field_number))); \
-    const EnumDescriptor* enum_descriptor = node_field_model->get_column_descriptor(field_number)->enum_type(); \
+    const EnumDescriptor* enum_descriptor = node_field_model->get_column_descriptor(0)->enum_type(); \
     CHECK_PARAM_NULLPTR_NON_VOID(enum_descriptor, false, "EnumDescriptor is nullptr."); \
     VisualShaderNodeFieldComboBox* node_field_widget = new VisualShaderNodeFieldComboBox(initial_value, n_id, enum_descriptor, field_number, embed_widget); \
     node_field_widget->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Fixed); \
