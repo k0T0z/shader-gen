@@ -75,7 +75,11 @@ std::string VisualShaderNodeGeneratorInput::generate_code(
 std::string VisualShaderNodeGeneratorOutput::generate_global([[maybe_unused]] const int& id) const {
   std::string code;
 
-  for (int i{0}; i < output_types_value_names_count; ++i) code += "out vec4 " + output_types_value_names.at(i) + ";" + std::string("\n");
+  for (int i{0}; i < output_types_value_names_count; ++i) {
+    const std::string value_name{output_types_value_names.at(i)};
+
+    if (value_name == "FragColor") code += "out vec4 " + output_types_value_names.at(i) + ";" + std::string("\n");
+  }
 
   return code;
 }
