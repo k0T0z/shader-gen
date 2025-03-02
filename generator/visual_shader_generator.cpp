@@ -37,6 +37,8 @@
 #include "generator/vs_node_noise_generators.hpp"
 #include "gui/model/utils/utils.hpp"
 
+using EnumDescriptor = google::protobuf::EnumDescriptor;
+
 // Global variable holding the license notice.
 const std::string license_notices = 
 "/***********************************************************************************/\n"
@@ -124,14 +126,39 @@ std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>> to_generator
         const ProtoModel* input_model{oneof_model->get_sub_model(FieldPath::Of<VisualShader::VisualShaderNode>(
             FieldPath::FieldNumber(VisualShader::VisualShaderNode::kInputFieldNumber)))};
 
-        const VisualShaderNodeInputType input_type{input_model->get_sub_model(FieldPath::Of<VisualShaderNodeInput>(
-            FieldPath::FieldNumber(VisualShaderNodeInput::kTypeFieldNumber)))->data().toInt()};
+        const ProtoModel* input_type_model{input_model->get_sub_model(FieldPath::Of<VisualShaderNodeInput>(
+          FieldPath::FieldNumber(VisualShaderNodeInput::kTypeFieldNumber)))};
 
-        generators[n_id] = std::make_shared<VisualShaderNodeGeneratorInput>(input_type);
+        const VisualShaderNodeInputType input_type{input_type_model->data().toInt()};
+
+        const EnumDescriptor* input_type_enum{input_type_model->get_column_descriptor(0)->enum_type()};
+
+        const std::string input_type_name{shadergen_utils::get_enum_value_name_by_index(input_type_enum, input_type)};
+        
+        const int input_types_count{input_type_enum->value_count()};
+        std::vector<VisualShaderNodeInputType> input_types;
+        input_types.resize(input_types_count);
+        for (int j{0}; j < input_types_count; ++j) input_types.at(j) = (VisualShaderNodeInputType)shadergen_utils::get_enum_value_by_enum_index(input_type_enum, j);
+
+        std::vector<std::string> input_types_names;
+        input_types_names.resize(input_types_count);
+        for (int j{0}; j < input_types_count; ++j) input_types_names.at(j) = shadergen_utils::get_enum_value_name_by_index(input_type_enum, input_types.at(j));
+
+        const VisualShaderNodePortType ports_type = shadergen_utils::get_enum_value_port_type_by_value(input_type_enum, input_type);
+
+        generators[n_id] = std::make_shared<VisualShaderNodeGeneratorInput>(input_type, input_type_name, input_types, input_types_names, ports_type);
         break;
       }
       case VisualShader::VisualShaderNode::kOutputFieldNumber: {
-        generators[n_id] = std::make_shared<VisualShaderNodeGeneratorOutput>();
+        std::shared_ptr<IVisualShaderProtoNode> proto_node{shadergen_utils::get_proto_node_by_oneof_value_field_number(oneof_value_field_number)};
+        CHECK_PARAM_NULLPTR_NON_VOID(proto_node, generators, "Proto node is nullptr.");
+
+        const int output_types_count{proto_node->get_input_port_count()};
+        std::vector<std::string> output_types_value_names;
+        output_types_value_names.resize(output_types_count);  
+        for (int j{0}; j < output_types_count; ++j) output_types_value_names.at(j) = proto_node->get_input_port_value_name(j);
+
+        generators[n_id] = std::make_shared<VisualShaderNodeGeneratorOutput>(output_types_value_names);
         break;
       }
       case VisualShader::VisualShaderNode::kFloatConstantFieldNumber: {
@@ -235,10 +262,17 @@ std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>> to_generator
           const ProtoModel* vector_op_model{oneof_model->get_sub_model(FieldPath::Of<VisualShader::VisualShaderNode>(
             FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVectorOpFieldNumber)))};
 
-          const VisualShaderNodeVectorType type {vector_op_model->get_sub_model(FieldPath::Of<VisualShaderNodeVectorOp>(FieldPath::FieldNumber(VisualShaderNodeVectorOp::kVecTypeFieldNumber)))->data().toInt()};
+          const ProtoModel* vector_type_model{vector_op_model->get_sub_model(FieldPath::Of<VisualShaderNodeVectorOp>(
+            FieldPath::FieldNumber(VisualShaderNodeVectorOp::kVecTypeFieldNumber)))};
+
+          const EnumDescriptor* vector_type_enum{vector_type_model->get_column_descriptor(0)->enum_type()};
+
+          const VisualShaderNodeVectorType type {vector_type_model->data().toInt()};
           const VisualShaderNodeVectorOp::VisualShaderNodeVectorOpType op_type {vector_op_model->get_sub_model(FieldPath::Of<VisualShaderNodeVectorOp>(FieldPath::FieldNumber(VisualShaderNodeVectorOp::kOpTypeFieldNumber)))->data().toInt()};
 
-          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorVectorOp>(type, op_type);
+          const VisualShaderNodePortType ports_type = shadergen_utils::get_enum_value_port_type_by_value(vector_type_enum, type);
+
+          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorVectorOp>(type, op_type, ports_type);
           break;
       }
       case VisualShader::VisualShaderNode::kFloatFuncFieldNumber: {
@@ -269,10 +303,17 @@ std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>> to_generator
           const ProtoModel* vector_func_model{oneof_model->get_sub_model(FieldPath::Of<VisualShader::VisualShaderNode>(
             FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVectorFuncFieldNumber)))};
 
-          const VisualShaderNodeVectorType type {vector_func_model->get_sub_model(FieldPath::Of<VisualShaderNodeVectorFunc>(FieldPath::FieldNumber(VisualShaderNodeVectorFunc::kVecTypeFieldNumber)))->data().toInt()};
+          const ProtoModel* vector_type_model{vector_func_model->get_sub_model(FieldPath::Of<VisualShaderNodeVectorFunc>(
+            FieldPath::FieldNumber(VisualShaderNodeVectorFunc::kVecTypeFieldNumber)))};
+
+          const EnumDescriptor* vector_type_enum{vector_type_model->get_column_descriptor(0)->enum_type()};
+
+          const VisualShaderNodeVectorType type {vector_type_model->data().toInt()};
           const VisualShaderNodeVectorFunc::VisualShaderNodeVectorFuncType func_type {vector_func_model->get_sub_model(FieldPath::Of<VisualShaderNodeVectorFunc>(FieldPath::FieldNumber(VisualShaderNodeVectorFunc::kFuncTypeFieldNumber)))->data().toInt()};
 
-          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorVectorFunc>(type, func_type);
+          const VisualShaderNodePortType ports_type = shadergen_utils::get_enum_value_port_type_by_value(vector_type_enum, type);
+
+          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorVectorFunc>(type, func_type, ports_type);
           break;
       }
       case VisualShader::VisualShaderNode::kValueNoiseFieldNumber: {
@@ -308,27 +349,48 @@ std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>> to_generator
           const ProtoModel* vector_len_model{oneof_model->get_sub_model(FieldPath::Of<VisualShader::VisualShaderNode>(
             FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVectorLenFieldNumber)))};
 
-          const VisualShaderNodeVectorType type {vector_len_model->get_sub_model(FieldPath::Of<VisualShaderNodeVectorLen>(FieldPath::FieldNumber(VisualShaderNodeVectorLen::kVecTypeFieldNumber)))->data().toInt()};
+          const ProtoModel* vector_type_model{vector_len_model->get_sub_model(FieldPath::Of<VisualShaderNodeVectorLen>(
+            FieldPath::FieldNumber(VisualShaderNodeVectorLen::kVecTypeFieldNumber)))};
 
-          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorVectorLen>(type);
+          const EnumDescriptor* vector_type_enum{vector_type_model->get_column_descriptor(0)->enum_type()};
+
+          const VisualShaderNodeVectorType type {vector_type_model->data().toInt()};
+
+          const VisualShaderNodePortType ports_type = shadergen_utils::get_enum_value_port_type_by_value(vector_type_enum, type);
+
+          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorVectorLen>(ports_type);
           break;
       }
       case VisualShader::VisualShaderNode::kClampFieldNumber: {
           const ProtoModel* clamp_model{oneof_model->get_sub_model(FieldPath::Of<VisualShader::VisualShaderNode>(
             FieldPath::FieldNumber(VisualShader::VisualShaderNode::kClampFieldNumber)))};
 
-          const VisualShaderNodeClamp::VisualShaderNodeClampType type {clamp_model->get_sub_model(FieldPath::Of<VisualShaderNodeClamp>(FieldPath::FieldNumber(VisualShaderNodeClamp::kTypeFieldNumber)))->data().toInt()};
+          const ProtoModel* clamp_type_model{clamp_model->get_sub_model(FieldPath::Of<VisualShaderNodeClamp>(
+            FieldPath::FieldNumber(VisualShaderNodeClamp::kTypeFieldNumber)))};
 
-          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorClamp>(type);
+          const EnumDescriptor* clamp_type_enum{clamp_type_model->get_column_descriptor(0)->enum_type()};
+
+          const VisualShaderNodeClamp::VisualShaderNodeClampType type {clamp_type_model->data().toInt()};
+
+          const VisualShaderNodePortType ports_type = shadergen_utils::get_enum_value_port_type_by_value(clamp_type_enum, type);
+
+          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorClamp>(ports_type);
           break;
       }
       case VisualShader::VisualShaderNode::kVectorDistanceFieldNumber: {
           const ProtoModel* vector_distance_model{oneof_model->get_sub_model(FieldPath::Of<VisualShader::VisualShaderNode>(
             FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVectorDistanceFieldNumber)))};
 
-          const VisualShaderNodeVectorType type {vector_distance_model->get_sub_model(FieldPath::Of<VisualShaderNodeVectorDistance>(FieldPath::FieldNumber(VisualShaderNodeVectorDistance::kVecTypeFieldNumber)))->data().toInt()};
+          const ProtoModel* vector_distance_type_model{vector_distance_model->get_sub_model(FieldPath::Of<VisualShaderNodeVectorDistance>(
+            FieldPath::FieldNumber(VisualShaderNodeVectorDistance::kVecTypeFieldNumber)))};
 
-          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorVectorDistance>(type);
+          const EnumDescriptor* vector_distance_type_enum{vector_distance_type_model->get_column_descriptor(0)->enum_type()};
+
+          const VisualShaderNodeVectorType type {vector_distance_type_model->data().toInt()};
+
+          const VisualShaderNodePortType ports_type = shadergen_utils::get_enum_value_port_type_by_value(vector_distance_type_enum, type);
+
+          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorVectorDistance>(ports_type);
           break;
       }
       case VisualShader::VisualShaderNode::kVector2DComposeFieldNumber: {
@@ -363,8 +425,16 @@ std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>> to_generator
           const ProtoModel* switch_model{oneof_model->get_sub_model(FieldPath::Of<VisualShader::VisualShaderNode>(
             FieldPath::FieldNumber(VisualShader::VisualShaderNode::kSwitchNodeFieldNumber)))};
 
-          const VisualShaderNodeSwitch::VisualShaderNodeSwitchType type {switch_model->get_sub_model(FieldPath::Of<VisualShaderNodeSwitch>(FieldPath::FieldNumber(VisualShaderNodeSwitch::kTypeFieldNumber)))->data().toInt()};
-          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorSwitch>(type);
+          const ProtoModel* switch_type_model{switch_model->get_sub_model(FieldPath::Of<VisualShaderNodeSwitch>(
+            FieldPath::FieldNumber(VisualShaderNodeSwitch::kTypeFieldNumber)))};
+
+          const EnumDescriptor* switch_type_enum{switch_type_model->get_column_descriptor(0)->enum_type()};
+
+          const VisualShaderNodeSwitch::VisualShaderNodeSwitchType type {switch_type_model->data().toInt()};
+
+          const VisualShaderNodePortType ports_type = shadergen_utils::get_enum_value_port_type_by_value(switch_type_enum, type);
+
+          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorSwitch>(type, ports_type);
           break;
       }
       case VisualShader::VisualShaderNode::kIsFieldNumber: {
@@ -379,10 +449,18 @@ std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>> to_generator
           const ProtoModel* compare_model{oneof_model->get_sub_model(FieldPath::Of<VisualShader::VisualShaderNode>(
             FieldPath::FieldNumber(VisualShader::VisualShaderNode::kCompareFieldNumber)))};
 
-          const VisualShaderNodeCompare::VisualShaderNodeCompareType type {compare_model->get_sub_model(FieldPath::Of<VisualShaderNodeCompare>(FieldPath::FieldNumber(VisualShaderNodeCompare::kTypeFieldNumber)))->data().toInt()};
+          const ProtoModel* compare_type_model{compare_model->get_sub_model(FieldPath::Of<VisualShaderNodeCompare>(
+            FieldPath::FieldNumber(VisualShaderNodeCompare::kTypeFieldNumber)))};
+
+          const EnumDescriptor* compare_type_enum{compare_type_model->get_column_descriptor(0)->enum_type()};
+
+          const VisualShaderNodeCompare::VisualShaderNodeCompareType type {compare_type_model->data().toInt()};
           const VisualShaderNodeCompare::VisualShaderNodeCompareFunction func {compare_model->get_sub_model(FieldPath::Of<VisualShaderNodeCompare>(FieldPath::FieldNumber(VisualShaderNodeCompare::kFuncFieldNumber)))->data().toInt()};
           const VisualShaderNodeCompare::VisualShaderNodeCompareCondition cond {compare_model->get_sub_model(FieldPath::Of<VisualShaderNodeCompare>(FieldPath::FieldNumber(VisualShaderNodeCompare::kCondFieldNumber)))->data().toInt()};
-          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorCompare>(type, func, cond);
+
+          const VisualShaderNodePortType ports_type = shadergen_utils::get_enum_value_port_type_by_value(compare_type_enum, type);
+
+          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorCompare>(type, func, cond, ports_type);
           break;
       }
       default:

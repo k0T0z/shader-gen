@@ -57,6 +57,7 @@ class IVisualShaderProtoNode {
   virtual int get_input_port_count() const = 0;
   virtual VisualShaderNodePortType get_input_port_type(const int& index) const = 0;
   virtual std::string get_input_port_caption(const int& index) const = 0;
+  virtual std::string get_input_port_value_name(const int& index) const = 0; // Special case for output node
 
   virtual int get_output_port_count() const = 0;
   virtual VisualShaderNodePortType get_output_port_type(const int& index) const = 0;
@@ -106,6 +107,16 @@ class VisualShaderProtoNode : public IVisualShaderProtoNode {
                             Proto::descriptor()->options().ExtensionSize(gui::model::schema::node_input_port_caption),
                             "", "Invalid input port index");
     return Proto::descriptor()->options().GetExtension(gui::model::schema::node_input_port_caption, index);
+  }
+
+  std::string get_input_port_value_name(const int& index) const override {
+    CHECK_CONDITION_TRUE_NON_VOID(oneof_value_field_number != VisualShader::VisualShaderNode::kOutputFieldNumber, "",
+                                  "Must be an output node");
+    VALIDATE_INDEX_NON_VOID(index, get_input_port_count(), "", "Invalid input port index");
+    VALIDATE_INDEX_NON_VOID(index,
+                            Proto::descriptor()->options().ExtensionSize(gui::model::schema::output_node_input_port_value_name),
+                            "", "Invalid input port index");
+    return Proto::descriptor()->options().GetExtension(gui::model::schema::output_node_input_port_value_name, index);
   }
 
   int get_output_port_count() const override {

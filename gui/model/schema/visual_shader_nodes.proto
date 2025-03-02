@@ -69,14 +69,15 @@ extend google.protobuf.MessageOptions {
     int32 node_input_port_count = 60002;
     repeated string node_input_port_caption = 60003;
     repeated VisualShaderNodePortType node_input_port_type = 60004;
+    repeated string output_node_input_port_value_name = 60005; // Special case for output node
 
-    int32 node_output_port_count = 60005;
-    repeated string node_output_port_caption = 60006;
-    repeated VisualShaderNodePortType node_output_port_type = 60007;
+    int32 node_output_port_count = 60006;
+    repeated string node_output_port_caption = 60007;
+    repeated VisualShaderNodePortType node_output_port_type = 60008;
 
-    string node_category_path = 60008;
+    string node_category_path = 60009;
 
-    string node_description = 60009;
+    string node_description = 60010;
 }
 
 /*************************************/
@@ -117,16 +118,12 @@ message VisualShaderNodeInput {
 /* Output Node                       */
 /*************************************/
 
-enum VisualShaderNodeOutputType {
-    OUTPUT_TYPE_UNSPECIFIED = 0 [(value_name) = ""];
-    OUTPUT_TYPE_COLOR = 1 [(value_name) = "FragColor"];
-};
-
 message VisualShaderNodeOutput {
     option (node_caption) = "Output";
     option (node_input_port_count) = 1;
     option (node_input_port_caption) = "Color";
     option (node_input_port_type) = PORT_TYPE_VECTOR_4D;
+    option (output_node_input_port_value_name) = "FragColor";
     
     option (node_output_port_count) = 0;
 
