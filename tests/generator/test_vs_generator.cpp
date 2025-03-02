@@ -50,12 +50,25 @@ TEST(VisualShaderGeneratorTest, TestGenerateShader) {
   proto_nodes[sub_node_id] = std::make_shared<VisualShaderProtoNode<VisualShaderNodeFloatOp>>();
   proto_nodes[round_node_id] = std::make_shared<VisualShaderProtoNode<VisualShaderNodeFloatFunc>>();
 
+  std::vector<VisualShaderNodeInputType> input_types;
+  input_types.emplace_back(VisualShaderNodeInputType::INPUT_TYPE_UNSPECIFIED);
+  input_types.emplace_back(VisualShaderNodeInputType::INPUT_TYPE_UV);
+  input_types.emplace_back(VisualShaderNodeInputType::INPUT_TYPE_TIME);
+
+  std::vector<std::string> input_types_names;
+  input_types_names.emplace_back("");
+  input_types_names.emplace_back("FragCoord");
+  input_types_names.emplace_back("uTime");
+
+  std::vector<std::string> output_types_value_names;
+  output_types_value_names.emplace_back("FragColor");
+
   std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>> generators;
-  generators[output_node_id] = std::make_shared<VisualShaderNodeGeneratorOutput>(); // Create an output node
-  generators[time_node_id] = std::make_shared<VisualShaderNodeGeneratorInput>(VisualShaderNodeInputType::INPUT_TYPE_TIME); // Create a time input
+  generators[output_node_id] = std::make_shared<VisualShaderNodeGeneratorOutput>(output_types_value_names); // Create an output node
+  generators[time_node_id] = std::make_shared<VisualShaderNodeGeneratorInput>(VisualShaderNodeInputType::INPUT_TYPE_TIME, "uTime", input_types, input_types_names, VisualShaderNodePortType::PORT_TYPE_SCALAR); // Create a time input
   generators[sin_node_id] = std::make_shared<VisualShaderNodeGeneratorFloatFunc>(VisualShaderNodeFloatFunc::FUNC_TYPE_SIN); // Create a sin func
   generators[div_node_id] = std::make_shared<VisualShaderNodeGeneratorFloatOp>(VisualShaderNodeFloatOp::OP_TYPE_DIV); // Create a divide operator
-  generators[uv_node_id] = std::make_shared<VisualShaderNodeGeneratorInput>(VisualShaderNodeInputType::INPUT_TYPE_UV); // Create a UV input
+  generators[uv_node_id] = std::make_shared<VisualShaderNodeGeneratorInput>(VisualShaderNodeInputType::INPUT_TYPE_UV, "FragCoord", input_types, input_types_names, VisualShaderNodePortType::PORT_TYPE_VECTOR_2D); // Create a UV input
   generators[value_noise_node_id] = std::make_shared<VisualShaderNodeGeneratorValueNoise>(100.0f); // Create a Value Noise node
   generators[sub_node_id] = std::make_shared<VisualShaderNodeGeneratorFloatOp>(VisualShaderNodeFloatOp::OP_TYPE_SUB); // Create a subtract operator
   generators[round_node_id] = std::make_shared<VisualShaderNodeGeneratorFloatFunc>(VisualShaderNodeFloatFunc::FUNC_TYPE_ROUND); // Create a float func
