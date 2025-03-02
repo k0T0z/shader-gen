@@ -98,6 +98,8 @@ class VisualShaderProtoNode : public IVisualShaderProtoNode {
     VALIDATE_INDEX_NON_VOID(index,
                             Proto::descriptor()->options().ExtensionSize(gui::model::schema::node_input_port_type),
                             VisualShaderNodePortType::PORT_TYPE_UNSPECIFIED, "Invalid input port index");
+    CHECK_CONDITION_TRUE_NON_VOID(Proto::descriptor()->options().ExtensionSize(gui::model::schema::node_input_port_type) != get_input_port_count(),
+                                  VisualShaderNodePortType::PORT_TYPE_UNSPECIFIED, "Input port type count mismatch");
     return Proto::descriptor()->options().GetExtension(gui::model::schema::node_input_port_type, index);
   }
 
@@ -106,6 +108,8 @@ class VisualShaderProtoNode : public IVisualShaderProtoNode {
     VALIDATE_INDEX_NON_VOID(index,
                             Proto::descriptor()->options().ExtensionSize(gui::model::schema::node_input_port_caption),
                             "", "Invalid input port index");
+    CHECK_CONDITION_TRUE_NON_VOID(Proto::descriptor()->options().ExtensionSize(gui::model::schema::node_input_port_caption) != get_input_port_count(),
+                                  "", "Input port caption count mismatch");
     return Proto::descriptor()->options().GetExtension(gui::model::schema::node_input_port_caption, index);
   }
 
@@ -116,6 +120,8 @@ class VisualShaderProtoNode : public IVisualShaderProtoNode {
     VALIDATE_INDEX_NON_VOID(index,
                             Proto::descriptor()->options().ExtensionSize(gui::model::schema::output_node_input_port_value_name),
                             "", "Invalid input port index");
+    CHECK_CONDITION_TRUE_NON_VOID(Proto::descriptor()->options().ExtensionSize(gui::model::schema::output_node_input_port_value_name) != get_input_port_count(),
+                                  "", "Input port value name count mismatch");
     return Proto::descriptor()->options().GetExtension(gui::model::schema::output_node_input_port_value_name, index);
   }
 
@@ -132,6 +138,8 @@ class VisualShaderProtoNode : public IVisualShaderProtoNode {
     VALIDATE_INDEX_NON_VOID(index,
                             Proto::descriptor()->options().ExtensionSize(gui::model::schema::node_output_port_type),
                             VisualShaderNodePortType::PORT_TYPE_UNSPECIFIED, "Invalid output port index");
+    CHECK_CONDITION_TRUE_NON_VOID(Proto::descriptor()->options().ExtensionSize(gui::model::schema::node_output_port_type) != get_output_port_count(),
+                                  VisualShaderNodePortType::PORT_TYPE_UNSPECIFIED, "Output port type count mismatch");
     return Proto::descriptor()->options().GetExtension(gui::model::schema::node_output_port_type, index);
   }
 
@@ -140,6 +148,8 @@ class VisualShaderProtoNode : public IVisualShaderProtoNode {
     VALIDATE_INDEX_NON_VOID(index,
                             Proto::descriptor()->options().ExtensionSize(gui::model::schema::node_output_port_caption),
                             "", "Invalid output port index");
+    CHECK_CONDITION_TRUE_NON_VOID(Proto::descriptor()->options().ExtensionSize(gui::model::schema::node_output_port_caption) != get_output_port_count(),
+                                  "", "Output port caption count mismatch");
     return Proto::descriptor()->options().GetExtension(gui::model::schema::node_output_port_caption, index);
   }
 
