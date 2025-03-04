@@ -63,7 +63,6 @@ void AIAgentWorker::stop_matching() {
         std::lock_guard<std::mutex> lock(mtx);
         stop_requested = true;
     }
-    cv.notify_one();
 }
 
 void AIAgentWorker::worker_main() {
@@ -81,6 +80,7 @@ void AIAgentWorker::worker_main() {
         if (stop_requested.load()) stop_requested.store(false);
 
         CONTINUE_IF_TRUE(fitness_calculator == nullptr, "Fitness calculator is not set");
+        CONTINUE_IF_TRUE(scene == nullptr, "Scene is not set");
 
         // Process all pending requests
         while (process_counter > 0) {

@@ -85,6 +85,8 @@ private:
     QGraphicsScene* scene;
 
     void stop_thread();
+
+    std::vector<std::pair<std::unordered_map<int, std::string>, std::unordered_map<int, std::string>>> generate_population(const int& population_size);
 };
 
 #endif // AI_AGENT_HPP

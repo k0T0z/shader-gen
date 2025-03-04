@@ -36,6 +36,7 @@
 #include "gui/model/repeated_message_model.hpp"
 #include "gui/controller/vs_proto_node.hpp"
 #include "gui/model/oneof_model.hpp"
+#include "ai-agent/ai_agent.hpp"
 
 using VisualShader = gui::model::schema::VisualShader;
 
@@ -173,6 +174,28 @@ inline static std::unordered_map<int, std::string> encode_connections(const Prot
     }
 
     return encoded_connections;
+}
+
+/**
+ * @brief 
+ * 
+ * @note Josh — 10/02/2025 20:36 "my recommendation for "how can we possibly guess 
+ *       at a topology other than pure random" would be K-means clustering based on 
+ *       fourier values"
+ * 
+ * @return std::vector<std::unordered_map<int, std::string>> 
+ */
+
+inline static std::vector<std::unordered_map<int, std::string>> generate_nodes_population(const AIAgentWorker::MatchingType& matching_type) {
+    std::vector<std::unordered_map<int, std::string>> population;
+
+    return population;
+}
+
+inline static std::vector<std::unordered_map<int, std::string>> generate_connections_population(const AIAgentWorker::MatchingType& matching_type) {
+    std::vector<std::unordered_map<int, std::string>> population;
+
+    return population;
 }
 }  // namespace ai_agent_utils
 
