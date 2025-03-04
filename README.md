@@ -48,3 +48,7 @@ Or mRGM, which stands for mini-RadialGM, is a simple and lightweight version of 
 2. Add it inside `gui/controller/vs_proto_node.hpp`.
 3. Add it inside the `VisualShaderEditor(MessageModel* model, QWidget* parent = nullptr)` in `gui/controller/visual_shader_editor.cpp`.
 4. Create a generator for it.
+
+## Rules
+
+I personally follow these rules to make the codebase clean and maintainable: [The Power of Ten – Rules for Developing Safety Critical Code](https://www.cs.otago.ac.nz/cosc345/resources/nasa-10-rules.pdf)
