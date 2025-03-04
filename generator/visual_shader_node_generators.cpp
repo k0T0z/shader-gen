@@ -763,7 +763,17 @@ std::string VisualShaderNodeGeneratorIf::generate_code(
 
 VisualShaderNodeGeneratorSwitch::VisualShaderNodeGeneratorSwitch(const VisualShaderNodeSwitch::VisualShaderNodeSwitchType& type, const VisualShaderNodePortType& ports_type)
       : VisualShaderNodeGenerator(ports_type), type(type) {
-  simple_decl = false;
+  switch (type) {
+    case VisualShaderNodeSwitch::TYPE_FLOAT:
+    case VisualShaderNodeSwitch::TYPE_VECTOR_2D:
+    case VisualShaderNodeSwitch::TYPE_VECTOR_3D:
+    case VisualShaderNodeSwitch::TYPE_VECTOR_4D:
+      scoped_assignment = false;
+      break;
+    default:
+      scoped_assignment = true;
+      break;
+  }
 }
 
 std::string VisualShaderNodeGeneratorSwitch::generate_code(
@@ -824,12 +834,12 @@ VisualShaderNodeGeneratorCompare::VisualShaderNodeGeneratorCompare(const VisualS
     case VisualShaderNodeCompare::CMP_TYPE_SCALAR_UINT:
     case VisualShaderNodeCompare::CMP_TYPE_SCALAR_INT:
     case VisualShaderNodeCompare::CMP_TYPE_BOOLEAN:
-      simple_decl = true;
+      scoped_assignment = true;
       break;
     case VisualShaderNodeCompare::CMP_TYPE_VECTOR_2D:
     case VisualShaderNodeCompare::CMP_TYPE_VECTOR_3D:
     case VisualShaderNodeCompare::CMP_TYPE_VECTOR_4D:
-      simple_decl = false;
+      scoped_assignment = false;
       break;
     default:
       break;

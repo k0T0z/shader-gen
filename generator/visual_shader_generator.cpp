@@ -994,8 +994,8 @@ static inline bool generate_shader_for_each_node(std::string& global_code, std::
   std::vector<std::string> output_vars;
   output_vars.resize(output_port_count);
 
-  if (generator->is_simple_decl()) {
-    // Generate less code for some simple_decl nodes.
+  if (!generator->is_scoped_assignment()) {
+    // Generate less code for some scoped_assignment nodes.
     for (int i{0}; i < output_port_count; i++) {
       std::string from_var{"var_from_n" + std::to_string(node_id) + "_p" + std::to_string(i)};
 

@@ -38,10 +38,10 @@ using namespace gui::model::schema;
 class VisualShaderNodeGenerator {
  public:
   VisualShaderNodeGenerator(const VisualShaderNodePortType& ports_type = VisualShaderNodePortType::PORT_TYPE_UNSPECIFIED) 
-    : simple_decl(true), ports_type(ports_type) {}
+    : scoped_assignment(false), ports_type(ports_type) {}
   virtual ~VisualShaderNodeGenerator() = default;
 
-  bool is_simple_decl() const { return simple_decl; }
+  bool is_scoped_assignment() const { return scoped_assignment; }
 
   VisualShaderNodePortType get_ports_type() const { return ports_type; }
 
@@ -54,7 +54,7 @@ class VisualShaderNodeGenerator {
                                     [[maybe_unused]] const std::vector<std::string>& output_vars) const = 0;
 
  protected:
-  bool simple_decl;
+  bool scoped_assignment;
 
  private:
   VisualShaderNodePortType ports_type;
@@ -403,7 +403,7 @@ class VisualShaderNodeGeneratorVectorDecompose : public VisualShaderNodeGenerato
 class VisualShaderNodeGeneratorIf : public VisualShaderNodeGenerator {
  public:
   VisualShaderNodeGeneratorIf()
-      : VisualShaderNodeGenerator() { simple_decl = false; }
+      : VisualShaderNodeGenerator() { scoped_assignment = true; }
 
   virtual std::string generate_code([[maybe_unused]] const int& id,
                                     [[maybe_unused]] const std::vector<std::string>& input_vars,
