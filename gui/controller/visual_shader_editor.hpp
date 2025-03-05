@@ -476,11 +476,11 @@ class VisualShaderGraphicsScene : public QGraphicsScene {
   VisualShaderNodeGraphicsObject* get_node_graphics_object(const int& n_id) const;
   VisualShaderConnectionGraphicsObject* get_connection_graphics_object(const int& c_id) const;
 
-  static int get_new_node_id(ProtoModel* visual_shader_model, ProtoModel* nodes_model);
-  static int get_new_connection_id(ProtoModel* visual_shader_model, ProtoModel* connections_model);
-  static int find_node_entry(ProtoModel* visual_shader_model, ProtoModel* nodes_model, const int& n_id);
-  static int find_connection_entry(ProtoModel* visual_shader_model, ProtoModel* connections_model, const int& c_id);
-  static int get_node_type_field_number(ProtoModel* nodes_model, const int& n_id);
+  int get_new_node_id() const;
+  int get_new_connection_id() const;
+  int find_node_entry(const int& n_id) const;
+  int find_connection_entry(const int& c_id) const;
+  int get_node_type_field_number(const int& n_id) const;
 
  public Q_SLOTS:
   void on_scene_update_requested();
@@ -663,6 +663,9 @@ class VisualShaderNodeGraphicsObject : public QGraphicsObject {
   VisualShaderNodeGraphicsObject(const int& n_id, const QPointF& coordinate,
                                   const std::shared_ptr<IVisualShaderProtoNode>& proto_node, QGraphicsItem* parent = nullptr);
   ~VisualShaderNodeGraphicsObject();
+
+  void set_x_coordinate(const float& x) { coordinate.setX(x); }
+  void set_y_coordinate(const float& y) { coordinate.setY(y); }
 
   int get_input_port_count() const { return in_port_count; }
   int get_output_port_count() const { return out_port_count; }
