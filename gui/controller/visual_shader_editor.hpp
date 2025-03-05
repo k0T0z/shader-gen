@@ -1086,6 +1086,7 @@ class VisualShaderConnectionGraphicsObject : public QGraphicsObject {
 /**********************************************************************/
 /**********************************************************************/
 
+// TODO: Create a debouncer for the text changed signals.
 class VisualShaderNodeFieldComboBox : public QComboBox {
   Q_OBJECT
 
