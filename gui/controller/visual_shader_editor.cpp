@@ -448,23 +448,12 @@ void VisualShaderEditor::load_graph() {
   CHECK_PARAM_NULLPTR(repeated_nodes, "Nodes is not a repeated message model.");
 
   // Load the nodes
-  int nodes_size{nodes_model->rowCount()};
+  const int nodes_size{nodes_model->rowCount()};
   for (int i{0}; i < nodes_size; ++i) {
-    int n_id = visual_shader_model->data(
-        FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
-                                    FieldPath::RepeatedAt(i),
-                                    FieldPath::FieldNumber(VisualShader::VisualShaderNode::kIdFieldNumber))).toInt();
-
-    double x = visual_shader_model->data(
-        FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
-                                    FieldPath::RepeatedAt(i),
-                                    FieldPath::FieldNumber(VisualShader::VisualShaderNode::kXCoordinateFieldNumber))).toDouble();
-
-    double y = visual_shader_model->data(
-        FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
-                                    FieldPath::RepeatedAt(i),
-                                    FieldPath::FieldNumber(VisualShader::VisualShaderNode::kYCoordinateFieldNumber))).toDouble();
-
+    const int n_id = scene->get_node_value(-1, VisualShader::VisualShaderNode::kIdFieldNumber, i).toInt();
+    const double x = scene->get_node_value(-1, VisualShader::VisualShaderNode::kXCoordinateFieldNumber, i).toDouble();
+    const double y = scene->get_node_value(-1, VisualShader::VisualShaderNode::kYCoordinateFieldNumber, i).toDouble();
+    
     std::shared_ptr<IVisualShaderProtoNode> proto_node;
 
     const MessageModel* node_model{repeated_nodes->get_sub_model(i)};
@@ -480,39 +469,20 @@ void VisualShaderEditor::load_graph() {
     proto_node = shadergen_utils::get_proto_node_by_oneof_value_field_number(oneof_value_field_number);
     CHECK_PARAM_NULLPTR(proto_node, "Proto node is nullptr.");
 
-    bool result{scene->add_node_to_scene(n_id, proto_node, QPointF(x, y))};
+    const bool result{scene->add_node_to_scene(n_id, proto_node, QPointF(x, y))};
     CONTINUE_IF_TRUE(!result, "Failed to add node to scene");
   }
 
   // Load the connections
-  int connections_size{connections_model->rowCount()};
+  const int connections_size{connections_model->rowCount()};
   for (int i{0}; i < connections_size; ++i)  {
-    int c_id = visual_shader_model->data(
-        FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kConnectionsFieldNumber),
-                                    FieldPath::RepeatedAt(i),
-                                    FieldPath::FieldNumber(VisualShader::VisualShaderConnection::kIdFieldNumber))).toInt();
+    const int c_id = scene->get_connection_value(-1, VisualShader::VisualShaderConnection::kIdFieldNumber, i);
+    const int from_node_id = scene->get_connection_value(-1, VisualShader::VisualShaderConnection::kFromNodeIdFieldNumber, i);
+    const int from_port_index = scene->get_connection_value(-1, VisualShader::VisualShaderConnection::kFromPortIndexFieldNumber, i);
+    const int to_node_id = scene->get_connection_value(-1, VisualShader::VisualShaderConnection::kToNodeIdFieldNumber, i);
+    const int to_port_index = scene->get_connection_value(-1, VisualShader::VisualShaderConnection::kToPortIndexFieldNumber, i);
 
-    int from_node_id = visual_shader_model->data(
-        FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kConnectionsFieldNumber),
-                                    FieldPath::RepeatedAt(i),
-                                    FieldPath::FieldNumber(VisualShader::VisualShaderConnection::kFromNodeIdFieldNumber))).toInt();
-
-    int from_port_index = visual_shader_model->data(
-        FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kConnectionsFieldNumber),
-                                    FieldPath::RepeatedAt(i),
-                                    FieldPath::FieldNumber(VisualShader::VisualShaderConnection::kFromPortIndexFieldNumber))).toInt();
-
-    int to_node_id = visual_shader_model->data(
-        FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kConnectionsFieldNumber),
-                                    FieldPath::RepeatedAt(i),
-                                    FieldPath::FieldNumber(VisualShader::VisualShaderConnection::kToNodeIdFieldNumber))).toInt();
-
-    int to_port_index = visual_shader_model->data(
-        FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kConnectionsFieldNumber),
-                                    FieldPath::RepeatedAt(i),
-                                    FieldPath::FieldNumber(VisualShader::VisualShaderConnection::kToPortIndexFieldNumber))).toInt();
-
-    bool result{scene->add_connection_to_scene(c_id, from_node_id, from_port_index, to_node_id, to_port_index)};
+    const bool result{scene->add_connection_to_scene(c_id, from_node_id, from_port_index, to_node_id, to_port_index)};
     CONTINUE_IF_TRUE(!result, "Failed to add connection to scene");
   }
 }
@@ -827,26 +797,9 @@ bool VisualShaderGraphicsScene::add_node_to_model(const int& n_id, const std::sh
 
   int row_entry{nodes_model->append_row()};
 
-  bool result = visual_shader_model->set_data(
-      FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
-                                  FieldPath::RepeatedAt(row_entry),
-                                  FieldPath::FieldNumber(VisualShader::VisualShaderNode::kIdFieldNumber)),
-      n_id);
-  CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to set node id");
-
-  result = visual_shader_model->set_data(
-      FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
-                                  FieldPath::RepeatedAt(row_entry),
-                                  FieldPath::FieldNumber(VisualShader::VisualShaderNode::kXCoordinateFieldNumber)),
-      coordinate.x());
-  CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to set node x coordinate");
-
-  result = visual_shader_model->set_data(
-      FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
-                                  FieldPath::RepeatedAt(row_entry),
-                                  FieldPath::FieldNumber(VisualShader::VisualShaderNode::kYCoordinateFieldNumber)),
-      coordinate.y());
-  CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to set node y coordinate");
+  CHECK_CONDITION_TRUE_NON_VOID(!update_node_in_model(n_id, VisualShader::VisualShaderNode::kIdFieldNumber, n_id, row_entry), false, "Failed to set node id");
+  CHECK_CONDITION_TRUE_NON_VOID(!update_node_in_model(n_id, VisualShader::VisualShaderNode::kXCoordinateFieldNumber, coordinate.x(), row_entry), false, "Failed to set node x coordinate");
+  CHECK_CONDITION_TRUE_NON_VOID(!update_node_in_model(n_id, VisualShader::VisualShaderNode::kYCoordinateFieldNumber, coordinate.y(), row_entry), false, "Failed to set node y coordinate");
 
   // Pass any field number that is inside the oneof to enter te OneofModel.
   // You must also to pass true for `for_get_oneof` parameter.
@@ -855,8 +808,7 @@ bool VisualShaderGraphicsScene::add_node_to_model(const int& n_id, const std::sh
   CHECK_PARAM_NULLPTR_NON_VOID(oneof, false, "Failed to get oneof model");
 
   const int oneof_value_field_number = proto_node->get_oneof_value_field_number();
-  result = oneof->set_oneof(oneof_value_field_number);
-  CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to set oneof");
+  CHECK_CONDITION_TRUE_NON_VOID(!oneof->set_oneof(oneof_value_field_number), false, "Failed to set oneof");
 
   return true;
 }
@@ -1155,6 +1107,29 @@ bool VisualShaderGraphicsScene::add_node(const std::shared_ptr<IVisualShaderProt
   return add_node_to_model(temp_n_id, proto_node, coordinate) && add_node_to_scene(temp_n_id, proto_node, coordinate);
 }
 
+QVariant VisualShaderGraphicsScene::get_node_value(const int& n_id, const int& field_number, const int& row_entry) const {
+  int t_row_entry{row_entry};
+  if (t_row_entry == -1) t_row_entry = find_node_entry(visual_shader_model, nodes_model, n_id);
+  CHECK_CONDITION_TRUE_NON_VOID(t_row_entry == -1, false, "Failed to find node entry");
+
+  return visual_shader_model->data(
+      FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(t_row_entry),
+                                  FieldPath::FieldNumber(field_number)));
+}
+
+QVariant VisualShaderGraphicsScene::get_node_field_value(const int& n_id, const int& field_number, const int& row_entry) const {
+  int t_row_entry{row_entry};
+  if (t_row_entry == -1) t_row_entry = find_node_entry(visual_shader_model, nodes_model, n_id);
+  CHECK_CONDITION_TRUE_NON_VOID(t_row_entry == -1, false, "Failed to find node entry");
+
+  const int oneof_value_field_number{get_node_type_field_number(nodes_model, t_row_entry)};
+  CHECK_CONDITION_TRUE_NON_VOID(oneof_value_field_number == -1, false, "Failed to get oneof value field number");
+
+  return visual_shader_model->data(
+      FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(t_row_entry),
+                                  FieldPath::FieldNumber(oneof_value_field_number), FieldPath::FieldNumber(field_number)));
+}
+
 bool VisualShaderGraphicsScene::delete_node_from_model(const int& n_id) {
   int row_entry{find_node_entry(visual_shader_model, nodes_model, n_id)};
   VALIDATE_INDEX_NON_VOID(row_entry, nodes_model->rowCount(), false, "Node entry not found");
@@ -1208,7 +1183,21 @@ bool VisualShaderGraphicsScene::delete_node(const int& n_id, const int& in_port_
   return delete_node_from_model(n_id) && delete_node_from_scene(n_id, in_port_count, out_port_count);
 }
 
-bool VisualShaderGraphicsScene::update_node_in_model(const int& n_id, const int& field_number, const QVariant& value) {
+bool VisualShaderGraphicsScene::update_node_in_model(const int& n_id, const int& field_number, const QVariant& value, const int& row_entry) {
+  int t_row_entry{row_entry};
+  if (t_row_entry == -1) t_row_entry = find_node_entry(visual_shader_model, nodes_model, n_id);
+  CHECK_CONDITION_TRUE_NON_VOID(t_row_entry == -1, false, "Failed to find node entry");
+
+  bool result{visual_shader_model->set_data(
+      FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(t_row_entry),
+                                  FieldPath::FieldNumber(field_number)),
+      value)};
+  CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to update node in model");
+
+  return true;
+}
+
+bool VisualShaderGraphicsScene::update_node_field_in_model(const int& n_id, const int& field_number, const QVariant& value) {
   int row_entry{find_node_entry(visual_shader_model, nodes_model, n_id)};
   CHECK_CONDITION_TRUE_NON_VOID(row_entry == -1, false, "Failed to find node entry");
 
@@ -1225,6 +1214,13 @@ bool VisualShaderGraphicsScene::update_node_in_model(const int& n_id, const int&
 }
 
 bool VisualShaderGraphicsScene::update_node_in_scene(const int& n_id, const int& field_number, const QVariant& value) {
+  VisualShaderNodeGraphicsObject* n_o{this->get_node_graphics_object(n_id)};
+  CHECK_PARAM_NULLPTR_NON_VOID(n_o, false, "Node graphics object is null");
+
+  return false;
+}
+
+bool VisualShaderGraphicsScene::update_node_field_in_scene(const int& n_id, const int& field_number, const QVariant& value) {
   VisualShaderNodeGraphicsObject* n_o{this->get_node_graphics_object(n_id)};
   CHECK_PARAM_NULLPTR_NON_VOID(n_o, false, "Node graphics object is null");
 
@@ -1259,8 +1255,8 @@ bool VisualShaderGraphicsScene::update_node_in_scene(const int& n_id, const int&
 }
 
 bool VisualShaderGraphicsScene::update_node(const int& n_id, const int& field_number, const QVariant& value) {
-  return update_node_in_model(n_id, field_number, value) &&
-         update_node_in_scene(n_id, field_number, value);
+  return update_node_field_in_model(n_id, field_number, value) &&
+         update_node_field_in_scene(n_id, field_number, value);
 }
 
 void VisualShaderGraphicsScene::on_update_renderer_widgets_requested() {
@@ -1423,40 +1419,11 @@ bool VisualShaderGraphicsScene::add_connection_to_model(const int& c_id, const i
 
   int row_entry{connections_model->append_row()};
 
-  bool result = visual_shader_model->set_data(
-      FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kConnectionsFieldNumber),
-                                  FieldPath::RepeatedAt(row_entry),
-                                  FieldPath::FieldNumber(VisualShader::VisualShaderConnection::kIdFieldNumber)),
-      c_id);
-  CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to set connection id");
-
-  result = visual_shader_model->set_data(
-      FieldPath::Of<VisualShader>(
-          FieldPath::FieldNumber(VisualShader::kConnectionsFieldNumber), FieldPath::RepeatedAt(row_entry),
-          FieldPath::FieldNumber(VisualShader::VisualShaderConnection::kFromNodeIdFieldNumber)),
-      from_node_id);
-  CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to set connection from node id");
-
-  result = visual_shader_model->set_data(
-      FieldPath::Of<VisualShader>(
-          FieldPath::FieldNumber(VisualShader::kConnectionsFieldNumber), FieldPath::RepeatedAt(row_entry),
-          FieldPath::FieldNumber(VisualShader::VisualShaderConnection::kFromPortIndexFieldNumber)),
-      from_port_index);
-  CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to set connection from port index");
-
-  result = visual_shader_model->set_data(
-      FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kConnectionsFieldNumber),
-                                  FieldPath::RepeatedAt(row_entry),
-                                  FieldPath::FieldNumber(VisualShader::VisualShaderConnection::kToNodeIdFieldNumber)),
-      to_node_id);
-  CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to set connection to node id");
-
-  result = visual_shader_model->set_data(
-      FieldPath::Of<VisualShader>(
-          FieldPath::FieldNumber(VisualShader::kConnectionsFieldNumber), FieldPath::RepeatedAt(row_entry),
-          FieldPath::FieldNumber(VisualShader::VisualShaderConnection::kToPortIndexFieldNumber)),
-      to_port_index);
-  CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to set connection to port index");
+  CHECK_CONDITION_TRUE_NON_VOID(!update_connection_in_model(c_id, VisualShader::VisualShaderConnection::kIdFieldNumber, c_id, row_entry), false, "Failed to update connection id");
+  CHECK_CONDITION_TRUE_NON_VOID(!update_connection_in_model(c_id, VisualShader::VisualShaderConnection::kFromNodeIdFieldNumber, from_node_id, row_entry), false, "Failed to update from node id");
+  CHECK_CONDITION_TRUE_NON_VOID(!update_connection_in_model(c_id, VisualShader::VisualShaderConnection::kFromPortIndexFieldNumber, from_port_index, row_entry), false, "Failed to update from port index");
+  CHECK_CONDITION_TRUE_NON_VOID(!update_connection_in_model(c_id, VisualShader::VisualShaderConnection::kToNodeIdFieldNumber, to_node_id, row_entry), false, "Failed to update to node id");
+  CHECK_CONDITION_TRUE_NON_VOID(!update_connection_in_model(c_id, VisualShader::VisualShaderConnection::kToPortIndexFieldNumber, to_port_index, row_entry), false, "Failed to update to port index");
 
   return true;
 }
@@ -1562,6 +1529,17 @@ bool VisualShaderGraphicsScene::is_valid_connection(const int& from_node_id, con
   CHECK_PARAM_NULLPTR_NON_VOID(to_i_port, false, "Failed to get to input port graphics object");
 
   return controller_utils::is_valid_connection(from_o_port->get_port_type(), to_i_port->get_port_type());
+}
+
+int VisualShaderGraphicsScene::get_connection_value(const int& c_id, const int& field_number, const int& row_entry) const {
+  int t_row_entry{row_entry};
+  if (t_row_entry == -1) t_row_entry = find_connection_entry(visual_shader_model, connections_model, c_id);
+  VALIDATE_INDEX_NON_VOID(t_row_entry, connections_model->rowCount(), false, "Connection entry not found");
+
+  return visual_shader_model->data(
+      FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kConnectionsFieldNumber),
+                                  FieldPath::RepeatedAt(t_row_entry),
+                                  FieldPath::FieldNumber(field_number))).toInt();
 }
 
 void VisualShaderGraphicsScene::revalidate_connections(const int& n_id) {
@@ -1711,32 +1689,26 @@ bool VisualShaderGraphicsScene::convert_to_temporary_connection(const int& c_id,
   return true;
 }
 
-bool VisualShaderGraphicsScene::update_connection_in_model(const int& c_id, const int& node_id_field_number, const int& port_index_field_number, const int& node_id, const int& port_index) {
-  int row_entry{find_connection_entry(visual_shader_model, connections_model, c_id)};
-  VALIDATE_INDEX_NON_VOID(row_entry, connections_model->rowCount(), false, "Connection entry not found");
+bool VisualShaderGraphicsScene::update_connection_in_model(const int& c_id, const int& field_number, const int& value, const int& row_entry) {
+  int t_row_entry{row_entry};
+  if (t_row_entry == -1) t_row_entry = find_connection_entry(visual_shader_model, connections_model, c_id);
+  VALIDATE_INDEX_NON_VOID(t_row_entry, connections_model->rowCount(), false, "Connection entry not found");
 
   bool result{visual_shader_model->set_data(
       FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kConnectionsFieldNumber),
-                                  FieldPath::RepeatedAt(row_entry),
-                                  FieldPath::FieldNumber(node_id_field_number)),
-      node_id)};
-  CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to update connection in model");
-
-  result = visual_shader_model->set_data(
-      FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kConnectionsFieldNumber),
-                                  FieldPath::RepeatedAt(row_entry),
-                                  FieldPath::FieldNumber(port_index_field_number)),
-      port_index);
+                                  FieldPath::RepeatedAt(t_row_entry),
+                                  FieldPath::FieldNumber(field_number)),
+      value)};
   CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to update connection in model");
 
   return true;
 }
 
-bool VisualShaderGraphicsScene::update_connection_in_scene(const int& c_id, const int& node_id_field_number, const int& node_id, const int& port_index) {
+bool VisualShaderGraphicsScene::update_connection_in_scene(const int& c_id, const int& field_number, const int& node_id, const int& port_index) {
   VisualShaderConnectionGraphicsObject* c_o{get_connection_graphics_object(c_id)};
   CHECK_PARAM_NULLPTR_NON_VOID(c_o, false, "Failed to get connection graphics object");
 
-  switch (node_id_field_number) {
+  switch (field_number) {
     case VisualShader::VisualShaderConnection::kFromNodeIdFieldNumber: {
       VisualShaderNodeGraphicsObject* from_n_o{this->get_node_graphics_object(c_o->get_from_node_id())};
       CHECK_PARAM_NULLPTR_NON_VOID(from_n_o, false, "Failed to get from node graphics object");
@@ -1792,7 +1764,8 @@ bool VisualShaderGraphicsScene::update_connection_in_scene(const int& c_id, cons
 }
 
 bool VisualShaderGraphicsScene::update_connection(const int& c_id, const int& node_id_field_number, const int& port_index_field_number, const int& node_id, const int& port_index) {
-  return update_connection_in_model(c_id, node_id_field_number, port_index_field_number, node_id, port_index) &&
+  return update_connection_in_model(c_id, node_id_field_number, node_id) &&
+         update_connection_in_model(c_id, port_index_field_number, port_index) &&
          update_connection_in_scene(c_id, node_id_field_number, node_id, port_index);
 }
 
@@ -1969,19 +1942,8 @@ void VisualShaderGraphicsScene::on_node_moved(const int& n_id, const int& in_por
   int row_entry{find_node_entry(visual_shader_model, nodes_model, n_id)};
   VALIDATE_INDEX(row_entry, nodes_model->rowCount(), "Node entry not found");
 
-  bool result = visual_shader_model->set_data(
-      FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
-                                  FieldPath::RepeatedAt(row_entry),
-                                  FieldPath::FieldNumber(VisualShader::VisualShaderNode::kXCoordinateFieldNumber)),
-      new_coordinate.x());
-  CHECK_CONDITION_TRUE(!result, "Failed to set node x coordinate");
-
-  result = visual_shader_model->set_data(
-      FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
-                                  FieldPath::RepeatedAt(row_entry),
-                                  FieldPath::FieldNumber(VisualShader::VisualShaderNode::kYCoordinateFieldNumber)),
-      new_coordinate.y());
-  CHECK_CONDITION_TRUE(!result, "Failed to set node y coordinate");
+  CHECK_CONDITION_TRUE(!update_node_in_model(n_id, VisualShader::VisualShaderNode::kXCoordinateFieldNumber, new_coordinate.x()), "Failed to update node x coordinate");
+  CHECK_CONDITION_TRUE(!update_node_in_model(n_id, VisualShader::VisualShaderNode::kYCoordinateFieldNumber, new_coordinate.y()), "Failed to update node y coordinate");
 
   // Update coordinates of all connected connections
   VisualShaderNodeGraphicsObject* n_o{this->get_node_graphics_object(n_id)};

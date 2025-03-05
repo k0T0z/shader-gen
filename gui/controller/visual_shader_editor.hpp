@@ -417,12 +417,17 @@ class VisualShaderGraphicsScene : public QGraphicsScene {
                          const QPointF& coordinate);
   bool add_node(const std::shared_ptr<IVisualShaderProtoNode>& proto_node, const QPointF& coordinate, const int& n_id = -1);
 
+  QVariant get_node_value(const int& n_id, const int& field_number, const int& row_entry = -1) const;
+  QVariant get_node_field_value(const int& n_id, const int& field_number, const int& row_entry = -1) const;
+
   bool delete_node_from_model(const int& n_id);
   bool delete_node_from_scene(const int& n_id, const int& in_port_count, const int& out_port_count);
   bool delete_node(const int& n_id, const int& in_port_count, const int& out_port_count);
 
-  bool update_node_in_model(const int& n_id, const int& field_number, const QVariant& value);
+  bool update_node_in_model(const int& n_id, const int& field_number, const QVariant& value, const int& row_entry = -1);
+  bool update_node_field_in_model(const int& n_id, const int& field_number, const QVariant& value);
   bool update_node_in_scene(const int& n_id, const int& field_number, const QVariant& value);
+  bool update_node_field_in_scene(const int& n_id, const int& field_number, const QVariant& value);
   bool update_node(const int& n_id, const int& field_number, const QVariant& value);
 
   void set_model(ProtoModel* visual_shader_model) { this->visual_shader_model = visual_shader_model; }
@@ -440,6 +445,8 @@ class VisualShaderGraphicsScene : public QGraphicsScene {
                                const int& to_port_index);
   bool add_connection(const int& c_id, const int& from_node_id, const int& from_port_index, const int& to_node_id,
                       const int& to_port_index);
+
+  int get_connection_value(const int& c_id, const int& field_number, const int& row_entry = -1) const;
 
   bool is_valid_connection(const int& from_node_id, const int& from_port_index, const int& to_node_id, const int& to_port_index) const;
 
@@ -462,8 +469,8 @@ class VisualShaderGraphicsScene : public QGraphicsScene {
   bool delete_temporary_connection(const int& from_node_id, const int& from_port_index);
   bool convert_to_temporary_connection(const int& c_id, const int& from_node_id, const int& from_port_index);
 
-  bool update_connection_in_model(const int& c_id, const int& node_id_field_number, const int& port_index_field_number, const int& node_id, const int& port_index);
-  bool update_connection_in_scene(const int& c_id, const int& node_id_field_number, const int& node_id, const int& port_index);
+  bool update_connection_in_model(const int& c_id, const int& field_number, const int& value, const int& row_entry = -1);
+  bool update_connection_in_scene(const int& c_id, const int& field_number, const int& node_id, const int& port_index);
   bool update_connection(const int& c_id, const int& node_id_field_number, const int& port_index_field_number, const int& node_id, const int& port_index);
 
   VisualShaderNodeGraphicsObject* get_node_graphics_object(const int& n_id) const;
@@ -1216,7 +1223,7 @@ private:
     node_field_widget->setContentsMargins(0, 0, 0, 0);  \
     embed_widget_layout->addWidget(node_field_widget); \
     QObject::connect(node_field_widget, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &VisualShaderGraphicsScene::on_update_renderer_widgets_requested); \
-    QObject::connect(node_field_widget, &VisualShaderNodeFieldComboBox::node_update_requested, this, &VisualShaderGraphicsScene::update_node_in_model); \
+    QObject::connect(node_field_widget, &VisualShaderNodeFieldComboBox::node_update_requested, this, &VisualShaderGraphicsScene::update_node_field_in_model); \
     QObject::connect(node_field_widget, &VisualShaderNodeFieldComboBox::port_type_update_requested, n_o, &VisualShaderNodeGraphicsObject::port_type_update_requested); \
     node_field_widgets[n_id][field_number] = node_field_widget; \
   } else                                                                                                        \
@@ -1234,7 +1241,7 @@ private:
     embed_widget_layout->addWidget(node_field_widget); \
     node_field_widget->setPlaceholderText(placeholder); \
     QObject::connect(node_field_widget, &QLineEdit::textChanged, this, &VisualShaderGraphicsScene::on_update_renderer_widgets_requested); \
-    QObject::connect(node_field_widget, &VisualShaderNodeFieldLineEditFloat::node_update_requested, this, &VisualShaderGraphicsScene::update_node_in_model); \
+    QObject::connect(node_field_widget, &VisualShaderNodeFieldLineEditFloat::node_update_requested, this, &VisualShaderGraphicsScene::update_node_field_in_model); \
     node_field_widgets[n_id][field_number] = node_field_widget; \
   } else                                                                                                        \
     ((void)0)
@@ -1251,7 +1258,7 @@ private:
     embed_widget_layout->addWidget(node_field_widget); \
     node_field_widget->setPlaceholderText(placeholder); \
     QObject::connect(node_field_widget, &QLineEdit::textChanged, this, &VisualShaderGraphicsScene::on_update_renderer_widgets_requested); \
-    QObject::connect(node_field_widget, &VisualShaderNodeFieldLineEditInt::node_update_requested, this, &VisualShaderGraphicsScene::update_node_in_model); \
+    QObject::connect(node_field_widget, &VisualShaderNodeFieldLineEditInt::node_update_requested, this, &VisualShaderGraphicsScene::update_node_field_in_model); \
     node_field_widgets[n_id][field_number] = node_field_widget; \
   } else                                                                                                        \
     ((void)0)
@@ -1268,7 +1275,7 @@ private:
     embed_widget_layout->addWidget(node_field_widget); \
     node_field_widget->setPlaceholderText(placeholder); \
     QObject::connect(node_field_widget, &QLineEdit::textChanged, this, &VisualShaderGraphicsScene::on_update_renderer_widgets_requested); \
-    QObject::connect(node_field_widget, &VisualShaderNodeFieldLineEditUInt::node_update_requested, this, &VisualShaderGraphicsScene::update_node_in_model); \
+    QObject::connect(node_field_widget, &VisualShaderNodeFieldLineEditUInt::node_update_requested, this, &VisualShaderGraphicsScene::update_node_field_in_model); \
     node_field_widgets[n_id][field_number] = node_field_widget; \
   } else                                                                                                        \
     ((void)0)
@@ -1284,7 +1291,7 @@ private:
     node_field_widget->setContentsMargins(0, 0, 0, 0);  \
     embed_widget_layout->addWidget(node_field_widget); \
     QObject::connect(node_field_widget, &QCheckBox::stateChanged, this, &VisualShaderGraphicsScene::on_update_renderer_widgets_requested); \
-    QObject::connect(node_field_widget, &VisualShaderNodeFieldCheckBox::node_update_requested, this, &VisualShaderGraphicsScene::update_node_in_model); \
+    QObject::connect(node_field_widget, &VisualShaderNodeFieldCheckBox::node_update_requested, this, &VisualShaderGraphicsScene::update_node_field_in_model); \
     node_field_widgets[n_id][field_number] = node_field_widget; \
   } else                                                                                                        \
     ((void)0)
@@ -1300,7 +1307,7 @@ private:
     node_field_widget->setContentsMargins(0, 0, 0, 0);  \
     embed_widget_layout->addWidget(node_field_widget); \
     QObject::connect(node_field_widget, QOverload<int>::of(&QSpinBox::valueChanged), this, &VisualShaderGraphicsScene::on_update_renderer_widgets_requested); \
-    QObject::connect(node_field_widget, &VisualShaderNodeFieldSpinBox::node_update_requested, this, &VisualShaderGraphicsScene::update_node_in_model); \
+    QObject::connect(node_field_widget, &VisualShaderNodeFieldSpinBox::node_update_requested, this, &VisualShaderGraphicsScene::update_node_field_in_model); \
     node_field_widgets[n_id][field_number] = node_field_widget; \
   } else                                                                                                        \
     ((void)0)
