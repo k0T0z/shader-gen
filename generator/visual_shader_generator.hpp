@@ -33,6 +33,7 @@
 #include "gui/model/proto_model.hpp"
 
 #include "generator/visual_shader_node_generators.hpp"
+#include "generator/visual_shader_node_port_type_generator.hpp"
 #include <map>
 #include <unordered_map>
 #include "generator/utils/utils.hpp"
@@ -66,6 +67,8 @@ std::unordered_map<int, std::shared_ptr<IVisualShaderProtoNode>> to_proto_nodes(
 
 std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>> to_generators(const ProtoModel* nodes) noexcept;
 
+std::unordered_map<int, std::shared_ptr<VisualShaderNodePortTypeGenerator>> to_port_type_generators(const ProtoModel* nodes) noexcept;
+
 std::pair<std::map<ConnectionKey, std::shared_ptr<Connection>>, std::map<ConnectionKey, std::shared_ptr<Connection>>> to_input_output_connections_by_key(const ProtoModel* connections) noexcept;
 
 /**
@@ -83,11 +86,13 @@ std::pair<std::map<ConnectionKey, std::shared_ptr<Connection>>, std::map<Connect
 bool generate_shader(
   const std::unordered_map<int, std::shared_ptr<IVisualShaderProtoNode>>& proto_nodes, 
   const std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>>& generators, 
+  const std::unordered_map<int, std::shared_ptr<VisualShaderNodePortTypeGenerator>>& port_type_generators,
   const std::pair<std::map<ConnectionKey, std::shared_ptr<Connection>>, std::map<ConnectionKey, std::shared_ptr<Connection>>>& input_output_connections_by_key, 
   std::string& code_buffer) noexcept;
 
 std::string generate_preview_shader(const std::unordered_map<int, std::shared_ptr<IVisualShaderProtoNode>>& proto_nodes, 
   const std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>>& generators, 
+  const std::unordered_map<int, std::shared_ptr<VisualShaderNodePortTypeGenerator>>& port_type_generators,
   const std::pair<std::map<ConnectionKey, std::shared_ptr<Connection>>, std::map<ConnectionKey, std::shared_ptr<Connection>>>& input_output_connections_by_key, 
   const int& node_id, const int& port) noexcept;
 }  // namespace shadergen_visual_shader_generator

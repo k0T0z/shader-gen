@@ -75,6 +75,7 @@
 #include "ai-agent/ai_agent.hpp"
 #include "gui/controller/fitness_calculator.hpp"
 #include "gui/controller/parameters_editor.hpp"
+#include "generator/visual_shader_node_port_type_generator.hpp"
 
 using EnumDescriptor = google::protobuf::EnumDescriptor;
 
@@ -522,6 +523,8 @@ class VisualShaderGraphicsScene : public QGraphicsScene {
   void on_in_port_remove_requested(VisualShaderInputPortGraphicsObject* in_port);
   void on_out_port_remove_requested(VisualShaderOutputPortGraphicsObject* out_port);
 
+  void on_port_type_generator_requested(const int& n_id);
+
  private:
   VisualShaderEditor* editor;
 
@@ -665,6 +668,8 @@ class VisualShaderNodeGraphicsObject : public QGraphicsObject {
 
   RendererWidget* get_renderer_widget() const { return renderer_widget; }
 
+  void update_port_types(const std::shared_ptr<VisualShaderNodePortTypeGenerator>& port_type_generator);
+
   void update_layout();
 
  Q_SIGNALS:
@@ -706,11 +711,12 @@ class VisualShaderNodeGraphicsObject : public QGraphicsObject {
   void in_port_remove_requested(VisualShaderInputPortGraphicsObject* in_port);
   void out_port_remove_requested(VisualShaderOutputPortGraphicsObject* out_port);
 
-  void port_type_changed(const VisualShaderNodePortType& p_type);
+  void port_type_update_requested();
+  void port_type_generator_requested(const int& n_id);
 
  public Q_SLOTS:
   void on_preview_shader_button_pressed();
-  void on_port_type_changed(const VisualShaderNodePortType& p_type);
+  void on_port_type_update_requested();
 
  private Q_SLOTS:
   /**
@@ -849,6 +855,7 @@ class VisualShaderInputPortGraphicsObject : public QGraphicsObject {
 
   int get_node_id() const { return n_id; }
   int get_port_index() const { return p_index; }
+  void set_port_type(const VisualShaderNodePortType& port_type) { this->port_type = port_type; }
   VisualShaderNodePortType get_port_type() const { return port_type; }
 
   int get_c_id() const { return c_id; }
@@ -863,9 +870,6 @@ class VisualShaderInputPortGraphicsObject : public QGraphicsObject {
     return true;
   }
   bool is_connected() const { return this->c_id != -1; }
-
- public Q_SLOTS:
-  void on_port_type_changed(const VisualShaderNodePortType& p_type) { this->port_type = p_type; }
 
  Q_SIGNALS:
   /**
@@ -934,9 +938,6 @@ class VisualShaderOutputPortGraphicsObject : public QGraphicsObject {
     return true;
   }
   bool is_connected() const { return c_ids.size() > 0; }
-
- public Q_SLOTS:
-  void on_port_type_changed(const VisualShaderNodePortType& p_type) { this->port_type = p_type; }
 
  Q_SIGNALS:
   /**
@@ -1087,7 +1088,7 @@ class VisualShaderNodeFieldComboBox : public QComboBox {
 
  Q_SIGNALS:
   void node_update_requested(const int& n_id, const int& field_number, const QVariant& value);
-  void port_type_changed(const VisualShaderNodePortType& p_type);
+  void port_type_update_requested();
   void revalidate_connections_requested(const int& n_id);
 
  private Q_SLOTS:
@@ -1216,11 +1217,7 @@ private:
     embed_widget_layout->addWidget(node_field_widget); \
     QObject::connect(node_field_widget, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &VisualShaderGraphicsScene::on_update_renderer_widgets_requested); \
     QObject::connect(node_field_widget, &VisualShaderNodeFieldComboBox::node_update_requested, this, &VisualShaderGraphicsScene::update_node_in_model); \
-    if (controller_utils::is_node_field_affects_port_type(node_type_field_number, field_number)) { \
-      QObject::connect(node_field_widget, &VisualShaderNodeFieldComboBox::port_type_changed, n_o, &VisualShaderNodeGraphicsObject::port_type_changed); \
-      QObject::connect(node_field_widget, &VisualShaderNodeFieldComboBox::revalidate_connections_requested, this, &VisualShaderGraphicsScene::revalidate_connections); \
-      Q_EMIT node_field_widget->port_type_changed(shadergen_utils::get_enum_value_port_type_by_value(enum_descriptor, initial_value.toInt())); \
-    } \
+    QObject::connect(node_field_widget, &VisualShaderNodeFieldComboBox::port_type_update_requested, n_o, &VisualShaderNodeGraphicsObject::port_type_update_requested); \
     node_field_widgets[n_id][field_number] = node_field_widget; \
   } else                                                                                                        \
     ((void)0)

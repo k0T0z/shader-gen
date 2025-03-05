@@ -36,6 +36,7 @@
 #include "gui/model/repeated_message_model.hpp"
 #include "generator/vs_node_noise_generators.hpp"
 #include "gui/model/utils/utils.hpp"
+// #include "generator/visual_shader_node_port_type_generator.hpp"
 
 using EnumDescriptor = google::protobuf::EnumDescriptor;
 
@@ -129,36 +130,13 @@ std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>> to_generator
         const ProtoModel* input_type_model{input_model->get_sub_model(FieldPath::Of<VisualShaderNodeInput>(
           FieldPath::FieldNumber(VisualShaderNodeInput::kTypeFieldNumber)))};
 
-        const VisualShaderNodeInputType input_type{input_type_model->data().toInt()};
+        const VisualShaderNodeInput::VisualShaderNodeInputType input_type{input_type_model->data().toInt()};
 
-        const EnumDescriptor* input_type_enum{input_type_model->get_column_descriptor(0)->enum_type()};
-
-        const std::string input_type_name{shadergen_utils::get_enum_value_name_by_index(input_type_enum, input_type)};
-        
-        const int input_types_count{input_type_enum->value_count()};
-        std::vector<VisualShaderNodeInputType> input_types;
-        input_types.resize(input_types_count);
-        for (int j{0}; j < input_types_count; ++j) input_types.at(j) = (VisualShaderNodeInputType)shadergen_utils::get_enum_value_by_enum_index(input_type_enum, j);
-
-        std::vector<std::string> input_types_names;
-        input_types_names.resize(input_types_count);
-        for (int j{0}; j < input_types_count; ++j) input_types_names.at(j) = shadergen_utils::get_enum_value_name_by_index(input_type_enum, input_types.at(j));
-
-        const VisualShaderNodePortType ports_type = shadergen_utils::get_enum_value_port_type_by_value(input_type_enum, input_type);
-
-        generators[n_id] = std::make_shared<VisualShaderNodeGeneratorInput>(input_type, input_type_name, input_types, input_types_names, ports_type);
+        generators[n_id] = std::make_shared<VisualShaderNodeGeneratorInput>(input_type);
         break;
       }
       case VisualShader::VisualShaderNode::kOutputFieldNumber: {
-        std::shared_ptr<IVisualShaderProtoNode> proto_node{shadergen_utils::get_proto_node_by_oneof_value_field_number(oneof_value_field_number)};
-        CHECK_PARAM_NULLPTR_NON_VOID(proto_node, generators, "Proto node is nullptr.");
-
-        const int output_types_count{proto_node->get_input_port_count()};
-        std::vector<std::string> output_types_value_names;
-        output_types_value_names.resize(output_types_count);  
-        for (int j{0}; j < output_types_count; ++j) output_types_value_names.at(j) = proto_node->get_input_port_value_name(j);
-
-        generators[n_id] = std::make_shared<VisualShaderNodeGeneratorOutput>(output_types_value_names);
+        generators[n_id] = std::make_shared<VisualShaderNodeGeneratorOutput>();
         break;
       }
       case VisualShader::VisualShaderNode::kFloatConstantFieldNumber: {
@@ -265,14 +243,10 @@ std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>> to_generator
           const ProtoModel* vector_type_model{vector_op_model->get_sub_model(FieldPath::Of<VisualShaderNodeVectorOp>(
             FieldPath::FieldNumber(VisualShaderNodeVectorOp::kVecTypeFieldNumber)))};
 
-          const EnumDescriptor* vector_type_enum{vector_type_model->get_column_descriptor(0)->enum_type()};
-
           const VisualShaderNodeVectorType type {vector_type_model->data().toInt()};
           const VisualShaderNodeVectorOp::VisualShaderNodeVectorOpType op_type {vector_op_model->get_sub_model(FieldPath::Of<VisualShaderNodeVectorOp>(FieldPath::FieldNumber(VisualShaderNodeVectorOp::kOpTypeFieldNumber)))->data().toInt()};
 
-          const VisualShaderNodePortType ports_type = shadergen_utils::get_enum_value_port_type_by_value(vector_type_enum, type);
-
-          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorVectorOp>(type, op_type, ports_type);
+          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorVectorOp>(type, op_type);
           break;
       }
       case VisualShader::VisualShaderNode::kFloatFuncFieldNumber: {
@@ -306,14 +280,10 @@ std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>> to_generator
           const ProtoModel* vector_type_model{vector_func_model->get_sub_model(FieldPath::Of<VisualShaderNodeVectorFunc>(
             FieldPath::FieldNumber(VisualShaderNodeVectorFunc::kVecTypeFieldNumber)))};
 
-          const EnumDescriptor* vector_type_enum{vector_type_model->get_column_descriptor(0)->enum_type()};
-
           const VisualShaderNodeVectorType type {vector_type_model->data().toInt()};
           const VisualShaderNodeVectorFunc::VisualShaderNodeVectorFuncType func_type {vector_func_model->get_sub_model(FieldPath::Of<VisualShaderNodeVectorFunc>(FieldPath::FieldNumber(VisualShaderNodeVectorFunc::kFuncTypeFieldNumber)))->data().toInt()};
 
-          const VisualShaderNodePortType ports_type = shadergen_utils::get_enum_value_port_type_by_value(vector_type_enum, type);
-
-          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorVectorFunc>(type, func_type, ports_type);
+          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorVectorFunc>(type, func_type);
           break;
       }
       case VisualShader::VisualShaderNode::kValueNoiseFieldNumber: {
@@ -346,51 +316,15 @@ std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>> to_generator
           break;
       }
       case VisualShader::VisualShaderNode::kVectorLenFieldNumber: {
-          const ProtoModel* vector_len_model{oneof_model->get_sub_model(FieldPath::Of<VisualShader::VisualShaderNode>(
-            FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVectorLenFieldNumber)))};
-
-          const ProtoModel* vector_type_model{vector_len_model->get_sub_model(FieldPath::Of<VisualShaderNodeVectorLen>(
-            FieldPath::FieldNumber(VisualShaderNodeVectorLen::kVecTypeFieldNumber)))};
-
-          const EnumDescriptor* vector_type_enum{vector_type_model->get_column_descriptor(0)->enum_type()};
-
-          const VisualShaderNodeVectorType type {vector_type_model->data().toInt()};
-
-          const VisualShaderNodePortType ports_type = shadergen_utils::get_enum_value_port_type_by_value(vector_type_enum, type);
-
-          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorVectorLen>(ports_type);
+          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorVectorLen>();
           break;
       }
       case VisualShader::VisualShaderNode::kClampFieldNumber: {
-          const ProtoModel* clamp_model{oneof_model->get_sub_model(FieldPath::Of<VisualShader::VisualShaderNode>(
-            FieldPath::FieldNumber(VisualShader::VisualShaderNode::kClampFieldNumber)))};
-
-          const ProtoModel* clamp_type_model{clamp_model->get_sub_model(FieldPath::Of<VisualShaderNodeClamp>(
-            FieldPath::FieldNumber(VisualShaderNodeClamp::kTypeFieldNumber)))};
-
-          const EnumDescriptor* clamp_type_enum{clamp_type_model->get_column_descriptor(0)->enum_type()};
-
-          const VisualShaderNodeClamp::VisualShaderNodeClampType type {clamp_type_model->data().toInt()};
-
-          const VisualShaderNodePortType ports_type = shadergen_utils::get_enum_value_port_type_by_value(clamp_type_enum, type);
-
-          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorClamp>(ports_type);
+          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorClamp>();
           break;
       }
       case VisualShader::VisualShaderNode::kVectorDistanceFieldNumber: {
-          const ProtoModel* vector_distance_model{oneof_model->get_sub_model(FieldPath::Of<VisualShader::VisualShaderNode>(
-            FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVectorDistanceFieldNumber)))};
-
-          const ProtoModel* vector_distance_type_model{vector_distance_model->get_sub_model(FieldPath::Of<VisualShaderNodeVectorDistance>(
-            FieldPath::FieldNumber(VisualShaderNodeVectorDistance::kVecTypeFieldNumber)))};
-
-          const EnumDescriptor* vector_distance_type_enum{vector_distance_type_model->get_column_descriptor(0)->enum_type()};
-
-          const VisualShaderNodeVectorType type {vector_distance_type_model->data().toInt()};
-
-          const VisualShaderNodePortType ports_type = shadergen_utils::get_enum_value_port_type_by_value(vector_distance_type_enum, type);
-
-          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorVectorDistance>(ports_type);
+          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorVectorDistance>();
           break;
       }
       case VisualShader::VisualShaderNode::kVector2DComposeFieldNumber: {
@@ -428,13 +362,9 @@ std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>> to_generator
           const ProtoModel* switch_type_model{switch_model->get_sub_model(FieldPath::Of<VisualShaderNodeSwitch>(
             FieldPath::FieldNumber(VisualShaderNodeSwitch::kTypeFieldNumber)))};
 
-          const EnumDescriptor* switch_type_enum{switch_type_model->get_column_descriptor(0)->enum_type()};
-
           const VisualShaderNodeSwitch::VisualShaderNodeSwitchType type {switch_type_model->data().toInt()};
 
-          const VisualShaderNodePortType ports_type = shadergen_utils::get_enum_value_port_type_by_value(switch_type_enum, type);
-
-          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorSwitch>(type, ports_type);
+          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorSwitch>(type);
           break;
       }
       case VisualShader::VisualShaderNode::kIsFieldNumber: {
@@ -452,15 +382,11 @@ std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>> to_generator
           const ProtoModel* compare_type_model{compare_model->get_sub_model(FieldPath::Of<VisualShaderNodeCompare>(
             FieldPath::FieldNumber(VisualShaderNodeCompare::kTypeFieldNumber)))};
 
-          const EnumDescriptor* compare_type_enum{compare_type_model->get_column_descriptor(0)->enum_type()};
-
           const VisualShaderNodeCompare::VisualShaderNodeCompareType type {compare_type_model->data().toInt()};
           const VisualShaderNodeCompare::VisualShaderNodeCompareFunction func {compare_model->get_sub_model(FieldPath::Of<VisualShaderNodeCompare>(FieldPath::FieldNumber(VisualShaderNodeCompare::kFuncFieldNumber)))->data().toInt()};
           const VisualShaderNodeCompare::VisualShaderNodeCompareCondition cond {compare_model->get_sub_model(FieldPath::Of<VisualShaderNodeCompare>(FieldPath::FieldNumber(VisualShaderNodeCompare::kCondFieldNumber)))->data().toInt()};
 
-          const VisualShaderNodePortType ports_type = shadergen_utils::get_enum_value_port_type_by_value(compare_type_enum, type);
-
-          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorCompare>(type, func, cond, ports_type);
+          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorCompare>(type, func, cond);
           break;
       }
       default:
@@ -470,6 +396,31 @@ std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>> to_generator
   }
 
   return generators;
+}
+
+std::unordered_map<int, std::shared_ptr<VisualShaderNodePortTypeGenerator>> to_port_type_generators(const ProtoModel* nodes) noexcept {
+  int size{nodes->rowCount()};
+  std::unordered_map<int, std::shared_ptr<VisualShaderNodePortTypeGenerator>> port_type_generators;
+
+  // Cast to ReapeatedMessageModel
+  const RepeatedMessageModel* repeated_nodes{dynamic_cast<const RepeatedMessageModel*>(nodes)};
+  CHECK_PARAM_NULLPTR_NON_VOID(repeated_nodes, port_type_generators, "Nodes is not a repeated message model.");
+
+  for (int i{0}; i < size; ++i) {
+    const MessageModel* node_model{repeated_nodes->get_sub_model(i)};
+
+    const int n_id{node_model->get_sub_model(FieldPath::Of<VisualShader::VisualShaderNode>(
+        FieldPath::FieldNumber(VisualShader::VisualShaderNode::kIdFieldNumber)))->data().toInt()};
+
+    if (port_type_generators.find(n_id) != port_type_generators.end()) {
+      FAIL_AND_RETURN_NON_VOID(port_type_generators, "Node id already exists.");
+    }
+
+    port_type_generators[n_id] = shadergen_utils::get_port_type_generator(node_model);
+    CHECK_PARAM_NULLPTR_NON_VOID(port_type_generators[n_id], port_type_generators, "Proto node is nullptr.");
+  }
+
+  return port_type_generators;
 }
 
 std::pair<std::map<ConnectionKey, std::shared_ptr<Connection>>, std::map<ConnectionKey, std::shared_ptr<Connection>>> to_input_output_connections_by_key(const ProtoModel* connections) noexcept {
@@ -516,6 +467,7 @@ static inline bool generate_shader_for_each_node(std::string& global_code, std::
                                                  std::string& func_code,
                                                  const std::unordered_map<int, std::shared_ptr<IVisualShaderProtoNode>>& proto_nodes,
                                                  const std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>>& generators,
+                                                 const std::unordered_map<int, std::shared_ptr<VisualShaderNodePortTypeGenerator>>& port_type_generators,
                                                  const std::map<ConnectionKey, std::shared_ptr<Connection>>& input_connections,
                                                  const std::map<ConnectionKey, std::shared_ptr<Connection>>& output_connections,
                                                  const int& node_id, 
@@ -524,6 +476,7 @@ static inline bool generate_shader_for_each_node(std::string& global_code, std::
 
 bool generate_shader(const std::unordered_map<int, std::shared_ptr<IVisualShaderProtoNode>>& proto_nodes, 
                      const std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>>& generators, 
+                     const std::unordered_map<int, std::shared_ptr<VisualShaderNodePortTypeGenerator>>& port_type_generators, 
                      const std::pair<std::map<ConnectionKey, std::shared_ptr<Connection>>, std::map<ConnectionKey, std::shared_ptr<Connection>>>& input_output_connections_by_key, 
                      std::string& code_buffer) noexcept {
   static const std::string func_name{"main"};   
@@ -544,6 +497,7 @@ bool generate_shader(const std::unordered_map<int, std::shared_ptr<IVisualShader
                                             func_code, 
                                             proto_nodes, 
                                             generators, 
+                                            port_type_generators,
                                             input_output_connections_by_key.first,
                                             input_output_connections_by_key.second, 0, 
                                             processed,
@@ -567,6 +521,7 @@ bool generate_shader(const std::unordered_map<int, std::shared_ptr<IVisualShader
 
 std::string generate_preview_shader(const std::unordered_map<int, std::shared_ptr<IVisualShaderProtoNode>>& proto_nodes, 
                                     const std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>>& generators, 
+                                    const std::unordered_map<int, std::shared_ptr<VisualShaderNodePortTypeGenerator>>& port_type_generators,
                                     const std::pair<std::map<ConnectionKey, std::shared_ptr<Connection>>, std::map<ConnectionKey, std::shared_ptr<Connection>>>& input_output_connections_by_key, 
                                     const int& node_id, const int& port) noexcept { 
   static const std::string preview_func_name{"main"};
@@ -574,6 +529,7 @@ std::string generate_preview_shader(const std::unordered_map<int, std::shared_pt
 
   CHECK_CONDITION_TRUE_NON_VOID(proto_nodes.find(node_id) == proto_nodes.end(), std::string(), "Node ID not found in proto nodes.");
   CHECK_CONDITION_TRUE_NON_VOID(generators.find(node_id) == generators.end(), std::string(), "Node ID not found in generators.");
+  CHECK_CONDITION_TRUE_NON_VOID(port_type_generators.find(node_id) == port_type_generators.end(), std::string(), "Node ID not found in port type generators.");
 
   const std::shared_ptr<IVisualShaderProtoNode> proto_node{proto_nodes.at(node_id)};
   CHECK_PARAM_NULLPTR_NON_VOID(proto_node, std::string(), "Proto node is null.");
@@ -593,6 +549,7 @@ std::string generate_preview_shader(const std::unordered_map<int, std::shared_pt
                                             shader_code, 
                                             proto_nodes, 
                                             generators, 
+                                            port_type_generators,
                                             input_output_connections_by_key.first,
                                             input_output_connections_by_key.second, 
                                             node_id,
@@ -603,8 +560,9 @@ std::string generate_preview_shader(const std::unordered_map<int, std::shared_pt
 
   global_code += "out vec4 " + output_var + ";" + std::string("\n");
 
-  VisualShaderNodePortType from_port_type{proto_node->get_output_port_type(port)};
-  if (from_port_type == VisualShaderNodePortType::PORT_TYPE_UNSPECIFIED) from_port_type = generators.at(node_id)->get_ports_type();
+  std::shared_ptr<VisualShaderNodePortTypeGenerator> port_type_generator{port_type_generators.at(node_id)};
+
+  VisualShaderNodePortType from_port_type{port_type_generator->get_output_port_type(port)};
 
   switch (from_port_type) {
     case VisualShaderNodePortType::PORT_TYPE_SCALAR:
@@ -637,7 +595,7 @@ std::string generate_preview_shader(const std::unordered_map<int, std::shared_pt
       break;
     default:
       shader_code += std::string("\t") + output_var + " = vec4(vec3(0.0), 1.0);" + std::string("\n");
-      WARN_PRINT("Unsupported port type: " + std::to_string(from_port_type));
+      WARN_PRINT("Unsupported port type: " + std::to_string((int)from_port_type));
       break;
   }
 
@@ -656,6 +614,7 @@ static inline bool generate_shader_for_each_node(std::string& global_code, std::
                                                  std::string& func_code,
                                                  const std::unordered_map<int, std::shared_ptr<IVisualShaderProtoNode>>& proto_nodes,
                                                  const std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>>& generators,
+                                                 const std::unordered_map<int, std::shared_ptr<VisualShaderNodePortTypeGenerator>>& port_type_generators,
                                                  const std::map<ConnectionKey, std::shared_ptr<Connection>>& input_connections,
                                                  const std::map<ConnectionKey, std::shared_ptr<Connection>>& output_connections,
                                                  const int& node_id, 
@@ -663,9 +622,11 @@ static inline bool generate_shader_for_each_node(std::string& global_code, std::
                                                  std::unordered_set<std::string>& global_processed) noexcept {
   CHECK_CONDITION_TRUE_NON_VOID(proto_nodes.find(node_id) == proto_nodes.end(), false, "Node id not found in proto nodes.");
   CHECK_CONDITION_TRUE_NON_VOID(generators.find(node_id) == generators.end(), false, "Node id not found in generators.");
+  CHECK_CONDITION_TRUE_NON_VOID(port_type_generators.find(node_id) == port_type_generators.end(), false, "Node id not found in port type generators.");
 
   const std::shared_ptr<IVisualShaderProtoNode> proto_node{proto_nodes.at(node_id)};
   const std::shared_ptr<VisualShaderNodeGenerator> generator{generators.at(node_id)};
+  const std::shared_ptr<VisualShaderNodePortTypeGenerator> port_type_generator{port_type_generators.at(node_id)};
 
   // Check inputs recursively.
   int input_port_count{proto_node->get_input_port_count()};
@@ -691,6 +652,7 @@ static inline bool generate_shader_for_each_node(std::string& global_code, std::
                                               func_code, 
                                               proto_nodes, 
                                               generators, 
+                                              port_type_generators,
                                               input_connections,
                                               output_connections, 
                                               from_node,
@@ -727,11 +689,9 @@ static inline bool generate_shader_for_each_node(std::string& global_code, std::
       int from_node{(int)c->from.f_key.node};
       int from_port{(int)c->from.f_key.port};
 
-      VisualShaderNodePortType to_port_type{proto_node->get_input_port_type(i)};
-      if (to_port_type == VisualShaderNodePortType::PORT_TYPE_UNSPECIFIED) to_port_type = generator->get_ports_type();
+      VisualShaderNodePortType to_port_type{port_type_generator->get_input_port_type(i)};
 
-      VisualShaderNodePortType from_port_type{proto_nodes.at(from_node)->get_output_port_type(from_port)};
-      if (from_port_type == VisualShaderNodePortType::PORT_TYPE_UNSPECIFIED) from_port_type = generators.at(from_node)->get_ports_type();
+      VisualShaderNodePortType from_port_type{port_type_generators.at(from_node)->get_output_port_type(from_port)};
 
       std::string from_var{"var_from_n" + std::to_string(from_node) + "_p" + std::to_string(from_port)};
 
@@ -761,7 +721,7 @@ static inline bool generate_shader_for_each_node(std::string& global_code, std::
               } break;
               default: {
                 input_vars.at(i) = "0.0";
-                WARN_PRINT("Unsupported port type: " + std::to_string(from_port_type));
+                WARN_PRINT("Unsupported port type: " + std::to_string((int)from_port_type));
               } break;
             }
           } break;
@@ -787,7 +747,7 @@ static inline bool generate_shader_for_each_node(std::string& global_code, std::
               } break;
               default: {
                 input_vars.at(i) = "0";
-                WARN_PRINT("Unsupported port type: " + std::to_string(from_port_type));
+                WARN_PRINT("Unsupported port type: " + std::to_string((int)from_port_type));
               } break;
             }
           } break;
@@ -813,7 +773,7 @@ static inline bool generate_shader_for_each_node(std::string& global_code, std::
               } break;
               default: {
                 input_vars.at(i) = "0u";
-                WARN_PRINT("Unsupported port type: " + std::to_string(from_port_type));
+                WARN_PRINT("Unsupported port type: " + std::to_string((int)from_port_type));
               } break;
             }
           } break;
@@ -839,7 +799,7 @@ static inline bool generate_shader_for_each_node(std::string& global_code, std::
               } break;
               default:{
                 input_vars.at(i) = "false";
-                WARN_PRINT("Unsupported port type: " + std::to_string(from_port_type));
+                WARN_PRINT("Unsupported port type: " + std::to_string((int)from_port_type));
               } break;
             }
           } break;
@@ -863,7 +823,7 @@ static inline bool generate_shader_for_each_node(std::string& global_code, std::
               } break;
               default: {
                 input_vars.at(i) = "vec2(0.0)";
-                WARN_PRINT("Unsupported port type: " + std::to_string(from_port_type));
+                WARN_PRINT("Unsupported port type: " + std::to_string((int)from_port_type));
               } break;
             }
           } break;
@@ -889,7 +849,7 @@ static inline bool generate_shader_for_each_node(std::string& global_code, std::
               } break;
               default: {
                 input_vars.at(i) = "vec3(0.0)";
-                WARN_PRINT("Unsupported port type: " + std::to_string(from_port_type));
+                WARN_PRINT("Unsupported port type: " + std::to_string((int)from_port_type));
               } break;
             }
           } break;
@@ -915,21 +875,20 @@ static inline bool generate_shader_for_each_node(std::string& global_code, std::
               } break;
               default: {
                 input_vars.at(i) = "vec4(vec3(0.0), 1.0)";
-                WARN_PRINT("Unsupported port type: " + std::to_string(from_port_type));
+                WARN_PRINT("Unsupported port type: " + std::to_string((int)from_port_type));
               } break;
             }
           } break;
           default: {
             input_vars.at(i) = "0.0";
-            WARN_PRINT("Unsupported port type: " + std::to_string(to_port_type));
+            WARN_PRINT("Unsupported port type: " + std::to_string((int)to_port_type));
           } break;
         }  // end of switch (to_port_type)
       }  // end of if (to_port_type == from_port_type)
     } else {
       // Add the default value.
 
-      VisualShaderNodePortType in_port_type{proto_node->get_input_port_type(i)};
-      if (in_port_type == VisualShaderNodePortType::PORT_TYPE_UNSPECIFIED) in_port_type = generator->get_ports_type();
+      VisualShaderNodePortType in_port_type{port_type_generator->get_input_port_type(i)};
 
       // For Output node, type is by port
       switch (in_port_type) {
@@ -999,8 +958,7 @@ static inline bool generate_shader_for_each_node(std::string& global_code, std::
     for (int i{0}; i < output_port_count; i++) {
       std::string from_var{"var_from_n" + std::to_string(node_id) + "_p" + std::to_string(i)};
 
-      VisualShaderNodePortType from_port_type{proto_node->get_output_port_type(i)};
-      if (from_port_type == VisualShaderNodePortType::PORT_TYPE_UNSPECIFIED) from_port_type = generator->get_ports_type();
+      VisualShaderNodePortType from_port_type{port_type_generator->get_output_port_type(i)};
 
       switch (from_port_type) {
         case VisualShaderNodePortType::PORT_TYPE_SCALAR:
@@ -1032,8 +990,7 @@ static inline bool generate_shader_for_each_node(std::string& global_code, std::
     for (int i{0}; i < output_port_count; i++) {
       output_vars.at(i) = "var_from_n" + std::to_string(node_id) + "_p" + std::to_string(i);
 
-      VisualShaderNodePortType from_port_type{proto_node->get_output_port_type(i)};
-      if (from_port_type == VisualShaderNodePortType::PORT_TYPE_UNSPECIFIED) from_port_type = generator->get_ports_type();
+      VisualShaderNodePortType from_port_type{port_type_generator->get_output_port_type(i)};
 
       switch (from_port_type) {
         case VisualShaderNodePortType::PORT_TYPE_SCALAR:

@@ -565,6 +565,7 @@ void VisualShaderEditor::on_preview_shader_button_pressed() {
   bool result{shadergen_visual_shader_generator::generate_shader(
     shadergen_visual_shader_generator::to_proto_nodes(nodes_model),
     shadergen_visual_shader_generator::to_generators(nodes_model), 
+    shadergen_visual_shader_generator::to_port_type_generators(nodes_model),
     shadergen_visual_shader_generator::to_input_output_connections_by_key(connections_model), code)};
   CHECK_CONDITION_TRUE(!result, "Failed to generate shader code");
 
@@ -616,6 +617,7 @@ void VisualShaderEditor::on_match_image_button_pressed() {
 
   fitness_calculator->update_current_output(shadergen_visual_shader_generator::generate_preview_shader(shadergen_visual_shader_generator::to_proto_nodes(nodes_model),
                                             shadergen_visual_shader_generator::to_generators(nodes_model), 
+                                            shadergen_visual_shader_generator::to_port_type_generators(nodes_model),
                                             shadergen_visual_shader_generator::to_input_output_connections_by_key(connections_model), c_o->get_from_node_id(), 0));  // 0 is the output port index
 
   
@@ -904,6 +906,9 @@ bool VisualShaderGraphicsScene::add_node_to_scene(const int& n_id, const std::sh
   QObject::connect(n_o, &VisualShaderNodeGraphicsObject::out_port_remove_requested, this,
                    &VisualShaderGraphicsScene::on_out_port_remove_requested);
 
+  QObject::connect(n_o, &VisualShaderNodeGraphicsObject::port_type_generator_requested, this,
+                   &VisualShaderGraphicsScene::on_port_type_generator_requested);
+
   // If not the output node
   if (n_id != 0) {
     QObject::connect(n_o, &VisualShaderNodeGraphicsObject::node_deleted, this,
@@ -1132,6 +1137,7 @@ bool VisualShaderGraphicsScene::add_node_to_scene(const int& n_id, const std::sh
   node_graphics_objects[n_id] = n_o;
 
   newest_node_graphics_object = nullptr; // We don't need to delete the temporary node graphics object
+  on_port_type_generator_requested(n_id); // Update the port types using the port type generator
 
   addItem(n_o);
 
@@ -1268,6 +1274,7 @@ void VisualShaderGraphicsScene::on_update_renderer_widgets_requested() {
 
     spw->set_code(shadergen_visual_shader_generator::generate_preview_shader(shadergen_visual_shader_generator::to_proto_nodes(nodes_model),
                                     shadergen_visual_shader_generator::to_generators(nodes_model), 
+                                    shadergen_visual_shader_generator::to_port_type_generators(nodes_model),
                                     shadergen_visual_shader_generator::to_input_output_connections_by_key(connections_model), n_id, 0));  // 0 is the output port index
   }
 
@@ -1310,6 +1317,25 @@ void VisualShaderGraphicsScene::on_out_port_remove_requested(VisualShaderOutputP
   }
 
   remove_item(out_port);
+}
+
+void VisualShaderGraphicsScene::on_port_type_generator_requested(const int& n_id) {
+  const int node_entry{VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, n_id)};
+  CHECK_CONDITION_TRUE(node_entry == -1, "Failed to find node entry");
+
+  // Cast to ReapeatedMessageModel
+  const RepeatedMessageModel* repeated_nodes{dynamic_cast<const RepeatedMessageModel*>(nodes_model)};
+  CHECK_PARAM_NULLPTR(repeated_nodes, "Nodes is not a repeated message model.");
+
+  const MessageModel* node_model{repeated_nodes->get_sub_model(node_entry)};
+
+  const std::shared_ptr<VisualShaderNodePortTypeGenerator> port_type_generator{shadergen_utils::get_port_type_generator(node_model)};
+
+  VisualShaderNodeGraphicsObject* n_o{this->get_node_graphics_object(n_id)};
+  CHECK_PARAM_NULLPTR(n_o, "Node graphics object is null");
+
+  n_o->update_port_types(port_type_generator);
+  revalidate_connections(n_id);
 }
 
 int VisualShaderGraphicsScene::get_new_node_id(ProtoModel* visual_shader_model, ProtoModel* nodes_model) {
@@ -2348,8 +2374,8 @@ VisualShaderNodeGraphicsObject::VisualShaderNodeGraphicsObject(const int& n_id, 
   // Set input and output port types
   in_port_types.resize(this->in_port_count);
   out_port_types.resize(this->out_port_count);
-  for (int i{0}; i < (int)in_port_types.size(); i++) in_port_types.at(i) = proto_node->get_input_port_type(i);
-  for (int i{0}; i < (int)out_port_types.size(); i++) out_port_types.at(i) = proto_node->get_output_port_type(i);
+  for (int i{0}; i < (int)in_port_types.size(); i++) in_port_types.at(i) = VisualShaderNodePortType::PORT_TYPE_UNSPECIFIED;
+  for (int i{0}; i < (int)out_port_types.size(); i++) out_port_types.at(i) = VisualShaderNodePortType::PORT_TYPE_UNSPECIFIED;
 
   // Output node should have a matching image widget
   if (n_id == 0) {
@@ -2379,7 +2405,7 @@ VisualShaderNodeGraphicsObject::VisualShaderNodeGraphicsObject(const int& n_id, 
                    &VisualShaderNodeGraphicsObject::on_delete_node_action_triggered);
   context_menu->addAction(delete_node_action);
 
-  QObject::connect(this, &VisualShaderNodeGraphicsObject::port_type_changed, this, &VisualShaderNodeGraphicsObject::on_port_type_changed);
+  QObject::connect(this, &VisualShaderNodeGraphicsObject::port_type_update_requested, this, &VisualShaderNodeGraphicsObject::on_port_type_update_requested);
 }
 
 VisualShaderNodeGraphicsObject::~VisualShaderNodeGraphicsObject() {
@@ -2406,6 +2432,24 @@ VisualShaderOutputPortGraphicsObject* VisualShaderNodeGraphicsObject::get_output
   }
 
   return nullptr;
+}
+
+void VisualShaderNodeGraphicsObject::update_port_types(const std::shared_ptr<VisualShaderNodePortTypeGenerator>& port_type_generator) {
+  for (int i {0}; i < in_port_count; ++i) in_port_types.at(i) = port_type_generator->get_input_port_type(i);
+  for (int i {0}; i < out_port_count; ++i) out_port_types.at(i) = port_type_generator->get_output_port_type(i);
+
+  // Update the port types
+  for (int i{0}; i < in_port_count; ++i) {
+    VisualShaderInputPortGraphicsObject* i_port{get_input_port_graphics_object(i)};
+    SILENT_CONTINUE_IF_TRUE(!i_port);
+    i_port->set_port_type(in_port_types.at(i));
+  }
+
+  for (int i{0}; i < out_port_count; ++i) {
+    VisualShaderOutputPortGraphicsObject* o_port{get_output_port_graphics_object(i)};
+    SILENT_CONTINUE_IF_TRUE(!o_port);
+    o_port->set_port_type(out_port_types.at(i));
+  }
 }
 
 void VisualShaderNodeGraphicsObject::update_layout() {
@@ -2598,8 +2642,6 @@ void VisualShaderNodeGraphicsObject::update_layout() {
                        &VisualShaderNodeGraphicsObject::on_in_port_dragged);
       QObject::connect(p_o, &VisualShaderInputPortGraphicsObject::port_dropped, this,
                        &VisualShaderNodeGraphicsObject::on_in_port_dropped);
-      if (proto_node->get_input_port_type(i) == VisualShaderNodePortType::PORT_TYPE_UNSPECIFIED)
-        QObject::connect(this, &VisualShaderNodeGraphicsObject::port_type_changed, p_o, &VisualShaderInputPortGraphicsObject::on_port_type_changed);
     }
   }
 
@@ -2654,8 +2696,6 @@ void VisualShaderNodeGraphicsObject::update_layout() {
                        &VisualShaderNodeGraphicsObject::on_out_port_dragged);
       QObject::connect(p_o, &VisualShaderOutputPortGraphicsObject::port_dropped, this,
                        &VisualShaderNodeGraphicsObject::on_out_port_dropped);
-      if (proto_node->get_output_port_type(i) == VisualShaderNodePortType::PORT_TYPE_UNSPECIFIED)
-        QObject::connect(this, &VisualShaderNodeGraphicsObject::port_type_changed, p_o, &VisualShaderOutputPortGraphicsObject::on_port_type_changed);
     }
   }
 
@@ -2697,20 +2737,8 @@ void VisualShaderNodeGraphicsObject::on_preview_shader_button_pressed() {
   preview_shader_button->setText(!is_visible ? "Hide Preview" : "Show Preview");
 }
 
-void VisualShaderNodeGraphicsObject::on_port_type_changed(const VisualShaderNodePortType& p_type) {
-  for (int i {0}; i < in_port_count; ++i) {
-    /*
-      Here we only update any unspecified port type in the proto file ONLY. This is 
-      so important because we don't want to change the port type of the node in the
-      proto file if it is already specified.
-    */
-    SILENT_CONTINUE_IF_TRUE(proto_node->get_input_port_type(i) != VisualShaderNodePortType::PORT_TYPE_UNSPECIFIED);
-    in_port_types.at(i) = p_type;
-  }
-  for (int i {0}; i < out_port_count; ++i) {
-    SILENT_CONTINUE_IF_TRUE(proto_node->get_output_port_type(i) != VisualShaderNodePortType::PORT_TYPE_UNSPECIFIED);
-    out_port_types.at(i) = p_type;
-  }
+void VisualShaderNodeGraphicsObject::on_port_type_update_requested() {
+  Q_EMIT port_type_generator_requested(n_id);
 }
 
 QRectF VisualShaderNodeGraphicsObject::boundingRect() const {
@@ -3208,8 +3236,7 @@ VisualShaderNodeFieldComboBox::VisualShaderNodeFieldComboBox(const QVariant& ini
                                                              const EnumDescriptor* enum_descriptor, const int& field_number, QWidget* parent)
     : QComboBox(parent),
       n_id(n_id),
-      field_number(field_number),
-      enum_descriptor(enum_descriptor) {
+      field_number(field_number) {
   setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
   setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
 
@@ -3229,8 +3256,8 @@ VisualShaderNodeFieldComboBox::VisualShaderNodeFieldComboBox(const QVariant& ini
 void VisualShaderNodeFieldComboBox::on_current_index_changed(const int& index) {
   Q_EMIT node_update_requested(n_id, field_number, index);
 
-  Q_EMIT port_type_changed(shadergen_utils::get_enum_value_port_type_by_value(enum_descriptor, index));
-  Q_EMIT revalidate_connections_requested(n_id);
+  Q_EMIT port_type_update_requested();
+  Q_EMIT revalidate_connections_requested(n_id); // As the port type might change, we need to revalidate the connections
 }
 
 VisualShaderNodeFieldLineEditFloat::VisualShaderNodeFieldLineEditFloat(const QVariant& initial_value, const int& n_id,

@@ -33,16 +33,23 @@
 #include <iomanip>
 #include <sstream>
 
+VisualShaderNodeGeneratorInput::VisualShaderNodeGeneratorInput(const VisualShaderNodeInput::VisualShaderNodeInputType& input_type) 
+    : VisualShaderNodeGenerator(), input_type(input_type) {
+  input_types_value_names[(int)VisualShaderNodeInput::INPUT_TYPE_UNSPECIFIED] = "";
+  input_types_value_names[(int)VisualShaderNodeInput::INPUT_TYPE_UV] = "FragCoord";
+  input_types_value_names[(int)VisualShaderNodeInput::INPUT_TYPE_TIME] = "uTime";
+}
+
 std::string VisualShaderNodeGeneratorInput::generate_global([[maybe_unused]] const int& id) const {
   std::string code;
 
-  for (int i{1}; i < input_types_count; ++i) { // Skip INPUT_TYPE_UNSPECIFIED
-    switch (input_types.at(i)) {
-      case VisualShaderNodeInputType::INPUT_TYPE_UV: {
-        code += "in vec2 " + input_types_names.at(i) + ";" + std::string("\n");
+  for (const auto& [key, value] : input_types_value_names) {
+    switch (key) {
+      case VisualShaderNodeInput::INPUT_TYPE_UV: {
+        code += "in vec2 " + value + ";" + std::string("\n");
       } break;
-      case VisualShaderNodeInputType::INPUT_TYPE_TIME: {
-        code += "uniform float " + input_types_names.at(i) + ";" + std::string("\n");
+      case VisualShaderNodeInput::INPUT_TYPE_TIME: {
+        code += "uniform float " + value + ";" + std::string("\n");
       } break;
       default:
         break;
@@ -58,11 +65,11 @@ std::string VisualShaderNodeGeneratorInput::generate_code(
   std::string code;
 
   switch (input_type) {
-    case VisualShaderNodeInputType::INPUT_TYPE_UV: {
-      code = std::string("\t") + output_vars.at(0) + " = " + input_type_name + ";" + std::string("\n");
+    case VisualShaderNodeInput::INPUT_TYPE_UV: {
+      code = std::string("\t") + output_vars.at(0) + " = " + input_types_value_names.at(VisualShaderNodeInput::INPUT_TYPE_UV) + ";" + std::string("\n");
     } break;
-    case VisualShaderNodeInputType::INPUT_TYPE_TIME: {
-      code = std::string("\t") + output_vars.at(0) + " = " + input_type_name + ";" + std::string("\n");
+    case VisualShaderNodeInput::INPUT_TYPE_TIME: {
+      code = std::string("\t") + output_vars.at(0) + " = " + input_types_value_names.at(VisualShaderNodeInput::INPUT_TYPE_TIME) + ";" + std::string("\n");
     } break;
     default:
       code = "0.0;" + std::string("\n");
@@ -72,13 +79,15 @@ std::string VisualShaderNodeGeneratorInput::generate_code(
   return code;
 }
 
+VisualShaderNodeGeneratorOutput::VisualShaderNodeGeneratorOutput() : VisualShaderNodeGenerator() {
+  output_types_value_names[0] = "FragColor";
+}
+
 std::string VisualShaderNodeGeneratorOutput::generate_global([[maybe_unused]] const int& id) const {
   std::string code;
 
-  for (int i{0}; i < output_types_value_names_count; ++i) {
-    const std::string value_name{output_types_value_names.at(i)};
-
-    if (value_name == "FragColor") code += "out vec4 " + output_types_value_names.at(i) + ";" + std::string("\n");
+  for (const auto& [key, value] : output_types_value_names) {
+    if (value == "FragColor") code += "out vec4 " + value + ";" + std::string("\n");
   }
 
   return code;
@@ -89,8 +98,10 @@ std::string VisualShaderNodeGeneratorOutput::generate_code(
     [[maybe_unused]] const std::vector<std::string>& output_vars) const {
   std::string code;
 
-  for (int i{0}; i < output_types_value_names_count; ++i) {
-    if (!input_vars.at(i).empty()) code += std::string("\t") + output_types_value_names.at(i) + " = " + input_vars.at(i) + ";" + std::string("\n");
+  int i{0};
+  for (const auto& [key, value] : output_types_value_names) {
+    if (!input_vars.at(i).empty()) code += std::string("\t") + value + " = " + input_vars.at(i) + ";" + std::string("\n");
+    ++i;
   }
 
   return code;
@@ -761,17 +772,15 @@ std::string VisualShaderNodeGeneratorIf::generate_code(
   return code;
 }
 
-VisualShaderNodeGeneratorSwitch::VisualShaderNodeGeneratorSwitch(const VisualShaderNodeSwitch::VisualShaderNodeSwitchType& type, const VisualShaderNodePortType& ports_type)
-      : VisualShaderNodeGenerator(ports_type), type(type) {
+VisualShaderNodeGeneratorSwitch::VisualShaderNodeGeneratorSwitch(const VisualShaderNodeSwitch::VisualShaderNodeSwitchType& type)
+      : VisualShaderNodeGenerator(), type(type) {
   switch (type) {
-    case VisualShaderNodeSwitch::TYPE_FLOAT:
-    case VisualShaderNodeSwitch::TYPE_VECTOR_2D:
-    case VisualShaderNodeSwitch::TYPE_VECTOR_3D:
-    case VisualShaderNodeSwitch::TYPE_VECTOR_4D:
-      scoped_assignment = false;
+    case VisualShaderNodeSwitch::TYPE_INT:
+    case VisualShaderNodeSwitch::TYPE_UINT:
+    case VisualShaderNodeSwitch::TYPE_BOOLEAN:
+      scoped_assignment = true;
       break;
     default:
-      scoped_assignment = true;
       break;
   }
 }
@@ -827,8 +836,8 @@ std::string VisualShaderNodeGeneratorIs::generate_code(
 
 VisualShaderNodeGeneratorCompare::VisualShaderNodeGeneratorCompare(const VisualShaderNodeCompare::VisualShaderNodeCompareType& comp, 
                                    const VisualShaderNodeCompare::VisualShaderNodeCompareFunction& func, 
-                                   const VisualShaderNodeCompare::VisualShaderNodeCompareCondition& cond, const VisualShaderNodePortType& ports_type)
-      : VisualShaderNodeGenerator(ports_type), comp(comp), func(func), cond(cond) {
+                                   const VisualShaderNodeCompare::VisualShaderNodeCompareCondition& cond)
+      : VisualShaderNodeGenerator(), comp(comp), func(func), cond(cond) {
   switch (comp) {
     case VisualShaderNodeCompare::CMP_TYPE_SCALAR:
     case VisualShaderNodeCompare::CMP_TYPE_SCALAR_UINT:

@@ -55,12 +55,9 @@ class IVisualShaderProtoNode {
   virtual std::string get_caption() const = 0;
 
   virtual int get_input_port_count() const = 0;
-  virtual VisualShaderNodePortType get_input_port_type(const int& index) const = 0;
   virtual std::string get_input_port_caption(const int& index) const = 0;
-  virtual std::string get_input_port_value_name(const int& index) const = 0; // Special case for output node
 
   virtual int get_output_port_count() const = 0;
-  virtual VisualShaderNodePortType get_output_port_type(const int& index) const = 0;
   virtual std::string get_output_port_caption(const int& index) const = 0;
 
   virtual std::string get_category_path() const = 0;
@@ -92,17 +89,6 @@ class VisualShaderProtoNode : public IVisualShaderProtoNode {
     return Proto::descriptor()->options().GetExtension(gui::model::schema::node_input_port_count);
   }
 
-  VisualShaderNodePortType get_input_port_type(const int& index) const override {
-    VALIDATE_INDEX_NON_VOID(index, get_input_port_count(), VisualShaderNodePortType::PORT_TYPE_UNSPECIFIED,
-                            "Invalid input port index");
-    VALIDATE_INDEX_NON_VOID(index,
-                            Proto::descriptor()->options().ExtensionSize(gui::model::schema::node_input_port_type),
-                            VisualShaderNodePortType::PORT_TYPE_UNSPECIFIED, "Invalid input port index");
-    CHECK_CONDITION_TRUE_NON_VOID(Proto::descriptor()->options().ExtensionSize(gui::model::schema::node_input_port_type) != get_input_port_count(),
-                                  VisualShaderNodePortType::PORT_TYPE_UNSPECIFIED, "Input port type count mismatch");
-    return Proto::descriptor()->options().GetExtension(gui::model::schema::node_input_port_type, index);
-  }
-
   std::string get_input_port_caption(const int& index) const override {
     VALIDATE_INDEX_NON_VOID(index, get_input_port_count(), "", "Invalid input port index");
     VALIDATE_INDEX_NON_VOID(index,
@@ -113,34 +99,11 @@ class VisualShaderProtoNode : public IVisualShaderProtoNode {
     return Proto::descriptor()->options().GetExtension(gui::model::schema::node_input_port_caption, index);
   }
 
-  std::string get_input_port_value_name(const int& index) const override {
-    CHECK_CONDITION_TRUE_NON_VOID(oneof_value_field_number != VisualShader::VisualShaderNode::kOutputFieldNumber, "",
-                                  "Must be an output node");
-    VALIDATE_INDEX_NON_VOID(index, get_input_port_count(), "", "Invalid input port index");
-    VALIDATE_INDEX_NON_VOID(index,
-                            Proto::descriptor()->options().ExtensionSize(gui::model::schema::output_node_input_port_value_name),
-                            "", "Invalid input port index");
-    CHECK_CONDITION_TRUE_NON_VOID(Proto::descriptor()->options().ExtensionSize(gui::model::schema::output_node_input_port_value_name) != get_input_port_count(),
-                                  "", "Input port value name count mismatch");
-    return Proto::descriptor()->options().GetExtension(gui::model::schema::output_node_input_port_value_name, index);
-  }
-
   int get_output_port_count() const override {
     CHECK_CONDITION_TRUE_NON_VOID(
         !Proto::descriptor()->options().HasExtension(gui::model::schema::node_output_port_count), 0,
         "Output port count not set");
     return Proto::descriptor()->options().GetExtension(gui::model::schema::node_output_port_count);
-  }
-
-  VisualShaderNodePortType get_output_port_type(const int& index) const override {
-    VALIDATE_INDEX_NON_VOID(index, get_output_port_count(), VisualShaderNodePortType::PORT_TYPE_UNSPECIFIED,
-                            "Invalid output port index");
-    VALIDATE_INDEX_NON_VOID(index,
-                            Proto::descriptor()->options().ExtensionSize(gui::model::schema::node_output_port_type),
-                            VisualShaderNodePortType::PORT_TYPE_UNSPECIFIED, "Invalid output port index");
-    CHECK_CONDITION_TRUE_NON_VOID(Proto::descriptor()->options().ExtensionSize(gui::model::schema::node_output_port_type) != get_output_port_count(),
-                                  VisualShaderNodePortType::PORT_TYPE_UNSPECIFIED, "Output port type count mismatch");
-    return Proto::descriptor()->options().GetExtension(gui::model::schema::node_output_port_type, index);
   }
 
   std::string get_output_port_caption(const int& index) const override {

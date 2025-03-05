@@ -32,18 +32,16 @@
 #include <vector>
 
 #include "gui/model/schema/visual_shader_nodes.pb.h"
+#include "generator/visual_shader_node_port_type_generator.hpp"
 
 using namespace gui::model::schema;
 
 class VisualShaderNodeGenerator {
  public:
-  VisualShaderNodeGenerator(const VisualShaderNodePortType& ports_type = VisualShaderNodePortType::PORT_TYPE_UNSPECIFIED) 
-    : scoped_assignment(false), ports_type(ports_type) {}
+  VisualShaderNodeGenerator() : scoped_assignment(false) {}
   virtual ~VisualShaderNodeGenerator() = default;
 
   bool is_scoped_assignment() const { return scoped_assignment; }
-
-  VisualShaderNodePortType get_ports_type() const { return ports_type; }
 
   virtual std::string generate_global([[maybe_unused]] const int& id) const { return ""; }
   virtual std::string generate_global_per_node([[maybe_unused]] const int& id) const { return ""; }
@@ -55,44 +53,35 @@ class VisualShaderNodeGenerator {
 
  protected:
   bool scoped_assignment;
-
- private:
-  VisualShaderNodePortType ports_type;
 };
 
 class VisualShaderNodeGeneratorInput : public VisualShaderNodeGenerator {
  public:
-  VisualShaderNodeGeneratorInput(const VisualShaderNodeInputType& input_type, const std::string& input_type_name, const std::vector<VisualShaderNodeInputType>& input_types, const std::vector<std::string>& input_types_names, const VisualShaderNodePortType& ports_type = VisualShaderNodePortType::PORT_TYPE_UNSPECIFIED) 
-    : VisualShaderNodeGenerator(ports_type), input_type(input_type), input_type_name(input_type_name), input_types(input_types), input_types_names(input_types_names), input_types_count((int)input_types.size()) {}
+  VisualShaderNodeGeneratorInput(const VisualShaderNodeInput::VisualShaderNodeInputType& input_type);
 
   virtual std::string generate_global([[maybe_unused]] const int& id) const override;
 
   virtual std::string generate_code([[maybe_unused]] const int& id,
                                     [[maybe_unused]] const std::vector<std::string>& input_vars,
-                                    [[maybe_unused]] const std::vector<std::string>& output_vars) const;
+                                    [[maybe_unused]] const std::vector<std::string>& output_vars) const override;
 
  private:
-  const VisualShaderNodeInputType input_type;
-  const std::string input_type_name;
-  const std::vector<VisualShaderNodeInputType> input_types;
-  const std::vector<std::string> input_types_names;
-  const int input_types_count;
+  std::unordered_map<int, std::string> input_types_value_names;
+  const VisualShaderNodeInput::VisualShaderNodeInputType input_type;
 };
 
 class VisualShaderNodeGeneratorOutput : public VisualShaderNodeGenerator {
  public:
-  VisualShaderNodeGeneratorOutput(const std::vector<std::string> output_types_value_names) 
-    : VisualShaderNodeGenerator(), output_types_value_names(output_types_value_names), output_types_value_names_count((int)output_types_value_names.size()) {}
+  VisualShaderNodeGeneratorOutput();
 
   virtual std::string generate_global([[maybe_unused]] const int& id) const override;
 
   virtual std::string generate_code([[maybe_unused]] const int& id,
                                     [[maybe_unused]] const std::vector<std::string>& input_vars,
-                                    [[maybe_unused]] const std::vector<std::string>& output_vars) const;
+                                    [[maybe_unused]] const std::vector<std::string>& output_vars) const override;
 
  private:
-  const std::vector<std::string> output_types_value_names;
-  const int output_types_value_names_count;
+  std::unordered_map<int, std::string> output_types_value_names;
 };
 
 /*************************************/
@@ -256,8 +245,8 @@ class VisualShaderNodeGeneratorUIntOp : public VisualShaderNodeGenerator {
 class VisualShaderNodeGeneratorVectorOp : public VisualShaderNodeGenerator {
  public:
   VisualShaderNodeGeneratorVectorOp(const VisualShaderNodeVectorType& type,
-    const VisualShaderNodeVectorOp::VisualShaderNodeVectorOpType& op, const VisualShaderNodePortType& ports_type = VisualShaderNodePortType::PORT_TYPE_UNSPECIFIED) 
-      : VisualShaderNodeGenerator(ports_type), type(type), op(op) {}
+    const VisualShaderNodeVectorOp::VisualShaderNodeVectorOpType& op) 
+      : VisualShaderNodeGenerator(), type(type), op(op) {}
 
   virtual std::string generate_code([[maybe_unused]] const int& id,
                                     [[maybe_unused]] const std::vector<std::string>& input_vars,
@@ -314,8 +303,8 @@ class VisualShaderNodeGeneratorUIntFunc : public VisualShaderNodeGenerator {
 class VisualShaderNodeGeneratorVectorFunc : public VisualShaderNodeGenerator {
  public:
   VisualShaderNodeGeneratorVectorFunc(const VisualShaderNodeVectorType& type,
-    const VisualShaderNodeVectorFunc::VisualShaderNodeVectorFuncType& func, const VisualShaderNodePortType& ports_type = VisualShaderNodePortType::PORT_TYPE_UNSPECIFIED) 
-      : VisualShaderNodeGenerator(ports_type), type(type), func(func) {}
+    const VisualShaderNodeVectorFunc::VisualShaderNodeVectorFuncType& func) 
+      : VisualShaderNodeGenerator(), type(type), func(func) {}
 
   virtual std::string generate_code([[maybe_unused]] const int& id,
                                     [[maybe_unused]] const std::vector<std::string>& input_vars,
@@ -342,8 +331,8 @@ class VisualShaderNodeGeneratorDotProduct : public VisualShaderNodeGenerator {
 
 class VisualShaderNodeGeneratorVectorLen : public VisualShaderNodeGenerator {
  public:
-  VisualShaderNodeGeneratorVectorLen(const VisualShaderNodePortType& ports_type = VisualShaderNodePortType::PORT_TYPE_UNSPECIFIED) 
-      : VisualShaderNodeGenerator(ports_type) {}
+  VisualShaderNodeGeneratorVectorLen() 
+      : VisualShaderNodeGenerator() {}
 
   virtual std::string generate_code([[maybe_unused]] const int& id,
                                     [[maybe_unused]] const std::vector<std::string>& input_vars,
@@ -352,8 +341,8 @@ class VisualShaderNodeGeneratorVectorLen : public VisualShaderNodeGenerator {
 
 class VisualShaderNodeGeneratorClamp : public VisualShaderNodeGenerator {
  public:
-  VisualShaderNodeGeneratorClamp(const VisualShaderNodePortType& ports_type = VisualShaderNodePortType::PORT_TYPE_UNSPECIFIED) 
-      : VisualShaderNodeGenerator(ports_type) {}
+  VisualShaderNodeGeneratorClamp() 
+      : VisualShaderNodeGenerator() {}
 
   virtual std::string generate_code([[maybe_unused]] const int& id,
                                     [[maybe_unused]] const std::vector<std::string>& input_vars,
@@ -362,8 +351,8 @@ class VisualShaderNodeGeneratorClamp : public VisualShaderNodeGenerator {
 
 class VisualShaderNodeGeneratorVectorDistance : public VisualShaderNodeGenerator {
  public:
-  VisualShaderNodeGeneratorVectorDistance(const VisualShaderNodePortType& ports_type = VisualShaderNodePortType::PORT_TYPE_UNSPECIFIED) 
-      : VisualShaderNodeGenerator(ports_type) {}
+  VisualShaderNodeGeneratorVectorDistance() 
+      : VisualShaderNodeGenerator() {}
 
   virtual std::string generate_code([[maybe_unused]] const int& id,
                                     [[maybe_unused]] const std::vector<std::string>& input_vars,
@@ -412,7 +401,7 @@ class VisualShaderNodeGeneratorIf : public VisualShaderNodeGenerator {
 
 class VisualShaderNodeGeneratorSwitch : public VisualShaderNodeGenerator {
  public:
-  VisualShaderNodeGeneratorSwitch(const VisualShaderNodeSwitch::VisualShaderNodeSwitchType& type, const VisualShaderNodePortType& ports_type = VisualShaderNodePortType::PORT_TYPE_UNSPECIFIED);
+  VisualShaderNodeGeneratorSwitch(const VisualShaderNodeSwitch::VisualShaderNodeSwitchType& type);
 
   virtual std::string generate_code([[maybe_unused]] const int& id,
                                     [[maybe_unused]] const std::vector<std::string>& input_vars,
@@ -439,8 +428,7 @@ class VisualShaderNodeGeneratorCompare : public VisualShaderNodeGenerator {
  public:
   VisualShaderNodeGeneratorCompare(const VisualShaderNodeCompare::VisualShaderNodeCompareType& comp, 
                                    const VisualShaderNodeCompare::VisualShaderNodeCompareFunction& func, 
-                                   const VisualShaderNodeCompare::VisualShaderNodeCompareCondition& cond, 
-                                   const VisualShaderNodePortType& ports_type = VisualShaderNodePortType::PORT_TYPE_UNSPECIFIED);
+                                   const VisualShaderNodeCompare::VisualShaderNodeCompareCondition& cond);
 
   virtual std::string generate_code([[maybe_unused]] const int& id,
                                     [[maybe_unused]] const std::vector<std::string>& input_vars,
