@@ -43,17 +43,27 @@ VisualShaderNodeGeneratorInput::VisualShaderNodeGeneratorInput(const VisualShade
 std::string VisualShaderNodeGeneratorInput::generate_global([[maybe_unused]] const int& id) const {
   std::string code;
 
+  // Which value name we will face first?
+  // This differs from compiler to another so we do this workaround.
+  // The order is important for the tests to pass.
+  std::vector<std::string> temp;
+  temp.resize(input_types_value_names.size());
+
   for (const auto& [key, value] : input_types_value_names) {
     switch (key) {
       case VisualShaderNodeInput::INPUT_TYPE_UV: {
-        code += "in vec2 " + value + ";" + std::string("\n");
+        temp.at(0) = "in vec2 " + value + ";" + std::string("\n");
       } break;
       case VisualShaderNodeInput::INPUT_TYPE_TIME: {
-        code += "uniform float " + value + ";" + std::string("\n");
+        temp.at(1) = "uniform float " + value + ";" + std::string("\n");
       } break;
       default:
         break;
     }
+  }
+
+  for (const auto& value : temp) {
+    if (!value.empty()) code += value;
   }
 
   return code;
@@ -86,8 +96,17 @@ VisualShaderNodeGeneratorOutput::VisualShaderNodeGeneratorOutput() : VisualShade
 std::string VisualShaderNodeGeneratorOutput::generate_global([[maybe_unused]] const int& id) const {
   std::string code;
 
+  // Which value name we will face first?
+  // This differs from compiler to another so we do this workaround.
+  std::vector<std::string> temp;
+  temp.resize(output_types_value_names.size());
+
   for (const auto& [key, value] : output_types_value_names) {
-    if (value == "FragColor") code += "out vec4 " + value + ";" + std::string("\n");
+    if (value == "FragColor") temp.at(0) = "out vec4 " + value + ";" + std::string("\n");
+  }
+
+  for (const auto& value : temp) {
+    if (!value.empty()) code += value;
   }
 
   return code;
