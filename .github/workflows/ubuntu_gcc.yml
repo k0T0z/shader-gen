@@ -51,4 +51,6 @@ jobs:
 
     - name: Run tests
       shell: bash
+      env:
+        QT_QPA_PLATFORM: offscreen
       run: ctest --test-dir build --parallel $(nproc) --output-on-failure --verbose -C Debug
