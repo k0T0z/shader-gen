@@ -55,5 +55,5 @@ jobs:
     - name: Run tests
       shell: msys2 {0}
       env:
-        QT_QPA_PLATFORM: offscreen
+        QT_QPA_PLATFORM: offscreen # Required for running UI tests without a display
       run: ctest --test-dir build --parallel $(nproc) --output-on-failure --verbose -C Debug

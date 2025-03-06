@@ -36,13 +36,14 @@ int main(int argc, char** argv) {
     // Run Google Test tests.
     ::testing::InitGoogleTest(&argc, argv);
     int gtest_result = RUN_ALL_TESTS();
+    if (gtest_result != 0) return gtest_result;
 
     QApplication app(argc, argv);
 
     // Run Qt tests.
-    VisualShaderEditorTest qtTest;
-    int qt_result = QTest::qExec(&qtTest, argc, argv);
+    VisualShaderEditorTest visual_shader_editor_test;
+    int qt_result = QTest::qExec(&visual_shader_editor_test, argc, argv);
+    if (qt_result != 0) return qt_result;
 
-    // Combine the results.
-    return (gtest_result == 0 && qt_result == 0) ? 0 : 1;
+    return 0;
 }

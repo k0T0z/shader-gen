@@ -60,5 +60,5 @@ jobs:
     - name: Run tests
       shell: pwsh
       env:
-        QT_QPA_PLATFORM: offscreen
+        QT_QPA_PLATFORM: offscreen # Required for running UI tests without a display
       run: ctest --test-dir build --parallel $env:NUMBER_OF_PROCESSORS --output-on-failure --verbose -C Debug
