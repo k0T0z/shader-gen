@@ -27,6 +27,10 @@
 
 #include "ai-agent/parameters.hpp"
 
+// TODO: What about the maximum number of genes?
+
+int maximum_population_size = 100; // Maximum number of graphs to apply genetic algorithm on
+int maximum_generations = 100; // Maximum number of generations until the algorithm stops
 float mutation_probability = 0.1f;
 float crossover_probability = 0.8f;
 float elitism_ratio = 0.2f;

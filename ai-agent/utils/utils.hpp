@@ -31,6 +31,10 @@
 #include "gui/model/schema/visual_shader.pb.h"
 
 #include <vector>
+#include <random>
+#include <limits>
+#include <cmath>  // for std::nextafter
+#include <type_traits>
 
 #include "error_macros.hpp"
 #include "gui/model/repeated_message_model.hpp"
@@ -183,6 +187,11 @@ inline static std::unordered_map<int, std::string> encode_connections(const Prot
  *       at a topology other than pure random" would be K-means clustering based on 
  *       fourier values"
  * 
+ * @note Josh — 07/03/2025 21:26 "I think those are good heuristics, but what I would 
+ *       probably do is start with a handful of topologies or even a few random nodes 
+ *       of each kernel type, then just choose the ones that are the closest based on 
+ *       that Fourier analysis"
+ * 
  * @return std::vector<std::unordered_map<int, std::string>> 
  */
 
@@ -196,6 +205,137 @@ inline static std::vector<std::unordered_map<int, std::string>> generate_connect
     std::vector<std::unordered_map<int, std::string>> population;
 
     return population;
+}
+
+//------------------------------------------------------------------------------
+// Example: Using a non-uniform distribution
+//
+// With the generic random_value function you can generate random numbers
+// from any distribution available in the STL (or even user-defined ones). For
+// example, to sample from a normal distribution:
+//
+/*
+   double sample = random_value<std::normal_distribution<double>>(0.0, 1.0);
+*/
+// Similarly, you can use
+//   std::bernoulli_distribution, std::binomial_distribution,
+//   std::poisson_distribution, std::exponential_distribution, etc.
+//
+//------------------------------------------------------------------------------
+
+// Get a reference to a static random engine.
+inline static std::mt19937& rand_engine() {
+    // Seed the engine with a random device only once.
+    static std::random_device rd;
+    static std::mt19937 eng(rd());
+    return eng;
+}
+
+//------------------------------------------------------------------------------
+// Generic random value generator
+//
+// This template accepts any distribution type (from the STL random library,
+// such as uniform_int_distribution, normal_distribution, etc.) along with its
+// constructor parameters. It creates an instance of the distribution and returns
+// a random sample from it.
+//------------------------------------------------------------------------------
+template <typename Distribution, typename... Args>
+inline static auto random_value(Args&&... args)
+        -> decltype(Distribution(std::forward<Args>(args)...)(rand_engine())) {
+    Distribution dist(std::forward<Args>(args)...);
+    return dist(rand_engine());
+}
+
+//------------------------------------------------------------------------------
+// Specialized functions for floating-point random generation
+//
+// These functions include extra endpoint adjustments using std::nextafter.
+//------------------------------------------------------------------------------
+
+// Returns a random number in [a, b] – both endpoints included.
+template<typename T, typename std::enable_if_t<std::is_floating_point<T>::value, int> = 0>
+inline static T random_real_inclusive(const T& a, const T& b) {
+    CHECK_CONDITION_TRUE_NON_VOID(a > b, a, "Invalid range for [a, b]");
+    CHECK_CONDITION_TRUE_NON_VOID(a == b, a, "Upper and lower bounds are equal for [a, b]");
+    // Adjust upper so that b is included.
+    const T upper = std::nextafter(b, std::numeric_limits<T>::max());
+    return random_value<std::uniform_real_distribution<T>>(a, upper);
+}
+
+// Returns a random number in (a, b) – both endpoints excluded.
+template<typename T, typename std::enable_if_t<std::is_floating_point<T>::value, int> = 0>
+inline static T random_real_exclusive(const T& a, const T& b) {
+    CHECK_CONDITION_TRUE_NON_VOID(a + std::numeric_limits<T>::epsilon() > b - std::numeric_limits<T>::epsilon(), a, "Invalid range for (a, b)");
+    CHECK_CONDITION_TRUE_NON_VOID(a == b, a, "Upper and lower bounds are equal for (a, b)");
+    const T lower = std::nextafter(a, b);
+    const T upper = std::nextafter(b, a);  // largest representable < b
+    return random_value<std::uniform_real_distribution<T>>(lower, upper);
+}
+
+// Returns a random number in [a, b) – include first, exclude second.
+template<typename T, typename std::enable_if_t<std::is_floating_point<T>::value, int> = 0>
+inline static T random_real_include_first_exclude_second(const T& a, const T& b) {
+    CHECK_CONDITION_TRUE_NON_VOID(a > b - std::numeric_limits<T>::epsilon(), a, "Invalid range for [a, b)");
+    CHECK_CONDITION_TRUE_NON_VOID(a == b, a, "Upper and lower bounds are equal for [a, b)");
+    // Standard uniform_real_distribution is [a, b)
+    return random_value<std::uniform_real_distribution<T>>(a, b);
+}
+
+// Returns a random number in (a, b] – exclude first, include second.
+template<typename T, typename std::enable_if_t<std::is_floating_point<T>::value, int> = 0>
+inline static T random_real_exclude_first_include_second(const T& a, const T& b) {
+    CHECK_CONDITION_TRUE_NON_VOID(a + std::numeric_limits<T>::epsilon() > b, a, "Invalid range for (a, b]");
+    CHECK_CONDITION_TRUE_NON_VOID(a == b, a, "Upper and lower bounds are equal for (a, b]");
+    const T lower = std::nextafter(a, b);  // smallest representable > a
+    const T upper = std::nextafter(b, std::numeric_limits<T>::max());  // just above b so b can be returned
+    return random_value<std::uniform_real_distribution<T>>(lower, upper);
+}
+
+//------------------------------------------------------------------------------
+// Specialized functions for integer random generation
+//------------------------------------------------------------------------------
+
+// Returns a random integer in [a, b] – both endpoints included.
+template<typename T, typename std::enable_if_t<std::is_integral<T>::value, int> = 0>
+inline static T random_int_inclusive(const T& a, const T& b) {
+    CHECK_CONDITION_TRUE_NON_VOID(a > b, a, "Invalid range for [a, b]");
+    CHECK_CONDITION_TRUE_NON_VOID(a == b, a, "Upper and lower bounds are equal for [a, b]");
+    return random_value<std::uniform_int_distribution<T>>(a, b);
+}
+
+// Returns a random integer in (a, b) – both endpoints excluded.
+// For example, if a = 5 and b = 10, returns one of {6, 7, 8, 9}.
+template<typename T, typename std::enable_if_t<std::is_integral<T>::value, int> = 0>
+inline static T random_int_exclusive(const T& a, const T& b) {
+    CHECK_CONDITION_TRUE_NON_VOID(a + 1 > b - 1, a, "Invalid range for (a, b)");
+    CHECK_CONDITION_TRUE_NON_VOID(a == b, a, "Upper and lower bounds are equal for (a, b)");
+    return random_value<std::uniform_int_distribution<T>>(a + 1, b - 1);
+}
+
+// Returns a random integer in [a, b) – include first, exclude second.
+template<typename T, typename std::enable_if_t<std::is_integral<T>::value, int> = 0>
+inline static T random_int_include_first_exclude_second(const T& a, const T& b) {
+    CHECK_CONDITION_TRUE_NON_VOID(a > b - 1, a, "Invalid range for [a, b)");
+    CHECK_CONDITION_TRUE_NON_VOID(a == b, a, "Upper and lower bounds are equal for [a, b)");
+    return random_value<std::uniform_int_distribution<T>>(a, b - 1);
+}
+
+// Returns a random integer in (a, b] – exclude first, include second.
+template<typename T, typename std::enable_if_t<std::is_integral<T>::value, int> = 0>
+inline static T random_int_exclude_first_include_second(const T& a, const T& b) {
+    CHECK_CONDITION_TRUE_NON_VOID(a + 1 > b, a, "Invalid range for (a, b]");
+    CHECK_CONDITION_TRUE_NON_VOID(a == b, a, "Upper and lower bounds are equal for (a, b]");
+    return random_value<std::uniform_int_distribution<T>>(a + 1, b);
+}
+
+/**
+ * @brief Get the range for continuous field object. This range will be used for Mutation.
+ * 
+ * @param field_number 
+ * @return std::pair<int, int> 
+ */
+inline static std::pair<int, int> get_range_for_continuous_field(const int& node_type, const int& field_number) {
+    return std::make_pair(0, 0);
 }
 }  // namespace ai_agent_utils
 
