@@ -35,6 +35,7 @@
 #include <limits>
 #include <cmath>  // for std::nextafter
 #include <type_traits>
+#include <variant>
 
 #include "error_macros.hpp"
 #include "gui/model/repeated_message_model.hpp"
@@ -334,8 +335,509 @@ inline static T random_int_exclude_first_include_second(const T& a, const T& b) 
  * @param field_number 
  * @return std::pair<int, int> 
  */
-inline static std::pair<int, int> get_range_for_continuous_field(const int& node_type, const int& field_number) {
+using RangeBoundVariant = std::variant<int, float>;
+inline static std::pair<RangeBoundVariant, RangeBoundVariant> get_range_for_continuous_field(const int& node_type, const int& field_number) {
+    switch (node_type) {
+        case VisualShader::VisualShaderNode::kFloatConstantFieldNumber: {
+            switch (field_number) {
+                case VisualShaderNodeFloatConstant::kValueFieldNumber: {
+                    return std::make_pair(-100.0f, 100.0f);
+                }
+                default: 
+                    break;
+            }
+            break;
+        }
+        case VisualShader::VisualShaderNode::kIntConstantFieldNumber: {
+            switch (field_number) {
+                case VisualShaderNodeIntConstant::kValueFieldNumber: {
+                    return std::make_pair(-100, 100);
+                }
+                default: 
+                    break;
+            }
+            break;
+        }
+        case VisualShader::VisualShaderNode::kUintConstantFieldNumber: {
+            switch (field_number) {
+                case VisualShaderNodeUIntConstant::kValueFieldNumber: {
+                    return std::make_pair(0, 100);
+                }
+                default: 
+                    break;
+            }
+            break;
+        }
+        case VisualShader::VisualShaderNode::kColorConstantFieldNumber: {
+            switch (field_number) {
+                case VisualShaderNodeColorConstant::kRFieldNumber:
+                case VisualShaderNodeColorConstant::kGFieldNumber:
+                case VisualShaderNodeColorConstant::kBFieldNumber:
+                case VisualShaderNodeColorConstant::kAFieldNumber: {
+                    return std::make_pair(0.0f, 1.0f);
+                }
+                default: 
+                    break;
+            }
+            break;
+        }
+        case VisualShader::VisualShaderNode::kVec2ConstantFieldNumber: {
+            switch (field_number) {
+                case VisualShaderNodeVec2Constant::kXFieldNumber:
+                case VisualShaderNodeVec2Constant::kYFieldNumber: {
+                    return std::make_pair(-100.0f, 100.0f);
+                }
+                default: 
+                    break;
+            }
+            break;
+        }
+        case VisualShader::VisualShaderNode::kVec3ConstantFieldNumber: {
+            switch (field_number) {
+                case VisualShaderNodeVec3Constant::kXFieldNumber:
+                case VisualShaderNodeVec3Constant::kYFieldNumber:
+                case VisualShaderNodeVec3Constant::kZFieldNumber: {
+                    return std::make_pair(-100.0f, 100.0f);
+                }
+                default: 
+                    break;
+            }
+            break;
+        }
+        case VisualShader::VisualShaderNode::kVec4ConstantFieldNumber: {
+            switch (field_number) {
+                case VisualShaderNodeVec4Constant::kXFieldNumber:
+                case VisualShaderNodeVec4Constant::kYFieldNumber:
+                case VisualShaderNodeVec4Constant::kZFieldNumber:
+                case VisualShaderNodeVec4Constant::kWFieldNumber: {
+                    return std::make_pair(-100.0f, 100.0f);
+                }
+                default: 
+                    break;
+            }
+            break;
+        }
+        case VisualShader::VisualShaderNode::kValueNoiseFieldNumber: {
+            switch (field_number) {
+                case VisualShaderNodeValueNoise::kScaleFieldNumber: {
+                    return std::make_pair(0.0f, 100.0f);
+                }
+                default: 
+                    break;
+            }
+            break;
+        }
+        case VisualShader::VisualShaderNode::kPerlinNoiseFieldNumber: {
+            switch (field_number) {
+                case VisualShaderNodePerlinNoise::kScaleFieldNumber: {
+                    return std::make_pair(0.0f, 100.0f);
+                }
+                default: 
+                    break;
+            }
+            break;
+        }
+        case VisualShader::VisualShaderNode::kVoronoiNoiseFieldNumber: {
+            switch (field_number) {
+                case VisualShaderNodeVoronoiNoise::kCellDensityFieldNumber: {
+                    return std::make_pair(0.0f, 100.0f);
+                }
+                case VisualShaderNodeVoronoiNoise::kAngleOffsetFieldNumber: {
+                    return std::make_pair(0.0f, 360.0f);
+                }
+                default: 
+                    break;
+            }
+            break;
+        }
+        default:
+          WARN_PRINT("Unsupported node type: " + std::to_string(node_type));
+          break;
+    }
+
     return std::make_pair(0, 0);
+}
+
+/**
+ * @brief Get the range for discrete field object. This range will be used for Mutation.
+ * 
+ * @param field_number 
+ * @return std::vector<int> 
+ */
+inline static std::vector<int> get_range_for_discrete_field(const int& node_type, const int& field_number) {
+    switch (node_type) {
+        case VisualShader::VisualShaderNode::kInputFieldNumber: {
+            switch (field_number) {
+                case VisualShaderNodeInput::kTypeFieldNumber: {
+                    return {
+                            VisualShaderNodeInput::INPUT_TYPE_UNSPECIFIED, 
+                            VisualShaderNodeInput::INPUT_TYPE_UV, 
+                            VisualShaderNodeInput::INPUT_TYPE_TIME
+                        };
+                    }
+                default: 
+                    break;
+            }
+            break;
+        }
+        case VisualShader::VisualShaderNode::kBooleanConstantFieldNumber: {
+            switch (field_number) {
+                case VisualShaderNodeBooleanConstant::kValueFieldNumber: {
+                    return {0, 1}; // false, true
+                }
+                default: 
+                    break;
+            }
+            break;
+        }
+        case VisualShader::VisualShaderNode::kFloatOpFieldNumber: {
+            switch (field_number) {
+                case VisualShaderNodeFloatOp::kOpTypeFieldNumber: {
+                    return {
+                            VisualShaderNodeFloatOp::OP_TYPE_UNSPECIFIED, 
+                            VisualShaderNodeFloatOp::OP_TYPE_ADD, 
+                            VisualShaderNodeFloatOp::OP_TYPE_SUB, 
+                            VisualShaderNodeFloatOp::OP_TYPE_MUL,
+                            VisualShaderNodeFloatOp::OP_TYPE_DIV,
+                            VisualShaderNodeFloatOp::OP_TYPE_MOD,
+                            VisualShaderNodeFloatOp::OP_TYPE_POW,
+                            VisualShaderNodeFloatOp::OP_TYPE_MAX,
+                            VisualShaderNodeFloatOp::OP_TYPE_MIN,
+                            VisualShaderNodeFloatOp::OP_TYPE_ATAN2,
+                            VisualShaderNodeFloatOp::OP_TYPE_STEP
+                        };
+                    }
+                default: 
+                    break;
+            }
+            break;
+        }
+        case VisualShader::VisualShaderNode::kIntOpFieldNumber: {
+            switch (field_number) {
+                case VisualShaderNodeIntOp::kOpTypeFieldNumber: {
+                    return {
+                            VisualShaderNodeIntOp::OP_TYPE_UNSPECIFIED, 
+                            VisualShaderNodeIntOp::OP_TYPE_ADD, 
+                            VisualShaderNodeIntOp::OP_TYPE_SUB, 
+                            VisualShaderNodeIntOp::OP_TYPE_MUL,
+                            VisualShaderNodeIntOp::OP_TYPE_DIV,
+                            VisualShaderNodeIntOp::OP_TYPE_MOD,
+                            VisualShaderNodeIntOp::OP_TYPE_MAX,
+                            VisualShaderNodeIntOp::OP_TYPE_MIN,
+                            VisualShaderNodeIntOp::OP_TYPE_BITWISE_AND,
+                            VisualShaderNodeIntOp::OP_TYPE_BITWISE_OR,
+                            VisualShaderNodeIntOp::OP_TYPE_BITWISE_XOR,
+                            VisualShaderNodeIntOp::OP_TYPE_BITWISE_LEFT_SHIFT,
+                            VisualShaderNodeIntOp::OP_TYPE_BITWISE_RIGHT_SHIFT
+                        };
+                    }
+                default: 
+                    break;
+            }
+            break;
+        }
+        case VisualShader::VisualShaderNode::kUintOpFieldNumber: {
+            switch (field_number) {
+                case VisualShaderNodeUIntOp::kOpTypeFieldNumber: {
+                    return {
+                            VisualShaderNodeUIntOp::OP_TYPE_UNSPECIFIED, 
+                            VisualShaderNodeUIntOp::OP_TYPE_ADD, 
+                            VisualShaderNodeUIntOp::OP_TYPE_SUB, 
+                            VisualShaderNodeUIntOp::OP_TYPE_MUL,
+                            VisualShaderNodeUIntOp::OP_TYPE_DIV,
+                            VisualShaderNodeUIntOp::OP_TYPE_MOD,
+                            VisualShaderNodeUIntOp::OP_TYPE_MAX,
+                            VisualShaderNodeUIntOp::OP_TYPE_MIN,
+                            VisualShaderNodeUIntOp::OP_TYPE_BITWISE_AND,
+                            VisualShaderNodeUIntOp::OP_TYPE_BITWISE_OR,
+                            VisualShaderNodeUIntOp::OP_TYPE_BITWISE_XOR,
+                            VisualShaderNodeUIntOp::OP_TYPE_BITWISE_LEFT_SHIFT,
+                            VisualShaderNodeUIntOp::OP_TYPE_BITWISE_RIGHT_SHIFT
+                        };
+                    }
+                default: 
+                    break;
+            }
+            break;
+        }
+        case VisualShader::VisualShaderNode::kVectorOpFieldNumber: {
+            switch (field_number) {
+                case VisualShaderNodeVectorOp::kVecTypeFieldNumber: {
+                    return {
+                            VisualShaderNodeVectorType::TYPE_VECTOR_UNSPECIFIED, 
+                            VisualShaderNodeVectorType::TYPE_VECTOR_2D, 
+                            VisualShaderNodeVectorType::TYPE_VECTOR_3D, 
+                            VisualShaderNodeVectorType::TYPE_VECTOR_4D
+                        };
+                    }
+                case VisualShaderNodeVectorOp::kOpTypeFieldNumber: {
+                    return {
+                            VisualShaderNodeVectorOp::OP_TYPE_UNSPECIFIED, 
+                            VisualShaderNodeVectorOp::OP_TYPE_ADD, 
+                            VisualShaderNodeVectorOp::OP_TYPE_SUB, 
+                            VisualShaderNodeVectorOp::OP_TYPE_MUL,
+                            VisualShaderNodeVectorOp::OP_TYPE_DIV,
+                            VisualShaderNodeVectorOp::OP_TYPE_MOD,
+                            VisualShaderNodeVectorOp::OP_TYPE_POW,
+                            VisualShaderNodeVectorOp::OP_TYPE_MAX,
+                            VisualShaderNodeVectorOp::OP_TYPE_MIN,
+                            VisualShaderNodeVectorOp::OP_TYPE_CROSS,
+                            VisualShaderNodeVectorOp::OP_TYPE_ATAN2,
+                            VisualShaderNodeVectorOp::OP_TYPE_REFLECT,
+                            VisualShaderNodeVectorOp::OP_TYPE_STEP
+                        };
+                    }
+                default: 
+                    break;
+            }
+            break;
+        }
+        case VisualShader::VisualShaderNode::kFloatFuncFieldNumber: {
+            switch (field_number) {
+                case VisualShaderNodeFloatFunc::kFuncTypeFieldNumber: {
+                    return {
+                            VisualShaderNodeFloatFunc::FUNC_TYPE_UNSPECIFIED, 
+                            VisualShaderNodeFloatFunc::FUNC_TYPE_SIN, 
+                            VisualShaderNodeFloatFunc::FUNC_TYPE_COS,
+                            VisualShaderNodeFloatFunc::FUNC_TYPE_TAN,
+                            VisualShaderNodeFloatFunc::FUNC_TYPE_ASIN,
+                            VisualShaderNodeFloatFunc::FUNC_TYPE_ACOS,
+                            VisualShaderNodeFloatFunc::FUNC_TYPE_ATAN,
+                            VisualShaderNodeFloatFunc::FUNC_TYPE_SINH,
+                            VisualShaderNodeFloatFunc::FUNC_TYPE_COSH,
+                            VisualShaderNodeFloatFunc::FUNC_TYPE_TANH,
+                            VisualShaderNodeFloatFunc::FUNC_TYPE_LOG,
+                            VisualShaderNodeFloatFunc::FUNC_TYPE_EXP,
+                            VisualShaderNodeFloatFunc::FUNC_TYPE_SQRT,
+                            VisualShaderNodeFloatFunc::FUNC_TYPE_ABS,
+                            VisualShaderNodeFloatFunc::FUNC_TYPE_SIGN,
+                            VisualShaderNodeFloatFunc::FUNC_TYPE_FLOOR,
+                            VisualShaderNodeFloatFunc::FUNC_TYPE_ROUND,
+                            VisualShaderNodeFloatFunc::FUNC_TYPE_CEIL,
+                            VisualShaderNodeFloatFunc::FUNC_TYPE_FRACT,
+                            VisualShaderNodeFloatFunc::FUNC_TYPE_SATURATE,
+                            VisualShaderNodeFloatFunc::FUNC_TYPE_NEGATE,
+                            VisualShaderNodeFloatFunc::FUNC_TYPE_ACOSH,
+                            VisualShaderNodeFloatFunc::FUNC_TYPE_ASINH,
+                            VisualShaderNodeFloatFunc::FUNC_TYPE_ATANH,
+                            VisualShaderNodeFloatFunc::FUNC_TYPE_DEGREES,
+                            VisualShaderNodeFloatFunc::FUNC_TYPE_EXP2,
+                            VisualShaderNodeFloatFunc::FUNC_TYPE_INVERSE_SQRT,
+                            VisualShaderNodeFloatFunc::FUNC_TYPE_LOG2,
+                            VisualShaderNodeFloatFunc::FUNC_TYPE_RADIANS,
+                            VisualShaderNodeFloatFunc::FUNC_TYPE_RECIPROCAL,
+                            VisualShaderNodeFloatFunc::FUNC_TYPE_ROUNDEVEN,
+                            VisualShaderNodeFloatFunc::FUNC_TYPE_TRUNC,
+                            VisualShaderNodeFloatFunc::FUNC_TYPE_ONEMINUS
+                    };
+                }
+                default: 
+                    break;
+            }
+            break;
+        }
+        case VisualShader::VisualShaderNode::kIntFuncFieldNumber: {
+            switch (field_number) {
+                case VisualShaderNodeIntFunc::kFuncTypeFieldNumber: {
+                    return {
+                            VisualShaderNodeIntFunc::FUNC_TYPE_UNSPECIFIED, 
+                            VisualShaderNodeIntFunc::FUNC_TYPE_ABS, 
+                            VisualShaderNodeIntFunc::FUNC_TYPE_NEGATE,
+                            VisualShaderNodeIntFunc::FUNC_TYPE_SIGN,
+                            VisualShaderNodeIntFunc::FUNC_TYPE_BITWISE_NOT
+                    };
+                }
+                default: 
+                    break;
+            }
+            break;
+        }
+        case VisualShader::VisualShaderNode::kUintFuncFieldNumber: {
+            switch (field_number) {
+                case VisualShaderNodeUIntFunc::kFuncTypeFieldNumber: {
+                    return {
+                            VisualShaderNodeUIntFunc::FUNC_TYPE_UNSPECIFIED, 
+                            VisualShaderNodeUIntFunc::FUNC_TYPE_NEGATE,
+                            VisualShaderNodeUIntFunc::FUNC_TYPE_BITWISE_NOT
+                    };
+                }
+                default: 
+                    break;
+            }
+            break;
+        }
+        case VisualShader::VisualShaderNode::kVectorFuncFieldNumber: {
+            switch (field_number) {
+                case VisualShaderNodeVectorFunc::kVecTypeFieldNumber: {
+                    return {
+                            VisualShaderNodeVectorType::TYPE_VECTOR_UNSPECIFIED, 
+                            VisualShaderNodeVectorType::TYPE_VECTOR_2D, 
+                            VisualShaderNodeVectorType::TYPE_VECTOR_3D, 
+                            VisualShaderNodeVectorType::TYPE_VECTOR_4D
+                        };
+                    }
+                case VisualShaderNodeVectorFunc::kFuncTypeFieldNumber: {
+                    return {
+                            VisualShaderNodeVectorFunc::FUNC_TYPE_UNSPECIFIED, 
+                            VisualShaderNodeVectorFunc::FUNC_TYPE_NORMALIZE, 
+                            VisualShaderNodeVectorFunc::FUNC_TYPE_SATURATE,
+                            VisualShaderNodeVectorFunc::FUNC_TYPE_NEGATE,
+                            VisualShaderNodeVectorFunc::FUNC_TYPE_RECIPROCAL,
+                            VisualShaderNodeVectorFunc::FUNC_TYPE_ABS,
+                            VisualShaderNodeVectorFunc::FUNC_TYPE_ACOS,
+                            VisualShaderNodeVectorFunc::FUNC_TYPE_ACOSH,
+                            VisualShaderNodeVectorFunc::FUNC_TYPE_ASIN,
+                            VisualShaderNodeVectorFunc::FUNC_TYPE_ASINH,
+                            VisualShaderNodeVectorFunc::FUNC_TYPE_ATAN,
+                            VisualShaderNodeVectorFunc::FUNC_TYPE_ATANH,
+                            VisualShaderNodeVectorFunc::FUNC_TYPE_CEIL,
+                            VisualShaderNodeVectorFunc::FUNC_TYPE_COS,
+                            VisualShaderNodeVectorFunc::FUNC_TYPE_COSH,
+                            VisualShaderNodeVectorFunc::FUNC_TYPE_DEGREES,
+                            VisualShaderNodeVectorFunc::FUNC_TYPE_EXP,
+                            VisualShaderNodeVectorFunc::FUNC_TYPE_EXP2,
+                            VisualShaderNodeVectorFunc::FUNC_TYPE_FLOOR,
+                            VisualShaderNodeVectorFunc::FUNC_TYPE_FRACT,
+                            VisualShaderNodeVectorFunc::FUNC_TYPE_INVERSE_SQRT,
+                            VisualShaderNodeVectorFunc::FUNC_TYPE_LOG,
+                            VisualShaderNodeVectorFunc::FUNC_TYPE_LOG2,
+                            VisualShaderNodeVectorFunc::FUNC_TYPE_RADIANS,
+                            VisualShaderNodeVectorFunc::FUNC_TYPE_ROUND,
+                            VisualShaderNodeVectorFunc::FUNC_TYPE_ROUNDEVEN,
+                            VisualShaderNodeVectorFunc::FUNC_TYPE_SIGN,
+                            VisualShaderNodeVectorFunc::FUNC_TYPE_SIN,
+                            VisualShaderNodeVectorFunc::FUNC_TYPE_SINH,
+                            VisualShaderNodeVectorFunc::FUNC_TYPE_SQRT,
+                            VisualShaderNodeVectorFunc::FUNC_TYPE_TAN,
+                            VisualShaderNodeVectorFunc::FUNC_TYPE_TANH,
+                            VisualShaderNodeVectorFunc::FUNC_TYPE_TRUNC,
+                            VisualShaderNodeVectorFunc::FUNC_TYPE_ONEMINUS
+                    };
+                }
+            }
+            break;
+        }
+        case VisualShader::VisualShaderNode::kVectorLenFieldNumber: {
+            switch (field_number) {
+                case VisualShaderNodeVectorLen::kVecTypeFieldNumber: {
+                    return {
+                            VisualShaderNodeVectorType::TYPE_VECTOR_UNSPECIFIED, 
+                            VisualShaderNodeVectorType::TYPE_VECTOR_2D, 
+                            VisualShaderNodeVectorType::TYPE_VECTOR_3D, 
+                            VisualShaderNodeVectorType::TYPE_VECTOR_4D
+                        };
+                    }
+                default: 
+                    break;
+            }
+            break;
+        }
+        case VisualShader::VisualShaderNode::kClampFieldNumber: {
+            switch (field_number) {
+                case VisualShaderNodeClamp::kTypeFieldNumber: {
+                    return {
+                            VisualShaderNodeClamp::TYPE_UNSPECIFIED, 
+                            VisualShaderNodeClamp::TYPE_FLOAT, 
+                            VisualShaderNodeClamp::TYPE_INT, 
+                            VisualShaderNodeClamp::TYPE_UINT,
+                            VisualShaderNodeClamp::TYPE_VECTOR_2D,
+                            VisualShaderNodeClamp::TYPE_VECTOR_3D,
+                            VisualShaderNodeClamp::TYPE_VECTOR_4D
+                        };
+                    }
+                default: 
+                    break;
+            }
+            break;
+        }
+        case VisualShader::VisualShaderNode::kVectorDistanceFieldNumber: {
+            switch (field_number) {
+                case VisualShaderNodeVectorDistance::kVecTypeFieldNumber: {
+                    return {
+                            VisualShaderNodeVectorType::TYPE_VECTOR_UNSPECIFIED, 
+                            VisualShaderNodeVectorType::TYPE_VECTOR_2D, 
+                            VisualShaderNodeVectorType::TYPE_VECTOR_3D, 
+                            VisualShaderNodeVectorType::TYPE_VECTOR_4D
+                        };
+                    }
+                default: 
+                    break;
+            }
+            break;
+        }
+        case VisualShader::VisualShaderNode::kSwitchNodeFieldNumber: {
+            switch (field_number) {
+                case VisualShaderNodeSwitch::kTypeFieldNumber: {
+                    return {
+                            VisualShaderNodeSwitch::TYPE_UNSPECIFIED, 
+                            VisualShaderNodeSwitch::TYPE_FLOAT, 
+                            VisualShaderNodeSwitch::TYPE_INT, 
+                            VisualShaderNodeSwitch::TYPE_UINT,
+                            VisualShaderNodeSwitch::TYPE_VECTOR_2D,
+                            VisualShaderNodeSwitch::TYPE_VECTOR_3D,
+                            VisualShaderNodeSwitch::TYPE_VECTOR_4D,
+                            VisualShaderNodeSwitch::TYPE_BOOLEAN
+                        };
+                    }
+                default: 
+                    break;
+            }
+            break;
+        }
+        case VisualShader::VisualShaderNode::kIsFieldNumber: {
+            switch (field_number) {
+                case VisualShaderNodeIs::kFuncFieldNumber: {
+                    return {
+                            VisualShaderNodeIs::FUNC_UNSPECIFIED, 
+                            VisualShaderNodeIs::FUNC_IS_INF, 
+                            VisualShaderNodeIs::FUNC_IS_NAN
+                        };
+                    }
+                default: 
+                    break;
+            }
+            break;
+        }
+        case VisualShader::VisualShaderNode::kCompareFieldNumber: {
+            switch (field_number) {
+                case VisualShaderNodeCompare::kTypeFieldNumber: {
+                    return {
+                            VisualShaderNodeCompare::CMP_TYPE_UNSPECIFIED, 
+                            VisualShaderNodeCompare::CMP_TYPE_SCALAR, 
+                            VisualShaderNodeCompare::CMP_TYPE_SCALAR_INT, 
+                            VisualShaderNodeCompare::CMP_TYPE_SCALAR_UINT,
+                            VisualShaderNodeCompare::CMP_TYPE_VECTOR_2D,
+                            VisualShaderNodeCompare::CMP_TYPE_VECTOR_3D,
+                            VisualShaderNodeCompare::CMP_TYPE_VECTOR_4D,
+                            VisualShaderNodeCompare::CMP_TYPE_BOOLEAN
+                        };
+                    }
+                case VisualShaderNodeCompare::kFuncFieldNumber: {
+                    return {
+                            VisualShaderNodeCompare::FUNC_UNSPECIFIED, 
+                            VisualShaderNodeCompare::FUNC_EQUAL, 
+                            VisualShaderNodeCompare::FUNC_NOT_EQUAL, 
+                            VisualShaderNodeCompare::FUNC_GREATER_THAN,
+                            VisualShaderNodeCompare::FUNC_GREATER_THAN_EQUAL,
+                            VisualShaderNodeCompare::FUNC_LESS_THAN,
+                            VisualShaderNodeCompare::FUNC_LESS_THAN_EQUAL
+                        };
+                    }
+                case VisualShaderNodeCompare::kCondFieldNumber: {
+                    return {
+                            VisualShaderNodeCompare::COND_UNSPECIFIED, 
+                            VisualShaderNodeCompare::COND_ALL, 
+                            VisualShaderNodeCompare::COND_ANY
+                        };
+                    }
+                default: 
+                    break;
+            }
+            break;
+        }
+    }
+
+    return {};
 }
 }  // namespace ai_agent_utils
 
