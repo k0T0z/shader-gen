@@ -25,14 +25,40 @@
 /*                                                                               */
 /*********************************************************************************/
 
-#include "ai-agent/parameters.hpp"
+#ifndef SHADER_GEN_AI_AGENT_PARAMETERS_EDITOR_HPP
+#define SHADER_GEN_AI_AGENT_PARAMETERS_EDITOR_HPP
 
-// TODO: What about the maximum number of genes?
+#include <QWidget>
+#include <QVBoxLayout>
+#include <QHBoxLayout>
+#include <QPushButton>
+#include <QLabel>
+#include <QLineEdit>
+#include <QCheckBox>
 
-int maximum_population_size = 100; // Maximum number of graphs to apply genetic algorithm on
-int maximum_generations = 100; // Maximum number of generations until the algorithm stops
-float mutation_probability = 0.1f;
-float crossover_probability = 0.8f;
-float elitism_ratio = 0.2f;
-int maximum_iterations = 1000;
-int maximum_nodes_per_graph = 100; // If the matching type is FULL_GRAPH, we need to limit the number of nodes
+class AIAgentParametersEditor : public QWidget {
+  Q_OBJECT
+
+ public:
+  AIAgentParametersEditor(QWidget* parent = nullptr);
+  ~AIAgentParametersEditor() override = default;
+
+  float get_mutation_probability() const { return parameter_line_edits[0]->text().toFloat(); }
+  float get_crossover_probability() const { return parameter_line_edits[1]->text().toFloat(); }
+  float get_elitism_ratio() const { return parameter_line_edits[2]->text().toFloat(); }
+  int get_maximum_iterations() const { return parameter_line_edits[3]->text().toInt(); }
+  int get_maximum_nodes_per_graph() const { return parameter_line_edits[4]->text().toInt(); }
+
+ private:
+  QVBoxLayout* layout;
+
+  std::vector<QLineEdit*> parameter_line_edits;
+
+  /**
+   * @brief Initializes the UI
+   * 
+   */
+  void init();
+};
+
+#endif  // SHADER_GEN_AI_AGENT_PARAMETERS_EDITOR_HPP

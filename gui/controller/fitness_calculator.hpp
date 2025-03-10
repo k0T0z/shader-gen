@@ -54,11 +54,13 @@ class AIAgentFitnessCalculator : public QWidget {
 
   void update_current_output(const std::string& code);
 
+  unsigned long get_fitness_value(const std::unordered_map<int, std::string>& encoded_nodes, const std::unordered_map<int, std::string>& encoded_connections) const;
   unsigned long get_fitness_value() const;
 
  private Q_SLOTS:
   void on_load_image_button_pressed();
   void on_calculate_fitness_button_pressed();
+  void on_matching_type_combo_box_current_index_changed(int index);
 
  private:
   QVBoxLayout* layout;
@@ -99,6 +101,8 @@ class CurrentOutputRenderer : public QOpenGLWidget, protected QOpenGLFunctions_4
   CurrentOutputRenderer(QWidget* parent = nullptr);
   ~CurrentOutputRenderer() override;
  
+  void set_is_dynamic(const bool& is_dynamic);
+
   void set_code(const std::string& code);
   
   QImage get_pixel_data() const;
@@ -107,6 +111,9 @@ class CurrentOutputRenderer : public QOpenGLWidget, protected QOpenGLFunctions_4
   void update_shader_program();
 
  private:
+  bool is_dynamic;
+  bool static_rendered;
+
   std::unique_ptr<QOpenGLShaderProgram> shader_program;
   GLuint VAO, VBO;
 
@@ -140,4 +147,3 @@ class CurrentOutputRenderer : public QOpenGLWidget, protected QOpenGLFunctions_4
 };
 
 #endif  // SHADER_GEN_AI_AGENT_FITNESS_CALCULATOR_HPP
-  

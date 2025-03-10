@@ -25,14 +25,28 @@
 /*                                                                               */
 /*********************************************************************************/
 
-#include "ai-agent/parameters.hpp"
+#include <QtTest/QtTest>
 
-// TODO: What about the maximum number of genes?
+#include "gui/controller/visual_shader_editor.hpp"
 
-int maximum_population_size = 100; // Maximum number of graphs to apply genetic algorithm on
-int maximum_generations = 100; // Maximum number of generations until the algorithm stops
-float mutation_probability = 0.1f;
-float crossover_probability = 0.8f;
-float elitism_ratio = 0.2f;
-int maximum_iterations = 1000;
-int maximum_nodes_per_graph = 100; // If the matching type is FULL_GRAPH, we need to limit the number of nodes
+class VisualShaderEditorTest : public QObject {
+    Q_OBJECT
+
+public:
+    VisualShaderEditorTest();
+
+private slots:
+    void initTestCase(); // Will be called before the first test function is executed.
+    void cleanupTestCase(); // Will be called after the last test function was executed.
+    void init(); // Will be called before each test function is executed.
+    void cleanup(); // Will be called after every test function.
+
+    void my_first_test();
+    void my_second_test();
+
+private:
+    VisualShaderEditor* editor;
+
+    bool my_condition();
+};
+

@@ -79,14 +79,21 @@ VisualShaderEditor::VisualShaderEditor(MessageModel* model, QWidget* parent)
       visual_shader_model(model),
       nodes_model(nullptr),
       connections_model(nullptr),
-      fitness_calculator(nullptr) {
+      ai_agent_worker(nullptr),
+      fitness_calculator(nullptr),
+      parameters_editor(nullptr),
+      start_matching_button(nullptr),
+      stop_matching_button(nullptr),
+      matching_type_combo_box(nullptr) {
   resize(1440, 720);
 
   VisualShaderEditor::init();
 }
 
 VisualShaderEditor::~VisualShaderEditor() {
+  delete ai_agent_worker;
   delete fitness_calculator;
+  delete parameters_editor;
 }
 
 void VisualShaderEditor::init() {
@@ -261,7 +268,31 @@ void VisualShaderEditor::init() {
   menu_bar->addWidget(match_image_button);
   QObject::connect(match_image_button, &QPushButton::pressed, this, &VisualShaderEditor::on_match_image_button_pressed);
 
+  ai_agent_worker = new AIAgentWorker();
   fitness_calculator = new AIAgentFitnessCalculator();
+  parameters_editor = new AIAgentParametersEditor();
+  start_matching_button = new StartMatchingButton(scene_layer);
+  start_matching_button->setToolTip("Start matching the shader to the loaded image");
+  start_matching_button->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
+  start_matching_button->setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
+  QObject::connect(start_matching_button, &QPushButton::pressed, this, &VisualShaderEditor::on_start_matching_button_pressed);
+  stop_matching_button = new StopMatchingButton(scene_layer);
+  stop_matching_button->setToolTip("Stop matching the shader to the loaded image");
+  stop_matching_button->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
+  stop_matching_button->setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
+  QObject::connect(stop_matching_button, &QPushButton::pressed, this, &VisualShaderEditor::on_stop_matching_button_pressed);
+  menu_bar->addWidget(start_matching_button);
+  menu_bar->addWidget(stop_matching_button);
+
+  matching_type_combo_box = new QComboBox(scene_layer);
+  matching_type_combo_box->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
+  matching_type_combo_box->setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
+  matching_type_combo_box->setToolTip("Select the type of matching to perform");
+  matching_type_combo_box->addItem("Parameters Only", static_cast<int>(AIAgentWorker::MatchingType::PARAMETERS_ONLY));
+  matching_type_combo_box->addItem("Parameters and Connections", static_cast<int>(AIAgentWorker::MatchingType::PARAMETERS_AND_CONNECTIONS));
+  matching_type_combo_box->addItem("Full Graph", static_cast<int>(AIAgentWorker::MatchingType::FULL_GRAPH));
+  matching_type_combo_box->setCurrentIndex(0);
+  menu_bar->addWidget(matching_type_combo_box);
 
   // Set the top layer layout.
   top_layer->setLayout(menu_bar);
@@ -346,10 +377,7 @@ void VisualShaderEditor::init() {
   t_nodes.emplace_back(std::make_shared<VisualShaderProtoNode<VisualShaderNodeDotProduct>>());
   t_nodes.emplace_back(std::make_shared<VisualShaderProtoNode<VisualShaderNodeVectorLen>>());
   t_nodes.emplace_back(std::make_shared<VisualShaderProtoNode<VisualShaderNodeClamp>>());
-  t_nodes.emplace_back(std::make_shared<VisualShaderProtoNode<VisualShaderNodeStep>>());
-  t_nodes.emplace_back(std::make_shared<VisualShaderProtoNode<VisualShaderNodeSmoothStep>>());
   t_nodes.emplace_back(std::make_shared<VisualShaderProtoNode<VisualShaderNodeVectorDistance>>());
-  t_nodes.emplace_back(std::make_shared<VisualShaderProtoNode<VisualShaderNodeMix>>());
   t_nodes.emplace_back(std::make_shared<VisualShaderProtoNode<VisualShaderNode2dVectorCompose>>());
   t_nodes.emplace_back(std::make_shared<VisualShaderProtoNode<VisualShaderNode3dVectorCompose>>());
   t_nodes.emplace_back(std::make_shared<VisualShaderProtoNode<VisualShaderNode4dVectorCompose>>());
@@ -406,7 +434,7 @@ void VisualShaderEditor::init() {
 }
 
 bool VisualShaderEditor::add_output_node() {
-  int node_entry{VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, 0)};
+  int node_entry{scene->find_node_entry(0)};
 
   // If the output node exists in the model, don't add it because it will be added by the load_graph function
   SILENT_CHECK_CONDITION_TRUE_NON_VOID(node_entry != -1, true);
@@ -420,23 +448,12 @@ void VisualShaderEditor::load_graph() {
   CHECK_PARAM_NULLPTR(repeated_nodes, "Nodes is not a repeated message model.");
 
   // Load the nodes
-  int nodes_size{nodes_model->rowCount()};
+  const int nodes_size{nodes_model->rowCount()};
   for (int i{0}; i < nodes_size; ++i) {
-    int n_id = visual_shader_model->data(
-        FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
-                                    FieldPath::RepeatedAt(i),
-                                    FieldPath::FieldNumber(VisualShader::VisualShaderNode::kIdFieldNumber))).toInt();
-
-    double x = visual_shader_model->data(
-        FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
-                                    FieldPath::RepeatedAt(i),
-                                    FieldPath::FieldNumber(VisualShader::VisualShaderNode::kXCoordinateFieldNumber))).toDouble();
-
-    double y = visual_shader_model->data(
-        FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
-                                    FieldPath::RepeatedAt(i),
-                                    FieldPath::FieldNumber(VisualShader::VisualShaderNode::kYCoordinateFieldNumber))).toDouble();
-
+    const int n_id = scene->get_node_value(-1, VisualShader::VisualShaderNode::kIdFieldNumber, i).toInt();
+    const double x = scene->get_node_value(-1, VisualShader::VisualShaderNode::kXCoordinateFieldNumber, i).toDouble();
+    const double y = scene->get_node_value(-1, VisualShader::VisualShaderNode::kYCoordinateFieldNumber, i).toDouble();
+    
     std::shared_ptr<IVisualShaderProtoNode> proto_node;
 
     const MessageModel* node_model{repeated_nodes->get_sub_model(i)};
@@ -452,39 +469,20 @@ void VisualShaderEditor::load_graph() {
     proto_node = shadergen_utils::get_proto_node_by_oneof_value_field_number(oneof_value_field_number);
     CHECK_PARAM_NULLPTR(proto_node, "Proto node is nullptr.");
 
-    bool result{scene->add_node_to_scene(n_id, proto_node, QPointF(x, y))};
+    const bool result{scene->add_node_to_scene(n_id, proto_node, QPointF(x, y))};
     CONTINUE_IF_TRUE(!result, "Failed to add node to scene");
   }
 
   // Load the connections
-  int connections_size{connections_model->rowCount()};
+  const int connections_size{connections_model->rowCount()};
   for (int i{0}; i < connections_size; ++i)  {
-    int c_id = visual_shader_model->data(
-        FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kConnectionsFieldNumber),
-                                    FieldPath::RepeatedAt(i),
-                                    FieldPath::FieldNumber(VisualShader::VisualShaderConnection::kIdFieldNumber))).toInt();
+    const int c_id = scene->get_connection_value(-1, VisualShader::VisualShaderConnection::kIdFieldNumber, i);
+    const int from_node_id = scene->get_connection_value(-1, VisualShader::VisualShaderConnection::kFromNodeIdFieldNumber, i);
+    const int from_port_index = scene->get_connection_value(-1, VisualShader::VisualShaderConnection::kFromPortIndexFieldNumber, i);
+    const int to_node_id = scene->get_connection_value(-1, VisualShader::VisualShaderConnection::kToNodeIdFieldNumber, i);
+    const int to_port_index = scene->get_connection_value(-1, VisualShader::VisualShaderConnection::kToPortIndexFieldNumber, i);
 
-    int from_node_id = visual_shader_model->data(
-        FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kConnectionsFieldNumber),
-                                    FieldPath::RepeatedAt(i),
-                                    FieldPath::FieldNumber(VisualShader::VisualShaderConnection::kFromNodeIdFieldNumber))).toInt();
-
-    int from_port_index = visual_shader_model->data(
-        FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kConnectionsFieldNumber),
-                                    FieldPath::RepeatedAt(i),
-                                    FieldPath::FieldNumber(VisualShader::VisualShaderConnection::kFromPortIndexFieldNumber))).toInt();
-
-    int to_node_id = visual_shader_model->data(
-        FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kConnectionsFieldNumber),
-                                    FieldPath::RepeatedAt(i),
-                                    FieldPath::FieldNumber(VisualShader::VisualShaderConnection::kToNodeIdFieldNumber))).toInt();
-
-    int to_port_index = visual_shader_model->data(
-        FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kConnectionsFieldNumber),
-                                    FieldPath::RepeatedAt(i),
-                                    FieldPath::FieldNumber(VisualShader::VisualShaderConnection::kToPortIndexFieldNumber))).toInt();
-
-    bool result{scene->add_connection_to_scene(c_id, from_node_id, from_port_index, to_node_id, to_port_index)};
+    const bool result{scene->add_connection_to_scene(c_id, from_node_id, from_port_index, to_node_id, to_port_index)};
     CONTINUE_IF_TRUE(!result, "Failed to add connection to scene");
   }
 }
@@ -537,6 +535,7 @@ void VisualShaderEditor::on_preview_shader_button_pressed() {
   bool result{shadergen_visual_shader_generator::generate_shader(
     shadergen_visual_shader_generator::to_proto_nodes(nodes_model),
     shadergen_visual_shader_generator::to_generators(nodes_model), 
+    shadergen_visual_shader_generator::to_port_type_generators(nodes_model),
     shadergen_visual_shader_generator::to_input_output_connections_by_key(connections_model), code)};
   CHECK_CONDITION_TRUE(!result, "Failed to generate shader code");
 
@@ -569,9 +568,8 @@ void VisualShaderEditor::on_load_image_button_pressed() {
 }
 
 void VisualShaderEditor::on_match_image_button_pressed() {
-  if (!fitness_calculator->isVisible()) {
-    fitness_calculator->show();
-  }
+  SILENT_CHECK_CONDITION_TRUE(fitness_calculator->isVisible());
+  SILENT_CHECK_CONDITION_TRUE(parameters_editor->isVisible());
 
   // Find the node connected to the output node and generate the shader code at it
   VisualShaderNodeGraphicsObject* n_o{scene->get_node_graphics_object(0)};
@@ -589,10 +587,38 @@ void VisualShaderEditor::on_match_image_button_pressed() {
 
   fitness_calculator->update_current_output(shadergen_visual_shader_generator::generate_preview_shader(shadergen_visual_shader_generator::to_proto_nodes(nodes_model),
                                             shadergen_visual_shader_generator::to_generators(nodes_model), 
+                                            shadergen_visual_shader_generator::to_port_type_generators(nodes_model),
                                             shadergen_visual_shader_generator::to_input_output_connections_by_key(connections_model), c_o->get_from_node_id(), 0));  // 0 is the output port index
 
-  // Open the parameters editor
   
+  if (!fitness_calculator->isVisible()) fitness_calculator->show();
+  if (!parameters_editor->isVisible()) parameters_editor->show();
+}
+
+void VisualShaderEditor::on_start_matching_button_pressed() {
+  CHECK_PARAM_NULLPTR(ai_agent_worker, "AI agent worker is null");
+  CHECK_PARAM_NULLPTR(fitness_calculator, "Fitness calculator is null");
+  CHECK_PARAM_NULLPTR(parameters_editor, "Parameters editor is null");
+
+  ai_agent_worker->set_mutation_probability(parameters_editor->get_mutation_probability());
+  ai_agent_worker->set_crossover_probability(parameters_editor->get_crossover_probability());
+  ai_agent_worker->set_elitism_ratio(parameters_editor->get_elitism_ratio());
+  ai_agent_worker->set_maximum_iterations(parameters_editor->get_maximum_iterations());
+
+  ai_agent_worker->set_fitness_calculator(fitness_calculator);
+
+  AIAgentWorker::MatchingType matching_type{static_cast<AIAgentWorker::MatchingType>(matching_type_combo_box->currentData().toInt())};
+  ai_agent_worker->set_matching_type(matching_type);
+
+  ai_agent_worker->set_scene(scene);
+  
+  ai_agent_worker->start_matching();
+}
+
+void VisualShaderEditor::on_stop_matching_button_pressed() {
+  CHECK_PARAM_NULLPTR(ai_agent_worker, "AI agent worker is null");
+
+  ai_agent_worker->stop_matching();
 }
 
 std::vector<std::string> VisualShaderEditor::parse_node_category_path(const std::string& n_category_path) {
@@ -755,35 +781,25 @@ void CreateNodeDialog::update_selected_item() {
 //////////////////////////////
 
 VisualShaderGraphicsScene::VisualShaderGraphicsScene(QObject* parent)
-    : QGraphicsScene(parent), temporary_connection_graphics_object(nullptr) {
+    : QGraphicsScene(parent), temporary_connection_graphics_object(nullptr), newest_node_graphics_object(nullptr) {
   setItemIndexMethod(QGraphicsScene::NoIndex);  // https://doc.qt.io/qt-6/qgraphicsscene.html#ItemIndexMethod-enum
 }
 
+VisualShaderGraphicsScene::~VisualShaderGraphicsScene() {
+  if (newest_node_graphics_object) {
+    delete newest_node_graphics_object;
+    newest_node_graphics_object = nullptr;
+  }
+}
+
 bool VisualShaderGraphicsScene::add_node_to_model(const int& n_id, const std::shared_ptr<IVisualShaderProtoNode>& proto_node, const QPointF& coordinate) {
-  CHECK_CONDITION_TRUE_NON_VOID(find_node_entry(visual_shader_model, connections_model, n_id) != -1, false, "Node already exists");
+  CHECK_CONDITION_TRUE_NON_VOID(find_node_entry(n_id) != -1, false, "Node already exists");
 
   int row_entry{nodes_model->append_row()};
 
-  bool result = visual_shader_model->set_data(
-      FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
-                                  FieldPath::RepeatedAt(row_entry),
-                                  FieldPath::FieldNumber(VisualShader::VisualShaderNode::kIdFieldNumber)),
-      n_id);
-  CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to set node id");
-
-  result = visual_shader_model->set_data(
-      FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
-                                  FieldPath::RepeatedAt(row_entry),
-                                  FieldPath::FieldNumber(VisualShader::VisualShaderNode::kXCoordinateFieldNumber)),
-      coordinate.x());
-  CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to set node x coordinate");
-
-  result = visual_shader_model->set_data(
-      FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
-                                  FieldPath::RepeatedAt(row_entry),
-                                  FieldPath::FieldNumber(VisualShader::VisualShaderNode::kYCoordinateFieldNumber)),
-      coordinate.y());
-  CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to set node y coordinate");
+  CHECK_CONDITION_TRUE_NON_VOID(!update_node_in_model(n_id, VisualShader::VisualShaderNode::kIdFieldNumber, n_id, row_entry), false, "Failed to set node id");
+  CHECK_CONDITION_TRUE_NON_VOID(!update_node_in_model(n_id, VisualShader::VisualShaderNode::kXCoordinateFieldNumber, coordinate.x(), row_entry), false, "Failed to set node x coordinate");
+  CHECK_CONDITION_TRUE_NON_VOID(!update_node_in_model(n_id, VisualShader::VisualShaderNode::kYCoordinateFieldNumber, coordinate.y(), row_entry), false, "Failed to set node y coordinate");
 
   // Pass any field number that is inside the oneof to enter te OneofModel.
   // You must also to pass true for `for_get_oneof` parameter.
@@ -792,8 +808,7 @@ bool VisualShaderGraphicsScene::add_node_to_model(const int& n_id, const std::sh
   CHECK_PARAM_NULLPTR_NON_VOID(oneof, false, "Failed to get oneof model");
 
   const int oneof_value_field_number = proto_node->get_oneof_value_field_number();
-  result = oneof->set_oneof(oneof_value_field_number);
-  CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to set oneof");
+  CHECK_CONDITION_TRUE_NON_VOID(!oneof->set_oneof(oneof_value_field_number), false, "Failed to set oneof");
 
   return true;
 }
@@ -813,6 +828,14 @@ bool VisualShaderGraphicsScene::add_node_to_scene(const int& n_id, const std::sh
   }
 
   VisualShaderNodeGraphicsObject* n_o{new VisualShaderNodeGraphicsObject(n_id, coordinate, proto_node)};
+
+  if (newest_node_graphics_object) {
+    delete newest_node_graphics_object;
+    newest_node_graphics_object = nullptr;
+  }
+
+  // We save the node graphics object so that we can delete it later in case of failure
+  newest_node_graphics_object = n_o;
 
   QObject::connect(n_o, &VisualShaderNodeGraphicsObject::node_moved, this, &VisualShaderGraphicsScene::on_node_moved);
   QObject::connect(n_o, &VisualShaderNodeGraphicsObject::in_port_pressed, this,
@@ -835,14 +858,17 @@ bool VisualShaderGraphicsScene::add_node_to_scene(const int& n_id, const std::sh
   QObject::connect(n_o, &VisualShaderNodeGraphicsObject::out_port_remove_requested, this,
                    &VisualShaderGraphicsScene::on_out_port_remove_requested);
 
+  QObject::connect(n_o, &VisualShaderNodeGraphicsObject::port_type_generator_requested, this,
+                   &VisualShaderGraphicsScene::on_port_type_generator_requested);
+
   // If not the output node
   if (n_id != 0) {
     QObject::connect(n_o, &VisualShaderNodeGraphicsObject::node_deleted, this,
       &VisualShaderGraphicsScene::on_node_deleted);
   }
 
-  int row_entry{VisualShaderGraphicsScene::find_node_entry(visual_shader_model, nodes_model, n_id)};
-  int node_type_field_number{VisualShaderGraphicsScene::get_node_type_field_number(nodes_model, row_entry)};
+  int row_entry{VisualShaderGraphicsScene::find_node_entry(n_id)};
+  int node_type_field_number{VisualShaderGraphicsScene::get_node_type_field_number(row_entry)};
 
   if (n_id != 0) {
     QWidget* embed_widget{new QWidget()};
@@ -858,7 +884,7 @@ bool VisualShaderGraphicsScene::add_node_to_scene(const int& n_id, const std::sh
 
     switch (proto_node->get_oneof_value_field_number()) {
       case VisualShader::VisualShaderNode::kInputFieldNumber: {
-        REGISTER_NODE_FIELD_COMBO_BOX(VisualShaderNodeInputType_descriptor(), VisualShaderNodeInput::kTypeFieldNumber);
+        REGISTER_NODE_FIELD_COMBO_BOX(VisualShaderNodeInput::kTypeFieldNumber);
         break;
       }
       case VisualShader::VisualShaderNode::kFloatConstantFieldNumber: {
@@ -945,37 +971,37 @@ bool VisualShaderGraphicsScene::add_node_to_scene(const int& n_id, const std::sh
         break;
       }
       case VisualShader::VisualShaderNode::kFloatOpFieldNumber: {
-        REGISTER_NODE_FIELD_COMBO_BOX(VisualShaderNodeFloatOp::VisualShaderNodeFloatOpType_descriptor(), VisualShaderNodeFloatOp::kOpFieldNumber);
+        REGISTER_NODE_FIELD_COMBO_BOX(VisualShaderNodeFloatOp::kOpTypeFieldNumber);
         break;
       }
       case VisualShader::VisualShaderNode::kIntOpFieldNumber: {
-        REGISTER_NODE_FIELD_COMBO_BOX(VisualShaderNodeIntOp::VisualShaderNodeIntOpType_descriptor(), VisualShaderNodeIntOp::kOpFieldNumber);
+        REGISTER_NODE_FIELD_COMBO_BOX(VisualShaderNodeIntOp::kOpTypeFieldNumber);
         break;
       }
       case VisualShader::VisualShaderNode::kUintOpFieldNumber: {
-        REGISTER_NODE_FIELD_COMBO_BOX(VisualShaderNodeUIntOp::VisualShaderNodeUIntOpType_descriptor(), VisualShaderNodeUIntOp::kOpFieldNumber);
+        REGISTER_NODE_FIELD_COMBO_BOX(VisualShaderNodeUIntOp::kOpTypeFieldNumber);
         break;
       }
       case VisualShader::VisualShaderNode::kVectorOpFieldNumber: {
-        REGISTER_NODE_FIELD_COMBO_BOX(VisualShaderNodeVectorType_descriptor(), VisualShaderNodeVectorOp::kTypeFieldNumber);
-        REGISTER_NODE_FIELD_COMBO_BOX(VisualShaderNodeVectorOp::VisualShaderNodeVectorOpType_descriptor(), VisualShaderNodeVectorOp::kOpFieldNumber);
+        REGISTER_NODE_FIELD_COMBO_BOX(VisualShaderNodeVectorOp::kVecTypeFieldNumber);
+        REGISTER_NODE_FIELD_COMBO_BOX(VisualShaderNodeVectorOp::kOpTypeFieldNumber);
         break;
       }
       case VisualShader::VisualShaderNode::kFloatFuncFieldNumber: {
-        REGISTER_NODE_FIELD_COMBO_BOX(VisualShaderNodeFloatFunc::VisualShaderNodeFloatFuncType_descriptor(), VisualShaderNodeFloatFunc::kFuncFieldNumber);
+        REGISTER_NODE_FIELD_COMBO_BOX(VisualShaderNodeFloatFunc::kFuncTypeFieldNumber);
         break;
       }
       case VisualShader::VisualShaderNode::kIntFuncFieldNumber: {
-        REGISTER_NODE_FIELD_COMBO_BOX(VisualShaderNodeIntFunc::VisualShaderNodeIntFuncType_descriptor(), VisualShaderNodeIntFunc::kFuncFieldNumber);
+        REGISTER_NODE_FIELD_COMBO_BOX(VisualShaderNodeIntFunc::kFuncTypeFieldNumber);
         break;
       }
       case VisualShader::VisualShaderNode::kUintFuncFieldNumber: {
-        REGISTER_NODE_FIELD_COMBO_BOX(VisualShaderNodeUIntFunc::VisualShaderNodeUIntFuncType_descriptor(), VisualShaderNodeUIntFunc::kFuncFieldNumber);
+        REGISTER_NODE_FIELD_COMBO_BOX(VisualShaderNodeUIntFunc::kFuncTypeFieldNumber);
         break;
       }
       case VisualShader::VisualShaderNode::kVectorFuncFieldNumber: {
-        REGISTER_NODE_FIELD_COMBO_BOX(VisualShaderNodeVectorType_descriptor(), VisualShaderNodeVectorFunc::kTypeFieldNumber);
-        REGISTER_NODE_FIELD_COMBO_BOX(VisualShaderNodeVectorFunc::VisualShaderNodeVectorFuncType_descriptor(), VisualShaderNodeVectorFunc::kFuncFieldNumber);
+        REGISTER_NODE_FIELD_COMBO_BOX(VisualShaderNodeVectorFunc::kVecTypeFieldNumber);
+        REGISTER_NODE_FIELD_COMBO_BOX(VisualShaderNodeVectorFunc::kFuncTypeFieldNumber);
         break;
       }
       case VisualShader::VisualShaderNode::kValueNoiseFieldNumber: {
@@ -992,22 +1018,32 @@ bool VisualShaderGraphicsScene::add_node_to_scene(const int& n_id, const std::sh
         break;
       }
       case VisualShader::VisualShaderNode::kIsFieldNumber: {
-        REGISTER_NODE_FIELD_COMBO_BOX(VisualShaderNodeIs::Function_descriptor(), VisualShaderNodeIs::kFuncFieldNumber);
+        REGISTER_NODE_FIELD_COMBO_BOX(VisualShaderNodeIs::kFuncFieldNumber);
         break;
       }
       case VisualShader::VisualShaderNode::kCompareFieldNumber: {
-        REGISTER_NODE_FIELD_COMBO_BOX(VisualShaderNodeCompare::ComparisonType_descriptor(), VisualShaderNodeCompare::kTypeFieldNumber);
-        REGISTER_NODE_FIELD_COMBO_BOX(VisualShaderNodeCompare::Function_descriptor(), VisualShaderNodeCompare::kFuncFieldNumber);
-        REGISTER_NODE_FIELD_COMBO_BOX(VisualShaderNodeCompare::Condition_descriptor(), VisualShaderNodeCompare::kCondFieldNumber);
+        REGISTER_NODE_FIELD_COMBO_BOX(VisualShaderNodeCompare::kTypeFieldNumber);
+        REGISTER_NODE_FIELD_COMBO_BOX(VisualShaderNodeCompare::kFuncFieldNumber);
+        REGISTER_NODE_FIELD_COMBO_BOX(VisualShaderNodeCompare::kCondFieldNumber);
+        break;
+      }
+      case VisualShader::VisualShaderNode::kClampFieldNumber: {
+        REGISTER_NODE_FIELD_COMBO_BOX(VisualShaderNodeClamp::kTypeFieldNumber);
+        break;
+      }
+      case VisualShader::VisualShaderNode::kSwitchNodeFieldNumber: {
+        REGISTER_NODE_FIELD_COMBO_BOX(VisualShaderNodeSwitch::kTypeFieldNumber);
+        break;
+      }
+      case VisualShader::VisualShaderNode::kVectorLenFieldNumber: {
+        REGISTER_NODE_FIELD_COMBO_BOX(VisualShaderNodeVectorLen::kVecTypeFieldNumber);
+        break;
+      }
+      case VisualShader::VisualShaderNode::kVectorDistanceFieldNumber: {
+        REGISTER_NODE_FIELD_COMBO_BOX(VisualShaderNodeVectorDistance::kVecTypeFieldNumber);
         break;
       }
       case VisualShader::VisualShaderNode::kDotProductFieldNumber:
-      case VisualShader::VisualShaderNode::kVectorLenFieldNumber:
-      case VisualShader::VisualShaderNode::kClampFieldNumber:
-      case VisualShader::VisualShaderNode::kStepFieldNumber:
-      case VisualShader::VisualShaderNode::kSmoothStepFieldNumber:
-      case VisualShader::VisualShaderNode::kVectorDistanceFieldNumber:
-      case VisualShader::VisualShaderNode::kMixFieldNumber:
       case VisualShader::VisualShaderNode::kVector2DComposeFieldNumber:
       case VisualShader::VisualShaderNode::kVector3DComposeFieldNumber:
       case VisualShader::VisualShaderNode::kVector4DComposeFieldNumber:
@@ -1015,7 +1051,6 @@ bool VisualShaderGraphicsScene::add_node_to_scene(const int& n_id, const std::sh
       case VisualShader::VisualShaderNode::kVector3DDecomposeFieldNumber:
       case VisualShader::VisualShaderNode::kVector4DDecomposeFieldNumber:
       case VisualShader::VisualShaderNode::kIfNodeFieldNumber:
-      case VisualShader::VisualShaderNode::kSwitchNodeFieldNumber:
         break;
       default:
         FAIL_AND_RETURN_NON_VOID(false, "Unknown node type");
@@ -1053,6 +1088,9 @@ bool VisualShaderGraphicsScene::add_node_to_scene(const int& n_id, const std::sh
 
   node_graphics_objects[n_id] = n_o;
 
+  newest_node_graphics_object = nullptr; // We don't need to delete the temporary node graphics object
+  on_port_type_generator_requested(n_id); // Update the port types using the port type generator
+
   addItem(n_o);
 
   return true;
@@ -1062,15 +1100,38 @@ bool VisualShaderGraphicsScene::add_node(const std::shared_ptr<IVisualShaderProt
   int temp_n_id{n_id};
 
   if (temp_n_id == -1)  {
-    temp_n_id = VisualShaderGraphicsScene::get_new_node_id(visual_shader_model, nodes_model);
+    temp_n_id = VisualShaderGraphicsScene::get_new_node_id();
     CHECK_CONDITION_TRUE_NON_VOID(temp_n_id == 0, false, "The id " + std::to_string(temp_n_id) + " is reserved for the output node");
   }
 
   return add_node_to_model(temp_n_id, proto_node, coordinate) && add_node_to_scene(temp_n_id, proto_node, coordinate);
 }
 
+QVariant VisualShaderGraphicsScene::get_node_value(const int& n_id, const int& field_number, const int& row_entry) const {
+  int t_row_entry{row_entry};
+  if (t_row_entry == -1) t_row_entry = find_node_entry(n_id);
+  CHECK_CONDITION_TRUE_NON_VOID(t_row_entry == -1, false, "Failed to find node entry");
+
+  return visual_shader_model->data(
+      FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(t_row_entry),
+                                  FieldPath::FieldNumber(field_number)));
+}
+
+QVariant VisualShaderGraphicsScene::get_node_field_value(const int& n_id, const int& field_number, const int& row_entry) const {
+  int t_row_entry{row_entry};
+  if (t_row_entry == -1) t_row_entry = find_node_entry(n_id);
+  CHECK_CONDITION_TRUE_NON_VOID(t_row_entry == -1, false, "Failed to find node entry");
+
+  const int oneof_value_field_number{get_node_type_field_number(t_row_entry)};
+  CHECK_CONDITION_TRUE_NON_VOID(oneof_value_field_number == -1, false, "Failed to get oneof value field number");
+
+  return visual_shader_model->data(
+      FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(t_row_entry),
+                                  FieldPath::FieldNumber(oneof_value_field_number), FieldPath::FieldNumber(field_number)));
+}
+
 bool VisualShaderGraphicsScene::delete_node_from_model(const int& n_id) {
-  int row_entry{find_node_entry(visual_shader_model, nodes_model, n_id)};
+  int row_entry{find_node_entry(n_id)};
   VALIDATE_INDEX_NON_VOID(row_entry, nodes_model->rowCount(), false, "Node entry not found");
 
   // Remove the node from the model
@@ -1122,14 +1183,28 @@ bool VisualShaderGraphicsScene::delete_node(const int& n_id, const int& in_port_
   return delete_node_from_model(n_id) && delete_node_from_scene(n_id, in_port_count, out_port_count);
 }
 
-bool VisualShaderGraphicsScene::update_node_in_model(const int& n_id, const int& field_number, const QVariant& value) {
-  int row_entry{find_node_entry(visual_shader_model, nodes_model, n_id)};
-  CHECK_CONDITION_TRUE_NON_VOID(row_entry == -1, false, "Failed to find node entry");
-
-  const int oneof_value_field_number{get_node_type_field_number(nodes_model, row_entry)};
-  CHECK_CONDITION_TRUE_NON_VOID(oneof_value_field_number == -1, false, "Failed to get oneof value field number");
+bool VisualShaderGraphicsScene::update_node_in_model(const int& n_id, const int& field_number, const QVariant& value, const int& row_entry) {
+  int t_row_entry{row_entry};
+  if (t_row_entry == -1) t_row_entry = find_node_entry(n_id);
+  CHECK_CONDITION_TRUE_NON_VOID(t_row_entry == -1, false, "Failed to find node entry");
 
   bool result{visual_shader_model->set_data(
+      FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(t_row_entry),
+                                  FieldPath::FieldNumber(field_number)),
+      value)};
+  CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to update node in model");
+
+  return true;
+}
+
+bool VisualShaderGraphicsScene::update_node_field_in_model(const int& n_id, const int& field_number, const QVariant& value) {
+  const int row_entry{find_node_entry(n_id)};
+  CHECK_CONDITION_TRUE_NON_VOID(row_entry == -1, false, "Failed to find node entry");
+
+  const int oneof_value_field_number{get_node_type_field_number(row_entry)};
+  CHECK_CONDITION_TRUE_NON_VOID(oneof_value_field_number == -1, false, "Failed to get oneof value field number");
+
+  const bool result{visual_shader_model->set_data(
       FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry),
                                   FieldPath::FieldNumber(oneof_value_field_number), FieldPath::FieldNumber(field_number)),
       value)};
@@ -1139,6 +1214,30 @@ bool VisualShaderGraphicsScene::update_node_in_model(const int& n_id, const int&
 }
 
 bool VisualShaderGraphicsScene::update_node_in_scene(const int& n_id, const int& field_number, const QVariant& value) {
+  VisualShaderNodeGraphicsObject* n_o{this->get_node_graphics_object(n_id)};
+  CHECK_PARAM_NULLPTR_NON_VOID(n_o, false, "Node graphics object is null");
+
+  switch (field_number) {
+    case VisualShader::VisualShaderNode::kIdFieldNumber:
+      FAIL_AND_RETURN_NON_VOID(false, "Cannot update the node id");
+      break;
+    case VisualShader::VisualShaderNode::kXCoordinateFieldNumber:
+      n_o->set_x_coordinate(value.toDouble());
+      n_o->update_layout();
+      break;
+    case VisualShader::VisualShaderNode::kYCoordinateFieldNumber:
+      n_o->set_y_coordinate(value.toDouble());
+      n_o->update_layout();
+      break;
+    default:
+      FAIL_AND_RETURN_NON_VOID(false, "Unknown field number");
+      break;
+  }
+
+  return true;
+}
+
+bool VisualShaderGraphicsScene::update_node_field_in_scene(const int& n_id, const int& field_number, const QVariant& value) {
   VisualShaderNodeGraphicsObject* n_o{this->get_node_graphics_object(n_id)};
   CHECK_PARAM_NULLPTR_NON_VOID(n_o, false, "Node graphics object is null");
 
@@ -1173,8 +1272,8 @@ bool VisualShaderGraphicsScene::update_node_in_scene(const int& n_id, const int&
 }
 
 bool VisualShaderGraphicsScene::update_node(const int& n_id, const int& field_number, const QVariant& value) {
-  return update_node_in_model(n_id, field_number, value) &&
-         update_node_in_scene(n_id, field_number, value);
+  return update_node_field_in_model(n_id, field_number, value) &&
+         update_node_field_in_scene(n_id, field_number, value);
 }
 
 void VisualShaderGraphicsScene::on_update_renderer_widgets_requested() {
@@ -1188,6 +1287,7 @@ void VisualShaderGraphicsScene::on_update_renderer_widgets_requested() {
 
     spw->set_code(shadergen_visual_shader_generator::generate_preview_shader(shadergen_visual_shader_generator::to_proto_nodes(nodes_model),
                                     shadergen_visual_shader_generator::to_generators(nodes_model), 
+                                    shadergen_visual_shader_generator::to_port_type_generators(nodes_model),
                                     shadergen_visual_shader_generator::to_input_output_connections_by_key(connections_model), n_id, 0));  // 0 is the output port index
   }
 
@@ -1232,69 +1332,70 @@ void VisualShaderGraphicsScene::on_out_port_remove_requested(VisualShaderOutputP
   remove_item(out_port);
 }
 
-int VisualShaderGraphicsScene::get_new_node_id(ProtoModel* visual_shader_model, ProtoModel* nodes_model) {
-  int size{nodes_model->rowCount()};
+void VisualShaderGraphicsScene::on_port_type_generator_requested(const int& n_id) {
+  const int node_entry{VisualShaderGraphicsScene::find_node_entry(n_id)};
+  CHECK_CONDITION_TRUE(node_entry == -1, "Failed to find node entry");
+
+  // Cast to ReapeatedMessageModel
+  const RepeatedMessageModel* repeated_nodes{dynamic_cast<const RepeatedMessageModel*>(nodes_model)};
+  CHECK_PARAM_NULLPTR(repeated_nodes, "Nodes is not a repeated message model.");
+
+  const MessageModel* node_model{repeated_nodes->get_sub_model(node_entry)};
+
+  const std::shared_ptr<VisualShaderNodePortTypeGenerator> port_type_generator{shadergen_utils::get_port_type_generator(node_model)};
+
+  VisualShaderNodeGraphicsObject* n_o{this->get_node_graphics_object(n_id)};
+  CHECK_PARAM_NULLPTR(n_o, "Node graphics object is null");
+
+  n_o->update_port_types(port_type_generator);
+  revalidate_connections(n_id);
+}
+
+int VisualShaderGraphicsScene::get_new_node_id() const {
+  const int size{nodes_model->rowCount()};
 
   int max_id{0};
   for (int i{0}; i < size; i++) {
-    // Path to the id field of the node
-    FieldPath path{FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
-                                               FieldPath::RepeatedAt(i),
-                                               FieldPath::FieldNumber(VisualShader::VisualShaderNode::kIdFieldNumber))};
-    int n_id{visual_shader_model->data(path).toInt()};
+    const int n_id{get_node_value(-1, VisualShader::VisualShaderNode::kIdFieldNumber, i).toInt()};
     if (n_id > max_id) max_id = n_id;
   }
 
   return max_id + 1;  // Minimum id is 1 (0 is reserved for the output node)
 }
 
-int VisualShaderGraphicsScene::get_new_connection_id(ProtoModel* visual_shader_model, ProtoModel* connections_model) {
-  int size{connections_model->rowCount()};
+int VisualShaderGraphicsScene::get_new_connection_id() const {
+  const int size{connections_model->rowCount()};
 
   int max_id{-1};
   for (int i{0}; i < size; i++) {
-    // Path to the id field of the connection
-    FieldPath path{FieldPath::Of<VisualShader>(
-        FieldPath::FieldNumber(VisualShader::kConnectionsFieldNumber), FieldPath::RepeatedAt(i),
-        FieldPath::FieldNumber(VisualShader::VisualShaderConnection::kIdFieldNumber))};
-    int c_id{visual_shader_model->data(path).toInt()};
+    const int c_id{get_connection_value(-1, VisualShader::VisualShaderConnection::kIdFieldNumber, i)};
     if (c_id > max_id) max_id = c_id;
   }
 
   return max_id + 1;  // Minimum id is 0
 }
 
-int VisualShaderGraphicsScene::find_node_entry(ProtoModel* visual_shader_model, ProtoModel* nodes_model,
-                                               const int& n_id) {
+int VisualShaderGraphicsScene::find_node_entry(const int& n_id) const {
   int size{nodes_model->rowCount()};
 
   for (int i{0}; i < size; i++) {
-    // Path to the id field of the node
-    FieldPath path{FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
-                                               FieldPath::RepeatedAt(i),
-                                               FieldPath::FieldNumber(VisualShader::VisualShaderNode::kIdFieldNumber))};
-    if (visual_shader_model->data(path).toInt() == n_id) return i;
+    if (get_node_value(-1, VisualShader::VisualShaderNode::kIdFieldNumber, i).toInt() == n_id) return i;
   }
 
   return -1;
 }
 
-int VisualShaderGraphicsScene::find_connection_entry(ProtoModel* visual_shader_model, ProtoModel* connections_model,
-                                                     const int& c_id) {
+int VisualShaderGraphicsScene::find_connection_entry(const int& c_id) const {
   int size{connections_model->rowCount()};
 
   for (int i{0}; i < size; i++) {
-    // Path to the id field of the connection
-    FieldPath path{FieldPath::Of<VisualShader>(
-        FieldPath::FieldNumber(VisualShader::kConnectionsFieldNumber), FieldPath::RepeatedAt(i),
-        FieldPath::FieldNumber(VisualShader::VisualShaderConnection::kIdFieldNumber))};
-    if (visual_shader_model->data(path).toInt() == c_id) return i;
+    if (get_connection_value(-1, VisualShader::VisualShaderConnection::kIdFieldNumber, i) == c_id) return i;
   }
 
   return -1;
 }
 
-int VisualShaderGraphicsScene::get_node_type_field_number(ProtoModel* nodes_model, const int& row_entry) {
+int VisualShaderGraphicsScene::get_node_type_field_number(const int& row_entry) const {
   const RepeatedMessageModel* repeated_nodes{dynamic_cast<const RepeatedMessageModel*>(nodes_model)};
   CHECK_PARAM_NULLPTR_NON_VOID(repeated_nodes, -1, "Nodes is not a repeated message model.");
 
@@ -1312,45 +1413,16 @@ int VisualShaderGraphicsScene::get_node_type_field_number(ProtoModel* nodes_mode
 
 bool VisualShaderGraphicsScene::add_connection_to_model(const int& c_id, const int& from_node_id, const int& from_port_index, const int& to_node_id,
                               const int& to_port_index) {
-  CHECK_CONDITION_TRUE_NON_VOID(find_connection_entry(visual_shader_model, connections_model, c_id) != -1, false, "Connection already exists");
+  CHECK_CONDITION_TRUE_NON_VOID(find_connection_entry(c_id) != -1, false, "Connection already exists");
   CHECK_CONDITION_TRUE_NON_VOID(!is_valid_connection(from_node_id, from_port_index, to_node_id, to_port_index), false, "Invalid connection");
 
   int row_entry{connections_model->append_row()};
 
-  bool result = visual_shader_model->set_data(
-      FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kConnectionsFieldNumber),
-                                  FieldPath::RepeatedAt(row_entry),
-                                  FieldPath::FieldNumber(VisualShader::VisualShaderConnection::kIdFieldNumber)),
-      c_id);
-  CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to set connection id");
-
-  result = visual_shader_model->set_data(
-      FieldPath::Of<VisualShader>(
-          FieldPath::FieldNumber(VisualShader::kConnectionsFieldNumber), FieldPath::RepeatedAt(row_entry),
-          FieldPath::FieldNumber(VisualShader::VisualShaderConnection::kFromNodeIdFieldNumber)),
-      from_node_id);
-  CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to set connection from node id");
-
-  result = visual_shader_model->set_data(
-      FieldPath::Of<VisualShader>(
-          FieldPath::FieldNumber(VisualShader::kConnectionsFieldNumber), FieldPath::RepeatedAt(row_entry),
-          FieldPath::FieldNumber(VisualShader::VisualShaderConnection::kFromPortIndexFieldNumber)),
-      from_port_index);
-  CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to set connection from port index");
-
-  result = visual_shader_model->set_data(
-      FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kConnectionsFieldNumber),
-                                  FieldPath::RepeatedAt(row_entry),
-                                  FieldPath::FieldNumber(VisualShader::VisualShaderConnection::kToNodeIdFieldNumber)),
-      to_node_id);
-  CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to set connection to node id");
-
-  result = visual_shader_model->set_data(
-      FieldPath::Of<VisualShader>(
-          FieldPath::FieldNumber(VisualShader::kConnectionsFieldNumber), FieldPath::RepeatedAt(row_entry),
-          FieldPath::FieldNumber(VisualShader::VisualShaderConnection::kToPortIndexFieldNumber)),
-      to_port_index);
-  CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to set connection to port index");
+  CHECK_CONDITION_TRUE_NON_VOID(!update_connection_in_model(c_id, VisualShader::VisualShaderConnection::kIdFieldNumber, c_id, row_entry), false, "Failed to update connection id");
+  CHECK_CONDITION_TRUE_NON_VOID(!update_connection_in_model(c_id, VisualShader::VisualShaderConnection::kFromNodeIdFieldNumber, from_node_id, row_entry), false, "Failed to update from node id");
+  CHECK_CONDITION_TRUE_NON_VOID(!update_connection_in_model(c_id, VisualShader::VisualShaderConnection::kFromPortIndexFieldNumber, from_port_index, row_entry), false, "Failed to update from port index");
+  CHECK_CONDITION_TRUE_NON_VOID(!update_connection_in_model(c_id, VisualShader::VisualShaderConnection::kToNodeIdFieldNumber, to_node_id, row_entry), false, "Failed to update to node id");
+  CHECK_CONDITION_TRUE_NON_VOID(!update_connection_in_model(c_id, VisualShader::VisualShaderConnection::kToPortIndexFieldNumber, to_port_index, row_entry), false, "Failed to update to port index");
 
   return true;
 }
@@ -1458,6 +1530,17 @@ bool VisualShaderGraphicsScene::is_valid_connection(const int& from_node_id, con
   return controller_utils::is_valid_connection(from_o_port->get_port_type(), to_i_port->get_port_type());
 }
 
+int VisualShaderGraphicsScene::get_connection_value(const int& c_id, const int& field_number, const int& row_entry) const {
+  int t_row_entry{row_entry};
+  if (t_row_entry == -1) t_row_entry = find_connection_entry(c_id);
+  VALIDATE_INDEX_NON_VOID(t_row_entry, connections_model->rowCount(), false, "Connection entry not found");
+
+  return visual_shader_model->data(
+      FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kConnectionsFieldNumber),
+                                  FieldPath::RepeatedAt(t_row_entry),
+                                  FieldPath::FieldNumber(field_number))).toInt();
+}
+
 void VisualShaderGraphicsScene::revalidate_connections(const int& n_id) {
   VisualShaderNodeGraphicsObject* n_o{this->get_node_graphics_object(n_id)};
   CHECK_PARAM_NULLPTR(n_o, "Node graphics object is null");
@@ -1498,7 +1581,7 @@ void VisualShaderGraphicsScene::revalidate_connections(const int& n_id) {
 }
 
 bool VisualShaderGraphicsScene::delete_connection_from_model(const int& c_id) {
-  int row_entry{find_connection_entry(visual_shader_model, connections_model, c_id)};
+  int row_entry{find_connection_entry(c_id)};
   VALIDATE_INDEX_NON_VOID(row_entry, connections_model->rowCount(), false, "Connection entry not found");
 
   return connections_model->remove_row(row_entry);
@@ -1554,7 +1637,7 @@ bool VisualShaderGraphicsScene::add_temporary_connection(const int& from_node_id
   VisualShaderOutputPortGraphicsObject* from_o_port{from_n_o->get_output_port_graphics_object(from_port_index)};
   CHECK_PARAM_NULLPTR_NON_VOID(from_o_port, false, "Failed to get from output port graphics object");
 
-  int c_id{get_new_connection_id(visual_shader_model, connections_model)};
+  const int c_id{get_new_connection_id()};
   CHECK_CONDITION_TRUE_NON_VOID(!from_o_port->connect(c_id), false, "Failed to connect connection");
   this->temporary_connection_graphics_object = new VisualShaderConnectionGraphicsObject(
       c_id, from_node_id, from_port_index, from_o_port->get_global_coordinate());
@@ -1605,32 +1688,26 @@ bool VisualShaderGraphicsScene::convert_to_temporary_connection(const int& c_id,
   return true;
 }
 
-bool VisualShaderGraphicsScene::update_connection_in_model(const int& c_id, const int& node_id_field_number, const int& port_index_field_number, const int& node_id, const int& port_index) {
-  int row_entry{find_connection_entry(visual_shader_model, connections_model, c_id)};
-  VALIDATE_INDEX_NON_VOID(row_entry, connections_model->rowCount(), false, "Connection entry not found");
+bool VisualShaderGraphicsScene::update_connection_in_model(const int& c_id, const int& field_number, const int& value, const int& row_entry) {
+  int t_row_entry{row_entry};
+  if (t_row_entry == -1) t_row_entry = find_connection_entry(c_id);
+  VALIDATE_INDEX_NON_VOID(t_row_entry, connections_model->rowCount(), false, "Connection entry not found");
 
   bool result{visual_shader_model->set_data(
       FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kConnectionsFieldNumber),
-                                  FieldPath::RepeatedAt(row_entry),
-                                  FieldPath::FieldNumber(node_id_field_number)),
-      node_id)};
-  CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to update connection in model");
-
-  result = visual_shader_model->set_data(
-      FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kConnectionsFieldNumber),
-                                  FieldPath::RepeatedAt(row_entry),
-                                  FieldPath::FieldNumber(port_index_field_number)),
-      port_index);
+                                  FieldPath::RepeatedAt(t_row_entry),
+                                  FieldPath::FieldNumber(field_number)),
+      value)};
   CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to update connection in model");
 
   return true;
 }
 
-bool VisualShaderGraphicsScene::update_connection_in_scene(const int& c_id, const int& node_id_field_number, const int& node_id, const int& port_index) {
+bool VisualShaderGraphicsScene::update_connection_in_scene(const int& c_id, const int& field_number, const int& node_id, const int& port_index) {
   VisualShaderConnectionGraphicsObject* c_o{get_connection_graphics_object(c_id)};
   CHECK_PARAM_NULLPTR_NON_VOID(c_o, false, "Failed to get connection graphics object");
 
-  switch (node_id_field_number) {
+  switch (field_number) {
     case VisualShader::VisualShaderConnection::kFromNodeIdFieldNumber: {
       VisualShaderNodeGraphicsObject* from_n_o{this->get_node_graphics_object(c_o->get_from_node_id())};
       CHECK_PARAM_NULLPTR_NON_VOID(from_n_o, false, "Failed to get from node graphics object");
@@ -1686,7 +1763,8 @@ bool VisualShaderGraphicsScene::update_connection_in_scene(const int& c_id, cons
 }
 
 bool VisualShaderGraphicsScene::update_connection(const int& c_id, const int& node_id_field_number, const int& port_index_field_number, const int& node_id, const int& port_index) {
-  return update_connection_in_model(c_id, node_id_field_number, port_index_field_number, node_id, port_index) &&
+  return update_connection_in_model(c_id, node_id_field_number, node_id) &&
+         update_connection_in_model(c_id, port_index_field_number, port_index) &&
          update_connection_in_scene(c_id, node_id_field_number, node_id, port_index);
 }
 
@@ -1860,22 +1938,11 @@ void VisualShaderGraphicsScene::on_port_dropped(QGraphicsObject* port, const QPo
 
 void VisualShaderGraphicsScene::on_node_moved(const int& n_id, const int& in_port_count, const int& out_port_count,
                                               const QPointF& new_coordinate) {
-  int row_entry{find_node_entry(visual_shader_model, nodes_model, n_id)};
+  int row_entry{find_node_entry(n_id)};
   VALIDATE_INDEX(row_entry, nodes_model->rowCount(), "Node entry not found");
 
-  bool result = visual_shader_model->set_data(
-      FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
-                                  FieldPath::RepeatedAt(row_entry),
-                                  FieldPath::FieldNumber(VisualShader::VisualShaderNode::kXCoordinateFieldNumber)),
-      new_coordinate.x());
-  CHECK_CONDITION_TRUE(!result, "Failed to set node x coordinate");
-
-  result = visual_shader_model->set_data(
-      FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber),
-                                  FieldPath::RepeatedAt(row_entry),
-                                  FieldPath::FieldNumber(VisualShader::VisualShaderNode::kYCoordinateFieldNumber)),
-      new_coordinate.y());
-  CHECK_CONDITION_TRUE(!result, "Failed to set node y coordinate");
+  CHECK_CONDITION_TRUE(!update_node_in_model(n_id, VisualShader::VisualShaderNode::kXCoordinateFieldNumber, new_coordinate.x()), "Failed to update node x coordinate");
+  CHECK_CONDITION_TRUE(!update_node_in_model(n_id, VisualShader::VisualShaderNode::kYCoordinateFieldNumber, new_coordinate.y()), "Failed to update node y coordinate");
 
   // Update coordinates of all connected connections
   VisualShaderNodeGraphicsObject* n_o{this->get_node_graphics_object(n_id)};
@@ -2268,8 +2335,8 @@ VisualShaderNodeGraphicsObject::VisualShaderNodeGraphicsObject(const int& n_id, 
   // Set input and output port types
   in_port_types.resize(this->in_port_count);
   out_port_types.resize(this->out_port_count);
-  for (int i{0}; i < (int)in_port_types.size(); i++) in_port_types.at(i) = proto_node->get_input_port_type(i);
-  for (int i{0}; i < (int)out_port_types.size(); i++) out_port_types.at(i) = proto_node->get_output_port_type(i);
+  for (int i{0}; i < (int)in_port_types.size(); i++) in_port_types.at(i) = VisualShaderNodePortType::PORT_TYPE_UNSPECIFIED;
+  for (int i{0}; i < (int)out_port_types.size(); i++) out_port_types.at(i) = VisualShaderNodePortType::PORT_TYPE_UNSPECIFIED;
 
   // Output node should have a matching image widget
   if (n_id == 0) {
@@ -2299,7 +2366,7 @@ VisualShaderNodeGraphicsObject::VisualShaderNodeGraphicsObject(const int& n_id, 
                    &VisualShaderNodeGraphicsObject::on_delete_node_action_triggered);
   context_menu->addAction(delete_node_action);
 
-  QObject::connect(this, &VisualShaderNodeGraphicsObject::port_type_changed, this, &VisualShaderNodeGraphicsObject::on_port_type_changed);
+  QObject::connect(this, &VisualShaderNodeGraphicsObject::port_type_update_requested, this, &VisualShaderNodeGraphicsObject::on_port_type_update_requested);
 }
 
 VisualShaderNodeGraphicsObject::~VisualShaderNodeGraphicsObject() {
@@ -2326,6 +2393,24 @@ VisualShaderOutputPortGraphicsObject* VisualShaderNodeGraphicsObject::get_output
   }
 
   return nullptr;
+}
+
+void VisualShaderNodeGraphicsObject::update_port_types(const std::shared_ptr<VisualShaderNodePortTypeGenerator>& port_type_generator) {
+  for (int i {0}; i < in_port_count; ++i) in_port_types.at(i) = port_type_generator->get_input_port_type(i);
+  for (int i {0}; i < out_port_count; ++i) out_port_types.at(i) = port_type_generator->get_output_port_type(i);
+
+  // Update the port types
+  for (int i{0}; i < in_port_count; ++i) {
+    VisualShaderInputPortGraphicsObject* i_port{get_input_port_graphics_object(i)};
+    SILENT_CONTINUE_IF_TRUE(!i_port);
+    i_port->set_port_type(in_port_types.at(i));
+  }
+
+  for (int i{0}; i < out_port_count; ++i) {
+    VisualShaderOutputPortGraphicsObject* o_port{get_output_port_graphics_object(i)};
+    SILENT_CONTINUE_IF_TRUE(!o_port);
+    o_port->set_port_type(out_port_types.at(i));
+  }
 }
 
 void VisualShaderNodeGraphicsObject::update_layout() {
@@ -2518,8 +2603,6 @@ void VisualShaderNodeGraphicsObject::update_layout() {
                        &VisualShaderNodeGraphicsObject::on_in_port_dragged);
       QObject::connect(p_o, &VisualShaderInputPortGraphicsObject::port_dropped, this,
                        &VisualShaderNodeGraphicsObject::on_in_port_dropped);
-      if (proto_node->get_input_port_type(i) == VisualShaderNodePortType::PORT_TYPE_UNSPECIFIED)
-        QObject::connect(this, &VisualShaderNodeGraphicsObject::port_type_changed, p_o, &VisualShaderInputPortGraphicsObject::on_port_type_changed);
     }
   }
 
@@ -2574,8 +2657,6 @@ void VisualShaderNodeGraphicsObject::update_layout() {
                        &VisualShaderNodeGraphicsObject::on_out_port_dragged);
       QObject::connect(p_o, &VisualShaderOutputPortGraphicsObject::port_dropped, this,
                        &VisualShaderNodeGraphicsObject::on_out_port_dropped);
-      if (proto_node->get_output_port_type(i) == VisualShaderNodePortType::PORT_TYPE_UNSPECIFIED)
-        QObject::connect(this, &VisualShaderNodeGraphicsObject::port_type_changed, p_o, &VisualShaderOutputPortGraphicsObject::on_port_type_changed);
     }
   }
 
@@ -2617,20 +2698,8 @@ void VisualShaderNodeGraphicsObject::on_preview_shader_button_pressed() {
   preview_shader_button->setText(!is_visible ? "Hide Preview" : "Show Preview");
 }
 
-void VisualShaderNodeGraphicsObject::on_port_type_changed(const VisualShaderNodePortType& p_type) {
-  for (int i {0}; i < in_port_count; ++i) {
-    /*
-      Here we only update any unspecified port type in the proto file ONLY. This is 
-      so important because we don't want to change the port type of the node in the
-      proto file if it is already specified.
-    */
-    SILENT_CONTINUE_IF_TRUE(proto_node->get_input_port_type(i) != VisualShaderNodePortType::PORT_TYPE_UNSPECIFIED);
-    in_port_types.at(i) = p_type;
-  }
-  for (int i {0}; i < out_port_count; ++i) {
-    SILENT_CONTINUE_IF_TRUE(proto_node->get_output_port_type(i) != VisualShaderNodePortType::PORT_TYPE_UNSPECIFIED);
-    out_port_types.at(i) = p_type;
-  }
+void VisualShaderNodeGraphicsObject::on_port_type_update_requested() {
+  Q_EMIT port_type_generator_requested(n_id);
 }
 
 QRectF VisualShaderNodeGraphicsObject::boundingRect() const {
@@ -3128,8 +3197,7 @@ VisualShaderNodeFieldComboBox::VisualShaderNodeFieldComboBox(const QVariant& ini
                                                              const EnumDescriptor* enum_descriptor, const int& field_number, QWidget* parent)
     : QComboBox(parent),
       n_id(n_id),
-      field_number(field_number),
-      enum_descriptor(enum_descriptor) {
+      field_number(field_number) {
   setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
   setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
 
@@ -3149,8 +3217,8 @@ VisualShaderNodeFieldComboBox::VisualShaderNodeFieldComboBox(const QVariant& ini
 void VisualShaderNodeFieldComboBox::on_current_index_changed(const int& index) {
   Q_EMIT node_update_requested(n_id, field_number, index);
 
-  Q_EMIT port_type_changed(shadergen_utils::get_enum_value_port_type_by_value(enum_descriptor, index));
-  Q_EMIT revalidate_connections_requested(n_id);
+  Q_EMIT port_type_update_requested();
+  Q_EMIT revalidate_connections_requested(n_id); // As the port type might change, we need to revalidate the connections
 }
 
 VisualShaderNodeFieldLineEditFloat::VisualShaderNodeFieldLineEditFloat(const QVariant& initial_value, const int& n_id,

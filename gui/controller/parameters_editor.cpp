@@ -25,14 +25,59 @@
 /*                                                                               */
 /*********************************************************************************/
 
+#include "gui/controller/parameters_editor.hpp"
+
 #include "ai-agent/parameters.hpp"
 
-// TODO: What about the maximum number of genes?
+AIAgentParametersEditor::AIAgentParametersEditor(QWidget* parent)
+    : QWidget(parent), layout(nullptr) {
+  init();
+}
 
-int maximum_population_size = 100; // Maximum number of graphs to apply genetic algorithm on
-int maximum_generations = 100; // Maximum number of generations until the algorithm stops
-float mutation_probability = 0.1f;
-float crossover_probability = 0.8f;
-float elitism_ratio = 0.2f;
-int maximum_iterations = 1000;
-int maximum_nodes_per_graph = 100; // If the matching type is FULL_GRAPH, we need to limit the number of nodes
+void AIAgentParametersEditor::init() {
+  // Create the main layout.
+  layout = new QVBoxLayout(this);
+  layout->setContentsMargins(10, 10, 10, 10);  // Left, top, right, bottom
+  layout->setSizeConstraint(QLayout::SetNoConstraint);
+  layout->setSpacing(5);
+  layout->setAlignment(Qt::AlignVCenter | Qt::AlignHCenter);
+
+  //////////////// End of Header ////////////////
+
+  // Helper lambda to create a horizontal layout for a parameter.
+  auto create_parameter_row = [this](const QString& param_name, const float& default_value) {
+    QHBoxLayout* param_row_layout = new QHBoxLayout();
+    QLabel* param_row_label = new QLabel(param_name + ":", this);
+    QLineEdit* param_row_line_edit = new QLineEdit(QString::number(default_value), this);
+    param_row_line_edit->setEnabled(false);
+    QCheckBox* param_row_check_box = new QCheckBox(this);
+    param_row_check_box->setToolTip("Check to change the default value");
+    param_row_check_box->setChecked(false);
+    connect(param_row_check_box, &QCheckBox::toggled, param_row_line_edit, &QLineEdit::setEnabled);
+
+    parameter_line_edits.emplace_back(param_row_line_edit);
+
+    param_row_layout->addWidget(param_row_label);
+    param_row_layout->addWidget(param_row_line_edit);
+    param_row_layout->addWidget(param_row_check_box);
+
+    layout->addLayout(param_row_layout);
+  };
+
+  // Create rows for each parameter
+  create_parameter_row("Mutation Probability", mutation_probability);
+  create_parameter_row("Crossover Probability", crossover_probability);
+  create_parameter_row("Elitism Ratio", elitism_ratio);
+  create_parameter_row("Maximum Iterations", maximum_iterations);
+  create_parameter_row("Maximum Nodes Per Graph", maximum_nodes_per_graph);
+
+  //////////////// Start of Footer ////////////////
+
+  this->setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
+  // this->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
+
+  // Set the window title and icon.
+  this->setWindowTitle("Parameters Editor");
+  this->setLayout(layout);
+}
+

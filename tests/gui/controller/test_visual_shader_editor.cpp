@@ -25,14 +25,44 @@
 /*                                                                               */
 /*********************************************************************************/
 
-#include "ai-agent/parameters.hpp"
+#include <QtTest/QtTest>
 
-// TODO: What about the maximum number of genes?
+#include "error_macros.hpp"
+#include "tests/gui/controller/test_visual_shader_editor.hpp"
 
-int maximum_population_size = 100; // Maximum number of graphs to apply genetic algorithm on
-int maximum_generations = 100; // Maximum number of generations until the algorithm stops
-float mutation_probability = 0.1f;
-float crossover_probability = 0.8f;
-float elitism_ratio = 0.2f;
-int maximum_iterations = 1000;
-int maximum_nodes_per_graph = 100; // If the matching type is FULL_GRAPH, we need to limit the number of nodes
+VisualShaderEditorTest::VisualShaderEditorTest() : editor(nullptr) {}
+
+void VisualShaderEditorTest::initTestCase()
+{
+    DEBUG_PRINT("Called before everything else.");
+}
+
+void VisualShaderEditorTest::cleanupTestCase()
+{
+    DEBUG_PRINT("Called after everything else.");
+}
+
+void VisualShaderEditorTest::init() {
+    DEBUG_PRINT("Called before each test.");
+}
+
+void VisualShaderEditorTest::cleanup() {
+    DEBUG_PRINT("Called after each test.");
+}
+
+void VisualShaderEditorTest::my_first_test()
+{
+    QVERIFY(true); // check that a condition is satisfied
+    QCOMPARE(1, 1); // compare two values
+}
+
+void VisualShaderEditorTest::my_second_test()
+{
+    QVERIFY(my_condition());
+    QVERIFY(1 != 2);
+}
+
+bool VisualShaderEditorTest::my_condition()
+{
+    return true;
+}

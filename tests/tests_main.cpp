@@ -25,14 +25,25 @@
 /*                                                                               */
 /*********************************************************************************/
 
-#include "ai-agent/parameters.hpp"
+#include <QApplication>
+#include <QtTest/QtTest>
+#include <gtest/gtest.h>
 
-// TODO: What about the maximum number of genes?
+#include "tests/gui/controller/test_visual_shader_editor.hpp"
 
-int maximum_population_size = 100; // Maximum number of graphs to apply genetic algorithm on
-int maximum_generations = 100; // Maximum number of generations until the algorithm stops
-float mutation_probability = 0.1f;
-float crossover_probability = 0.8f;
-float elitism_ratio = 0.2f;
-int maximum_iterations = 1000;
-int maximum_nodes_per_graph = 100; // If the matching type is FULL_GRAPH, we need to limit the number of nodes
+int main(int argc, char** argv) {
+    // Initialize Google Test
+    // Run Google Test tests.
+    ::testing::InitGoogleTest(&argc, argv);
+    int gtest_result = RUN_ALL_TESTS();
+    if (gtest_result != 0) return gtest_result;
+
+    QApplication app(argc, argv);
+
+    // Run Qt tests.
+    VisualShaderEditorTest visual_shader_editor_test;
+    int qt_result = QTest::qExec(&visual_shader_editor_test, argc, argv);
+    if (qt_result != 0) return qt_result;
+
+    return 0;
+}

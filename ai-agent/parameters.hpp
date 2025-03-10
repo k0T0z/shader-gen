@@ -28,9 +28,12 @@
 #ifndef AI_AGENT_PARAMETERS_HPP
 #define AI_AGENT_PARAMETERS_HPP
 
+extern int maximum_population_size;
+extern int maximum_generations;
 extern float mutation_probability;
 extern float crossover_probability;
 extern float elitism_ratio;
-extern float maximum_iterations;
+extern int maximum_iterations;
+extern int maximum_nodes_per_graph;
 
 #endif // AI_AGENT_PARAMETERS_HPP

@@ -59,7 +59,7 @@ void AIAgentFitnessCalculator::init() {
   //////////////// End of Header ////////////////
 
   // Create the menu bar layout.
-  menu_bar = new QHBoxLayout(this);
+  menu_bar = new QHBoxLayout();
   menu_bar->setContentsMargins(10, 10, 10, 10);  // Left, top, right, bottom
   menu_bar->setSpacing(5);                       // Adjust spacing as needed
   menu_bar->setAlignment(Qt::AlignTop | Qt::AlignLeft);
@@ -87,13 +87,14 @@ void AIAgentFitnessCalculator::init() {
   matching_type_combo_box->setToolTip("Select the matching type");
   matching_type_combo_box->addItem("Static");
   matching_type_combo_box->addItem("Dynamic");
+  QObject::connect(matching_type_combo_box, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &AIAgentFitnessCalculator::on_matching_type_combo_box_current_index_changed);
 
   menu_bar->addWidget(matching_type_combo_box);
 
   layout->addLayout(menu_bar, 1);
 
   // Create a H layout for printing the fitness value
-  status_layout = new QHBoxLayout(this);
+  status_layout = new QHBoxLayout();
   status_layout->setContentsMargins(10, 10, 10, 10);  // Left, top, right, bottom
   status_layout->setSpacing(5);                       // Adjust spacing as needed
   status_layout->setAlignment(Qt::AlignTop | Qt::AlignLeft);
@@ -115,13 +116,13 @@ void AIAgentFitnessCalculator::init() {
 
   layout->addLayout(status_layout, 1);
 
-  outputs_layout = new QHBoxLayout(this);
+  outputs_layout = new QHBoxLayout();
   outputs_layout->setContentsMargins(10, 10, 10, 10);  // Left, top, right, bottom
   outputs_layout->setSpacing(5);                       // Adjust spacing as needed
   outputs_layout->setAlignment(Qt::AlignTop | Qt::AlignLeft);
   outputs_layout->setSizeConstraint(QLayout::SetNoConstraint);
 
-  curent_output_renderer_layout = new QVBoxLayout(this);
+  curent_output_renderer_layout = new QVBoxLayout();
   curent_output_renderer_layout->setContentsMargins(10, 10, 10, 10);  // Left, top, right, bottom
   curent_output_renderer_layout->setSpacing(5);                       // Adjust spacing as needed
   curent_output_renderer_layout->setAlignment(Qt::AlignTop | Qt::AlignLeft);
@@ -144,7 +145,7 @@ void AIAgentFitnessCalculator::init() {
 
   outputs_layout->addLayout(curent_output_renderer_layout);
 
-  target_output_layout = new QVBoxLayout(this);
+  target_output_layout = new QVBoxLayout();
   target_output_layout->setContentsMargins(10, 10, 10, 10);  // Left, top, right, bottom
   target_output_layout->setSpacing(5);                       // Adjust spacing as needed
   target_output_layout->setAlignment(Qt::AlignTop | Qt::AlignLeft);
@@ -183,6 +184,10 @@ void AIAgentFitnessCalculator::update_current_output(const std::string& code) {
   CHECK_CONDITION_TRUE(code.empty(), "Code is empty");
 
   current_output_renderer->set_code(code);
+}
+
+unsigned long AIAgentFitnessCalculator::get_fitness_value(const std::unordered_map<int, std::string>& encoded_nodes, const std::unordered_map<int, std::string>& encoded_connections) const {
+  return get_fitness_value();
 }
 
 unsigned long AIAgentFitnessCalculator::get_fitness_value() const {
@@ -226,8 +231,25 @@ void AIAgentFitnessCalculator::on_calculate_fitness_button_pressed() {
   fitness_value->setText(QString::number(val));
 }
 
-CurrentOutputRenderer::CurrentOutputRenderer(QWidget* parent)
-    : QOpenGLWidget(parent), fbo(nullptr), texture_shader_program(nullptr), VAO(0), VBO(0), render_timer(this), compile_debounce_timer(this) {
+void AIAgentFitnessCalculator::on_matching_type_combo_box_current_index_changed(int index) {
+  if (index == 0) {
+    DEBUG_PRINT("Static matching");
+    current_output_renderer->set_is_dynamic(false);
+  } else {
+    DEBUG_PRINT("Dynamic matching");
+    current_output_renderer->set_is_dynamic(true);
+  }
+}
+
+CurrentOutputRenderer::CurrentOutputRenderer(QWidget* parent) : QOpenGLWidget(parent), 
+                                                                static_rendered(false),
+                                                                is_dynamic(false), 
+                                                                fbo(nullptr), 
+                                                                texture_shader_program(nullptr), 
+                                                                VAO(0), 
+                                                                VBO(0), 
+                                                                render_timer(this), 
+                                                                compile_debounce_timer(this) {
   render_timer.setInterval(32); // ~30 FPS
   connect(&render_timer, &QTimer::timeout, this, QOverload<>::of(&CurrentOutputRenderer::update));
 
@@ -238,6 +260,21 @@ CurrentOutputRenderer::CurrentOutputRenderer(QWidget* parent)
 
 CurrentOutputRenderer::~CurrentOutputRenderer() {
   cleanup();
+}
+
+void CurrentOutputRenderer::set_is_dynamic(const bool& is_dynamic) {
+  SILENT_CHECK_CONDITION_TRUE(this->is_dynamic == is_dynamic);
+
+  this->is_dynamic = is_dynamic;
+
+  if (this->is_dynamic) {
+    // Start the render timer if the widget is visible
+    if (isVisible() && !render_timer.isActive()) render_timer.start();
+  } else {
+    // Stop the timer and render once for static display
+    if (render_timer.isActive()) render_timer.stop();
+    update();  // Trigger a single render for static content
+  }
 }
 
 void CurrentOutputRenderer::set_code(const std::string& new_code) {
@@ -274,10 +311,10 @@ layout(location = 0) in vec2 aPos;
 layout(location = 1) in vec2 aTexCoord;
 out vec2 TexCoord;
 void main() {
-    gl_Position = vec4(aPos, 0.0, 1.0);
-    TexCoord = aTexCoord;
+  gl_Position = vec4(aPos, 0.0, 1.0);
+  TexCoord = aTexCoord;
 }
-  )";
+)";
 
   const char* texture_fragment_shader = R"(
 #version 430 core
@@ -285,9 +322,9 @@ in vec2 TexCoord;
 out vec4 FragColor;
 uniform sampler2D uTexture;
 void main() {
-    FragColor = texture(uTexture, TexCoord);
+  FragColor = texture(uTexture, TexCoord);
 }
-  )";
+)";
 
   CHECK_CONDITION_TRUE(!texture_shader_program->addShaderFromSourceCode(QOpenGLShader::Vertex, texture_vertex_shader), "Vertex shader compilation failed: " + texture_shader_program->log().toStdString());
   CHECK_CONDITION_TRUE(!texture_shader_program->addShaderFromSourceCode(QOpenGLShader::Fragment, texture_fragment_shader), "Fragment shader compilation failed: " + texture_shader_program->log().toStdString());
@@ -301,30 +338,50 @@ void main() {
 void CurrentOutputRenderer::resizeGL(int w, int h) { glViewport(0, 0, w, h); }
 
 void CurrentOutputRenderer::paintGL() {
-  // Render to FBO at 256x256
-  fbo->bind();
-  glViewport(0, 0, 256, 256);
-
-  glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-  glClear(GL_COLOR_BUFFER_BIT);
-
-  CHECK_PARAM_NULLPTR(shader_program, "Shader program is null");
+  if (is_dynamic) {
+    CHECK_PARAM_NULLPTR(shader_program, "Shader program is null");
+    
+    CHECK_CONDITION_TRUE(!shader_program->bind(), "Failed to bind shader program");
+    
+    // Render to FBO at 256x256
+    fbo->bind();
+    glViewport(0, 0, 256, 256);
+    
+    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT);
+    
+    int utime_location = shader_program->uniformLocation("uTime");
+    if (utime_location != -1) {
+      float time_value = timer.elapsed() * 0.001f; // Convert ms to seconds
+      shader_program->setUniformValue(utime_location, time_value);
+    }
+    
+    glBindVertexArray(VAO);
+    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+    glBindVertexArray(0);
+    
+    shader_program->release();
+    
+    fbo->release();
+  } else if (!static_rendered) {
+    // For static shaders, render once to FBO
+    CHECK_PARAM_NULLPTR(shader_program, "Shader program is null");
   
-  CHECK_CONDITION_TRUE(!shader_program->bind(), "Failed to bind shader program");
-  
-  int utime_location = shader_program->uniformLocation("uTime");
-  if (utime_location != -1) {
-    float time_value = timer.elapsed() * 0.001f; // Convert ms to seconds
-    shader_program->setUniformValue(utime_location, time_value);
+    CHECK_CONDITION_TRUE(!shader_program->bind(), "Failed to bind shader program");
+
+    fbo->bind();
+    glViewport(0, 0, 256, 256);
+    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT);
+    shader_program->bind();
+    glBindVertexArray(VAO);
+    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+    glBindVertexArray(0);
+    shader_program->release();
+    fbo->release();
+    update();  // Display the static render
+    static_rendered = true;
   }
-
-  glBindVertexArray(VAO);
-  glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-  glBindVertexArray(0);
-
-  shader_program->release();
-
-  fbo->release();
 
   // Render FBO texture to widget
   glBindFramebuffer(GL_FRAMEBUFFER, defaultFramebufferObject());
@@ -412,7 +469,7 @@ void main() {
   FragCoord = aFragCoord;
 }
 
-  )";
+)";
 
   std::string fragment_shader_source;
   if (code.empty()) {
@@ -430,7 +487,7 @@ void main() {
   FragColor = vec4(0.0, 0.0, 0.0, 1.0);
 }
 
-    )";
+)";
   } else {
     fragment_shader_source = "#version 430 core\n\n" + code;
   }
@@ -453,29 +510,31 @@ void main() {
     doneCurrent();
     return;
   }
+
+  if (new_program->uniformLocation("uTime") != -1 && !is_dynamic) {
+    WARN_PRINT("uTime uniform found in static shader code");
+  }
   
   shader_program.swap(new_program);
+
+  this->static_rendered = false;
   
   doneCurrent();  // Release the context
 }
 
 void CurrentOutputRenderer::showEvent(QShowEvent* event) {
   QOpenGLWidget::showEvent(event);
-
-  if (!render_timer.isActive()) render_timer.start();
-  else {
+  if (is_dynamic && !render_timer.isActive()) render_timer.start();
+  else if (!render_timer.isActive()) {
     render_timer.stop();
     render_timer.start();
   }
-
   if (!timer.isValid()) timer.start();
 }
 
 void CurrentOutputRenderer::hideEvent(QHideEvent* event) {
   QOpenGLWidget::hideEvent(event);
-  
-  if (timer.isValid()) timer.invalidate();
-
   if (render_timer.isActive()) render_timer.stop();
+  if (timer.isValid()) timer.invalidate();
 }
 

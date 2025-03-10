@@ -25,14 +25,68 @@
 /*                                                                               */
 /*********************************************************************************/
 
-#include "ai-agent/parameters.hpp"
+#ifndef AI_AGENT_HPP
+#define AI_AGENT_HPP
 
-// TODO: What about the maximum number of genes?
+#include <thread>
+#include <mutex>
+#include <condition_variable>
+#include <chrono>
 
-int maximum_population_size = 100; // Maximum number of graphs to apply genetic algorithm on
-int maximum_generations = 100; // Maximum number of generations until the algorithm stops
-float mutation_probability = 0.1f;
-float crossover_probability = 0.8f;
-float elitism_ratio = 0.2f;
-int maximum_iterations = 1000;
-int maximum_nodes_per_graph = 100; // If the matching type is FULL_GRAPH, we need to limit the number of nodes
+#include <QGraphicsScene>
+
+#include "gui/controller/fitness_calculator.hpp"
+
+class AIAgentWorker {
+public:
+    enum class MatchingType {
+        PARAMETERS_ONLY,
+        PARAMETERS_AND_CONNECTIONS,
+        FULL_GRAPH,
+    };
+
+    AIAgentWorker();
+    ~AIAgentWorker();
+
+    void start_matching();
+    void stop_matching();
+
+    void worker_main();
+
+    void set_mutation_probability(const float& mutation_probability) { this->mutation_probability = mutation_probability; }
+    void set_crossover_probability(const float& crossover_probability) { this->crossover_probability = crossover_probability; }
+    void set_elitism_ratio(const float& elitism_ratio) { this->elitism_ratio = elitism_ratio; }
+    void set_maximum_iterations(const int& maximum_iterations) { this->maximum_iterations = maximum_iterations; }
+
+    void set_fitness_calculator(AIAgentFitnessCalculator* fitness_calculator) { this->fitness_calculator = fitness_calculator; }
+
+    void set_matching_type(const MatchingType& matching_type) { this->matching_type = matching_type; }
+
+    void set_scene(QGraphicsScene* scene) { this->scene = scene; }
+    
+private:
+    std::thread worker;
+    
+    std::mutex mtx;
+    std::condition_variable cv;
+    int process_counter;
+    bool exit_requested;
+    std::atomic<bool> stop_requested;
+
+    float mutation_probability;
+    float crossover_probability;
+    float elitism_ratio;
+    int maximum_iterations;
+
+    AIAgentFitnessCalculator* fitness_calculator;
+
+    MatchingType matching_type;
+
+    QGraphicsScene* scene;
+
+    void stop_thread();
+
+    std::vector<std::pair<std::unordered_map<int, std::string>, std::unordered_map<int, std::string>>> generate_population(const int& population_size);
+};
+
+#endif // AI_AGENT_HPP

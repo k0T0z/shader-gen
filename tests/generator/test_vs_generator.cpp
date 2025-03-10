@@ -52,13 +52,23 @@ TEST(VisualShaderGeneratorTest, TestGenerateShader) {
 
   std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>> generators;
   generators[output_node_id] = std::make_shared<VisualShaderNodeGeneratorOutput>(); // Create an output node
-  generators[time_node_id] = std::make_shared<VisualShaderNodeGeneratorInput>(VisualShaderNodeInputType::INPUT_TYPE_TIME, VisualShaderNodePortType::PORT_TYPE_SCALAR); // Create a time input
-  generators[sin_node_id] = std::make_shared<VisualShaderNodeGeneratorFloatFunc>(VisualShaderNodeFloatFunc::FUNC_SIN); // Create a sin func
-  generators[div_node_id] = std::make_shared<VisualShaderNodeGeneratorFloatOp>(VisualShaderNodeFloatOp::OP_DIV); // Create a divide operator
-  generators[uv_node_id] = std::make_shared<VisualShaderNodeGeneratorInput>(VisualShaderNodeInputType::INPUT_TYPE_UV, VisualShaderNodePortType::PORT_TYPE_VECTOR_2D); // Create a UV input
+  generators[time_node_id] = std::make_shared<VisualShaderNodeGeneratorInput>(VisualShaderNodeInput::INPUT_TYPE_TIME); // Create a time input
+  generators[sin_node_id] = std::make_shared<VisualShaderNodeGeneratorFloatFunc>(VisualShaderNodeFloatFunc::FUNC_TYPE_SIN); // Create a sin func
+  generators[div_node_id] = std::make_shared<VisualShaderNodeGeneratorFloatOp>(VisualShaderNodeFloatOp::OP_TYPE_DIV); // Create a divide operator
+  generators[uv_node_id] = std::make_shared<VisualShaderNodeGeneratorInput>(VisualShaderNodeInput::INPUT_TYPE_UV); // Create a UV input
   generators[value_noise_node_id] = std::make_shared<VisualShaderNodeGeneratorValueNoise>(100.0f); // Create a Value Noise node
-  generators[sub_node_id] = std::make_shared<VisualShaderNodeGeneratorFloatOp>(VisualShaderNodeFloatOp::OP_SUB); // Create a subtract operator
-  generators[round_node_id] = std::make_shared<VisualShaderNodeGeneratorFloatFunc>(VisualShaderNodeFloatFunc::FUNC_ROUND); // Create a float func
+  generators[sub_node_id] = std::make_shared<VisualShaderNodeGeneratorFloatOp>(VisualShaderNodeFloatOp::OP_TYPE_SUB); // Create a subtract operator
+  generators[round_node_id] = std::make_shared<VisualShaderNodeGeneratorFloatFunc>(VisualShaderNodeFloatFunc::FUNC_TYPE_ROUND); // Create a float func
+
+  std::unordered_map<int, std::shared_ptr<VisualShaderNodePortTypeGenerator>> port_type_generators;
+  port_type_generators[output_node_id] = std::make_shared<VisualShaderNodePortTypeGeneratorOutput>(proto_nodes[output_node_id]);
+  port_type_generators[time_node_id] = std::make_shared<VisualShaderNodePortTypeGeneratorInput>(proto_nodes[time_node_id], VisualShaderNodeInput::INPUT_TYPE_TIME);
+  port_type_generators[sin_node_id] = std::make_shared<VisualShaderNodePortTypeGeneratorFloatFunc>(proto_nodes[sin_node_id], VisualShaderNodeFloatFunc::FUNC_TYPE_SIN);
+  port_type_generators[div_node_id] = std::make_shared<VisualShaderNodePortTypeGeneratorFloatOp>(proto_nodes[div_node_id], VisualShaderNodeFloatOp::OP_TYPE_DIV);
+  port_type_generators[uv_node_id] = std::make_shared<VisualShaderNodePortTypeGeneratorInput>(proto_nodes[uv_node_id], VisualShaderNodeInput::INPUT_TYPE_UV);
+  port_type_generators[value_noise_node_id] = std::make_shared<VisualShaderNodePortTypeGeneratorValueNoise>(proto_nodes[value_noise_node_id]);
+  port_type_generators[sub_node_id] = std::make_shared<VisualShaderNodePortTypeGeneratorFloatOp>(proto_nodes[sub_node_id], VisualShaderNodeFloatOp::OP_TYPE_SUB);
+  port_type_generators[round_node_id] = std::make_shared<VisualShaderNodePortTypeGeneratorFloatFunc>(proto_nodes[round_node_id], VisualShaderNodeFloatFunc::FUNC_TYPE_ROUND);
 
   shadergen_visual_shader_generator::ConnectionKey time_output_key;
   time_output_key.f_key.node = time_node_id;
@@ -176,6 +186,7 @@ TEST(VisualShaderGeneratorTest, TestGenerateShader) {
   // Generate the shader.
   bool status{shadergen_visual_shader_generator::generate_shader(proto_nodes,
                                                                  generators,
+                                                                 port_type_generators,
                                                                  std::make_pair(input_connections, output_connections),
                                                                  generated_code)};
   ASSERT_EQ(status, true);
@@ -272,6 +283,7 @@ TEST(VisualShaderGeneratorTest, TestGenerateShader) {
   // Send the time node.
   generated_code = shadergen_visual_shader_generator::generate_preview_shader(proto_nodes,
                                                                  generators,
+                                                                 port_type_generators,
                                                                  std::make_pair(input_connections, output_connections),
                                                                  time_node_id, 0);
   expected_code = license_notices +
@@ -288,6 +300,7 @@ TEST(VisualShaderGeneratorTest, TestGenerateShader) {
 
   generated_code = shadergen_visual_shader_generator::generate_preview_shader(proto_nodes,
                                                                  generators,
+                                                                 port_type_generators,
                                                                  std::make_pair(input_connections, output_connections),
                                                                  sin_node_id, 0);
   expected_code = license_notices +
@@ -306,6 +319,7 @@ TEST(VisualShaderGeneratorTest, TestGenerateShader) {
 
   generated_code = shadergen_visual_shader_generator::generate_preview_shader(proto_nodes,
                                                                  generators,
+                                                                 port_type_generators,
                                                                  std::make_pair(input_connections, output_connections),
                                                                  value_noise_node_id, 0);
   expected_code = license_notices +

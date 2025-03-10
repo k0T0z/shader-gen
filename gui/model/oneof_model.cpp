@@ -113,6 +113,12 @@ bool OneofModel::set_data([[maybe_unused]] const QVariant& value) {
   FAIL_AND_RETURN_NON_VOID(false, "Cannot set data in a MessageModel.");
 }
 
+const ProtoModel* OneofModel::get_sub_model() const {
+  const Reflection* refl{m_message_buffer->GetReflection()};
+  SILENT_CHECK_CONDITION_TRUE_NON_VOID(!is_set() && !refl->HasOneof(*m_message_buffer, m_oneof_desc), nullptr);
+  return m_sub_model;
+}
+
 const ProtoModel* OneofModel::get_sub_model(const int& field_number) const {
   const Reflection* refl{m_message_buffer->GetReflection()};
   SILENT_CHECK_CONDITION_TRUE_NON_VOID(!is_set() && !refl->HasOneof(*m_message_buffer, m_oneof_desc), nullptr);
@@ -258,7 +264,7 @@ bool OneofModel::set_oneof(const int& field_number) {
   bool result{set_oneof(field_desc)};
   CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to set oneof field.");
 
-  QModelIndex index{this->index(0, field_desc->index())};
+  QModelIndex index{this->index(0, get_column_index(field_desc))};
 
   Q_EMIT dataChanged(index, index);
   parent_data_changed();
@@ -270,6 +276,22 @@ int OneofModel::get_oneof_field_number() const {
   const Reflection* refl{m_message_buffer->GetReflection()};
   SILENT_CHECK_CONDITION_TRUE_NON_VOID(!is_set() && !refl->HasOneof(*m_message_buffer, m_oneof_desc), -1);
   return m_current_field_desc->number();
+}
+
+int OneofModel::get_column_index(const FieldDescriptor* field_desc) const {
+  CHECK_CONDITION_TRUE_NON_VOID(!shadergen_utils::is_inside_real_oneof(field_desc), false, "Field is not inside a oneof.");
+  const OneofDescriptor* oneof_desc{field_desc->real_containing_oneof()};
+  SILENT_CHECK_PARAM_NULLPTR_NON_VOID(oneof_desc, false);
+
+  SILENT_CHECK_CONDITION_TRUE_NON_VOID(oneof_desc->name() != m_oneof_desc->name(), false);
+
+  const int total_fields{columnCount()};
+  for (int i {0}; i < total_fields; ++i) {
+    if (oneof_desc->field(i) == field_desc) {
+      return i;
+    }
+  }
+  return -1;
 }
 
 void OneofModel::clear_sub_model() const {

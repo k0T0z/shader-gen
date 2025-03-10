@@ -55,14 +55,11 @@ class IVisualShaderProtoNode {
   virtual std::string get_caption() const = 0;
 
   virtual int get_input_port_count() const = 0;
-  virtual VisualShaderNodePortType get_input_port_type(const int& index) const = 0;
   virtual std::string get_input_port_caption(const int& index) const = 0;
 
   virtual int get_output_port_count() const = 0;
-  virtual VisualShaderNodePortType get_output_port_type(const int& index) const = 0;
   virtual std::string get_output_port_caption(const int& index) const = 0;
 
-  virtual VisualShaderNodeCategory get_category() const = 0;
   virtual std::string get_category_path() const = 0;
 
   virtual std::string get_description() const = 0;
@@ -92,20 +89,13 @@ class VisualShaderProtoNode : public IVisualShaderProtoNode {
     return Proto::descriptor()->options().GetExtension(gui::model::schema::node_input_port_count);
   }
 
-  VisualShaderNodePortType get_input_port_type(const int& index) const override {
-    VALIDATE_INDEX_NON_VOID(index, get_input_port_count(), VisualShaderNodePortType::PORT_TYPE_UNSPECIFIED,
-                            "Invalid input port index");
-    VALIDATE_INDEX_NON_VOID(index,
-                            Proto::descriptor()->options().ExtensionSize(gui::model::schema::node_input_port_type),
-                            VisualShaderNodePortType::PORT_TYPE_UNSPECIFIED, "Invalid input port index");
-    return Proto::descriptor()->options().GetExtension(gui::model::schema::node_input_port_type, index);
-  }
-
   std::string get_input_port_caption(const int& index) const override {
     VALIDATE_INDEX_NON_VOID(index, get_input_port_count(), "", "Invalid input port index");
     VALIDATE_INDEX_NON_VOID(index,
                             Proto::descriptor()->options().ExtensionSize(gui::model::schema::node_input_port_caption),
                             "", "Invalid input port index");
+    CHECK_CONDITION_TRUE_NON_VOID(Proto::descriptor()->options().ExtensionSize(gui::model::schema::node_input_port_caption) != get_input_port_count(),
+                                  "", "Input port caption count mismatch");
     return Proto::descriptor()->options().GetExtension(gui::model::schema::node_input_port_caption, index);
   }
 
@@ -116,27 +106,14 @@ class VisualShaderProtoNode : public IVisualShaderProtoNode {
     return Proto::descriptor()->options().GetExtension(gui::model::schema::node_output_port_count);
   }
 
-  VisualShaderNodePortType get_output_port_type(const int& index) const override {
-    VALIDATE_INDEX_NON_VOID(index, get_output_port_count(), VisualShaderNodePortType::PORT_TYPE_UNSPECIFIED,
-                            "Invalid output port index");
-    VALIDATE_INDEX_NON_VOID(index,
-                            Proto::descriptor()->options().ExtensionSize(gui::model::schema::node_output_port_type),
-                            VisualShaderNodePortType::PORT_TYPE_UNSPECIFIED, "Invalid output port index");
-    return Proto::descriptor()->options().GetExtension(gui::model::schema::node_output_port_type, index);
-  }
-
   std::string get_output_port_caption(const int& index) const override {
     VALIDATE_INDEX_NON_VOID(index, get_output_port_count(), "", "Invalid output port index");
     VALIDATE_INDEX_NON_VOID(index,
                             Proto::descriptor()->options().ExtensionSize(gui::model::schema::node_output_port_caption),
                             "", "Invalid output port index");
+    CHECK_CONDITION_TRUE_NON_VOID(Proto::descriptor()->options().ExtensionSize(gui::model::schema::node_output_port_caption) != get_output_port_count(),
+                                  "", "Output port caption count mismatch");
     return Proto::descriptor()->options().GetExtension(gui::model::schema::node_output_port_caption, index);
-  }
-
-  VisualShaderNodeCategory get_category() const override {
-    CHECK_CONDITION_TRUE_NON_VOID(!Proto::descriptor()->options().HasExtension(gui::model::schema::node_category),
-                                  VisualShaderNodeCategory::CATEGORY_UNSPECIFIED, "Node category not set");
-    return Proto::descriptor()->options().GetExtension(gui::model::schema::node_category);
   }
 
   std::string get_category_path() const override {
@@ -192,10 +169,7 @@ class VisualShaderProtoNode : public IVisualShaderProtoNode {
     else if constexpr (std::is_same_v<Proto, VisualShaderNodeDotProduct>) return VisualShader::VisualShaderNode::kDotProductFieldNumber;
     else if constexpr (std::is_same_v<Proto, VisualShaderNodeVectorLen>) return VisualShader::VisualShaderNode::kVectorLenFieldNumber;
     else if constexpr (std::is_same_v<Proto, VisualShaderNodeClamp>) return VisualShader::VisualShaderNode::kClampFieldNumber;
-    else if constexpr (std::is_same_v<Proto, VisualShaderNodeStep>) return VisualShader::VisualShaderNode::kStepFieldNumber;
-    else if constexpr (std::is_same_v<Proto, VisualShaderNodeSmoothStep>) return VisualShader::VisualShaderNode::kSmoothStepFieldNumber;
     else if constexpr (std::is_same_v<Proto, VisualShaderNodeVectorDistance>) return VisualShader::VisualShaderNode::kVectorDistanceFieldNumber;
-    else if constexpr (std::is_same_v<Proto, VisualShaderNodeMix>) return VisualShader::VisualShaderNode::kMixFieldNumber;
     else if constexpr (std::is_same_v<Proto, VisualShaderNode2dVectorCompose>) return VisualShader::VisualShaderNode::kVector2DComposeFieldNumber;
     else if constexpr (std::is_same_v<Proto, VisualShaderNode3dVectorCompose>) return VisualShader::VisualShaderNode::kVector3DComposeFieldNumber;
     else if constexpr (std::is_same_v<Proto, VisualShaderNode4dVectorCompose>) return VisualShader::VisualShaderNode::kVector4DComposeFieldNumber;

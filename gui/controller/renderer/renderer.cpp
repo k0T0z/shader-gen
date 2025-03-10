@@ -143,7 +143,7 @@ void main() {
   FragCoord = aFragCoord;
 }
 
-  )";
+)";
 
   std::string fragment_shader_source;
   if (code.empty()) {
@@ -161,7 +161,7 @@ void main() {
   FragColor = vec4(0.0, 0.0, 0.0, 1.0);
 }
 
-    )";
+)";
   } else {
     fragment_shader_source = "#version 430 core\n\n" + code;
   }
@@ -205,7 +205,6 @@ void RendererWidget::showEvent(QShowEvent* event) {
 void RendererWidget::hideEvent(QHideEvent* event) {
   QOpenGLWidget::hideEvent(event);
   
-  if (timer.isValid()) timer.invalidate();
-
   if (render_timer.isActive()) render_timer.stop();
+  if (timer.isValid()) timer.invalidate();
 }

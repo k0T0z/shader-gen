@@ -66,8 +66,6 @@ class PrimitiveModel : public ProtoModel {
   virtual QVariant headerData([[maybe_unused]] int section, [[maybe_unused]] Qt::Orientation orientation,
                               [[maybe_unused]] int role = Qt::DisplayRole) const override;
 
-  const FieldDescriptor* get_field_descriptor() const { return m_field_desc; }
-
  private:
   Message* m_message_buffer;
   const FieldDescriptor* m_field_desc;
