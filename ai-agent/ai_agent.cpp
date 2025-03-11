@@ -32,7 +32,7 @@
 #include "error_macros.hpp"
 #include "ai-agent/utils/utils.hpp"
 
-AIAgentWorker::AIAgentWorker() : process_counter(0), 
+AIAgentWorker::AIAgentWorker(ShaderGenSharedMemory* shared_memory) : process_counter(0), 
                                  exit_requested(false),
                                  stop_requested(false),
                                  mutation_probability(0.0f), 
@@ -41,7 +41,8 @@ AIAgentWorker::AIAgentWorker() : process_counter(0),
                                  maximum_iterations(0),
                                  fitness_calculator(nullptr),
                                  matching_type(MatchingType::PARAMETERS_ONLY),
-                                 scene(nullptr) {
+                                 scene(nullptr),
+                                 shared_memory(shared_memory) {
     worker = std::thread(&AIAgentWorker::worker_main, this);
 }
 
@@ -67,7 +68,13 @@ void AIAgentWorker::stop_matching() {
 
 void AIAgentWorker::worker_main() {
     std::unique_lock<std::mutex> lock(mtx);
+
+    CHECK_PARAM_NULLPTR(shared_memory, "Shared memory is not set");
+
     while (true) {
+        // Set is_stopped to false
+        shared_memory->set_is_stopped(false);
+
         // Wait for either start command or exit request
         cv.wait(lock, [this]() {
             return process_counter > 0 || exit_requested;

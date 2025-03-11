@@ -79,12 +79,15 @@ VisualShaderEditor::VisualShaderEditor(MessageModel* model, QWidget* parent)
       visual_shader_model(model),
       nodes_model(nullptr),
       connections_model(nullptr),
+      shared_memory(nullptr),
       ai_agent_worker(nullptr),
       fitness_calculator(nullptr),
       parameters_editor(nullptr),
       start_matching_button(nullptr),
       stop_matching_button(nullptr),
-      matching_type_combo_box(nullptr) {
+      matching_type_combo_box(nullptr),
+      start_matching_timer(nullptr),
+      stop_matching_timer(nullptr) {
   resize(1440, 720);
 
   VisualShaderEditor::init();
@@ -94,6 +97,7 @@ VisualShaderEditor::~VisualShaderEditor() {
   delete ai_agent_worker;
   delete fitness_calculator;
   delete parameters_editor;
+  delete shared_memory;
 }
 
 void VisualShaderEditor::init() {
@@ -268,7 +272,9 @@ void VisualShaderEditor::init() {
   menu_bar->addWidget(match_image_button);
   QObject::connect(match_image_button, &QPushButton::pressed, this, &VisualShaderEditor::on_match_image_button_pressed);
 
-  ai_agent_worker = new AIAgentWorker();
+  shared_memory = new ShaderGenSharedMemory();
+
+  ai_agent_worker = new AIAgentWorker(shared_memory);
   fitness_calculator = new AIAgentFitnessCalculator();
   parameters_editor = new AIAgentParametersEditor();
   start_matching_button = new StartMatchingButton(scene_layer);
@@ -293,6 +299,16 @@ void VisualShaderEditor::init() {
   matching_type_combo_box->addItem("Full Graph", static_cast<int>(AIAgentWorker::MatchingType::FULL_GRAPH));
   matching_type_combo_box->setCurrentIndex(0);
   menu_bar->addWidget(matching_type_combo_box);
+
+  start_matching_timer = new QTimer(this);
+  stop_matching_timer = new QTimer(this);
+
+  // Setup timers
+  start_matching_timer->setInterval(1000); // 1 second
+  stop_matching_timer->setInterval(500); // Check every 0.5 seconds
+  
+  QObject::connect(start_matching_timer, &QTimer::timeout, this, &VisualShaderEditor::on_start_matching_timer_timeout);
+  QObject::connect(stop_matching_timer, &QTimer::timeout, this, &VisualShaderEditor::on_stop_matching_timer_timeout);
 
   // Set the top layer layout.
   top_layer->setLayout(menu_bar);
@@ -613,12 +629,29 @@ void VisualShaderEditor::on_start_matching_button_pressed() {
   ai_agent_worker->set_scene(scene);
   
   ai_agent_worker->start_matching();
+
+  if (!start_matching_timer->isActive()) start_matching_timer->start();
+  if (stop_matching_timer->isActive()) stop_matching_timer->stop();
 }
 
 void VisualShaderEditor::on_stop_matching_button_pressed() {
   CHECK_PARAM_NULLPTR(ai_agent_worker, "AI agent worker is null");
 
   ai_agent_worker->stop_matching();
+
+  if (start_matching_timer->isActive()) start_matching_timer->stop();
+  if (!stop_matching_timer->isActive()) stop_matching_timer->start();
+}
+
+void VisualShaderEditor::on_start_matching_timer_timeout() {
+  const bool is_stopped{shared_memory->get_is_stopped()};
+  if (is_stopped && start_matching_timer->isActive()) start_matching_timer->stop();
+}
+
+void VisualShaderEditor::on_stop_matching_timer_timeout() {
+  const bool is_stopped{shared_memory->get_is_stopped()};
+  SILENT_CHECK_CONDITION_TRUE(!is_stopped);
+  if (stop_matching_timer->isActive()) stop_matching_timer->stop();
 }
 
 std::vector<std::string> VisualShaderEditor::parse_node_category_path(const std::string& n_category_path) {
