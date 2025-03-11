@@ -830,9 +830,9 @@ bool VisualShaderGraphicsScene::add_node_to_model(const int& n_id, const std::sh
 
   int row_entry{nodes_model->append_row()};
 
-  CHECK_CONDITION_TRUE_NON_VOID(!update_node_in_model(n_id, VisualShader::VisualShaderNode::kIdFieldNumber, n_id, row_entry), false, "Failed to set node id");
-  CHECK_CONDITION_TRUE_NON_VOID(!update_node_in_model(n_id, VisualShader::VisualShaderNode::kXCoordinateFieldNumber, coordinate.x(), row_entry), false, "Failed to set node x coordinate");
-  CHECK_CONDITION_TRUE_NON_VOID(!update_node_in_model(n_id, VisualShader::VisualShaderNode::kYCoordinateFieldNumber, coordinate.y(), row_entry), false, "Failed to set node y coordinate");
+  CHECK_CONDITION_TRUE_NON_VOID(!update_node_in_model(-1, VisualShader::VisualShaderNode::kIdFieldNumber, n_id, row_entry), false, "Failed to set node id");
+  CHECK_CONDITION_TRUE_NON_VOID(!update_node_in_model(-1, VisualShader::VisualShaderNode::kXCoordinateFieldNumber, coordinate.x(), row_entry), false, "Failed to set node x coordinate");
+  CHECK_CONDITION_TRUE_NON_VOID(!update_node_in_model(-1, VisualShader::VisualShaderNode::kYCoordinateFieldNumber, coordinate.y(), row_entry), false, "Failed to set node y coordinate");
 
   // Pass any field number that is inside the oneof to enter te OneofModel.
   // You must also to pass true for `for_get_oneof` parameter.
@@ -1142,7 +1142,7 @@ bool VisualShaderGraphicsScene::add_node(const std::shared_ptr<IVisualShaderProt
 
 QVariant VisualShaderGraphicsScene::get_node_value(const int& n_id, const int& field_number, const int& row_entry) const {
   int t_row_entry{row_entry};
-  if (t_row_entry == -1) t_row_entry = find_node_entry(n_id);
+  if (t_row_entry == -1 && n_id != -1) t_row_entry = find_node_entry(n_id);
   CHECK_CONDITION_TRUE_NON_VOID(t_row_entry == -1, false, "Failed to find node entry");
 
   return visual_shader_model->data(
@@ -1152,7 +1152,7 @@ QVariant VisualShaderGraphicsScene::get_node_value(const int& n_id, const int& f
 
 QVariant VisualShaderGraphicsScene::get_node_field_value(const int& n_id, const int& field_number, const int& row_entry) const {
   int t_row_entry{row_entry};
-  if (t_row_entry == -1) t_row_entry = find_node_entry(n_id);
+  if (t_row_entry == -1 && n_id != -1) t_row_entry = find_node_entry(n_id);
   CHECK_CONDITION_TRUE_NON_VOID(t_row_entry == -1, false, "Failed to find node entry");
 
   const int oneof_value_field_number{get_node_type_field_number(t_row_entry)};
@@ -1218,7 +1218,7 @@ bool VisualShaderGraphicsScene::delete_node(const int& n_id, const int& in_port_
 
 bool VisualShaderGraphicsScene::update_node_in_model(const int& n_id, const int& field_number, const QVariant& value, const int& row_entry) {
   int t_row_entry{row_entry};
-  if (t_row_entry == -1) t_row_entry = find_node_entry(n_id);
+  if (t_row_entry == -1 && n_id != -1) t_row_entry = find_node_entry(n_id);
   CHECK_CONDITION_TRUE_NON_VOID(t_row_entry == -1, false, "Failed to find node entry");
 
   bool result{visual_shader_model->set_data(
@@ -1451,11 +1451,11 @@ bool VisualShaderGraphicsScene::add_connection_to_model(const int& c_id, const i
 
   int row_entry{connections_model->append_row()};
 
-  CHECK_CONDITION_TRUE_NON_VOID(!update_connection_in_model(c_id, VisualShader::VisualShaderConnection::kIdFieldNumber, c_id, row_entry), false, "Failed to update connection id");
-  CHECK_CONDITION_TRUE_NON_VOID(!update_connection_in_model(c_id, VisualShader::VisualShaderConnection::kFromNodeIdFieldNumber, from_node_id, row_entry), false, "Failed to update from node id");
-  CHECK_CONDITION_TRUE_NON_VOID(!update_connection_in_model(c_id, VisualShader::VisualShaderConnection::kFromPortIndexFieldNumber, from_port_index, row_entry), false, "Failed to update from port index");
-  CHECK_CONDITION_TRUE_NON_VOID(!update_connection_in_model(c_id, VisualShader::VisualShaderConnection::kToNodeIdFieldNumber, to_node_id, row_entry), false, "Failed to update to node id");
-  CHECK_CONDITION_TRUE_NON_VOID(!update_connection_in_model(c_id, VisualShader::VisualShaderConnection::kToPortIndexFieldNumber, to_port_index, row_entry), false, "Failed to update to port index");
+  CHECK_CONDITION_TRUE_NON_VOID(!update_connection_in_model(-1, VisualShader::VisualShaderConnection::kIdFieldNumber, c_id, row_entry), false, "Failed to update connection id");
+  CHECK_CONDITION_TRUE_NON_VOID(!update_connection_in_model(-1, VisualShader::VisualShaderConnection::kFromNodeIdFieldNumber, from_node_id, row_entry), false, "Failed to update from node id");
+  CHECK_CONDITION_TRUE_NON_VOID(!update_connection_in_model(-1, VisualShader::VisualShaderConnection::kFromPortIndexFieldNumber, from_port_index, row_entry), false, "Failed to update from port index");
+  CHECK_CONDITION_TRUE_NON_VOID(!update_connection_in_model(-1, VisualShader::VisualShaderConnection::kToNodeIdFieldNumber, to_node_id, row_entry), false, "Failed to update to node id");
+  CHECK_CONDITION_TRUE_NON_VOID(!update_connection_in_model(-1, VisualShader::VisualShaderConnection::kToPortIndexFieldNumber, to_port_index, row_entry), false, "Failed to update to port index");
 
   return true;
 }
@@ -1565,7 +1565,7 @@ bool VisualShaderGraphicsScene::is_valid_connection(const int& from_node_id, con
 
 int VisualShaderGraphicsScene::get_connection_value(const int& c_id, const int& field_number, const int& row_entry) const {
   int t_row_entry{row_entry};
-  if (t_row_entry == -1) t_row_entry = find_connection_entry(c_id);
+  if (t_row_entry == -1 && c_id != -1) t_row_entry = find_connection_entry(c_id);
   VALIDATE_INDEX_NON_VOID(t_row_entry, connections_model->rowCount(), false, "Connection entry not found");
 
   return visual_shader_model->data(
@@ -1723,7 +1723,7 @@ bool VisualShaderGraphicsScene::convert_to_temporary_connection(const int& c_id,
 
 bool VisualShaderGraphicsScene::update_connection_in_model(const int& c_id, const int& field_number, const int& value, const int& row_entry) {
   int t_row_entry{row_entry};
-  if (t_row_entry == -1) t_row_entry = find_connection_entry(c_id);
+  if (t_row_entry == -1 && c_id != -1) t_row_entry = find_connection_entry(c_id);
   VALIDATE_INDEX_NON_VOID(t_row_entry, connections_model->rowCount(), false, "Connection entry not found");
 
   bool result{visual_shader_model->set_data(
