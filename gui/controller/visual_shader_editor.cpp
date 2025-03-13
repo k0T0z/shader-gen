@@ -36,6 +36,7 @@
 #include "gui/controller/utils/utils.hpp"
 
 #include "generator/visual_shader_generator.hpp"
+#include "ai-agent/utils/utils.hpp"
 
 using VisualShader = gui::model::schema::VisualShader;
 
@@ -616,6 +617,7 @@ void VisualShaderEditor::on_start_matching_button_pressed() {
   CHECK_PARAM_NULLPTR(fitness_calculator, "Fitness calculator is null");
   CHECK_PARAM_NULLPTR(parameters_editor, "Parameters editor is null");
 
+  ai_agent_worker->set_maximum_population_size(parameters_editor->get_maximum_population_size());
   ai_agent_worker->set_mutation_probability(parameters_editor->get_mutation_probability());
   ai_agent_worker->set_crossover_probability(parameters_editor->get_crossover_probability());
   ai_agent_worker->set_elitism_ratio(parameters_editor->get_elitism_ratio());
@@ -627,6 +629,8 @@ void VisualShaderEditor::on_start_matching_button_pressed() {
   ai_agent_worker->set_matching_type(matching_type);
 
   ai_agent_worker->set_scene(scene);
+
+  shared_memory->set_encoded_graph(ai_agent_utils::encode_graph(nodes_model, connections_model));
   
   ai_agent_worker->start_matching();
 

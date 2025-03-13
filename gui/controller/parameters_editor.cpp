@@ -65,6 +65,7 @@ void AIAgentParametersEditor::init() {
   };
 
   // Create rows for each parameter
+  create_parameter_row("Maximum Population Size", maximum_population_size);
   create_parameter_row("Mutation Probability", mutation_probability);
   create_parameter_row("Crossover Probability", crossover_probability);
   create_parameter_row("Elitism Ratio", elitism_ratio);

@@ -35,6 +35,7 @@
 AIAgentWorker::AIAgentWorker(ShaderGenSharedMemory* shared_memory) : process_counter(0), 
                                  exit_requested(false),
                                  stop_requested(false),
+                                 maximum_population_size(0),
                                  mutation_probability(0.0f), 
                                  crossover_probability(0.0f), 
                                  elitism_ratio(0.0f), 
@@ -89,45 +90,59 @@ void AIAgentWorker::worker_main() {
         CONTINUE_IF_TRUE(fitness_calculator == nullptr, "Fitness calculator is not set");
         CONTINUE_IF_TRUE(scene == nullptr, "Scene is not set");
 
-        // Process all pending requests
-        while (process_counter > 0) {
-            process_counter--;
-            lock.unlock();
+        // Generate initial population
+        const std::string encoded_graph = shared_memory->get_encoded_graph();
 
-            // Process with interrupt checks
-            bool completed = false;
-            auto start = std::chrono::steady_clock::now();
+        std::unordered_map<int, std::string> encoded_nodes = get_encoded_nodes(encoded_graph);
+        std::unordered_map<int, std::string> encoded_connections = get_encoded_connections(encoded_graph);
+
+        std::pair<std::vector<std::unordered_map<int, std::string>>, std::vector<std::unordered_map<int, std::string>>> population = ai_agent_utils::generate_population(matching_type, encoded_nodes, encoded_connections, maximum_population_size);
+        std::vector<std::unordered_map<int, std::string>> nodes_population = population.first;
+        std::vector<std::unordered_map<int, std::string>> connections_population = population.second;
+
+        while (maximum_iterations-- > 0) {
             
-            // Work simulation with interrupt checks
-            while (!completed) {
-                // Do chunk of work
-                DEBUG_PRINT("Processing...");
-                
-                // Check for stop every 100ms
-                std::this_thread::sleep_for(std::chrono::milliseconds(100));
-                
-                // Check completion condition
-                auto now = std::chrono::steady_clock::now();
-                if (now - start > std::chrono::milliseconds(500)) {
-                    completed = true;
-                }
-
-                // Check for stop request
-                if (stop_requested.load()) {
-                    DEBUG_PRINT("Interrupting current work");
-                    completed = true;
-                }
-            }
-
-            lock.lock();
-            
-            // Exit processing loop if stop requested
-            if (stop_requested.load()) {
-                stop_requested.store(false);
-                process_counter = 0; // Clear remaining tasks
-                break;
-            }
         }
+
+        // Process all pending requests
+        // while (process_counter > 0) {
+        //     process_counter--;
+        //     lock.unlock();
+
+        //     // Process with interrupt checks
+        //     bool completed = false;
+        //     auto start = std::chrono::steady_clock::now();
+            
+        //     // Work simulation with interrupt checks
+        //     while (!completed) {
+        //         // Do chunk of work
+        //         DEBUG_PRINT("Processing...");
+                
+        //         // Check for stop every 100ms
+        //         std::this_thread::sleep_for(std::chrono::milliseconds(100));
+                
+        //         // Check completion condition
+        //         auto now = std::chrono::steady_clock::now();
+        //         if (now - start > std::chrono::milliseconds(500)) {
+        //             completed = true;
+        //         }
+
+        //         // Check for stop request
+        //         if (stop_requested.load()) {
+        //             DEBUG_PRINT("Interrupting current work");
+        //             completed = true;
+        //         }
+        //     }
+
+        //     lock.lock();
+            
+        //     // Exit processing loop if stop requested
+        //     if (stop_requested.load()) {
+        //         stop_requested.store(false);
+        //         process_counter = 0; // Clear remaining tasks
+        //         break;
+        //     }
+        // }
     }
     DEBUG_PRINT("Worker thread exiting cleanly");
 }
@@ -138,4 +153,43 @@ void AIAgentWorker::stop_thread() {
         exit_requested = true;
     }
     cv.notify_one();
+}
+
+std::unordered_map<int, std::string> AIAgentWorker::get_encoded_nodes(const std::string& graph) {
+    std::unordered_map<int, std::string> encoded_nodes;
+    const std::vector<std::string> tokens{ai_agent_utils::split_string(graph, ',')};
+    for (const std::string& token : tokens) {
+        const std::vector<std::string> sub_tokens{ai_agent_utils::split_string(token, ';')};
+        SILENT_CONTINUE_IF_TRUE(sub_tokens.at(0) != "0");
+
+        const int n_id = std::stoi(sub_tokens.at(1));
+        std::string encoded_node;
+        encoded_node += "0;"; // 0 means Node and 1 means Connection
+        encoded_node += sub_tokens.at(1) + ';';
+        encoded_node += sub_tokens.at(2) + ';';
+        for (int i{3}; i < sub_tokens.size(); ++i) encoded_node += sub_tokens.at(i) + ';';
+        encoded_node.pop_back(); // Remove the last semicolon
+        encoded_nodes[n_id] = encoded_node;
+    }
+    return encoded_nodes;
+}
+
+std::unordered_map<int, std::string> AIAgentWorker::get_encoded_connections(const std::string& graph) {
+    std::unordered_map<int, std::string> encoded_connections;
+    const std::vector<std::string> tokens{ai_agent_utils::split_string(graph, ',')};
+    for (const std::string& token : tokens) {
+        const std::vector<std::string> sub_tokens{ai_agent_utils::split_string(token, ';')};
+        SILENT_CONTINUE_IF_TRUE(sub_tokens.at(0) != "1");
+
+        const int c_id = std::stoi(sub_tokens.at(1));
+        std::string encoded_connection;
+        encoded_connection += "1;"; // 0 means Node and 1 means Connection
+        encoded_connection += sub_tokens.at(1) + ';';
+        encoded_connection += sub_tokens.at(2) + ';';
+        encoded_connection += sub_tokens.at(3) + ';';
+        encoded_connection += sub_tokens.at(4) + ';';
+        encoded_connection += sub_tokens.at(5);
+        encoded_connections[c_id] = encoded_connection;
+    }
+    return encoded_connections;
 }

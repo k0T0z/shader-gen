@@ -54,6 +54,7 @@ public:
 
     void worker_main();
 
+    void set_maximum_population_size(const int& maximum_population_size) { this->maximum_population_size = maximum_population_size; }
     void set_mutation_probability(const float& mutation_probability) { this->mutation_probability = mutation_probability; }
     void set_crossover_probability(const float& crossover_probability) { this->crossover_probability = crossover_probability; }
     void set_elitism_ratio(const float& elitism_ratio) { this->elitism_ratio = elitism_ratio; }
@@ -74,6 +75,7 @@ private:
     std::atomic<bool> exit_requested;
     std::atomic<bool> stop_requested;
 
+    int maximum_population_size;
     float mutation_probability;
     float crossover_probability;
     float elitism_ratio;
@@ -88,8 +90,8 @@ private:
     ShaderGenSharedMemory* shared_memory;
 
     void stop_thread();
-
-    std::vector<std::pair<std::unordered_map<int, std::string>, std::unordered_map<int, std::string>>> generate_population(const int& population_size);
+    std::unordered_map<int, std::string> get_encoded_nodes(const std::string& graph);
+    std::unordered_map<int, std::string> get_encoded_connections(const std::string& graph);
 };
 
 #endif // AI_AGENT_HPP

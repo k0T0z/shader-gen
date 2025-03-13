@@ -36,6 +36,8 @@
 #include <cmath>  // for std::nextafter
 #include <type_traits>
 #include <variant>
+#include <sstream>
+#include <string>
 
 #include "error_macros.hpp"
 #include "gui/model/repeated_message_model.hpp"
@@ -132,9 +134,16 @@ inline static std::unordered_map<int, std::string> encode_nodes(const ProtoModel
             const ProtoModel* field_model{node_type_model_casted->get_sub_model_by_index(j)};
             CHECK_PARAM_NULLPTR_NON_VOID(field_model, encoded_nodes, "Field model is nullptr.");
 
+            const FieldDescriptor* field_descriptor{field_model->get_column_descriptor(0)};
+            CHECK_PARAM_NULLPTR_NON_VOID(field_descriptor, encoded_nodes, "Field descriptor is nullptr.");
+
+            const int field_number{field_descriptor->number()};
+
             const QVariant field_value{field_model->data()};
-            encoded_node += field_value.toString().toStdString() + ';';
+            encoded_node += std::to_string(field_number) + '-' + field_value.toString().toStdString() + ';';
         }
+
+        encoded_node.pop_back(); // Remove the last semicolon
 
         encoded_nodes[n_id] = encoded_node;
     }
@@ -173,7 +182,7 @@ inline static std::unordered_map<int, std::string> encode_connections(const Prot
         encoded_connection += std::to_string(from_node_id) + ';';
         encoded_connection += std::to_string(from_port_index) + ';';
         encoded_connection += std::to_string(to_node_id) + ';';
-        encoded_connection += std::to_string(to_port_index) + ';';
+        encoded_connection += std::to_string(to_port_index);
 
         encoded_connections[c_id] = encoded_connection;
     }
@@ -181,31 +190,18 @@ inline static std::unordered_map<int, std::string> encode_connections(const Prot
     return encoded_connections;
 }
 
-/**
- * @brief 
- * 
- * @note Josh — 10/02/2025 20:36 "my recommendation for "how can we possibly guess 
- *       at a topology other than pure random" would be K-means clustering based on 
- *       fourier values"
- * 
- * @note Josh — 07/03/2025 21:26 "I think those are good heuristics, but what I would 
- *       probably do is start with a handful of topologies or even a few random nodes 
- *       of each kernel type, then just choose the ones that are the closest based on 
- *       that Fourier analysis"
- * 
- * @return std::vector<std::unordered_map<int, std::string>> 
- */
+inline static std::string encode_graph(const ProtoModel* nodes, const ProtoModel* connections) {
+    std::string encoded_graph;
 
-inline static std::vector<std::unordered_map<int, std::string>> generate_nodes_population(const AIAgentWorker::MatchingType& matching_type) {
-    std::vector<std::unordered_map<int, std::string>> population;
+    const std::unordered_map<int, std::string> encoded_nodes{encode_nodes(nodes)};
+    const std::unordered_map<int, std::string> encoded_connections{encode_connections(connections)};
 
-    return population;
-}
+    for (const auto& [n_id, encoded_node] : encoded_nodes) encoded_graph += encoded_node + ',';
+    for (const auto& [c_id, encoded_connection] : encoded_connections) encoded_graph += encoded_connection + ',';
 
-inline static std::vector<std::unordered_map<int, std::string>> generate_connections_population(const AIAgentWorker::MatchingType& matching_type) {
-    std::vector<std::unordered_map<int, std::string>> population;
+    if (!encoded_graph.empty()) encoded_graph.pop_back(); // Remove the last comma
 
-    return population;
+    return encoded_graph;
 }
 
 //------------------------------------------------------------------------------
@@ -335,8 +331,8 @@ inline static T random_int_exclude_first_include_second(const T& a, const T& b) 
  * @param field_number 
  * @return std::pair<int, int> 
  */
-using RangeBoundVariant = std::variant<int, float>;
-inline static std::pair<RangeBoundVariant, RangeBoundVariant> get_range_for_continuous_field(const int& node_type, const int& field_number) {
+using ContinuousRangeVariant = std::variant<int, float>;
+inline static std::pair<ContinuousRangeVariant, ContinuousRangeVariant> get_range_for_continuous_field(const int& node_type, const int& field_number) {
     switch (node_type) {
         case VisualShader::VisualShaderNode::kFloatConstantFieldNumber: {
             switch (field_number) {
@@ -470,7 +466,6 @@ inline static std::vector<int> get_range_for_discrete_field(const int& node_type
             switch (field_number) {
                 case VisualShaderNodeInput::kTypeFieldNumber: {
                     return {
-                            VisualShaderNodeInput::INPUT_TYPE_UNSPECIFIED, 
                             VisualShaderNodeInput::INPUT_TYPE_UV, 
                             VisualShaderNodeInput::INPUT_TYPE_TIME
                         };
@@ -494,7 +489,6 @@ inline static std::vector<int> get_range_for_discrete_field(const int& node_type
             switch (field_number) {
                 case VisualShaderNodeFloatOp::kOpTypeFieldNumber: {
                     return {
-                            VisualShaderNodeFloatOp::OP_TYPE_UNSPECIFIED, 
                             VisualShaderNodeFloatOp::OP_TYPE_ADD, 
                             VisualShaderNodeFloatOp::OP_TYPE_SUB, 
                             VisualShaderNodeFloatOp::OP_TYPE_MUL,
@@ -516,7 +510,6 @@ inline static std::vector<int> get_range_for_discrete_field(const int& node_type
             switch (field_number) {
                 case VisualShaderNodeIntOp::kOpTypeFieldNumber: {
                     return {
-                            VisualShaderNodeIntOp::OP_TYPE_UNSPECIFIED, 
                             VisualShaderNodeIntOp::OP_TYPE_ADD, 
                             VisualShaderNodeIntOp::OP_TYPE_SUB, 
                             VisualShaderNodeIntOp::OP_TYPE_MUL,
@@ -540,7 +533,6 @@ inline static std::vector<int> get_range_for_discrete_field(const int& node_type
             switch (field_number) {
                 case VisualShaderNodeUIntOp::kOpTypeFieldNumber: {
                     return {
-                            VisualShaderNodeUIntOp::OP_TYPE_UNSPECIFIED, 
                             VisualShaderNodeUIntOp::OP_TYPE_ADD, 
                             VisualShaderNodeUIntOp::OP_TYPE_SUB, 
                             VisualShaderNodeUIntOp::OP_TYPE_MUL,
@@ -564,7 +556,6 @@ inline static std::vector<int> get_range_for_discrete_field(const int& node_type
             switch (field_number) {
                 case VisualShaderNodeVectorOp::kVecTypeFieldNumber: {
                     return {
-                            VisualShaderNodeVectorType::TYPE_VECTOR_UNSPECIFIED, 
                             VisualShaderNodeVectorType::TYPE_VECTOR_2D, 
                             VisualShaderNodeVectorType::TYPE_VECTOR_3D, 
                             VisualShaderNodeVectorType::TYPE_VECTOR_4D
@@ -572,7 +563,6 @@ inline static std::vector<int> get_range_for_discrete_field(const int& node_type
                     }
                 case VisualShaderNodeVectorOp::kOpTypeFieldNumber: {
                     return {
-                            VisualShaderNodeVectorOp::OP_TYPE_UNSPECIFIED, 
                             VisualShaderNodeVectorOp::OP_TYPE_ADD, 
                             VisualShaderNodeVectorOp::OP_TYPE_SUB, 
                             VisualShaderNodeVectorOp::OP_TYPE_MUL,
@@ -596,7 +586,6 @@ inline static std::vector<int> get_range_for_discrete_field(const int& node_type
             switch (field_number) {
                 case VisualShaderNodeFloatFunc::kFuncTypeFieldNumber: {
                     return {
-                            VisualShaderNodeFloatFunc::FUNC_TYPE_UNSPECIFIED, 
                             VisualShaderNodeFloatFunc::FUNC_TYPE_SIN, 
                             VisualShaderNodeFloatFunc::FUNC_TYPE_COS,
                             VisualShaderNodeFloatFunc::FUNC_TYPE_TAN,
@@ -640,7 +629,6 @@ inline static std::vector<int> get_range_for_discrete_field(const int& node_type
             switch (field_number) {
                 case VisualShaderNodeIntFunc::kFuncTypeFieldNumber: {
                     return {
-                            VisualShaderNodeIntFunc::FUNC_TYPE_UNSPECIFIED, 
                             VisualShaderNodeIntFunc::FUNC_TYPE_ABS, 
                             VisualShaderNodeIntFunc::FUNC_TYPE_NEGATE,
                             VisualShaderNodeIntFunc::FUNC_TYPE_SIGN,
@@ -656,7 +644,6 @@ inline static std::vector<int> get_range_for_discrete_field(const int& node_type
             switch (field_number) {
                 case VisualShaderNodeUIntFunc::kFuncTypeFieldNumber: {
                     return {
-                            VisualShaderNodeUIntFunc::FUNC_TYPE_UNSPECIFIED, 
                             VisualShaderNodeUIntFunc::FUNC_TYPE_NEGATE,
                             VisualShaderNodeUIntFunc::FUNC_TYPE_BITWISE_NOT
                     };
@@ -670,7 +657,6 @@ inline static std::vector<int> get_range_for_discrete_field(const int& node_type
             switch (field_number) {
                 case VisualShaderNodeVectorFunc::kVecTypeFieldNumber: {
                     return {
-                            VisualShaderNodeVectorType::TYPE_VECTOR_UNSPECIFIED, 
                             VisualShaderNodeVectorType::TYPE_VECTOR_2D, 
                             VisualShaderNodeVectorType::TYPE_VECTOR_3D, 
                             VisualShaderNodeVectorType::TYPE_VECTOR_4D
@@ -678,7 +664,6 @@ inline static std::vector<int> get_range_for_discrete_field(const int& node_type
                     }
                 case VisualShaderNodeVectorFunc::kFuncTypeFieldNumber: {
                     return {
-                            VisualShaderNodeVectorFunc::FUNC_TYPE_UNSPECIFIED, 
                             VisualShaderNodeVectorFunc::FUNC_TYPE_NORMALIZE, 
                             VisualShaderNodeVectorFunc::FUNC_TYPE_SATURATE,
                             VisualShaderNodeVectorFunc::FUNC_TYPE_NEGATE,
@@ -721,7 +706,6 @@ inline static std::vector<int> get_range_for_discrete_field(const int& node_type
             switch (field_number) {
                 case VisualShaderNodeVectorLen::kVecTypeFieldNumber: {
                     return {
-                            VisualShaderNodeVectorType::TYPE_VECTOR_UNSPECIFIED, 
                             VisualShaderNodeVectorType::TYPE_VECTOR_2D, 
                             VisualShaderNodeVectorType::TYPE_VECTOR_3D, 
                             VisualShaderNodeVectorType::TYPE_VECTOR_4D
@@ -736,7 +720,6 @@ inline static std::vector<int> get_range_for_discrete_field(const int& node_type
             switch (field_number) {
                 case VisualShaderNodeClamp::kTypeFieldNumber: {
                     return {
-                            VisualShaderNodeClamp::TYPE_UNSPECIFIED, 
                             VisualShaderNodeClamp::TYPE_FLOAT, 
                             VisualShaderNodeClamp::TYPE_INT, 
                             VisualShaderNodeClamp::TYPE_UINT,
@@ -754,7 +737,6 @@ inline static std::vector<int> get_range_for_discrete_field(const int& node_type
             switch (field_number) {
                 case VisualShaderNodeVectorDistance::kVecTypeFieldNumber: {
                     return {
-                            VisualShaderNodeVectorType::TYPE_VECTOR_UNSPECIFIED, 
                             VisualShaderNodeVectorType::TYPE_VECTOR_2D, 
                             VisualShaderNodeVectorType::TYPE_VECTOR_3D, 
                             VisualShaderNodeVectorType::TYPE_VECTOR_4D
@@ -769,7 +751,6 @@ inline static std::vector<int> get_range_for_discrete_field(const int& node_type
             switch (field_number) {
                 case VisualShaderNodeSwitch::kTypeFieldNumber: {
                     return {
-                            VisualShaderNodeSwitch::TYPE_UNSPECIFIED, 
                             VisualShaderNodeSwitch::TYPE_FLOAT, 
                             VisualShaderNodeSwitch::TYPE_INT, 
                             VisualShaderNodeSwitch::TYPE_UINT,
@@ -788,7 +769,6 @@ inline static std::vector<int> get_range_for_discrete_field(const int& node_type
             switch (field_number) {
                 case VisualShaderNodeIs::kFuncFieldNumber: {
                     return {
-                            VisualShaderNodeIs::FUNC_UNSPECIFIED, 
                             VisualShaderNodeIs::FUNC_IS_INF, 
                             VisualShaderNodeIs::FUNC_IS_NAN
                         };
@@ -802,7 +782,6 @@ inline static std::vector<int> get_range_for_discrete_field(const int& node_type
             switch (field_number) {
                 case VisualShaderNodeCompare::kTypeFieldNumber: {
                     return {
-                            VisualShaderNodeCompare::CMP_TYPE_UNSPECIFIED, 
                             VisualShaderNodeCompare::CMP_TYPE_SCALAR, 
                             VisualShaderNodeCompare::CMP_TYPE_SCALAR_INT, 
                             VisualShaderNodeCompare::CMP_TYPE_SCALAR_UINT,
@@ -814,7 +793,6 @@ inline static std::vector<int> get_range_for_discrete_field(const int& node_type
                     }
                 case VisualShaderNodeCompare::kFuncFieldNumber: {
                     return {
-                            VisualShaderNodeCompare::FUNC_UNSPECIFIED, 
                             VisualShaderNodeCompare::FUNC_EQUAL, 
                             VisualShaderNodeCompare::FUNC_NOT_EQUAL, 
                             VisualShaderNodeCompare::FUNC_GREATER_THAN,
@@ -825,7 +803,6 @@ inline static std::vector<int> get_range_for_discrete_field(const int& node_type
                     }
                 case VisualShaderNodeCompare::kCondFieldNumber: {
                     return {
-                            VisualShaderNodeCompare::COND_UNSPECIFIED, 
                             VisualShaderNodeCompare::COND_ALL, 
                             VisualShaderNodeCompare::COND_ANY
                         };
@@ -838,6 +815,113 @@ inline static std::vector<int> get_range_for_discrete_field(const int& node_type
     }
 
     return {};
+}
+
+using DiscreteContinuousRangeVariant = std::variant<std::vector<int>, std::pair<ContinuousRangeVariant, ContinuousRangeVariant>>;
+inline static DiscreteContinuousRangeVariant get_range_for_field(const int& node_type, const int& field_number) {
+    const std::vector<int> discrete_range{get_range_for_discrete_field(node_type, field_number)};
+    SILENT_CHECK_CONDITION_TRUE_NON_VOID(!discrete_range.empty(), discrete_range);
+
+    return get_range_for_continuous_field(node_type, field_number);
+}
+
+inline static std::vector<std::string> split_string(const std::string& str, const char& delimiter) {
+    std::vector<std::string> tokens;
+    std::string token;
+    std::istringstream tokenStream(str);
+    while (std::getline(tokenStream, token, delimiter)) {
+        tokens.push_back(token);
+    }
+    return tokens;
+}
+
+/**
+ * @brief 
+ * 
+ * @note Josh — 10/02/2025 20:36 "my recommendation for "how can we possibly guess 
+ *       at a topology other than pure random" would be K-means clustering based on 
+ *       fourier values"
+ * 
+ * @note Josh — 07/03/2025 21:26 "I think those are good heuristics, but what I would 
+ *       probably do is start with a handful of topologies or even a few random nodes 
+ *       of each kernel type, then just choose the ones that are the closest based on 
+ *       that Fourier analysis"
+ * 
+ * @return std::pair<std::vector<std::unordered_map<int, std::string>>, std::vector<std::unordered_map<int, std::string>>>
+ */
+
+ inline static std::pair<std::vector<std::unordered_map<int, std::string>>, std::vector<std::unordered_map<int, std::string>>> generate_population(const AIAgentWorker::MatchingType& matching_type, const std::unordered_map<int, std::string>& nodes, const std::unordered_map<int, std::string>& connections, const int& maximum_population_size) {
+    std::vector<std::unordered_map<int, std::string>> nodes_population;
+    std::vector<std::unordered_map<int, std::string>> connections_population;
+    nodes_population.resize(maximum_population_size);
+    connections_population.resize(maximum_population_size);
+
+    switch (matching_type) {
+        case AIAgentWorker::MatchingType::PARAMETERS_ONLY: {
+            for (const auto& [entity_id, entity] : nodes) {
+                const std::vector<std::string> tokens{split_string(entity, ';')};
+                const int entity_type = std::stoi(tokens.at(0));
+                // Node
+                // Format: entity_type;node_id;node_type;field_number-value;field_number-value;...
+                const int n_id = std::stoi(tokens.at(1));
+                const int oneof_value_field_number = std::stoi(tokens.at(2));
+                const std::vector<std::string> parameters{tokens.begin() + 3, tokens.end()};
+                for (int i{0}; i < maximum_population_size; ++i) {
+                    std::vector<std::string> new_parameters;
+                    new_parameters.resize(parameters.size());
+                    for (int j{0}; j < parameters.size(); ++j) {
+                        const std::string parameter{parameters.at(j)}; // Format: field_number-value
+                        const std::vector<std::string> parameter_tokens{split_string(parameter, '-')};
+                        const int field_number = std::stoi(parameter_tokens.at(0));
+                        const DiscreteContinuousRangeVariant range{get_range_for_field(oneof_value_field_number, field_number)};
+                        std::string new_parameter;
+                        new_parameter += std::to_string(field_number) + '-';
+                        if (std::holds_alternative<std::vector<int>>(range)) {
+                            const std::vector<int> discrete_range{std::get<std::vector<int>>(range)};
+                            const int random_index{random_int_inclusive<int>(0, (int)discrete_range.size() - 1)};
+                            new_parameter += std::to_string(discrete_range.at(random_index)) + ';';
+                        } else if (std::holds_alternative<std::pair<ContinuousRangeVariant, ContinuousRangeVariant>>(range)) {
+                            const std::pair<ContinuousRangeVariant, ContinuousRangeVariant> continuous_range{std::get<std::pair<ContinuousRangeVariant, ContinuousRangeVariant>>(range)};
+                            if (std::holds_alternative<int>(continuous_range.first) && std::holds_alternative<int>(continuous_range.second)) {
+                                const int lower_bound{std::get<int>(continuous_range.first)};
+                                const int upper_bound{std::get<int>(continuous_range.second)};
+                                const float random_value{random_real_inclusive<float>(lower_bound, upper_bound)};
+                                new_parameter += std::to_string(random_value) + ';';
+                            } else if (std::holds_alternative<float>(continuous_range.first) && std::holds_alternative<float>(continuous_range.second)) {
+                                const float lower_bound{std::get<float>(continuous_range.first)};
+                                const float upper_bound{std::get<float>(continuous_range.second)};
+                                const float random_value{random_real_inclusive<float>(lower_bound, upper_bound)};
+                                new_parameter += std::to_string(random_value) + ';';
+                            }
+                        } else {
+                            new_parameter += "0;";
+                        }
+                        new_parameter.pop_back(); // Remove the last semicolon
+                        new_parameters.at(j) = new_parameter;
+                    }
+                    std::string encoded_node;
+                    encoded_node += std::to_string(entity_type) + ';';
+                    encoded_node += std::to_string(n_id) + ';';
+                    encoded_node += std::to_string(oneof_value_field_number) + ';';
+                    for (const auto& new_parameter : new_parameters) encoded_node += new_parameter + ';';
+
+                    encoded_node.pop_back(); // Remove the last semicolon
+
+                    nodes_population.at(i)[n_id] = encoded_node;
+                }
+            }
+
+            for (const auto& [entity_id, entity] : connections) {
+                // Connection
+                for (int i{0}; i < maximum_population_size; ++i) connections_population.at(i)[entity_id] = entity;
+            }
+            break;
+        }
+        default:
+            break;
+    }
+
+    return std::make_pair(nodes_population, connections_population);
 }
 }  // namespace ai_agent_utils
 
