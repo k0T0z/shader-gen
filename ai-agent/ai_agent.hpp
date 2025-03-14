@@ -72,6 +72,7 @@ private:
     std::mutex mtx;
     std::condition_variable cv;
     int process_counter;
+    std::atomic<bool> start_requested;
     std::atomic<bool> exit_requested;
     std::atomic<bool> stop_requested;
 
@@ -90,8 +91,6 @@ private:
     ShaderGenSharedMemory* shared_memory;
 
     void stop_thread();
-    std::unordered_map<int, std::string> get_encoded_nodes(const std::string& graph);
-    std::unordered_map<int, std::string> get_encoded_connections(const std::string& graph);
 };
 
 #endif // AI_AGENT_HPP

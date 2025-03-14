@@ -89,28 +89,26 @@ inline static std::vector<int> get_node_type_population() {
     return node_type_population;
 }
 
-inline static std::unordered_map<int, std::string> encode_nodes(const ProtoModel* nodes) {
-    std::unordered_map<int, std::string> encoded_nodes;
-    
+inline static std::string encode_graph(const ProtoModel* nodes, const ProtoModel* connections) {
+    std::string encoded_graph;
+
     // Cast to ReapeatedMessageModel
     const RepeatedMessageModel* repeated_nodes{dynamic_cast<const RepeatedMessageModel*>(nodes)};
-    CHECK_PARAM_NULLPTR_NON_VOID(repeated_nodes, encoded_nodes, "Nodes is not a repeated message model.");
+    CHECK_PARAM_NULLPTR_NON_VOID(repeated_nodes, encoded_graph, "Nodes is not a repeated message model.");
     
-    int size{nodes->rowCount()};
-    for (int i{0}; i < size; ++i) {
+    int n_size{nodes->rowCount()};
+    for (int i{0}; i < n_size; ++i) {
         const MessageModel* node_model{repeated_nodes->get_sub_model(i)};
 
         const int n_id{node_model->get_sub_model(FieldPath::Of<VisualShader::VisualShaderNode>(
             FieldPath::FieldNumber(VisualShader::VisualShaderNode::kIdFieldNumber)))->data().toInt()};
-
-        CHECK_CONDITION_TRUE_NON_VOID(encoded_nodes.find(n_id) != encoded_nodes.end(), encoded_nodes, "Node id already exists.");
 
         // I don't care about the field number, just send any field number inside the oneof model you want to get
         const ProtoModel* oneof_model{
             node_model->get_sub_model(FieldPath::Of<VisualShader::VisualShaderNode>(
                                         FieldPath::FieldNumber(VisualShader::VisualShaderNode::kInputFieldNumber)),
                                     false, true)};
-        CHECK_PARAM_NULLPTR_NON_VOID(oneof_model, encoded_nodes, "Oneof Model is nullptr.");
+        CHECK_PARAM_NULLPTR_NON_VOID(oneof_model, encoded_graph, "Oneof Model is nullptr.");
         const int oneof_value_field_number{oneof_model->get_oneof_value_field_number()};
 
         std::string encoded_node;
@@ -120,52 +118,44 @@ inline static std::unordered_map<int, std::string> encode_nodes(const ProtoModel
 
         // Cast to OneofModel
         const OneofModel* oneof_model_casted{dynamic_cast<const OneofModel*>(oneof_model)};
-        CHECK_PARAM_NULLPTR_NON_VOID(oneof_model_casted, encoded_nodes, "Oneof Model is not a OneofModel.");
+        CHECK_PARAM_NULLPTR_NON_VOID(oneof_model_casted, encoded_graph, "Oneof Model is not a OneofModel.");
 
         const ProtoModel* node_type_model{oneof_model_casted->get_sub_model(oneof_value_field_number)};
-        CHECK_PARAM_NULLPTR_NON_VOID(node_type_model, encoded_nodes, "Node type model is nullptr.");
+        CHECK_PARAM_NULLPTR_NON_VOID(node_type_model, encoded_graph, "Node type model is nullptr.");
 
         // Cast to MessageModel
         const MessageModel* node_type_model_casted{dynamic_cast<const MessageModel*>(node_type_model)};
-        CHECK_PARAM_NULLPTR_NON_VOID(node_type_model_casted, encoded_nodes, "Node type model is not a MessageModel.");
+        CHECK_PARAM_NULLPTR_NON_VOID(node_type_model_casted, encoded_graph, "Node type model is not a MessageModel.");
 
         const int field_count{node_type_model->columnCount()};
         for (int j{0}; j < field_count; ++j) {
             const ProtoModel* field_model{node_type_model_casted->get_sub_model_by_index(j)};
-            CHECK_PARAM_NULLPTR_NON_VOID(field_model, encoded_nodes, "Field model is nullptr.");
+            CHECK_PARAM_NULLPTR_NON_VOID(field_model, encoded_graph, "Field model is nullptr.");
 
             const FieldDescriptor* field_descriptor{field_model->get_column_descriptor(0)};
-            CHECK_PARAM_NULLPTR_NON_VOID(field_descriptor, encoded_nodes, "Field descriptor is nullptr.");
+            CHECK_PARAM_NULLPTR_NON_VOID(field_descriptor, encoded_graph, "Field descriptor is nullptr.");
 
             const int field_number{field_descriptor->number()};
 
             const QVariant field_value{field_model->data()};
-            encoded_node += std::to_string(field_number) + '-' + field_value.toString().toStdString() + ';';
+            encoded_node += std::to_string(field_number) + '=' + field_value.toString().toStdString() + ';';
         }
 
         encoded_node.pop_back(); // Remove the last semicolon
 
-        encoded_nodes[n_id] = encoded_node;
+        encoded_graph += encoded_node + ',';
     }
-
-    return encoded_nodes;
-}
-
-inline static std::unordered_map<int, std::string> encode_connections(const ProtoModel* connections) {
-    std::unordered_map<int, std::string> encoded_connections;
 
     // Cast to ReapeatedMessageModel
     const RepeatedMessageModel* repeated_connections{dynamic_cast<const RepeatedMessageModel*>(connections)};
-    CHECK_PARAM_NULLPTR_NON_VOID(repeated_connections, encoded_connections, "Connections is not a repeated message model.");
+    CHECK_PARAM_NULLPTR_NON_VOID(repeated_connections, encoded_graph, "Connections is not a repeated message model.");
 
-    int size{connections->rowCount()};
-    for (int i{0}; i < size; ++i) {
+    int c_size{connections->rowCount()};
+    for (int i{0}; i < c_size; ++i) {
         const MessageModel* connection_model{repeated_connections->get_sub_model(i)};
 
         const int c_id{connection_model->get_sub_model(FieldPath::Of<VisualShader::VisualShaderConnection>(
             FieldPath::FieldNumber(VisualShader::VisualShaderConnection::kIdFieldNumber)))->data().toInt()};
-
-        CHECK_CONDITION_TRUE_NON_VOID(encoded_connections.find(c_id) != encoded_connections.end(), encoded_connections, "Connection id already exists.");
 
         const int from_node_id{connection_model->get_sub_model(FieldPath::Of<VisualShader::VisualShaderConnection>(
             FieldPath::FieldNumber(VisualShader::VisualShaderConnection::kFromNodeIdFieldNumber)))->data().toInt()};
@@ -184,20 +174,8 @@ inline static std::unordered_map<int, std::string> encode_connections(const Prot
         encoded_connection += std::to_string(to_node_id) + ';';
         encoded_connection += std::to_string(to_port_index);
 
-        encoded_connections[c_id] = encoded_connection;
+        encoded_graph += encoded_connection + ',';
     }
-
-    return encoded_connections;
-}
-
-inline static std::string encode_graph(const ProtoModel* nodes, const ProtoModel* connections) {
-    std::string encoded_graph;
-
-    const std::unordered_map<int, std::string> encoded_nodes{encode_nodes(nodes)};
-    const std::unordered_map<int, std::string> encoded_connections{encode_connections(connections)};
-
-    for (const auto& [n_id, encoded_node] : encoded_nodes) encoded_graph += encoded_node + ',';
-    for (const auto& [c_id, encoded_connection] : encoded_connections) encoded_graph += encoded_connection + ',';
 
     if (!encoded_graph.empty()) encoded_graph.pop_back(); // Remove the last comma
 
@@ -847,73 +825,72 @@ inline static std::vector<std::string> split_string(const std::string& str, cons
  *       of each kernel type, then just choose the ones that are the closest based on 
  *       that Fourier analysis"
  * 
- * @return std::pair<std::vector<std::unordered_map<int, std::string>>, std::vector<std::unordered_map<int, std::string>>>
+ * @return std::vector<std::string>
  */
 
- inline static std::pair<std::vector<std::unordered_map<int, std::string>>, std::vector<std::unordered_map<int, std::string>>> generate_population(const AIAgentWorker::MatchingType& matching_type, const std::unordered_map<int, std::string>& nodes, const std::unordered_map<int, std::string>& connections, const int& maximum_population_size) {
-    std::vector<std::unordered_map<int, std::string>> nodes_population;
-    std::vector<std::unordered_map<int, std::string>> connections_population;
-    nodes_population.resize(maximum_population_size);
-    connections_population.resize(maximum_population_size);
+ inline static std::vector<std::string> generate_population(const AIAgentWorker::MatchingType& matching_type, const std::string& graph, const int& maximum_population_size) {
+    std::vector<std::string> population;
+    population.resize(maximum_population_size);
 
     switch (matching_type) {
         case AIAgentWorker::MatchingType::PARAMETERS_ONLY: {
-            for (const auto& [entity_id, entity] : nodes) {
+            const std::vector<std::string> entities{split_string(graph, ',')};
+            for (const auto& entity : entities) {
                 const std::vector<std::string> tokens{split_string(entity, ';')};
                 const int entity_type = std::stoi(tokens.at(0));
-                // Node
-                // Format: entity_type;node_id;node_type;field_number-value;field_number-value;...
-                const int n_id = std::stoi(tokens.at(1));
-                const int oneof_value_field_number = std::stoi(tokens.at(2));
-                const std::vector<std::string> parameters{tokens.begin() + 3, tokens.end()};
-                for (int i{0}; i < maximum_population_size; ++i) {
-                    std::vector<std::string> new_parameters;
-                    new_parameters.resize(parameters.size());
-                    for (int j{0}; j < parameters.size(); ++j) {
-                        const std::string parameter{parameters.at(j)}; // Format: field_number-value
-                        const std::vector<std::string> parameter_tokens{split_string(parameter, '-')};
-                        const int field_number = std::stoi(parameter_tokens.at(0));
-                        const DiscreteContinuousRangeVariant range{get_range_for_field(oneof_value_field_number, field_number)};
-                        std::string new_parameter;
-                        new_parameter += std::to_string(field_number) + '-';
-                        if (std::holds_alternative<std::vector<int>>(range)) {
-                            const std::vector<int> discrete_range{std::get<std::vector<int>>(range)};
-                            const int random_index{random_int_inclusive<int>(0, (int)discrete_range.size() - 1)};
-                            new_parameter += std::to_string(discrete_range.at(random_index)) + ';';
-                        } else if (std::holds_alternative<std::pair<ContinuousRangeVariant, ContinuousRangeVariant>>(range)) {
-                            const std::pair<ContinuousRangeVariant, ContinuousRangeVariant> continuous_range{std::get<std::pair<ContinuousRangeVariant, ContinuousRangeVariant>>(range)};
-                            if (std::holds_alternative<int>(continuous_range.first) && std::holds_alternative<int>(continuous_range.second)) {
-                                const int lower_bound{std::get<int>(continuous_range.first)};
-                                const int upper_bound{std::get<int>(continuous_range.second)};
-                                const float random_value{random_real_inclusive<float>(lower_bound, upper_bound)};
-                                new_parameter += std::to_string(random_value) + ';';
-                            } else if (std::holds_alternative<float>(continuous_range.first) && std::holds_alternative<float>(continuous_range.second)) {
-                                const float lower_bound{std::get<float>(continuous_range.first)};
-                                const float upper_bound{std::get<float>(continuous_range.second)};
-                                const float random_value{random_real_inclusive<float>(lower_bound, upper_bound)};
-                                new_parameter += std::to_string(random_value) + ';';
+                if (entity_type == 0) {
+                    // Node
+                    // Format: entity_type;node_id;node_type;field_number-value;field_number-value;...
+                    const int n_id = std::stoi(tokens.at(1));
+                    const int oneof_value_field_number = std::stoi(tokens.at(2));
+                    const std::vector<std::string> parameters{tokens.begin() + 3, tokens.end()};
+                    for (int i{0}; i < maximum_population_size; ++i) {
+                        std::vector<std::string> new_parameters;
+                        new_parameters.resize(parameters.size());
+                        for (int j{0}; j < parameters.size(); ++j) {
+                            const std::string parameter{parameters.at(j)}; // Format: field_number-value
+                            const std::vector<std::string> parameter_tokens{split_string(parameter, '=')};
+                            const int field_number = std::stoi(parameter_tokens.at(0));
+                            const DiscreteContinuousRangeVariant range{get_range_for_field(oneof_value_field_number, field_number)};
+                            std::string new_parameter;
+                            new_parameter += std::to_string(field_number) + '=';
+                            if (std::holds_alternative<std::vector<int>>(range)) {
+                                const std::vector<int> discrete_range{std::get<std::vector<int>>(range)};
+                                const int random_index{random_int_inclusive<int>(0, (int)discrete_range.size() - 1)};
+                                new_parameter += std::to_string(discrete_range.at(random_index)) + ';';
+                            } else if (std::holds_alternative<std::pair<ContinuousRangeVariant, ContinuousRangeVariant>>(range)) {
+                                const std::pair<ContinuousRangeVariant, ContinuousRangeVariant> continuous_range{std::get<std::pair<ContinuousRangeVariant, ContinuousRangeVariant>>(range)};
+                                if (std::holds_alternative<int>(continuous_range.first) && std::holds_alternative<int>(continuous_range.second)) {
+                                    const int lower_bound{std::get<int>(continuous_range.first)};
+                                    const int upper_bound{std::get<int>(continuous_range.second)};
+                                    const float random_value{random_real_inclusive<float>(lower_bound, upper_bound)};
+                                    new_parameter += std::to_string(random_value) + ';';
+                                } else if (std::holds_alternative<float>(continuous_range.first) && std::holds_alternative<float>(continuous_range.second)) {
+                                    const float lower_bound{std::get<float>(continuous_range.first)};
+                                    const float upper_bound{std::get<float>(continuous_range.second)};
+                                    const float random_value{random_real_inclusive<float>(lower_bound, upper_bound)};
+                                    new_parameter += std::to_string(random_value) + ';';
+                                }
+                            } else {
+                                new_parameter += "0;";
                             }
-                        } else {
-                            new_parameter += "0;";
+                            new_parameter.pop_back(); // Remove the last semicolon
+                            new_parameters.at(j) = new_parameter;
                         }
-                        new_parameter.pop_back(); // Remove the last semicolon
-                        new_parameters.at(j) = new_parameter;
+                        std::string encoded_node;
+                        encoded_node += std::to_string(entity_type) + ';';
+                        encoded_node += std::to_string(n_id) + ';';
+                        encoded_node += std::to_string(oneof_value_field_number) + ';';
+                        for (const auto& new_parameter : new_parameters) encoded_node += new_parameter + ';';
+
+                        encoded_node.pop_back(); // Remove the last semicolon
+
+                        population.at(i) += encoded_node + ',';
                     }
-                    std::string encoded_node;
-                    encoded_node += std::to_string(entity_type) + ';';
-                    encoded_node += std::to_string(n_id) + ';';
-                    encoded_node += std::to_string(oneof_value_field_number) + ';';
-                    for (const auto& new_parameter : new_parameters) encoded_node += new_parameter + ';';
-
-                    encoded_node.pop_back(); // Remove the last semicolon
-
-                    nodes_population.at(i)[n_id] = encoded_node;
+                } else {
+                    // Connection
+                    for (int i{0}; i < maximum_population_size; ++i) population.at(i) += entity + ',';
                 }
-            }
-
-            for (const auto& [entity_id, entity] : connections) {
-                // Connection
-                for (int i{0}; i < maximum_population_size; ++i) connections_population.at(i)[entity_id] = entity;
             }
             break;
         }
@@ -921,7 +898,7 @@ inline static std::vector<std::string> split_string(const std::string& str, cons
             break;
     }
 
-    return std::make_pair(nodes_population, connections_population);
+    return population;
 }
 }  // namespace ai_agent_utils
 

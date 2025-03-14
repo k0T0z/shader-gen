@@ -186,7 +186,7 @@ void AIAgentFitnessCalculator::update_current_output(const std::string& code) {
   current_output_renderer->set_code(code);
 }
 
-unsigned long AIAgentFitnessCalculator::get_fitness_value(const std::unordered_map<int, std::string>& encoded_nodes, const std::unordered_map<int, std::string>& encoded_connections) const {
+unsigned long AIAgentFitnessCalculator::get_fitness_value(const std::string& encoded_graph) const {
   return get_fitness_value();
 }
 
