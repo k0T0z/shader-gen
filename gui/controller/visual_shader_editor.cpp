@@ -82,7 +82,7 @@ VisualShaderEditor::VisualShaderEditor(MessageModel* model, QWidget* parent)
       connections_model(nullptr),
       shared_memory(nullptr),
       ai_agent_worker(nullptr),
-      fitness_calculator(nullptr),
+      ai_agent_monitor(nullptr),
       parameters_editor(nullptr),
       start_matching_button(nullptr),
       stop_matching_button(nullptr),
@@ -96,7 +96,7 @@ VisualShaderEditor::VisualShaderEditor(MessageModel* model, QWidget* parent)
 
 VisualShaderEditor::~VisualShaderEditor() {
   delete ai_agent_worker;
-  delete fitness_calculator;
+  delete ai_agent_monitor;
   delete parameters_editor;
   delete shared_memory;
 }
@@ -276,7 +276,7 @@ void VisualShaderEditor::init() {
   shared_memory = new ShaderGenSharedMemory();
 
   ai_agent_worker = new AIAgentWorker(shared_memory);
-  fitness_calculator = new AIAgentFitnessCalculator();
+  ai_agent_monitor = new AIAgentMonitor();
   parameters_editor = new AIAgentParametersEditor();
   start_matching_button = new StartMatchingButton(scene_layer);
   start_matching_button->setToolTip("Start matching the shader to the loaded image");
@@ -585,7 +585,7 @@ void VisualShaderEditor::on_load_image_button_pressed() {
 }
 
 void VisualShaderEditor::on_match_image_button_pressed() {
-  SILENT_CHECK_CONDITION_TRUE(fitness_calculator->isVisible());
+  SILENT_CHECK_CONDITION_TRUE(ai_agent_monitor->isVisible());
   SILENT_CHECK_CONDITION_TRUE(parameters_editor->isVisible());
 
   // Find the node connected to the output node and generate the shader code at it
@@ -602,19 +602,19 @@ void VisualShaderEditor::on_match_image_button_pressed() {
   VisualShaderConnectionGraphicsObject* c_o{scene->get_connection_graphics_object(c_id)};
   CHECK_PARAM_NULLPTR(c_o, "Failed to get connection graphics object");
 
-  fitness_calculator->update_current_output(shadergen_visual_shader_generator::generate_preview_shader(shadergen_visual_shader_generator::to_proto_nodes(nodes_model),
+  ai_agent_monitor->update_current_output(shadergen_visual_shader_generator::generate_preview_shader(shadergen_visual_shader_generator::to_proto_nodes(nodes_model),
                                             shadergen_visual_shader_generator::to_generators(nodes_model), 
                                             shadergen_visual_shader_generator::to_port_type_generators(nodes_model),
                                             shadergen_visual_shader_generator::to_input_output_connections_by_key(connections_model), c_o->get_from_node_id(), 0));  // 0 is the output port index
 
   
-  if (!fitness_calculator->isVisible()) fitness_calculator->show();
+  if (!ai_agent_monitor->isVisible()) ai_agent_monitor->show();
   if (!parameters_editor->isVisible()) parameters_editor->show();
 }
 
 void VisualShaderEditor::on_start_matching_button_pressed() {
   CHECK_PARAM_NULLPTR(ai_agent_worker, "AI agent worker is null");
-  CHECK_PARAM_NULLPTR(fitness_calculator, "Fitness calculator is null");
+  CHECK_PARAM_NULLPTR(ai_agent_monitor, "AI Agent Monitor is null");
   CHECK_PARAM_NULLPTR(parameters_editor, "Parameters editor is null");
 
   ai_agent_worker->set_maximum_population_size(parameters_editor->get_maximum_population_size());
@@ -625,8 +625,7 @@ void VisualShaderEditor::on_start_matching_button_pressed() {
 
   AIAgentWorker::MatchingType matching_type{static_cast<AIAgentWorker::MatchingType>(matching_type_combo_box->currentData().toInt())};
   ai_agent_worker->set_matching_type(matching_type);
-
-  ai_agent_worker->set_scene(scene);
+  ai_agent_worker->set_target_image(ai_agent_monitor->get_target_image());
 
   shared_memory->set_encoded_graph(ai_agent_utils::encode_graph(nodes_model, connections_model));
   

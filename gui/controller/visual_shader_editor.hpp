@@ -74,7 +74,7 @@
 
 #include "ai-agent/ai_agent.hpp"
 #include "ai-agent/shared_memory.hpp"
-#include "gui/controller/fitness_calculator.hpp"
+#include "gui/controller/ai_agent_monitor.hpp"
 #include "gui/controller/parameters_editor.hpp"
 #include "generator/visual_shader_node_port_type_generator.hpp"
 
@@ -219,7 +219,7 @@ class VisualShaderEditor : public QWidget {
   ShaderGenSharedMemory* shared_memory;
 
   AIAgentWorker* ai_agent_worker;
-  AIAgentFitnessCalculator* fitness_calculator;
+  AIAgentMonitor* ai_agent_monitor;
   AIAgentParametersEditor* parameters_editor;
   StartMatchingButton* start_matching_button;
   StopMatchingButton* stop_matching_button;

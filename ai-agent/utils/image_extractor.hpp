@@ -51,11 +51,10 @@ private:
 
   QOpenGLContext* context;
   QOffscreenSurface* surface;
-  std::unique_ptr<QOpenGLFramebufferObject> fbo;
+  QOpenGLFramebufferObject* fbo;
   
   GLuint VAO;
   GLuint VBO;
-  bool initialized;
 };
 
 #endif  // SHADER_GEN_AI_AGENT_IMAGE_EXTRACTOR_HPP

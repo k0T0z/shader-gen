@@ -25,14 +25,13 @@
 /*                                                                               */
 /*********************************************************************************/
 
-#include "gui/controller/fitness_calculator.hpp"
+#include "gui/controller/ai_agent_monitor.hpp"
 
 #include "ai-agent/fitness.hpp"
 
 #include "error_macros.hpp"
-#include "generator/visual_shader_generator.hpp"
 
-AIAgentFitnessCalculator::AIAgentFitnessCalculator(QWidget* parent)
+AIAgentMonitor::AIAgentMonitor(QWidget* parent)
     : QWidget(parent),
       layout(nullptr),
       menu_bar(nullptr),
@@ -46,10 +45,10 @@ AIAgentFitnessCalculator::AIAgentFitnessCalculator(QWidget* parent)
       target_output(nullptr) {
   resize(720, 360);
 
-  AIAgentFitnessCalculator::init();
+  AIAgentMonitor::init();
 }
 
-void AIAgentFitnessCalculator::init() {
+void AIAgentMonitor::init() {
   // Create the main layout.
   layout = new QVBoxLayout(this);
   layout->setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
@@ -70,7 +69,7 @@ void AIAgentFitnessCalculator::init() {
   load_image_button->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
   load_image_button->setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
   load_image_button->setToolTip("Load an image to match");
-  QObject::connect(load_image_button, &QPushButton::pressed, this, &AIAgentFitnessCalculator::on_load_image_button_pressed);
+  QObject::connect(load_image_button, &QPushButton::pressed, this, &AIAgentMonitor::on_load_image_button_pressed);
 
   menu_bar->addWidget(load_image_button);
 
@@ -78,7 +77,7 @@ void AIAgentFitnessCalculator::init() {
   calculate_fitness_button->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
   calculate_fitness_button->setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
   calculate_fitness_button->setToolTip("Calculate the fitness value (only for preview)");
-  QObject::connect(calculate_fitness_button, &QPushButton::pressed, this, &AIAgentFitnessCalculator::on_calculate_fitness_button_pressed);
+  QObject::connect(calculate_fitness_button, &QPushButton::pressed, this, &AIAgentMonitor::on_calculate_fitness_button_pressed);
 
   menu_bar->addWidget(calculate_fitness_button);
   
@@ -88,7 +87,7 @@ void AIAgentFitnessCalculator::init() {
   matching_type_combo_box->setToolTip("Select the matching type");
   matching_type_combo_box->addItem("Static");
   matching_type_combo_box->addItem("Dynamic");
-  QObject::connect(matching_type_combo_box, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &AIAgentFitnessCalculator::on_matching_type_combo_box_current_index_changed);
+  QObject::connect(matching_type_combo_box, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &AIAgentMonitor::on_matching_type_combo_box_current_index_changed);
 
   menu_bar->addWidget(matching_type_combo_box);
 
@@ -177,32 +176,17 @@ void AIAgentFitnessCalculator::init() {
   // this->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
 
   // Set the window title.
-  this->setWindowTitle("Fitness Calculator");
+  this->setWindowTitle("AI Agent Monitor");
   this->setLayout(layout);
 }
 
-void AIAgentFitnessCalculator::update_current_output(const std::string& code) {
+void AIAgentMonitor::update_current_output(const std::string& code) {
   CHECK_CONDITION_TRUE(code.empty(), "Code is empty");
 
   current_output_renderer->set_code(code);
 }
 
-unsigned long AIAgentFitnessCalculator::get_fitness_value(const std::string& encoded_graph) {
-  std::string code;
-
-  bool result{shadergen_visual_shader_generator::generate_shader(
-    shadergen_visual_shader_generator::to_proto_nodes(encoded_graph),
-    shadergen_visual_shader_generator::to_generators(encoded_graph), 
-    shadergen_visual_shader_generator::to_port_type_generators(encoded_graph),
-    shadergen_visual_shader_generator::to_input_output_connections_by_key(encoded_graph), code)};
-  CHECK_CONDITION_TRUE_NON_VOID(!result, 0ul, "Failed to generate shader code");
-
-  update_current_output(code);
-
-  return get_fitness_value();
-}
-
-unsigned long AIAgentFitnessCalculator::get_fitness_value() const {
+unsigned long AIAgentMonitor::get_fitness_value() const {
   CHECK_CONDITION_TRUE_NON_VOID(target_image.isNull(), 0UL, "No target image loaded");
 
   QImage current_image = current_output_renderer->get_pixel_data();
@@ -220,7 +204,12 @@ unsigned long AIAgentFitnessCalculator::get_fitness_value() const {
   return ai_agent_fitness::calculate_fitness(pixels1, pixels2, width, height);
 }
 
-void AIAgentFitnessCalculator::on_load_image_button_pressed() {
+QImage AIAgentMonitor::get_target_image() const {
+  CHECK_CONDITION_TRUE_NON_VOID(target_image.isNull(), QImage(), "No target image loaded");
+  return target_image;
+}
+
+void AIAgentMonitor::on_load_image_button_pressed() {
   QString file_name = QFileDialog::getOpenFileName(this, "Load Target Image", "",
       "Images (*.png *.jpg *.jpeg *.bmp)");
 
@@ -238,12 +227,12 @@ void AIAgentFitnessCalculator::on_load_image_button_pressed() {
   }
 }
 
-void AIAgentFitnessCalculator::on_calculate_fitness_button_pressed() {
+void AIAgentMonitor::on_calculate_fitness_button_pressed() {
   unsigned long val = get_fitness_value();
   fitness_value->setText(QString::number(val));
 }
 
-void AIAgentFitnessCalculator::on_matching_type_combo_box_current_index_changed(int index) {
+void AIAgentMonitor::on_matching_type_combo_box_current_index_changed(int index) {
   if (index == 0) {
     DEBUG_PRINT("Static matching");
     current_output_renderer->set_is_dynamic(false);

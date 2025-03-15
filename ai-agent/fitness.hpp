@@ -34,7 +34,7 @@
 namespace ai_agent_fitness {
 // Calculates the sum of per-channel absolute differences between two images.
 // Each pixel is expected to be in ARGB32 (0xAARRGGBB) format.
-inline static unsigned long calculate_fitness(const uint32_t* pixels1, const uint32_t* pixels2, int width, int height) {
+inline static unsigned long calculate_fitness(const uint32_t* pixels1, const uint32_t* pixels2, const int& width, const int& height) {
     unsigned long total_fitness{0};
     int num_pixels{width * height};
     

@@ -29,10 +29,12 @@
 
 #include <sstream>
 #include <algorithm>
+#include <limits>
 
 #include "error_macros.hpp"
 #include "ai-agent/utils/utils.hpp"
-#include "ai-agent/utils/image_extractor.hpp"
+#include "ai-agent/fitness.hpp"
+#include "generator/visual_shader_generator.hpp"
 
 AIAgentWorker::AIAgentWorker(ShaderGenSharedMemory* shared_memory) : start_requested(false),
                                                                      exit_requested(false),
@@ -43,7 +45,6 @@ AIAgentWorker::AIAgentWorker(ShaderGenSharedMemory* shared_memory) : start_reque
                                                                      elitism_ratio(0.0f), 
                                                                      maximum_iterations(0),
                                                                      matching_type(MatchingType::PARAMETERS_ONLY),
-                                                                     scene(nullptr),
                                                                      shared_memory(shared_memory) {
     worker = std::thread(&AIAgentWorker::worker_main, this);
 }
@@ -91,7 +92,7 @@ void AIAgentWorker::worker_main() {
         // It doesn't make sense to stop before even starting
         if (stop_requested.load()) stop_requested.store(false);
 
-        CONTINUE_IF_TRUE(scene == nullptr, "Scene is not set");
+        CONTINUE_IF_TRUE(target_image.isNull(), "Target image is not set");
 
         // Generate initial population
         const std::string encoded_graph = shared_memory->get_encoded_graph();
@@ -104,6 +105,7 @@ void AIAgentWorker::worker_main() {
         // Calculate fitness
         std::vector<unsigned long> fitness_values;
         fitness_values.resize(maximum_population_size);
+        for (int i {0}; i < maximum_population_size; i++) fitness_values.at(i) = get_fitness_value(population.at(i), image_extractor);
 
         // Create a vector of pairs of population and fitness values
         std::vector<std::pair<std::string, unsigned long>> population_fitness;
@@ -168,4 +170,32 @@ void AIAgentWorker::stop_thread() {
         exit_requested = true;
     }
     cv.notify_one();
+}
+
+unsigned long AIAgentWorker::get_fitness_value(const std::string& encoded_graph, ImageExtractor& extractor) {
+  std::string code;
+
+  bool result{shadergen_visual_shader_generator::generate_shader(
+    shadergen_visual_shader_generator::to_proto_nodes(encoded_graph),
+    shadergen_visual_shader_generator::to_generators(encoded_graph), 
+    shadergen_visual_shader_generator::to_port_type_generators(encoded_graph),
+    shadergen_visual_shader_generator::to_input_output_connections_by_key(encoded_graph), code)};
+  CHECK_CONDITION_TRUE_NON_VOID(!result, std::numeric_limits<unsigned long>::max(), "Failed to generate shader code");
+
+  CHECK_CONDITION_TRUE_NON_VOID(target_image.isNull(), std::numeric_limits<unsigned long>::max(), "No target image loaded");
+
+  QImage current_image = extractor.render(code);
+
+  CHECK_CONDITION_TRUE_NON_VOID(current_image.isNull(), std::numeric_limits<unsigned long>::max(), "Failed to render image");
+  CHECK_CONDITION_TRUE_NON_VOID(current_image.size() != target_image.size(), std::numeric_limits<unsigned long>::max(), "Size mismatch");
+
+  // Retrieve pointers to the pixel data.
+  // QImage::bits() returns a pointer to the first pixel, and since our format is ARGB32,
+  // we can safely reinterpret_cast to a uint32_t pointer.
+  const uint32_t* pixels1 = reinterpret_cast<const uint32_t*>(current_image.bits());
+  const uint32_t* pixels2 = reinterpret_cast<const uint32_t*>(target_image.bits());
+  int width = current_image.width();
+  int height = current_image.height();
+
+  return ai_agent_fitness::calculate_fitness(pixels1, pixels2, width, height);
 }

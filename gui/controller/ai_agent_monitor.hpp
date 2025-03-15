@@ -25,8 +25,8 @@
 /*                                                                               */
 /*********************************************************************************/
 
-#ifndef SHADER_GEN_AI_AGENT_FITNESS_CALCULATOR_HPP
-#define SHADER_GEN_AI_AGENT_FITNESS_CALCULATOR_HPP
+#ifndef SHADER_GEN_AI_AGENT_MONITOR_HPP
+#define SHADER_GEN_AI_AGENT_MONITOR_HPP
 
 #include <QWidget>
 #include <QVBoxLayout>
@@ -36,7 +36,6 @@
 #include <QFileDialog>
 #include <QImage>
 #include <QtOpenGLWidgets/QOpenGLWidget>
-// #include <QOpenGLFunctions>
 #include <QTimer>
 #include <QElapsedTimer>
 #include <QtOpenGL/QOpenGLFunctions_4_3_Core>
@@ -45,17 +44,18 @@
 
 class CurrentOutputRenderer;
 
-class AIAgentFitnessCalculator : public QWidget {
+class AIAgentMonitor : public QWidget {
   Q_OBJECT
 
  public:
-  AIAgentFitnessCalculator(QWidget* parent = nullptr);
-  ~AIAgentFitnessCalculator() override = default;
+  AIAgentMonitor(QWidget* parent = nullptr);
+  ~AIAgentMonitor() override = default;
 
   void update_current_output(const std::string& code);
 
-  unsigned long get_fitness_value(const std::string& encoded_graph);
   unsigned long get_fitness_value() const;
+
+  QImage get_target_image() const;
 
  private Q_SLOTS:
   void on_load_image_button_pressed();
@@ -146,4 +146,4 @@ class CurrentOutputRenderer : public QOpenGLWidget, protected QOpenGLFunctions_4
   void cleanup();
 };
 
-#endif  // SHADER_GEN_AI_AGENT_FITNESS_CALCULATOR_HPP
+#endif  // SHADER_GEN_AI_AGENT_MONITOR_HPP

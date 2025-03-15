@@ -33,9 +33,9 @@
 ImageExtractor::ImageExtractor() :
     context(new QOpenGLContext),
     surface(new QOffscreenSurface),
+    fbo(nullptr),
     VAO(0),
-    VBO(0),
-    initialized(false) {
+    VBO(0) {
   QSurfaceFormat format;
   format.setVersion(4, 3);
   format.setProfile(QSurfaceFormat::CoreProfile);
@@ -43,15 +43,25 @@ ImageExtractor::ImageExtractor() :
 }
 
 ImageExtractor::~ImageExtractor() {
-  if (initialized) {
-    context->makeCurrent(surface);
+  if (isInitialized()) {
+    CHECK_CONDITION_TRUE(!context->makeCurrent(surface), "Failed to make OpenGL context current");
     glDeleteVertexArrays(1, &VAO);
     glDeleteBuffers(1, &VBO);
     VAO = VBO = 0;
+    if (fbo) {
+      delete fbo;
+      fbo = nullptr;
+    }
     context->doneCurrent();
   }
-  delete surface;
-  delete context;
+  if (context) {
+    delete context;
+    context = nullptr;
+  }
+  if (surface) {
+    delete surface;
+    surface = nullptr;
+  }
 }
 
 bool ImageExtractor::initialize() {
@@ -66,8 +76,8 @@ bool ImageExtractor::initialize() {
   init_buffers();
 
   // Create FBO with size 256x256
-  fbo = std::make_unique<QOpenGLFramebufferObject>(256, 256);
-  initialized = true;
+  fbo = new QOpenGLFramebufferObject(256, 256);
+  
   context->doneCurrent();
   return true;
 }
@@ -145,7 +155,7 @@ void main() {
 }
 
 QImage ImageExtractor::render(const std::string& code) {
-  CHECK_CONDITION_TRUE_NON_VOID(!initialized || !context->makeCurrent(surface), QImage(), "Failed to make OpenGL context current");
+  CHECK_CONDITION_TRUE_NON_VOID(!isInitialized() || !context->makeCurrent(surface), QImage(), "Failed to make OpenGL context current");
 
   QOpenGLShaderProgram program;
   if (!compile_shader(code, program)) {

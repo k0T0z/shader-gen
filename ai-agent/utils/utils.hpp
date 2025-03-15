@@ -890,6 +890,10 @@ inline static std::vector<std::string> split_string(const std::string& str, cons
                     for (int i{0}; i < maximum_population_size; ++i) population.at(i) += entity + ',';
                 }
             }
+
+            for (auto& entity : population) {
+                if (!entity.empty()) entity.pop_back(); // Remove the last comma
+            }
             break;
         }
         default:

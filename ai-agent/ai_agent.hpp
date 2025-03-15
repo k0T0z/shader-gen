@@ -33,10 +33,8 @@
 #include <condition_variable>
 #include <chrono>
 
-#include <QGraphicsScene>
-
-#include "gui/controller/fitness_calculator.hpp"
 #include "ai-agent/shared_memory.hpp"
+#include "ai-agent/utils/image_extractor.hpp"
 
 class AIAgentWorker {
 public:
@@ -61,8 +59,7 @@ public:
     void set_maximum_iterations(const int& maximum_iterations) { this->maximum_iterations = maximum_iterations; }
 
     void set_matching_type(const MatchingType& matching_type) { this->matching_type = matching_type; }
-
-    void set_scene(QGraphicsScene* scene) { this->scene = scene; }
+    void set_target_image(const QImage& target_image) { this->target_image = target_image; }
     
 private:
     std::thread worker;
@@ -81,12 +78,12 @@ private:
     int maximum_iterations;
 
     MatchingType matching_type;
-
-    QGraphicsScene* scene;
+    QImage target_image;
 
     ShaderGenSharedMemory* shared_memory;
 
     void stop_thread();
+    unsigned long get_fitness_value(const std::string& encoded_graph, ImageExtractor& extractor);
 };
 
 #endif // AI_AGENT_HPP

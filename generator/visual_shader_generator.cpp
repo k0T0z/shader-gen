@@ -808,8 +808,7 @@ std::unordered_map<int, std::shared_ptr<VisualShaderNodePortTypeGenerator>> to_p
     if (port_type_generators.find(n_id) != port_type_generators.end()) {
       FAIL_AND_RETURN_NON_VOID(port_type_generators, "Node id already exists.");
     }
-    const int oneof_value_field_number = std::stoi(tokens.at(2));
-
+    
     port_type_generators[n_id] = shadergen_utils::get_port_type_generator(encoded_graph);
     CHECK_PARAM_NULLPTR_NON_VOID(port_type_generators[n_id], port_type_generators, "Proto node is nullptr.");
   }
