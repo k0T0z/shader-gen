@@ -28,6 +28,7 @@
 #include "ai-agent/ai_agent.hpp"
 
 #include <sstream>
+#include <algorithm>
 
 #include "error_macros.hpp"
 #include "ai-agent/utils/utils.hpp"
@@ -97,6 +98,21 @@ void AIAgentWorker::worker_main() {
         const std::string encoded_graph = shared_memory->get_encoded_graph();
 
         std::vector<std::string> population = ai_agent_utils::generate_population(matching_type, encoded_graph, maximum_population_size);
+
+        // Calculate fitness
+        std::vector<unsigned long> fitness_values;
+        fitness_values.resize(maximum_population_size);
+        for (int i {0}; i < maximum_population_size; i++) fitness_values.at(i) = fitness_calculator->get_fitness_value(population.at(i));
+
+        // Create a vector of pairs of population and fitness values
+        std::vector<std::pair<std::string, unsigned long>> population_fitness;
+        population_fitness.resize(maximum_population_size);
+        for (int i {0}; i < maximum_population_size; i++) population_fitness.at(i) = std::make_pair(population.at(i), fitness_values.at(i));
+
+        // Sort the population based on fitness values
+        std::sort(population_fitness.begin(), population_fitness.end(), [](const std::pair<std::string, unsigned long>& a, const std::pair<std::string, unsigned long>& b) {
+            return a.second < b.second; // Ascending order
+        });
 
         while (maximum_iterations-- > 0) {
             

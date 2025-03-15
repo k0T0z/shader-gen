@@ -30,6 +30,7 @@
 #include "ai-agent/fitness.hpp"
 
 #include "error_macros.hpp"
+#include "generator/visual_shader_generator.hpp"
 
 AIAgentFitnessCalculator::AIAgentFitnessCalculator(QWidget* parent)
     : QWidget(parent),
@@ -186,7 +187,18 @@ void AIAgentFitnessCalculator::update_current_output(const std::string& code) {
   current_output_renderer->set_code(code);
 }
 
-unsigned long AIAgentFitnessCalculator::get_fitness_value(const std::string& encoded_graph) const {
+unsigned long AIAgentFitnessCalculator::get_fitness_value(const std::string& encoded_graph) {
+  std::string code;
+
+  bool result{shadergen_visual_shader_generator::generate_shader(
+    shadergen_visual_shader_generator::to_proto_nodes(encoded_graph),
+    shadergen_visual_shader_generator::to_generators(encoded_graph), 
+    shadergen_visual_shader_generator::to_port_type_generators(encoded_graph),
+    shadergen_visual_shader_generator::to_input_output_connections_by_key(encoded_graph), code)};
+  CHECK_CONDITION_TRUE_NON_VOID(!result, 0ul, "Failed to generate shader code");
+
+  update_current_output(code);
+
   return get_fitness_value();
 }
 
@@ -282,7 +294,8 @@ void CurrentOutputRenderer::set_code(const std::string& new_code) {
 
   this->code = new_code;
 
-  if (!compile_debounce_timer.isActive()) compile_debounce_timer.start();
+  // if (!compile_debounce_timer.isActive()) compile_debounce_timer.start();
+  update_shader_program();
 }
 
 QImage CurrentOutputRenderer::get_pixel_data() const {
