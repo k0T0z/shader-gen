@@ -104,7 +104,7 @@ std::unordered_map<int, std::shared_ptr<IVisualShaderProtoNode>> to_proto_nodes(
   for (const auto& entity : entities) {
     const std::vector<std::string> tokens{ai_agent_utils::split_string(entity, ';')};
     const int entity_type = std::stoi(tokens.at(0));
-    SILENT_CONTINUE_IF_TRUE(entity_type != 0, proto_nodes);
+    SILENT_CONTINUE_IF_TRUE(entity_type != 0);
     const int n_id = std::stoi(tokens.at(1));
     if (proto_nodes.find(n_id) != proto_nodes.end()) {
       FAIL_AND_RETURN_NON_VOID(proto_nodes, "Node id already exists.");
@@ -427,7 +427,7 @@ std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>> to_generator
   for (const auto& entity : entities) {
     const std::vector<std::string> tokens{ai_agent_utils::split_string(entity, ';')};
     const int entity_type = std::stoi(tokens.at(0));
-    SILENT_CONTINUE_IF_TRUE(entity_type != 0, proto_nodes);
+    SILENT_CONTINUE_IF_TRUE(entity_type != 0);
     const int n_id = std::stoi(tokens.at(1));
     if (generators.find(n_id) != generators.end()) {
       FAIL_AND_RETURN_NON_VOID(generators, "Node ID already exists in the generators map.");
@@ -803,7 +803,7 @@ std::unordered_map<int, std::shared_ptr<VisualShaderNodePortTypeGenerator>> to_p
   for (const auto& entity : entities) {
     const std::vector<std::string> tokens{ai_agent_utils::split_string(entity, ';')};
     const int entity_type = std::stoi(tokens.at(0));
-    SILENT_CONTINUE_IF_TRUE(entity_type != 0, proto_nodes);
+    SILENT_CONTINUE_IF_TRUE(entity_type != 0);
     const int n_id = std::stoi(tokens.at(1));
     if (port_type_generators.find(n_id) != port_type_generators.end()) {
       FAIL_AND_RETURN_NON_VOID(port_type_generators, "Node id already exists.");
@@ -865,7 +865,7 @@ std::pair<std::map<ConnectionKey, std::shared_ptr<Connection>>, std::map<Connect
   for (const auto& entity : entities) {
     const std::vector<std::string> tokens{ai_agent_utils::split_string(entity, ';')};
     const int entity_type = std::stoi(tokens.at(0));
-    SILENT_CONTINUE_IF_TRUE(entity_type != 1, proto_nodes);
+    SILENT_CONTINUE_IF_TRUE(entity_type != 1);
     std::shared_ptr<Connection> c = std::make_shared<Connection>();
     c->from.f_key.node = std::stoi(tokens.at(1));
     c->from.f_key.port = std::stoi(tokens.at(2));
