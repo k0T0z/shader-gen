@@ -294,8 +294,7 @@ void CurrentOutputRenderer::set_code(const std::string& new_code) {
 
   this->code = new_code;
 
-  // if (!compile_debounce_timer.isActive()) compile_debounce_timer.start();
-  update_shader_program();
+  if (!compile_debounce_timer.isActive()) compile_debounce_timer.start();
 }
 
 QImage CurrentOutputRenderer::get_pixel_data() const {
@@ -354,14 +353,18 @@ void CurrentOutputRenderer::paintGL() {
   if (is_dynamic) {
     CHECK_PARAM_NULLPTR(shader_program, "Shader program is null");
     
-    CHECK_CONDITION_TRUE(!shader_program->bind(), "Failed to bind shader program");
-    
     // Render to FBO at 256x256
     fbo->bind();
     glViewport(0, 0, 256, 256);
     
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
+
+    if (!shader_program->bind()) {
+      WARN_PRINT("Failed to bind shader program");
+      fbo->release();
+      return;
+    }
     
     int utime_location = shader_program->uniformLocation("uTime");
     if (utime_location != -1) {
@@ -379,14 +382,16 @@ void CurrentOutputRenderer::paintGL() {
   } else if (!static_rendered) {
     // For static shaders, render once to FBO
     CHECK_PARAM_NULLPTR(shader_program, "Shader program is null");
-  
-    CHECK_CONDITION_TRUE(!shader_program->bind(), "Failed to bind shader program");
 
     fbo->bind();
     glViewport(0, 0, 256, 256);
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
-    shader_program->bind();
+    if (!shader_program->bind()) {
+      WARN_PRINT("Failed to bind shader program");
+      fbo->release();
+      return;
+    }
     glBindVertexArray(VAO);
     glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
     glBindVertexArray(0);

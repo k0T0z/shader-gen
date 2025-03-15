@@ -32,6 +32,7 @@
 
 #include "error_macros.hpp"
 #include "ai-agent/utils/utils.hpp"
+#include "ai-agent/utils/image_extractor.hpp"
 
 AIAgentWorker::AIAgentWorker(ShaderGenSharedMemory* shared_memory) : start_requested(false),
                                                                      exit_requested(false),
@@ -41,7 +42,6 @@ AIAgentWorker::AIAgentWorker(ShaderGenSharedMemory* shared_memory) : start_reque
                                                                      crossover_probability(0.0f), 
                                                                      elitism_ratio(0.0f), 
                                                                      maximum_iterations(0),
-                                                                     fitness_calculator(nullptr),
                                                                      matching_type(MatchingType::PARAMETERS_ONLY),
                                                                      scene(nullptr),
                                                                      shared_memory(shared_memory) {
@@ -91,7 +91,6 @@ void AIAgentWorker::worker_main() {
         // It doesn't make sense to stop before even starting
         if (stop_requested.load()) stop_requested.store(false);
 
-        CONTINUE_IF_TRUE(fitness_calculator == nullptr, "Fitness calculator is not set");
         CONTINUE_IF_TRUE(scene == nullptr, "Scene is not set");
 
         // Generate initial population
@@ -99,10 +98,12 @@ void AIAgentWorker::worker_main() {
 
         std::vector<std::string> population = ai_agent_utils::generate_population(matching_type, encoded_graph, maximum_population_size);
 
+        ImageExtractor image_extractor;
+        CONTINUE_IF_TRUE(!image_extractor.initialize(), "Failed to initialize image extractor");
+
         // Calculate fitness
         std::vector<unsigned long> fitness_values;
         fitness_values.resize(maximum_population_size);
-        for (int i {0}; i < maximum_population_size; i++) fitness_values.at(i) = fitness_calculator->get_fitness_value(population.at(i));
 
         // Create a vector of pairs of population and fitness values
         std::vector<std::pair<std::string, unsigned long>> population_fitness;

@@ -623,8 +623,6 @@ void VisualShaderEditor::on_start_matching_button_pressed() {
   ai_agent_worker->set_elitism_ratio(parameters_editor->get_elitism_ratio());
   ai_agent_worker->set_maximum_iterations(parameters_editor->get_maximum_iterations());
 
-  ai_agent_worker->set_fitness_calculator(fitness_calculator);
-
   AIAgentWorker::MatchingType matching_type{static_cast<AIAgentWorker::MatchingType>(matching_type_combo_box->currentData().toInt())};
   ai_agent_worker->set_matching_type(matching_type);
 

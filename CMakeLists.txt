@@ -141,6 +141,7 @@ set(SHADER_GEN_HPP_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/ai-agent/utils/utils.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/ai-agent/parameters.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/ai-agent/shared_memory.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/ai-agent/utils/image_extractor.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/generator/visual_shader_generator.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/generator/visual_shader_node_generators.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/generator/vs_node_noise_generators.hpp
@@ -166,6 +167,7 @@ set(SHADER_GEN_HPP_FILES
 set(SHADER_GEN_CPP_FILES 
     ${CMAKE_CURRENT_SOURCE_DIR}/ai-agent/ai_agent.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/ai-agent/parameters.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/ai-agent/utils/image_extractor.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/generator/visual_shader_generator.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/generator/visual_shader_node_generators.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/generator/vs_node_noise_generators.cpp

@@ -25,68 +25,37 @@
 /*                                                                               */
 /*********************************************************************************/
 
-#ifndef AI_AGENT_HPP
-#define AI_AGENT_HPP
+#ifndef SHADER_GEN_AI_AGENT_IMAGE_EXTRACTOR_HPP
+#define SHADER_GEN_AI_AGENT_IMAGE_EXTRACTOR_HPP
 
-#include <thread>
-#include <mutex>
-#include <condition_variable>
-#include <chrono>
+#include <QtOpenGL/QOpenGLFunctions_4_3_Core>
+#include <QOffscreenSurface>
+#include <QOpenGLContext>
+#include <QOpenGLFramebufferObject>
+#include <QtOpenGL/QOpenGLShaderProgram>
+#include <QImage>
+#include <memory>
+#include <string>
 
-#include <QGraphicsScene>
+class ImageExtractor : protected QOpenGLFunctions_4_3_Core {
+  public:
+  ImageExtractor();
+  ~ImageExtractor();
 
-#include "gui/controller/fitness_calculator.hpp"
-#include "ai-agent/shared_memory.hpp"
+  bool initialize();
+  QImage render(const std::string& code);
 
-class AIAgentWorker {
-public:
-    enum class MatchingType {
-        PARAMETERS_ONLY,
-        PARAMETERS_AND_CONNECTIONS,
-        FULL_GRAPH,
-    };
-
-    AIAgentWorker(ShaderGenSharedMemory* shared_memory);
-    ~AIAgentWorker();
-
-    void start_matching();
-    void stop_matching();
-
-    void worker_main();
-
-    void set_maximum_population_size(const int& maximum_population_size) { this->maximum_population_size = maximum_population_size; }
-    void set_mutation_probability(const float& mutation_probability) { this->mutation_probability = mutation_probability; }
-    void set_crossover_probability(const float& crossover_probability) { this->crossover_probability = crossover_probability; }
-    void set_elitism_ratio(const float& elitism_ratio) { this->elitism_ratio = elitism_ratio; }
-    void set_maximum_iterations(const int& maximum_iterations) { this->maximum_iterations = maximum_iterations; }
-
-    void set_matching_type(const MatchingType& matching_type) { this->matching_type = matching_type; }
-
-    void set_scene(QGraphicsScene* scene) { this->scene = scene; }
-    
 private:
-    std::thread worker;
-    
-    std::mutex mtx;
-    std::condition_variable cv;
-    int process_counter;
-    std::atomic<bool> start_requested;
-    std::atomic<bool> exit_requested;
-    std::atomic<bool> stop_requested;
+  void init_buffers();
+  bool compile_shader(const std::string& code, QOpenGLShaderProgram& program);
 
-    int maximum_population_size;
-    float mutation_probability;
-    float crossover_probability;
-    float elitism_ratio;
-    int maximum_iterations;
-
-    MatchingType matching_type;
-
-    QGraphicsScene* scene;
-
-    ShaderGenSharedMemory* shared_memory;
-
-    void stop_thread();
+  QOpenGLContext* context;
+  QOffscreenSurface* surface;
+  std::unique_ptr<QOpenGLFramebufferObject> fbo;
+  
+  GLuint VAO;
+  GLuint VBO;
+  bool initialized;
 };
 
-#endif // AI_AGENT_HPP
+#endif  // SHADER_GEN_AI_AGENT_IMAGE_EXTRACTOR_HPP
