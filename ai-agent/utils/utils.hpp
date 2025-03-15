@@ -806,10 +806,8 @@ inline static DiscreteContinuousRangeVariant get_range_for_field(const int& node
 inline static std::vector<std::string> split_string(const std::string& str, const char& delimiter) {
     std::vector<std::string> tokens;
     std::string token;
-    std::istringstream tokenStream(str);
-    while (std::getline(tokenStream, token, delimiter)) {
-        tokens.push_back(token);
-    }
+    std::istringstream token_stream(str);
+    while (std::getline(token_stream, token, delimiter)) tokens.push_back(token);
     return tokens;
 }
 
@@ -840,7 +838,7 @@ inline static std::vector<std::string> split_string(const std::string& str, cons
                 const int entity_type = std::stoi(tokens.at(0));
                 if (entity_type == 0) {
                     // Node
-                    // Format: entity_type;node_id;node_type;field_number-value;field_number-value;...
+                    // Format: entity_type;node_id;node_type;field_number=value;field_number=value;...
                     const int n_id = std::stoi(tokens.at(1));
                     const int oneof_value_field_number = std::stoi(tokens.at(2));
                     const std::vector<std::string> parameters{tokens.begin() + 3, tokens.end()};
@@ -848,7 +846,7 @@ inline static std::vector<std::string> split_string(const std::string& str, cons
                         std::vector<std::string> new_parameters;
                         new_parameters.resize(parameters.size());
                         for (int j{0}; j < parameters.size(); ++j) {
-                            const std::string parameter{parameters.at(j)}; // Format: field_number-value
+                            const std::string parameter{parameters.at(j)}; // Format: field_number=value
                             const std::vector<std::string> parameter_tokens{split_string(parameter, '=')};
                             const int field_number = std::stoi(parameter_tokens.at(0));
                             const DiscreteContinuousRangeVariant range{get_range_for_field(oneof_value_field_number, field_number)};
