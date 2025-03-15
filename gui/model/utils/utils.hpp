@@ -440,7 +440,6 @@ inline static std::shared_ptr<VisualShaderNodePortTypeGenerator> get_port_type_g
   const std::vector<std::string> tokens{ai_agent_utils::split_string(node_entity, ';')};
   const int entity_type = std::stoi(tokens.at(0));
   CHECK_CONDITION_TRUE_NON_VOID(entity_type != 0, nullptr, "Wrong entity type.");
-  const int n_id = std::stoi(tokens.at(1));
   const int oneof_value_field_number = std::stoi(tokens.at(2));
   const std::vector<std::string> parameters{tokens.begin() + 3, tokens.end()};
   

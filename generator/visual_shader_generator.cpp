@@ -866,10 +866,10 @@ std::pair<std::map<ConnectionKey, std::shared_ptr<Connection>>, std::map<Connect
     const int entity_type = std::stoi(tokens.at(0));
     SILENT_CONTINUE_IF_TRUE(entity_type != 1);
     std::shared_ptr<Connection> c = std::make_shared<Connection>();
-    c->from.f_key.node = std::stoi(tokens.at(1));
-    c->from.f_key.port = std::stoi(tokens.at(2));
-    c->to.f_key.node = std::stoi(tokens.at(3));
-    c->to.f_key.port = std::stoi(tokens.at(4));
+    c->from.f_key.node = std::stoi(tokens.at(2));
+    c->from.f_key.port = std::stoi(tokens.at(3));
+    c->to.f_key.node = std::stoi(tokens.at(4));
+    c->to.f_key.port = std::stoi(tokens.at(5));
 
     ConnectionKey from_key;
     from_key.f_key.node = c->from.f_key.node;

@@ -31,16 +31,11 @@
 #include "generator/visual_shader_generator.hpp"
 
 ImageExtractor::ImageExtractor() :
-    context(new QOpenGLContext),
-    surface(new QOffscreenSurface),
+    context(nullptr),
+    surface(nullptr),
     fbo(nullptr),
     VAO(0),
-    VBO(0) {
-  QSurfaceFormat format;
-  format.setVersion(4, 3);
-  format.setProfile(QSurfaceFormat::CoreProfile);
-  context->setFormat(format);
-}
+    VBO(0) {}
 
 ImageExtractor::~ImageExtractor() {
   if (isInitialized()) {
@@ -54,25 +49,28 @@ ImageExtractor::~ImageExtractor() {
     }
     context->doneCurrent();
   }
-  if (context) {
-    delete context;
-    context = nullptr;
-  }
-  if (surface) {
-    delete surface;
-    surface = nullptr;
-  }
+  delete surface; surface = nullptr;
+  delete context; context = nullptr;
 }
 
 bool ImageExtractor::initialize() {
-  CHECK_CONDITION_TRUE_NON_VOID(!context->create(), false, "Failed to create OpenGL context");
-
-  surface->setFormat(context->format());
+  surface = new QOffscreenSurface();
   surface->create();
+
+  context = new QOpenGLContext();
+  context->setFormat(surface->format());
+  CHECK_CONDITION_TRUE_NON_VOID(!context->create(), false, "Failed to create OpenGL context");
 
   CHECK_CONDITION_TRUE_NON_VOID(!context->makeCurrent(surface), false, "Failed to make OpenGL context current");
 
-  CHECK_CONDITION_TRUE_NON_VOID(!initializeOpenGLFunctions(), false, "Failed to initialize OpenGL functions");
+  if (!initializeOpenGLFunctions()) {
+    WARN_PRINT("Failed to initialize OpenGL functions");
+    context->doneCurrent();
+    delete surface; surface = nullptr;
+    delete context; context = nullptr;
+    return false;
+  }
+
   init_buffers();
 
   // Create FBO with size 256x256
@@ -92,20 +90,49 @@ void ImageExtractor::init_buffers() {
 
   glGenVertexArrays(1, &VAO);
   glGenBuffers(1, &VBO);
-  Q_ASSERT(VAO && VBO);
+
+  /// Check for OpenGL errors after resource allocation
+  GLenum err = glGetError();
+  if (err != GL_NO_ERROR) {
+    ERROR_PRINT("Failed to generate VAO or VBO: OpenGL error " + std::to_string(err));
+    glDeleteVertexArrays(1, &VAO);
+    glDeleteBuffers(1, &VBO);
+    return;
+  }
 
   glBindVertexArray(VAO);
-
   glBindBuffer(GL_ARRAY_BUFFER, VBO);
   glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
+  // Check for errors after buffer setup
+  err = glGetError();
+  if (err != GL_NO_ERROR) {
+    ERROR_PRINT("Failed to set up VBO: OpenGL error " + std::to_string(err));
+    glDeleteVertexArrays(1, &VAO);
+    glDeleteBuffers(1, &VBO);
+    glBindVertexArray(0);
+    return;
+  }
+
+  // Position attribute (x, y)
   glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
   glEnableVertexAttribArray(0);
 
+  // FragCoord attribute (u, v)
   glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
   glEnableVertexAttribArray(1);
 
+  // Unbind both VBO and VAO
+  glBindBuffer(GL_ARRAY_BUFFER, 0);
   glBindVertexArray(0);
+
+  err = glGetError();
+  if (err != GL_NO_ERROR) {
+    ERROR_PRINT("Error setting vertex attributes: OpenGL error " + std::to_string(err));
+    glDeleteVertexArrays(1, &VAO);
+    glDeleteBuffers(1, &VBO);
+    return;
+  }
 }
 
 bool ImageExtractor::compile_shader(const std::string& code, QOpenGLShaderProgram& program) {
@@ -151,6 +178,9 @@ void main() {
   CHECK_CONDITION_TRUE_NON_VOID(!program.addShaderFromSourceCode(QOpenGLShader::Fragment, fragment_shader_source.c_str()), false, "Fragment shader compilation failed: " + program.log().toStdString());
   CHECK_CONDITION_TRUE_NON_VOID(!program.link(), false, "Shader program linking failed: " + program.log().toStdString());
 
+  // Delete shaders after linking
+  program.removeAllShaders();
+
   return true;
 }
 
@@ -159,7 +189,7 @@ QImage ImageExtractor::render(const std::string& code) {
 
   QOpenGLShaderProgram program;
   if (!compile_shader(code, program)) {
-    WARN_PRINT("Failed to compile shader");
+    ERROR_PRINT("Failed to compile shader code");
     context->doneCurrent();
     return QImage();
   }

@@ -51,7 +51,7 @@ AIAgentWorker::AIAgentWorker(ShaderGenSharedMemory* shared_memory) : start_reque
 
 AIAgentWorker::~AIAgentWorker() {
     stop_thread();
-    worker.join();
+    if (worker.joinable()) worker.join();
 }
 
 void AIAgentWorker::start_matching() {

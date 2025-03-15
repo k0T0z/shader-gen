@@ -36,7 +36,7 @@ namespace ai_agent_fitness {
 // Each pixel is expected to be in ARGB32 (0xAARRGGBB) format.
 inline static unsigned long calculate_fitness(const uint32_t* pixels1, const uint32_t* pixels2, const int& width, const int& height) {
     unsigned long total_fitness{0};
-    int num_pixels{width * height};
+    const int num_pixels{width * height};
     
     for (int i {0}; i < num_pixels; ++i) {
         uint32_t p1 = pixels1[i];
