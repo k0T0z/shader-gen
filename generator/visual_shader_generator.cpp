@@ -809,7 +809,7 @@ std::unordered_map<int, std::shared_ptr<VisualShaderNodePortTypeGenerator>> to_p
       FAIL_AND_RETURN_NON_VOID(port_type_generators, "Node id already exists.");
     }
     
-    port_type_generators[n_id] = shadergen_utils::get_port_type_generator(encoded_graph);
+    port_type_generators[n_id] = shadergen_utils::get_port_type_generator(entity);
     CHECK_PARAM_NULLPTR_NON_VOID(port_type_generators[n_id], port_type_generators, "Proto node is nullptr.");
   }
 
