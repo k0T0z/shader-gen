@@ -27,6 +27,8 @@
 
 #include "ai-agent/utils/image_extractor.hpp"
 
+#include <QImage>
+
 #include "error_macros.hpp"
 #include "generator/visual_shader_generator.hpp"
 
@@ -184,14 +186,14 @@ void main() {
   return true;
 }
 
-QImage ImageExtractor::render(const std::string& code) {
-  CHECK_CONDITION_TRUE_NON_VOID(!isInitialized() || !context->makeCurrent(surface), QImage(), "Failed to make OpenGL context current");
+const uint32_t* ImageExtractor::render(const std::string& code) {
+  CHECK_CONDITION_TRUE_NON_VOID(!isInitialized() || !context->makeCurrent(surface), nullptr, "Failed to make OpenGL context current");
 
   QOpenGLShaderProgram program;
   if (!compile_shader(code, program)) {
     ERROR_PRINT("Failed to compile shader code");
     context->doneCurrent();
-    return QImage();
+    return nullptr;
   }
 
   fbo->bind();
@@ -213,7 +215,13 @@ QImage ImageExtractor::render(const std::string& code) {
   fbo->release();
 
   QImage extracted_image = fbo->toImage().convertToFormat(QImage::Format_ARGB32);
+  
   context->doneCurrent();
-  return extracted_image;
+
+  // Retrieve pointers to the pixel data.
+  // QImage::bits() returns a pointer to the first pixel, and since our format is ARGB32,
+  // we can safely reinterpret_cast to a uint32_t pointer.
+  const uint32_t* extracted_image_pixels = reinterpret_cast<const uint32_t*>(extracted_image.bits());
+  return extracted_image_pixels;
 }
 

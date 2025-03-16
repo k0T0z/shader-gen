@@ -43,7 +43,6 @@
 #include "gui/model/repeated_message_model.hpp"
 #include "gui/controller/vs_proto_node.hpp"
 #include "gui/model/oneof_model.hpp"
-#include "ai-agent/ai_agent.hpp"
 
 using VisualShader = gui::model::schema::VisualShader;
 
@@ -809,98 +808,6 @@ inline static std::vector<std::string> split_string(const std::string& str, cons
     std::istringstream token_stream(str);
     while (std::getline(token_stream, token, delimiter)) tokens.push_back(token);
     return tokens;
-}
-
-/**
- * @brief 
- * 
- * @note Josh — 10/02/2025 20:36 "my recommendation for "how can we possibly guess 
- *       at a topology other than pure random" would be K-means clustering based on 
- *       fourier values"
- * 
- * @note Josh — 07/03/2025 21:26 "I think those are good heuristics, but what I would 
- *       probably do is start with a handful of topologies or even a few random nodes 
- *       of each kernel type, then just choose the ones that are the closest based on 
- *       that Fourier analysis"
- * 
- * @return std::vector<std::string>
- */
-
- inline static std::vector<std::string> generate_population(const AIAgentWorker::MatchingType& matching_type, const std::string& graph, const int& maximum_population_size) {
-    std::vector<std::string> population;
-    population.resize(maximum_population_size);
-
-    switch (matching_type) {
-        case AIAgentWorker::MatchingType::PARAMETERS_ONLY: {
-            const std::vector<std::string> entities{split_string(graph, ',')};
-            for (const auto& entity : entities) {
-                const std::vector<std::string> tokens{split_string(entity, ';')};
-                const int entity_type = std::stoi(tokens.at(0));
-                if (entity_type == 0) {
-                    // Node
-                    // Format: entity_type;node_id;node_type;field_number=value;field_number=value;...
-                    const int n_id = std::stoi(tokens.at(1));
-                    const int oneof_value_field_number = std::stoi(tokens.at(2));
-                    const std::vector<std::string> parameters{tokens.begin() + 3, tokens.end()};
-                    for (int i{0}; i < maximum_population_size; ++i) {
-                        std::vector<std::string> new_parameters;
-                        new_parameters.resize(parameters.size());
-                        for (int j{0}; j < parameters.size(); ++j) {
-                            const std::string parameter{parameters.at(j)}; // Format: field_number=value
-                            const std::vector<std::string> parameter_tokens{split_string(parameter, '=')};
-                            const int field_number = std::stoi(parameter_tokens.at(0));
-                            const DiscreteContinuousRangeVariant range{get_range_for_field(oneof_value_field_number, field_number)};
-                            std::string new_parameter;
-                            new_parameter += std::to_string(field_number) + '=';
-                            if (std::holds_alternative<std::vector<int>>(range)) {
-                                const std::vector<int> discrete_range{std::get<std::vector<int>>(range)};
-                                const int random_index{random_int_inclusive<int>(0, (int)discrete_range.size() - 1)};
-                                new_parameter += std::to_string(discrete_range.at(random_index)) + ';';
-                            } else if (std::holds_alternative<std::pair<ContinuousRangeVariant, ContinuousRangeVariant>>(range)) {
-                                const std::pair<ContinuousRangeVariant, ContinuousRangeVariant> continuous_range{std::get<std::pair<ContinuousRangeVariant, ContinuousRangeVariant>>(range)};
-                                if (std::holds_alternative<int>(continuous_range.first) && std::holds_alternative<int>(continuous_range.second)) {
-                                    const int lower_bound{std::get<int>(continuous_range.first)};
-                                    const int upper_bound{std::get<int>(continuous_range.second)};
-                                    const float random_value{random_real_inclusive<float>(lower_bound, upper_bound)};
-                                    new_parameter += std::to_string(random_value) + ';';
-                                } else if (std::holds_alternative<float>(continuous_range.first) && std::holds_alternative<float>(continuous_range.second)) {
-                                    const float lower_bound{std::get<float>(continuous_range.first)};
-                                    const float upper_bound{std::get<float>(continuous_range.second)};
-                                    const float random_value{random_real_inclusive<float>(lower_bound, upper_bound)};
-                                    new_parameter += std::to_string(random_value) + ';';
-                                }
-                            } else {
-                                new_parameter += "0;";
-                            }
-                            new_parameter.pop_back(); // Remove the last semicolon
-                            new_parameters.at(j) = new_parameter;
-                        }
-                        std::string encoded_node;
-                        encoded_node += std::to_string(entity_type) + ';';
-                        encoded_node += std::to_string(n_id) + ';';
-                        encoded_node += std::to_string(oneof_value_field_number) + ';';
-                        for (const auto& new_parameter : new_parameters) encoded_node += new_parameter + ';';
-
-                        encoded_node.pop_back(); // Remove the last semicolon
-
-                        population.at(i) += encoded_node + ',';
-                    }
-                } else {
-                    // Connection
-                    for (int i{0}; i < maximum_population_size; ++i) population.at(i) += entity + ',';
-                }
-            }
-
-            for (auto& entity : population) {
-                if (!entity.empty()) entity.pop_back(); // Remove the last comma
-            }
-            break;
-        }
-        default:
-            break;
-    }
-
-    return population;
 }
 }  // namespace ai_agent_utils
 

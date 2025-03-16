@@ -158,6 +158,7 @@ set(SHADER_GEN_HPP_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/gui/controller/renderer/renderer.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/gui/controller/ai_agent_monitor.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/gui/controller/parameters_editor.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/gui/controller/ai_agent_worker.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/gui/model/utils/field_path.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/gui/model/utils/utils.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/gui/controller/utils/utils.hpp
@@ -183,6 +184,7 @@ set(SHADER_GEN_CPP_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/gui/controller/renderer/renderer.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/gui/controller/ai_agent_monitor.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/gui/controller/parameters_editor.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/gui/controller/ai_agent_worker.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/gui/model/utils/field_path.cpp
 )
 

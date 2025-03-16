@@ -28,62 +28,33 @@
 #ifndef AI_AGENT_HPP
 #define AI_AGENT_HPP
 
-#include <thread>
-#include <mutex>
-#include <condition_variable>
-#include <chrono>
+#include <string>
 
-#include "ai-agent/shared_memory.hpp"
 #include "ai-agent/utils/image_extractor.hpp"
 
-class AIAgentWorker {
-public:
+namespace ai_agent_main {
+
     enum class MatchingType {
         PARAMETERS_ONLY,
         PARAMETERS_AND_CONNECTIONS,
         FULL_GRAPH,
     };
 
-    AIAgentWorker(ShaderGenSharedMemory* shared_memory);
-    ~AIAgentWorker();
+    bool genetic_algorithm(
+        const MatchingType& matching_type,
+        const std::string& encoded_graph,
+        const uint32_t* target_image_pixels,
+        const int& maximum_population_size
+    ) noexcept;
 
-    void start_matching();
-    void stop_matching();
+    unsigned long get_fitness_value(
+        const std::string& encoded_graph, 
+        ImageExtractor& extractor, 
+        const uint32_t* target_image_pixels, 
+        const int& width, 
+        const int& height
+    );
 
-    void worker_main();
-
-    void set_maximum_population_size(const int& maximum_population_size) { this->maximum_population_size = maximum_population_size; }
-    void set_mutation_probability(const float& mutation_probability) { this->mutation_probability = mutation_probability; }
-    void set_crossover_probability(const float& crossover_probability) { this->crossover_probability = crossover_probability; }
-    void set_elitism_ratio(const float& elitism_ratio) { this->elitism_ratio = elitism_ratio; }
-    void set_maximum_iterations(const int& maximum_iterations) { this->maximum_iterations = maximum_iterations; }
-
-    void set_matching_type(const MatchingType& matching_type) { this->matching_type = matching_type; }
-    void set_target_image(const QImage& target_image) { this->target_image = target_image; }
-    
-private:
-    std::thread worker;
-    
-    std::mutex mtx;
-    std::condition_variable cv;
-    int process_counter;
-    std::atomic<bool> start_requested;
-    std::atomic<bool> exit_requested;
-    std::atomic<bool> stop_requested;
-
-    int maximum_population_size;
-    float mutation_probability;
-    float crossover_probability;
-    float elitism_ratio;
-    int maximum_iterations;
-
-    MatchingType matching_type;
-    QImage target_image;
-
-    ShaderGenSharedMemory* shared_memory;
-
-    void stop_thread();
-    unsigned long get_fitness_value(const std::string& encoded_graph, ImageExtractor& extractor);
-};
+} // namespace ai_agent_main
 
 #endif // AI_AGENT_HPP

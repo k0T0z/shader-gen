@@ -72,7 +72,7 @@
 
 #include "gui/controller/renderer/renderer.hpp"
 
-#include "ai-agent/ai_agent.hpp"
+#include "gui/controller/ai_agent_worker.hpp"
 #include "ai-agent/shared_memory.hpp"
 #include "gui/controller/ai_agent_monitor.hpp"
 #include "gui/controller/parameters_editor.hpp"

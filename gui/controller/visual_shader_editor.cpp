@@ -37,6 +37,7 @@
 
 #include "generator/visual_shader_generator.hpp"
 #include "ai-agent/utils/utils.hpp"
+#include "ai-agent/ai_agent.hpp"
 
 using VisualShader = gui::model::schema::VisualShader;
 
@@ -295,9 +296,9 @@ void VisualShaderEditor::init() {
   matching_type_combo_box->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
   matching_type_combo_box->setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
   matching_type_combo_box->setToolTip("Select the type of matching to perform");
-  matching_type_combo_box->addItem("Parameters Only", static_cast<int>(AIAgentWorker::MatchingType::PARAMETERS_ONLY));
-  matching_type_combo_box->addItem("Parameters and Connections", static_cast<int>(AIAgentWorker::MatchingType::PARAMETERS_AND_CONNECTIONS));
-  matching_type_combo_box->addItem("Full Graph", static_cast<int>(AIAgentWorker::MatchingType::FULL_GRAPH));
+  matching_type_combo_box->addItem("Parameters Only", static_cast<int>(ai_agent_main::MatchingType::PARAMETERS_ONLY));
+  matching_type_combo_box->addItem("Parameters and Connections", static_cast<int>(ai_agent_main::MatchingType::PARAMETERS_AND_CONNECTIONS));
+  matching_type_combo_box->addItem("Full Graph", static_cast<int>(ai_agent_main::MatchingType::FULL_GRAPH));
   matching_type_combo_box->setCurrentIndex(0);
   menu_bar->addWidget(matching_type_combo_box);
 
@@ -623,7 +624,7 @@ void VisualShaderEditor::on_start_matching_button_pressed() {
   ai_agent_worker->set_elitism_ratio(parameters_editor->get_elitism_ratio());
   ai_agent_worker->set_maximum_iterations(parameters_editor->get_maximum_iterations());
 
-  AIAgentWorker::MatchingType matching_type{static_cast<AIAgentWorker::MatchingType>(matching_type_combo_box->currentData().toInt())};
+  ai_agent_main::MatchingType matching_type{static_cast<ai_agent_main::MatchingType>(matching_type_combo_box->currentData().toInt())};
   ai_agent_worker->set_matching_type(matching_type);
   ai_agent_worker->set_target_image(ai_agent_monitor->get_target_image());
 
