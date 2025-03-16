@@ -25,44 +25,22 @@
 /*                                                                               */
 /*********************************************************************************/
 
-#ifndef AI_AGENT_HPP
-#define AI_AGENT_HPP
+#include <gtest/gtest.h>
 
 #include <string>
-#include <vector>
 
-#include "ai-agent/utils/image_extractor.hpp"
+#include "ai-agent/ai_agent.hpp"
+#include "ai-agent/parameters.hpp"
 
-namespace ai_agent_main {
+TEST(AIAgentTest, TestMatchingAlgorithm) {
+    // I encoded the example.json graph
+    const std::string encoded_graph{"0;0;5,0;1;4;1=1,0;2;4;1=2,0;3;23;1=5,0;4;18;1=1,0;5;6;1=2,0;6;14;1=4,0;7;14;1=2,0;8;18;1=16,1;0;1;0;3;0,1;1;2;0;4;0,1;2;4;0;6;0,1;3;5;0;6;1,1;4;3;0;7;0,1;5;6;0;7;1,1;6;7;0;8;0,1;7;8;0;0;0"};
 
-    enum class MatchingType {
-        PARAMETERS_ONLY,
-        PARAMETERS_AND_CONNECTIONS,
-        FULL_GRAPH,
-    };
-
-    bool init(
-        const MatchingType& matching_type,
-        const std::string& encoded_graph,
-        const int& maximum_population_size, 
-        std::vector<std::string>& population_buffer
-    ) noexcept;
-
-    bool genetic_algorithm(
-        const MatchingType& matching_type,
-        const std::string& encoded_graph,
-        const uint32_t* target_image_pixels,
-        const int& maximum_population_size
-    ) noexcept;
-
-    unsigned long get_fitness_value(
-        const std::string& encoded_graph, 
-        ImageExtractor& extractor, 
-        const uint32_t* target_image_pixels, 
-        const int& width, 
-        const int& height
-    );
-
-} // namespace ai_agent_main
-
-#endif // AI_AGENT_HPP
+    std::vector<std::string> initial_population;
+    ASSERT_TRUE(ai_agent_main::init(
+        ai_agent_main::MatchingType::PARAMETERS_ONLY,
+        encoded_graph,
+        maximum_population_size,
+        initial_population
+    ));
+}

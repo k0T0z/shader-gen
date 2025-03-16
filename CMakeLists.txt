@@ -272,6 +272,7 @@ if(SHADER_GEN_BUILD_TESTS)
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/generator/test_vs_generator.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/generator/test_vs_node_generators.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/ai-agent/test_fitness.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/ai-agent/test_ai_agent.cpp
     )
 
     set(SHADER_GEN_TESTS_PROTO_FILES 
