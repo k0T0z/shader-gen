@@ -39,6 +39,8 @@ git submodule update --init --recursive
 # Create and switch to the build directory.
 New-Item -ItemType Directory -Path build | Set-Location
 
+# Note that we don't need to set CMAKE_MSVC_RUNTIME_LIBRARY as Protobuf already does this for us.
+
 # Configure the build with CMake using the provided build type and shared libraries setting.
 cmake .. -G "Visual Studio 17 2022" -A x64 `
          -Dprotobuf_BUILD_TESTS=OFF `
