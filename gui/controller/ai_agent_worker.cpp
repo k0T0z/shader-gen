@@ -95,6 +95,35 @@ void AIAgentWorker::worker_main() {
         // Generate initial population
         const std::string encoded_graph = shared_memory->get_encoded_graph();
 
+        std::vector<std::string> initial_population;
+        CONTINUE_IF_TRUE(!ai_agent_main::init(
+            ai_agent_main::MatchingType::PARAMETERS_ONLY,
+            encoded_graph,
+            maximum_population_size,
+            initial_population
+        ), "Failed to create initial population");
+
+        // Create the extractor
+        ImageExtractor image_extractor;
+        CONTINUE_IF_TRUE(!image_extractor.initialize(), "Failed to initialize image extractor");
+
+        // Get target image pixels
+        const uint32_t* target_image_pixels = reinterpret_cast<const uint32_t*>(target_image.bits());
+
+        std::vector<unsigned long> fitness_values;
+        fitness_values.resize(maximum_population_size);
+        for (int i {0}; i < maximum_population_size; i++) {
+            fitness_values.at(i) = ai_agent_main::get_fitness_value(
+                initial_population.at(i),
+                image_extractor,
+                target_image_pixels,
+                256,
+                256
+            );
+        }
+
+        DEBUG_PRINT("Initial population generated");
+
         // Process all pending requests
         // while (process_counter > 0) {
         //     process_counter--;

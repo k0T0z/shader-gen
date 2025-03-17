@@ -61,6 +61,7 @@ class AIAgentMonitor : public QWidget {
   void on_load_image_button_pressed();
   void on_calculate_fitness_button_pressed();
   void on_matching_type_combo_box_current_index_changed(int index);
+  void on_generate_random_image_button_pressed();
 
  private:
   QVBoxLayout* layout;
@@ -69,6 +70,7 @@ class AIAgentMonitor : public QWidget {
   QPushButton* load_image_button;
   QPushButton* calculate_fitness_button;
   QComboBox* matching_type_combo_box;
+  QPushButton* generate_random_image_button;
 
   QHBoxLayout* status_layout;
   QLabel* fitness_value_label;
@@ -92,6 +94,8 @@ class AIAgentMonitor : public QWidget {
    * 
    */
   void init();
+
+  QImage create_random_image(const int& width, const int& height);
 };
 
 class CurrentOutputRenderer : public QOpenGLWidget, protected QOpenGLFunctions_4_3_Core  {

@@ -28,7 +28,7 @@
 #include "gui/controller/ai_agent_monitor.hpp"
 
 #include "ai-agent/fitness.hpp"
-
+#include "ai-agent/utils/utils.hpp"
 #include "error_macros.hpp"
 
 AIAgentMonitor::AIAgentMonitor(QWidget* parent)
@@ -36,6 +36,12 @@ AIAgentMonitor::AIAgentMonitor(QWidget* parent)
       layout(nullptr),
       menu_bar(nullptr),
       load_image_button(nullptr),
+      calculate_fitness_button(nullptr),
+      matching_type_combo_box(nullptr),
+      generate_random_image_button(nullptr),
+      status_layout(nullptr),
+      fitness_value_label(nullptr),
+      fitness_value(nullptr),
       outputs_layout(nullptr),
       curent_output_renderer_layout(nullptr),
       current_output_renderer_label(nullptr),
@@ -90,6 +96,14 @@ void AIAgentMonitor::init() {
   QObject::connect(matching_type_combo_box, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &AIAgentMonitor::on_matching_type_combo_box_current_index_changed);
 
   menu_bar->addWidget(matching_type_combo_box);
+
+  generate_random_image_button = new QPushButton("Generate Random Image", this);
+  generate_random_image_button->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
+  generate_random_image_button->setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
+  generate_random_image_button->setToolTip("Generate a random image for testing");
+  QObject::connect(generate_random_image_button, &QPushButton::pressed, this, &AIAgentMonitor::on_generate_random_image_button_pressed);
+
+  menu_bar->addWidget(generate_random_image_button);
 
   layout->addLayout(menu_bar, 1);
 
@@ -180,6 +194,25 @@ void AIAgentMonitor::init() {
   this->setLayout(layout);
 }
 
+QImage AIAgentMonitor::create_random_image(const int& width, const int& height) {
+  QImage image(width, height, QImage::Format_ARGB32);
+  
+  for (int y = 0; y < height; ++y) {
+    for (int x = 0; x < width; ++x) {
+      const int alpha = 255;
+      // Generate random RGB components (0-255 inclusive)
+      const int red = ai_agent_utils::random_int_inclusive<int>(0, 255);
+      const int green = ai_agent_utils::random_int_inclusive<int>(0, 255);
+      const int blue = ai_agent_utils::random_int_inclusive<int>(0, 255);
+      
+      // Combine into ARGB32 pixel format and set the pixel
+      image.setPixel(x, y, qRgba(red, green, blue, alpha));
+    }
+  }
+  
+  return image;
+}
+
 void AIAgentMonitor::update_current_output(const std::string& code) {
   CHECK_CONDITION_TRUE(code.empty(), "Code is empty");
 
@@ -240,6 +273,12 @@ void AIAgentMonitor::on_matching_type_combo_box_current_index_changed(int index)
     DEBUG_PRINT("Dynamic matching");
     current_output_renderer->set_is_dynamic(true);
   }
+}
+
+void AIAgentMonitor::on_generate_random_image_button_pressed() {
+  target_image = create_random_image(256, 256);
+  target_output->clear();
+  target_output->setPixmap(QPixmap::fromImage(target_image));
 }
 
 CurrentOutputRenderer::CurrentOutputRenderer(QWidget* parent) : QOpenGLWidget(parent), 
