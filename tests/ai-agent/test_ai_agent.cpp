@@ -33,6 +33,8 @@
 #include <string>
 #include <cstdint>  // for uint32_t
 
+#include <QGuiApplication>
+
 #include "ai-agent/ai_agent.hpp"
 #include "ai-agent/parameters.hpp"
 #include "error_macros.hpp"
@@ -95,19 +97,25 @@ TEST(AIAgentTest, TestMatchingAlgorithm) {
     }
     const uint32_t* image_ptr = flat_data.data();
 
-    // // Create the extractor
-    // ImageExtractor image_extractor;
-    // ASSERT_TRUE(image_extractor.initialize());
+    // Dummy arguments for QGuiApplication for the ImageExtractor
+    int argc = 1;
+    char arg[] = "test";
+    char* argv[] = { arg };
+    QGuiApplication app(argc, argv);
 
-    // std::vector<unsigned long> fitness_values;
-    // fitness_values.resize(maximum_population_size);
-    // for (int i {0}; i < maximum_population_size; i++) {
-    //     fitness_values.at(i) = ai_agent_main::get_fitness_value(
-    //         initial_population.at(i),
-    //         image_extractor,
-    //         image_ptr,
-    //         256,
-    //         256
-    //     );
-    // }
+    // Create the extractor
+    ImageExtractor image_extractor;
+    ASSERT_TRUE(image_extractor.initialize());
+
+    std::vector<unsigned long> fitness_values;
+    fitness_values.resize(maximum_population_size);
+    for (int i {0}; i < maximum_population_size; i++) {
+        fitness_values.at(i) = ai_agent_main::get_fitness_value(
+            initial_population.at(i),
+            image_extractor,
+            image_ptr,
+            256,
+            256
+        );
+    }
 }
