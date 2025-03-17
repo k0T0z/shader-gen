@@ -25,27 +25,11 @@
 /*                                                                               */
 /*********************************************************************************/
 
-#include "tests/tests_main.hpp"
+#ifndef VISUAL_SHADER_TESTS_MAIN_HPP
+#define VISUAL_SHADER_TESTS_MAIN_HPP
 
-#include <QApplication>
-#include <QtTest/QtTest>
-#include <gtest/gtest.h>
+#ifndef SHADER_GEN_ROOTDIR
+#error "No root directory defined"
+#endif  // SHADER_GEN_ROOTDIR
 
-#include "tests/gui/controller/test_visual_shader_editor.hpp"
-
-int main(int argc, char** argv) {
-    // Initialize Google Test
-    // Run Google Test tests.
-    ::testing::InitGoogleTest(&argc, argv);
-    int gtest_result = RUN_ALL_TESTS();
-    if (gtest_result != 0) return gtest_result;
-
-    QApplication app(argc, argv);
-
-    // Run Qt tests.
-    VisualShaderEditorTest visual_shader_editor_test;
-    int qt_result = QTest::qExec(&visual_shader_editor_test, argc, argv);
-    if (qt_result != 0) return qt_result;
-
-    return 0;
-}
+#endif  // VISUAL_SHADER_TESTS_MAIN_HPP

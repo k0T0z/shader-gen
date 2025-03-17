@@ -356,6 +356,7 @@ if(SHADER_GEN_BUILD_TESTS)
 
     target_compile_definitions(${SHADER_GEN_TESTS_EXECUTABLE_NAME} PRIVATE 
         $<$<CONFIG:Debug>:${SHADER_GEN_DEBUG_MACRO_NAME}> # Define ${SHADER_GEN_DEBUG_MACRO_NAME} for Debug builds
+        SHADER_GEN_ROOTDIR="${SHADER_GEN_ROOTDIR}"
     )
 
     enable_testing()

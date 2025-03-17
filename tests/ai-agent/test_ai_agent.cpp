@@ -27,10 +27,47 @@
 
 #include <gtest/gtest.h>
 
+#include <fstream>
+#include <sstream>
+#include <vector>
 #include <string>
+#include <cstdint>  // for uint32_t
 
 #include "ai-agent/ai_agent.hpp"
 #include "ai-agent/parameters.hpp"
+#include "error_macros.hpp"
+
+bool get_image_data(std::vector<std::vector<uint32_t>>& image_data_buffer) {
+    std::string root_dir{SHADER_GEN_ROOTDIR};
+    if (root_dir.back() != '/') root_dir += '/';
+
+    // Load the target image pixels
+    std::ifstream file(root_dir + "tests/ai-agent/test_solas_256x256_ARGB32.txt");
+    if (!file.is_open()) {
+        ERROR_PRINT("Failed to open the file.");
+        return false;
+    }
+
+    std::string line;
+    // Process the file line by line.
+    while (std::getline(file, line)) {
+        std::vector<uint32_t> row;
+        std::istringstream lineStream(line);
+        std::string token;
+        
+        // Split the current line by commas.
+        while (std::getline(lineStream, token, ',')) {
+            // Each token is expected to be in hexadecimal format like "0xAARRGGBB".
+            // Convert the token from a string to a uint32_t, specifying base 16.
+            uint32_t pixel = std::stoul(token, nullptr, 16);
+            row.push_back(pixel);
+        }
+        if (!row.empty()) image_data_buffer.push_back(row);
+    }
+    file.close();
+
+    return true;
+}
 
 TEST(AIAgentTest, TestMatchingAlgorithm) {
     // I encoded the example.json graph
@@ -43,4 +80,34 @@ TEST(AIAgentTest, TestMatchingAlgorithm) {
         maximum_population_size,
         initial_population
     ));
+    ASSERT_EQ(initial_population.size(), maximum_population_size);
+
+    std::vector<std::vector<uint32_t>> image_data;
+    image_data.resize(256);
+    for (auto& row : image_data) row.resize(256);
+    ASSERT_TRUE(get_image_data(image_data));
+
+    // Convert to const uint32_t*
+    std::vector<uint32_t> flat_data;
+    flat_data.reserve(256 * 256); // Reserve space for 256x256 pixels
+    for (const auto& row : image_data) {
+        flat_data.insert(flat_data.end(), row.begin(), row.end());
+    }
+    const uint32_t* image_ptr = flat_data.data();
+
+    // // Create the extractor
+    // ImageExtractor image_extractor;
+    // ASSERT_TRUE(image_extractor.initialize());
+
+    // std::vector<unsigned long> fitness_values;
+    // fitness_values.resize(maximum_population_size);
+    // for (int i {0}; i < maximum_population_size; i++) {
+    //     fitness_values.at(i) = ai_agent_main::get_fitness_value(
+    //         initial_population.at(i),
+    //         image_extractor,
+    //         image_ptr,
+    //         256,
+    //         256
+    //     );
+    // }
 }
