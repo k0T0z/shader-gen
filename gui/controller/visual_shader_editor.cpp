@@ -628,6 +628,8 @@ void VisualShaderEditor::on_start_matching_button_pressed() {
   ai_agent_worker->set_matching_type(matching_type);
   ai_agent_worker->set_target_image(ai_agent_monitor->get_target_image());
 
+  ai_agent_worker->set_ai_agent_monitor(ai_agent_monitor);
+
   shared_memory->set_encoded_graph(ai_agent_utils::encode_graph(nodes_model, connections_model));
   
   ai_agent_worker->start_matching();

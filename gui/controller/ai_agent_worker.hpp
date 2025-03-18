@@ -38,6 +38,7 @@
 #include "ai-agent/ai_agent.hpp"
 #include "ai-agent/shared_memory.hpp"
 #include "ai-agent/utils/image_extractor.hpp"
+#include "gui/controller/ai_agent_monitor.hpp"
 
 class AIAgentWorker {
 public:
@@ -57,6 +58,8 @@ public:
 
     void set_matching_type(const ai_agent_main::MatchingType& matching_type) { this->matching_type = matching_type; }
     void set_target_image(const QImage& target_image) { this->target_image = target_image; }
+    
+    void set_ai_agent_monitor(AIAgentMonitor* ai_agent_monitor) { this->ai_agent_monitor = ai_agent_monitor; }
     
 private:
     std::thread worker;
@@ -78,6 +81,8 @@ private:
     QImage target_image;
 
     ShaderGenSharedMemory* shared_memory;
+
+    AIAgentMonitor* ai_agent_monitor;
 
     void stop_thread();
 };

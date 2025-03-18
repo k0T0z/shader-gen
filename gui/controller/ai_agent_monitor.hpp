@@ -57,6 +57,9 @@ class AIAgentMonitor : public QWidget {
 
   QImage get_target_image() const;
 
+ public Q_SLOTS:
+  unsigned long get_fitness_value(const std::string& code);
+
  private Q_SLOTS:
   void on_load_image_button_pressed();
   void on_calculate_fitness_button_pressed();
@@ -107,9 +110,10 @@ class CurrentOutputRenderer : public QOpenGLWidget, protected QOpenGLFunctions_4
  
   void set_is_dynamic(const bool& is_dynamic);
 
+  void force_set_code(const std::string& code);
   void set_code(const std::string& code);
   
-  QImage get_pixel_data() const;
+  QImage get_pixel_data();
 
  private Q_SLOTS:
   void update_shader_program();

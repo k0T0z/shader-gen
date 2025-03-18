@@ -219,12 +219,20 @@ void AIAgentMonitor::update_current_output(const std::string& code) {
   current_output_renderer->set_code(code);
 }
 
+unsigned long AIAgentMonitor::get_fitness_value(const std::string& code) {
+  CHECK_CONDITION_TRUE_NON_VOID(code.empty(), std::numeric_limits<unsigned long>::max(), "Code is empty");
+
+  current_output_renderer->force_set_code(code);
+
+  return get_fitness_value();
+}
+
 unsigned long AIAgentMonitor::get_fitness_value() const {
-  CHECK_CONDITION_TRUE_NON_VOID(target_image.isNull(), 0UL, "No target image loaded");
+  CHECK_CONDITION_TRUE_NON_VOID(target_image.isNull(), std::numeric_limits<unsigned long>::max(), "No target image loaded");
 
   QImage current_image = current_output_renderer->get_pixel_data();
 
-  CHECK_CONDITION_TRUE_NON_VOID(current_image.size() != target_image.size(), 0UL, "Size mismatch");
+  CHECK_CONDITION_TRUE_NON_VOID(current_image.size() != target_image.size(), std::numeric_limits<unsigned long>::max(), "Size mismatch");
 
   // Retrieve pointers to the pixel data.
   // QImage::bits() returns a pointer to the first pixel, and since our format is ARGB32,
@@ -317,6 +325,13 @@ void CurrentOutputRenderer::set_is_dynamic(const bool& is_dynamic) {
   }
 }
 
+void CurrentOutputRenderer::force_set_code(const std::string& code) {
+  SILENT_CHECK_CONDITION_TRUE(code == this->code);
+
+  this->code = code;
+  update_shader_program();
+}
+
 void CurrentOutputRenderer::set_code(const std::string& new_code) {
   SILENT_CHECK_CONDITION_TRUE(this->code == new_code);
 
@@ -325,8 +340,11 @@ void CurrentOutputRenderer::set_code(const std::string& new_code) {
   if (!compile_debounce_timer.isActive()) compile_debounce_timer.start();
 }
 
-QImage CurrentOutputRenderer::get_pixel_data() const {
-  return fbo->toImage().convertToFormat(QImage::Format_ARGB32);
+QImage CurrentOutputRenderer::get_pixel_data() {
+  makeCurrent();
+  QImage image = fbo->toImage();
+  doneCurrent();
+  return image.convertToFormat(QImage::Format_ARGB32);
 }
 
 void CurrentOutputRenderer::initializeGL() {

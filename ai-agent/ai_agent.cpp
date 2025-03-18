@@ -28,13 +28,28 @@
 #include "ai-agent/ai_agent.hpp"
 
 #include <algorithm>
+#include <QMetaObject>
 
 #include "ai-agent/utils/utils.hpp"
 #include "generator/visual_shader_generator.hpp"
 #include "ai-agent/fitness.hpp"
 
 namespace ai_agent_main {
-
+    
+    /**
+     * @brief 
+     * 
+     * @note Josh — 10/02/2025 20:36 "my recommendation for "how can we possibly guess 
+     *       at a topology other than pure random" would be K-means clustering based on 
+     *       fourier values"
+     * 
+     * @note Josh — 07/03/2025 21:26 "I think those are good heuristics, but what I would 
+     *       probably do is start with a handful of topologies or even a few random nodes 
+     *       of each kernel type, then just choose the ones that are the closest based on 
+     *       that Fourier analysis"
+     * 
+     * @return std::vector<std::string>
+     */
     bool init(
         const MatchingType& matching_type,
         const std::string& encoded_graph,
@@ -117,38 +132,7 @@ namespace ai_agent_main {
         return true;
     }
 
-    inline static std::vector<std::string> generate_population(const MatchingType& matching_type, const std::string& graph, const int& maximum_population_size) noexcept;
-
-    bool genetic_algorithm(
-        const MatchingType& matching_type,
-        const std::string& encoded_graph,
-        const uint32_t* target_image_pixels,
-        const int& maximum_population_size
-    ) noexcept {
-        std::vector<std::string> population = generate_population(matching_type, encoded_graph, maximum_population_size);
-
-        ImageExtractor image_extractor;
-        CHECK_CONDITION_TRUE_NON_VOID(!image_extractor.initialize(), false, "Failed to initialize image extractor");
-
-        // Calculate fitness
-        std::vector<unsigned long> fitness_values;
-        fitness_values.resize(maximum_population_size);
-        for (int i {0}; i < maximum_population_size; i++) fitness_values.at(i) = get_fitness_value(population.at(i), image_extractor, target_image_pixels, 256, 256);
-
-        // Create a vector of pairs of population and fitness values
-        std::vector<std::pair<std::string, unsigned long>> population_fitness;
-        population_fitness.resize(maximum_population_size);
-        for (int i {0}; i < maximum_population_size; i++) population_fitness.at(i) = std::make_pair(population.at(i), fitness_values.at(i));
-
-        // Sort the population based on fitness values
-        std::sort(population_fitness.begin(), population_fitness.end(), [](const std::pair<std::string, unsigned long>& a, const std::pair<std::string, unsigned long>& b) {
-            return a.second < b.second; // Ascending order
-        });
-
-        return true;
-    }
-
-    unsigned long get_fitness_value(const std::string& encoded_graph, ImageExtractor& extractor, const uint32_t* target_image_pixels, const int& width, const int& height) {
+    unsigned long get_fitness_value(const std::string& encoded_graph, AIAgentMonitor* ai_agent_monitor) {
         std::string code;
       
         bool result{shadergen_visual_shader_generator::generate_shader(
@@ -158,29 +142,20 @@ namespace ai_agent_main {
           shadergen_visual_shader_generator::to_input_output_connections_by_key(encoded_graph), code)};
         CHECK_CONDITION_TRUE_NON_VOID(!result, std::numeric_limits<unsigned long>::max(), "Failed to generate shader code");
 
-        const uint32_t* current_image_pixels = extractor.render(code);
+        // Variable to store the fitness value
+        unsigned long fitness_value{std::numeric_limits<unsigned long>::max()};
 
-        CHECK_PARAM_NULLPTR_NON_VOID(current_image_pixels, std::numeric_limits<unsigned long>::max(), "Failed to render image");
+        // Call the renderShader method on the GUI thread and block until it returns
+        bool success = QMetaObject::invokeMethod(
+            ai_agent_monitor, 
+            "get_fitness_value", 
+            Qt::BlockingQueuedConnection, 
+            Q_RETURN_ARG(unsigned long, fitness_value), 
+            Q_ARG(const std::string, code)
+        );
+        CHECK_CONDITION_TRUE_NON_VOID(!success, std::numeric_limits<unsigned long>::max(), "Failed to get fitness value");
       
-        return ai_agent_fitness::calculate_fitness(current_image_pixels, target_image_pixels, width, height);
-    }
-
-    /**
-     * @brief 
-     * 
-     * @note Josh — 10/02/2025 20:36 "my recommendation for "how can we possibly guess 
-     *       at a topology other than pure random" would be K-means clustering based on 
-     *       fourier values"
-     * 
-     * @note Josh — 07/03/2025 21:26 "I think those are good heuristics, but what I would 
-     *       probably do is start with a handful of topologies or even a few random nodes 
-     *       of each kernel type, then just choose the ones that are the closest based on 
-     *       that Fourier analysis"
-     * 
-     * @return std::vector<std::string>
-     */
-    inline static std::vector<std::string> generate_population(const MatchingType& matching_type, const std::string& graph, const int& maximum_population_size) noexcept {
-        return std::vector<std::string>();
+        return fitness_value;
     }
 
 } // namespace ai_agent_main

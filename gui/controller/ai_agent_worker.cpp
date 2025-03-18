@@ -43,7 +43,8 @@ AIAgentWorker::AIAgentWorker(ShaderGenSharedMemory* shared_memory) : start_reque
                                                                      elitism_ratio(0.0f), 
                                                                      maximum_iterations(0),
                                                                      matching_type(ai_agent_main::MatchingType::PARAMETERS_ONLY),
-                                                                     shared_memory(shared_memory) {
+                                                                     shared_memory(shared_memory),
+                                                                     ai_agent_monitor(nullptr) {
     worker = std::thread(&AIAgentWorker::worker_main, this);
 }
 
@@ -90,6 +91,7 @@ void AIAgentWorker::worker_main() {
         // It doesn't make sense to stop before even starting
         if (stop_requested.load()) stop_requested.store(false);
 
+        CONTINUE_IF_TRUE(ai_agent_monitor == nullptr, "AI Agent Monitor is not set");
         CONTINUE_IF_TRUE(target_image.isNull(), "Target image is not set");
 
         // Generate initial population
@@ -97,32 +99,33 @@ void AIAgentWorker::worker_main() {
 
         std::vector<std::string> initial_population;
         CONTINUE_IF_TRUE(!ai_agent_main::init(
-            ai_agent_main::MatchingType::PARAMETERS_ONLY,
+            matching_type,
             encoded_graph,
             maximum_population_size,
             initial_population
         ), "Failed to create initial population");
-
-        // Create the extractor
-        ImageExtractor image_extractor;
-        CONTINUE_IF_TRUE(!image_extractor.initialize(), "Failed to initialize image extractor");
-
-        // Get target image pixels
-        const uint32_t* target_image_pixels = reinterpret_cast<const uint32_t*>(target_image.bits());
 
         std::vector<unsigned long> fitness_values;
         fitness_values.resize(maximum_population_size);
         for (int i {0}; i < maximum_population_size; i++) {
             fitness_values.at(i) = ai_agent_main::get_fitness_value(
                 initial_population.at(i),
-                image_extractor,
-                target_image_pixels,
-                256,
-                256
+                ai_agent_monitor
             );
+
+            // Sleep for 200ms
+            std::this_thread::sleep_for(std::chrono::milliseconds(200));
         }
 
-        DEBUG_PRINT("Initial population generated");
+        // Create a vector of pairs of population and fitness values
+        std::vector<std::pair<std::string, unsigned long>> population_fitness;
+        population_fitness.resize(maximum_population_size);
+        for (int i {0}; i < maximum_population_size; i++) population_fitness.at(i) = std::make_pair(initial_population.at(i), fitness_values.at(i));
+
+        // Sort the population based on fitness values
+        std::sort(population_fitness.begin(), population_fitness.end(), [](const std::pair<std::string, unsigned long>& a, const std::pair<std::string, unsigned long>& b) {
+            return a.second < b.second; // Ascending order
+        });
 
         // Process all pending requests
         // while (process_counter > 0) {

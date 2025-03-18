@@ -32,6 +32,7 @@
 #include <vector>
 
 #include "ai-agent/utils/image_extractor.hpp"
+#include "gui/controller/ai_agent_monitor.hpp"
 
 namespace ai_agent_main {
 
@@ -48,20 +49,7 @@ namespace ai_agent_main {
         std::vector<std::string>& population_buffer
     ) noexcept;
 
-    bool genetic_algorithm(
-        const MatchingType& matching_type,
-        const std::string& encoded_graph,
-        const uint32_t* target_image_pixels,
-        const int& maximum_population_size
-    ) noexcept;
-
-    unsigned long get_fitness_value(
-        const std::string& encoded_graph, 
-        ImageExtractor& extractor, 
-        const uint32_t* target_image_pixels, 
-        const int& width, 
-        const int& height
-    );
+    unsigned long get_fitness_value(const std::string& encoded_graph, AIAgentMonitor* ai_agent_monitor);
 
 } // namespace ai_agent_main
 
