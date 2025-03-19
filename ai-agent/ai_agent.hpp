@@ -31,7 +31,7 @@
 #include <string>
 #include <vector>
 
-#include "ai-agent/utils/image_extractor.hpp"
+#include "gui/controller/shader_sampler.hpp"
 #include "gui/controller/ai_agent_monitor.hpp"
 
 namespace ai_agent_main {
@@ -49,7 +49,13 @@ namespace ai_agent_main {
         std::vector<std::string>& population_buffer
     ) noexcept;
 
-    unsigned long get_fitness_value(const std::string& encoded_graph, AIAgentMonitor* ai_agent_monitor);
+    unsigned long get_fitness_value(
+        const std::string& encoded_graph, 
+        ShaderSampler* shader_sampler,
+        const uint32_t* target_image_pixels, 
+        const int& width,
+        const int& height
+    ) noexcept;
 
 } // namespace ai_agent_main
 

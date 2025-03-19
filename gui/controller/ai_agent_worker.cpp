@@ -44,7 +44,7 @@ AIAgentWorker::AIAgentWorker(ShaderGenSharedMemory* shared_memory) : start_reque
                                                                      maximum_iterations(0),
                                                                      matching_type(ai_agent_main::MatchingType::PARAMETERS_ONLY),
                                                                      shared_memory(shared_memory),
-                                                                     ai_agent_monitor(nullptr) {
+                                                                     shader_sampler(nullptr) {
     worker = std::thread(&AIAgentWorker::worker_main, this);
 }
 
@@ -91,8 +91,8 @@ void AIAgentWorker::worker_main() {
         // It doesn't make sense to stop before even starting
         if (stop_requested.load()) stop_requested.store(false);
 
-        CONTINUE_IF_TRUE(ai_agent_monitor == nullptr, "AI Agent Monitor is not set");
         CONTINUE_IF_TRUE(target_image.isNull(), "Target image is not set");
+        CONTINUE_IF_TRUE(shader_sampler == nullptr, "AI Agent Monitor is not set");
 
         // Generate initial population
         const std::string encoded_graph = shared_memory->get_encoded_graph();
@@ -110,7 +110,10 @@ void AIAgentWorker::worker_main() {
         for (int i {0}; i < maximum_population_size; i++) {
             fitness_values.at(i) = ai_agent_main::get_fitness_value(
                 initial_population.at(i),
-                ai_agent_monitor
+                shader_sampler,
+                reinterpret_cast<const uint32_t*>(target_image.bits()),
+                target_image.width(),
+                target_image.height()
             );
 
             // Sleep for 200ms

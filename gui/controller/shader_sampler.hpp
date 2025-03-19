@@ -25,28 +25,36 @@
 /*                                                                               */
 /*********************************************************************************/
 
-#ifndef SHADER_GEN_AI_AGENT_IMAGE_EXTRACTOR_HPP
-#define SHADER_GEN_AI_AGENT_IMAGE_EXTRACTOR_HPP
+#ifndef SHADER_GEN_AI_AGENT_SHADER_SAMPLER_HPP
+#define SHADER_GEN_AI_AGENT_SHADER_SAMPLER_HPP
 
 #include <QtOpenGL/QOpenGLFunctions_4_3_Core>
 #include <QOffscreenSurface>
 #include <QOpenGLContext>
 #include <QOpenGLFramebufferObject>
 #include <QtOpenGL/QOpenGLShaderProgram>
+#include <QOpenGLBuffer>
+#include <QOpenGLVertexArrayObject>
 #include <memory>
 #include <string>
+#include <QImage>
+#include <QObject>
 
-class ImageExtractor : protected QOpenGLFunctions_4_3_Core {
-  public:
-  ImageExtractor();
-  ~ImageExtractor();
+class ShaderSampler : public QObject, protected QOpenGLFunctions_4_3_Core {
+  Q_OBJECT
+
+ public:
+  ShaderSampler(QObject* parent = nullptr);
+  ~ShaderSampler();
 
   bool initialize();
-  const uint32_t* render(const std::string& code);
 
-private:
+ public Q_SLOTS:
+  QImage sample_once(const std::string& code);
+
+ private:
   void init_buffers();
-  bool compile_shader(const std::string& code, QOpenGLShaderProgram& program);
+  bool compile_shader(const std::string& code, QOpenGLShaderProgram* program);
 
   QOpenGLContext* context;
   QOffscreenSurface* surface;
@@ -56,4 +64,4 @@ private:
   GLuint VBO;
 };
 
-#endif  // SHADER_GEN_AI_AGENT_IMAGE_EXTRACTOR_HPP
+#endif  // SHADER_GEN_AI_AGENT_SHADER_SAMPLER_HPP

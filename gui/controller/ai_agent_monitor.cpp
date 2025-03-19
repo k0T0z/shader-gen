@@ -605,7 +605,7 @@ void main() {
   }
 
   // Delete shaders after linking
-  new_program->removeAllShaders();
+  // new_program->removeAllShaders();
 
   if (new_program->uniformLocation("uTime") != -1 && !is_dynamic) {
     WARN_PRINT("uTime uniform found in static shader code");

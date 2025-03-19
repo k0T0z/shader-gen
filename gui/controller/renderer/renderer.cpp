@@ -215,7 +215,7 @@ void main() {
   }
 
   // Delete shaders after linking
-  new_program->removeAllShaders();
+  // new_program->removeAllShaders();
   
   shader_program.swap(new_program);
   

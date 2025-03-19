@@ -29,6 +29,7 @@
 
 #include <algorithm>
 #include <QMetaObject>
+#include <QImage>
 
 #include "ai-agent/utils/utils.hpp"
 #include "generator/visual_shader_generator.hpp"
@@ -132,7 +133,13 @@ namespace ai_agent_main {
         return true;
     }
 
-    unsigned long get_fitness_value(const std::string& encoded_graph, AIAgentMonitor* ai_agent_monitor) {
+    unsigned long get_fitness_value(
+        const std::string& encoded_graph, 
+        ShaderSampler* shader_sampler,
+        const uint32_t* target_image_pixels, 
+        const int& width,
+        const int& height
+    ) noexcept {
         std::string code;
       
         bool result{shadergen_visual_shader_generator::generate_shader(
@@ -142,20 +149,26 @@ namespace ai_agent_main {
           shadergen_visual_shader_generator::to_input_output_connections_by_key(encoded_graph), code)};
         CHECK_CONDITION_TRUE_NON_VOID(!result, std::numeric_limits<unsigned long>::max(), "Failed to generate shader code");
 
-        // Variable to store the fitness value
-        unsigned long fitness_value{std::numeric_limits<unsigned long>::max()};
+        QImage extracted_image;
 
-        // Call the renderShader method on the GUI thread and block until it returns
+        // Call the sample_once method on the GUI thread and block until it returns
         bool success = QMetaObject::invokeMethod(
-            ai_agent_monitor, 
-            "get_fitness_value", 
+            shader_sampler, 
+            "sample_once", 
             Qt::BlockingQueuedConnection, 
-            Q_RETURN_ARG(unsigned long, fitness_value), 
-            Q_ARG(const std::string, code)
+            Q_RETURN_ARG(QImage, extracted_image), 
+            Q_ARG(const std::string, code) 
         );
         CHECK_CONDITION_TRUE_NON_VOID(!success, std::numeric_limits<unsigned long>::max(), "Failed to get fitness value");
-      
-        return fitness_value;
+
+        CHECK_CONDITION_TRUE_NON_VOID(extracted_image.isNull(), std::numeric_limits<unsigned long>::max(), "Failed to get fitness value");
+
+        // Retrieve pointers to the pixel data.
+        // QImage::bits() returns a pointer to the first pixel, and since our format is ARGB32,
+        // we can safely reinterpret_cast to a uint32_t pointer.
+        const uint32_t* extracted_image_pixels = reinterpret_cast<const uint32_t*>(extracted_image.bits());
+
+        return ai_agent_fitness::calculate_fitness(extracted_image_pixels, target_image_pixels, width, height);
     }
 
 } // namespace ai_agent_main

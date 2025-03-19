@@ -25,64 +25,61 @@
 /*                                                                               */
 /*********************************************************************************/
 
-#include "ai-agent/utils/image_extractor.hpp"
-
-#include <QImage>
+#include "gui/controller/shader_sampler.hpp"
 
 #include "error_macros.hpp"
 #include "generator/visual_shader_generator.hpp"
 
-ImageExtractor::ImageExtractor() :
-    context(nullptr),
-    surface(nullptr),
-    fbo(nullptr),
-    VAO(0),
-    VBO(0) {}
+ShaderSampler::ShaderSampler(QObject* parent) : QObject(parent),
+                                                context(nullptr),
+                                                surface(nullptr),
+                                                fbo(nullptr),
+                                                VAO(0),
+                                                VBO(0) {}
 
-ImageExtractor::~ImageExtractor() {
+ShaderSampler::~ShaderSampler() {
   if (isInitialized()) {
     CHECK_CONDITION_TRUE(!context->makeCurrent(surface), "Failed to make OpenGL context current");
+    delete fbo;
     glDeleteVertexArrays(1, &VAO);
     glDeleteBuffers(1, &VBO);
     VAO = VBO = 0;
-    if (fbo) {
-      delete fbo;
-      fbo = nullptr;
-    }
     context->doneCurrent();
   }
-  delete surface; surface = nullptr;
-  delete context; context = nullptr;
+  delete surface;
+  delete context;
 }
 
-bool ImageExtractor::initialize() {
-  surface = new QOffscreenSurface();
-  surface->create();
-
+bool ShaderSampler::initialize() {
   context = new QOpenGLContext();
-  context->setFormat(surface->format());
   CHECK_CONDITION_TRUE_NON_VOID(!context->create(), false, "Failed to create OpenGL context");
+  
+  surface = new QOffscreenSurface();
+  surface->setFormat(context->format());
+  surface->create();
 
   CHECK_CONDITION_TRUE_NON_VOID(!context->makeCurrent(surface), false, "Failed to make OpenGL context current");
 
   if (!initializeOpenGLFunctions()) {
     WARN_PRINT("Failed to initialize OpenGL functions");
     context->doneCurrent();
-    delete surface; surface = nullptr;
-    delete context; context = nullptr;
+    delete surface;
+    delete context;
     return false;
   }
 
   init_buffers();
 
-  // Create FBO with size 256x256
-  fbo = new QOpenGLFramebufferObject(256, 256);
+  // Create an FBO for the fixed resolution.
+  QOpenGLFramebufferObjectFormat fbo_format;
+  fbo_format.setAttachment(QOpenGLFramebufferObject::CombinedDepthStencil);
+  fbo = new QOpenGLFramebufferObject(256, 256, fbo_format);
   
   context->doneCurrent();
   return true;
 }
 
-void ImageExtractor::init_buffers() {
+void ShaderSampler::init_buffers() {
   const float vertices[] = {
     -1.0f,  1.0f,  0.0f,  1.0f,  // Vertex 1: Position (x,y), FragCoord (u,v)
     -1.0f, -1.0f,  0.0f,  0.0f,  // Vertex 2: Position (x,y), FragCoord (u,v)
@@ -91,53 +88,27 @@ void ImageExtractor::init_buffers() {
   };
 
   glGenVertexArrays(1, &VAO);
-  glGenBuffers(1, &VBO);
-
-  /// Check for OpenGL errors after resource allocation
-  GLenum err = glGetError();
-  if (err != GL_NO_ERROR) {
-    ERROR_PRINT("Failed to generate VAO or VBO: OpenGL error " + std::to_string(err));
-    glDeleteVertexArrays(1, &VAO);
-    glDeleteBuffers(1, &VBO);
-    return;
-  }
-
   glBindVertexArray(VAO);
+
+  glGenBuffers(1, &VBO);
   glBindBuffer(GL_ARRAY_BUFFER, VBO);
+
   glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
-  // Check for errors after buffer setup
-  err = glGetError();
-  if (err != GL_NO_ERROR) {
-    ERROR_PRINT("Failed to set up VBO: OpenGL error " + std::to_string(err));
-    glDeleteVertexArrays(1, &VAO);
-    glDeleteBuffers(1, &VBO);
-    glBindVertexArray(0);
-    return;
-  }
-
   // Position attribute (x, y)
-  glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
   glEnableVertexAttribArray(0);
+  glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
 
   // FragCoord attribute (u, v)
-  glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
   glEnableVertexAttribArray(1);
+  glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
 
   // Unbind both VBO and VAO
-  glBindBuffer(GL_ARRAY_BUFFER, 0);
   glBindVertexArray(0);
-
-  err = glGetError();
-  if (err != GL_NO_ERROR) {
-    ERROR_PRINT("Error setting vertex attributes: OpenGL error " + std::to_string(err));
-    glDeleteVertexArrays(1, &VAO);
-    glDeleteBuffers(1, &VBO);
-    return;
-  }
+  glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
-bool ImageExtractor::compile_shader(const std::string& code, QOpenGLShaderProgram& program) {
+bool ShaderSampler::compile_shader(const std::string& code, QOpenGLShaderProgram* program) {
   const char* vertex_shader_source = R"(
 
 #version 430 core
@@ -168,7 +139,7 @@ in vec2 FragCoord;
 uniform float uTime;
 
 void main() {
-  FragColor = vec4(0.0, 0.0, 0.0, 1.0);
+  FragColor = vec4(FragCoord, 0.5, 1.0);
 }
 
 )";
@@ -176,34 +147,45 @@ void main() {
     fragment_shader_source = "#version 430 core\n\n" + code;
   }
   
-  CHECK_CONDITION_TRUE_NON_VOID(!program.addShaderFromSourceCode(QOpenGLShader::Vertex, vertex_shader_source), false, "Vertex shader compilation failed: " + program.log().toStdString());
-  CHECK_CONDITION_TRUE_NON_VOID(!program.addShaderFromSourceCode(QOpenGLShader::Fragment, fragment_shader_source.c_str()), false, "Fragment shader compilation failed: " + program.log().toStdString());
-  CHECK_CONDITION_TRUE_NON_VOID(!program.link(), false, "Shader program linking failed: " + program.log().toStdString());
+  CHECK_CONDITION_TRUE_NON_VOID(!program->addShaderFromSourceCode(QOpenGLShader::Vertex, vertex_shader_source), false, "Vertex shader compilation failed: " + program->log().toStdString());
+  CHECK_CONDITION_TRUE_NON_VOID(!program->addShaderFromSourceCode(QOpenGLShader::Fragment, fragment_shader_source.c_str()), false, "Fragment shader compilation failed: " + program->log().toStdString());
+  CHECK_CONDITION_TRUE_NON_VOID(!program->link(), false, "Shader program linking failed: " + program->log().toStdString());
 
   // Delete shaders after linking
-  program.removeAllShaders();
+  // program->removeAllShaders();
 
   return true;
 }
 
-const uint32_t* ImageExtractor::render(const std::string& code) {
-  CHECK_CONDITION_TRUE_NON_VOID(!isInitialized() || !context->makeCurrent(surface), nullptr, "Failed to make OpenGL context current");
+QImage ShaderSampler::sample_once(const std::string& code) {
+  CHECK_CONDITION_TRUE_NON_VOID(!isInitialized(), QImage(), "ShaderSampler is not initialized");
 
-  QOpenGLShaderProgram program;
+  CHECK_CONDITION_TRUE_NON_VOID(!context->makeCurrent(surface), QImage(), "Failed to make OpenGL context current");
+
+  QOpenGLShaderProgram* program = new QOpenGLShaderProgram(this);
   if (!compile_shader(code, program)) {
     ERROR_PRINT("Failed to compile shader code");
     context->doneCurrent();
-    return nullptr;
+    return QImage();
   }
 
-  fbo->bind();
+  if (!fbo->bind()) {
+    ERROR_PRINT("Failed to bind framebuffer object");
+    context->doneCurrent();
+    return QImage();
+  }
   glViewport(0, 0, 256, 256);
   glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-  glClear(GL_COLOR_BUFFER_BIT);
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-  program.bind();
+  if (!program->bind()) {
+    ERROR_PRINT("Failed to bind shader program");
+    fbo->release();
+    context->doneCurrent();
+    return QImage();
+  }
 
-  if (program.uniformLocation("uTime") != -1) {
+  if (program->uniformLocation("uTime") != -1) {
     WARN_PRINT("uTime uniform found in static shader code");
   }
 
@@ -211,17 +193,18 @@ const uint32_t* ImageExtractor::render(const std::string& code) {
   glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
   glBindVertexArray(0);
 
-  program.release();
+  program->release();
   fbo->release();
 
-  QImage extracted_image = fbo->toImage().convertToFormat(QImage::Format_ARGB32);
+  delete program;
+
+  const QImage extracted_image = fbo->toImage();
   
   context->doneCurrent();
 
-  // Retrieve pointers to the pixel data.
-  // QImage::bits() returns a pointer to the first pixel, and since our format is ARGB32,
-  // we can safely reinterpret_cast to a uint32_t pointer.
-  const uint32_t* extracted_image_pixels = reinterpret_cast<const uint32_t*>(extracted_image.bits());
-  return extracted_image_pixels;
+  // Save the image to disk for debugging
+  extracted_image.save("extracted_image.png");
+
+  return extracted_image.convertToFormat(QImage::Format_ARGB32);
 }
 
