@@ -151,9 +151,6 @@ void main() {
   CHECK_CONDITION_TRUE_NON_VOID(!program->addShaderFromSourceCode(QOpenGLShader::Fragment, fragment_shader_source.c_str()), false, "Fragment shader compilation failed: " + program->log().toStdString());
   CHECK_CONDITION_TRUE_NON_VOID(!program->link(), false, "Shader program linking failed: " + program->log().toStdString());
 
-  // Delete shaders after linking
-  // program->removeAllShaders();
-
   return true;
 }
 
@@ -203,7 +200,7 @@ QImage ShaderSampler::sample_once(const std::string& code) {
   context->doneCurrent();
 
   // Save the image to disk for debugging
-  extracted_image.save("extracted_image.png");
+  // extracted_image.save("extracted_image.png");
 
   return extracted_image.convertToFormat(QImage::Format_ARGB32);
 }

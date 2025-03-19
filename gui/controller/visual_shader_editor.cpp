@@ -313,7 +313,7 @@ void VisualShaderEditor::init() {
   QObject::connect(start_matching_timer, &QTimer::timeout, this, &VisualShaderEditor::on_start_matching_timer_timeout);
   QObject::connect(stop_matching_timer, &QTimer::timeout, this, &VisualShaderEditor::on_stop_matching_timer_timeout);
 
-  shader_sampler = new ShaderSampler(this);
+  shader_sampler = new ShaderSampler(this); // TODO: Deleting this object causes a crash
   CHECK_CONDITION_TRUE(!shader_sampler->initialize(), "Failed to initialize the image extractor");
 
   // Set the top layer layout.
