@@ -25,36 +25,20 @@
 /*                                                                               */
 /*********************************************************************************/
 
-#ifndef SHADER_GEN_AI_AGENT_SHADER_SAMPLER_HPP
-#define SHADER_GEN_AI_AGENT_SHADER_SAMPLER_HPP
+#ifndef AI_AGENT_ELITISM_HPP
+#define AI_AGENT_ELITISM_HPP
 
-#include <QtOpenGL/QOpenGLFunctions_4_3_Core>
-#include <QOffscreenSurface>
-#include <QOpenGLContext>
-#include <QOpenGLFramebufferObject>
-#include <QtOpenGL/QOpenGLShaderProgram>
 #include <string>
-#include <QImage>
+#include <vector>
 
-class ShaderSampler : protected QOpenGLFunctions_4_3_Core {
- public:
-  ShaderSampler();
-  ~ShaderSampler();
+namespace ai_agent_elitism {
+inline static std::vector<std::pair<std::string, unsigned long>> apply_elitism(
+    const std::vector<std::pair<std::string, unsigned long>>& old_population_fitness,
+    const std::vector<std::pair<std::string, unsigned long>>& new_population_fitness,
+    const float& elitism_ratio
+) {
+    return {};
+}
+}  // namespace ai_agent_elitism {
 
-  bool initialize();
-  
-  QImage sample_once(const std::string& code);
-
- private:
-  void init_buffers();
-  bool compile_shader(const std::string& code, QOpenGLShaderProgram* program);
-
-  QOpenGLContext* context;
-  QOffscreenSurface* surface;
-  QOpenGLFramebufferObject* fbo;
-  
-  GLuint VAO;
-  GLuint VBO;
-};
-
-#endif  // SHADER_GEN_AI_AGENT_SHADER_SAMPLER_HPP
+#endif // AI_AGENT_ELITISM_HPP

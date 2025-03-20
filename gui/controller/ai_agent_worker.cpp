@@ -34,6 +34,10 @@
 #include "error_macros.hpp"
 #include "generator/visual_shader_generator.hpp"
 #include "gui/controller/shader_sampler.hpp"
+#include "ai-agent/selection.hpp"
+#include "ai-agent/crossover.hpp"
+#include "ai-agent/mutation.hpp"
+#include "ai-agent/elitism.hpp"
 
 AIAgentWorker::AIAgentWorker(ShaderGenSharedMemory* shared_memory) : start_requested(false),
                                                                      exit_requested(false),
@@ -73,7 +77,7 @@ void AIAgentWorker::worker_main() {
 
     CHECK_PARAM_NULLPTR(shared_memory, "Shared memory is not set");
 
-    ShaderSampler* sampler = new ShaderSampler(); // TODO: Deleting this object causes a crash
+    ShaderSampler* sampler = new ShaderSampler();
     CHECK_CONDITION_TRUE(!sampler->initialize(), "Failed to initialize the image extractor");
 
     while (true) {
@@ -96,6 +100,9 @@ void AIAgentWorker::worker_main() {
 
         CONTINUE_IF_TRUE(target_image.isNull(), "Target image is not set");
 
+        // Process with interrupt checks
+        bool completed = false;
+
         // Generate initial population
         const std::string encoded_graph = shared_memory->get_encoded_graph();
 
@@ -109,7 +116,7 @@ void AIAgentWorker::worker_main() {
 
         std::vector<unsigned long> fitness_values;
         fitness_values.resize(maximum_population_size);
-        for (int i {0}; i < maximum_population_size; i++) {
+        for (int i {0}; (i < maximum_population_size) && !completed; i++) {
             fitness_values.at(i) = ai_agent_main::get_fitness_value(
                 initial_population.at(i),
                 sampler,
@@ -120,60 +127,42 @@ void AIAgentWorker::worker_main() {
 
             // Sleep for 200ms
             std::this_thread::sleep_for(std::chrono::milliseconds(200));
+
+            if (stop_requested.load()) completed = true;
         }
+
+        SILENT_CONTINUE_IF_TRUE(stop_requested.load());
+        completed = false;
 
         // Create a vector of pairs of population and fitness values
         std::vector<std::pair<std::string, unsigned long>> population_fitness;
         population_fitness.resize(maximum_population_size);
-        for (int i {0}; i < maximum_population_size; i++) population_fitness.at(i) = std::make_pair(initial_population.at(i), fitness_values.at(i));
+        for (int i {0}; (i < maximum_population_size) && !completed; i++) {
+            population_fitness.at(i) = std::make_pair(initial_population.at(i), fitness_values.at(i));
+
+            if (stop_requested.load()) completed = true;
+        }
+
+        SILENT_CONTINUE_IF_TRUE(stop_requested.load());
+        completed = false;
 
         // Sort the population based on fitness values
         std::sort(population_fitness.begin(), population_fitness.end(), [](const std::pair<std::string, unsigned long>& a, const std::pair<std::string, unsigned long>& b) {
             return a.second < b.second; // Ascending order
         });
 
-        // Process all pending requests
-        // while (process_counter > 0) {
-        //     process_counter--;
-        //     lock.unlock();
+        // Send the best individual to the shared memory
+        shared_memory->set_encoded_graph(population_fitness.at(0).first);
 
-        //     // Process with interrupt checks
-        //     bool completed = false;
-        //     auto start = std::chrono::steady_clock::now();
-            
-        //     // Work simulation with interrupt checks
-        //     while (!completed) {
-        //         // Do chunk of work
-        //         DEBUG_PRINT("Processing...");
-                
-        //         // Check for stop every 100ms
-        //         std::this_thread::sleep_for(std::chrono::milliseconds(100));
-                
-        //         // Check completion condition
-        //         auto now = std::chrono::steady_clock::now();
-        //         if (now - start > std::chrono::milliseconds(500)) {
-        //             completed = true;
-        //         }
+        // Main loop
+        // Starts from one because the initial population is already evaluated
+        for (int i {1}; (i < maximum_iterations) && !completed; i++) {
 
-        //         // Check for stop request
-        //         if (stop_requested.load()) {
-        //             DEBUG_PRINT("Interrupting current work");
-        //             completed = true;
-        //         }
-        //     }
+        }
 
-        //     lock.lock();
-            
-        //     // Exit processing loop if stop requested
-        //     if (stop_requested.load()) {
-        //         stop_requested.store(false);
-        //         process_counter = 0; // Clear remaining tasks
-        //         break;
-        //     }
-        // }
     }
 
-    delete sampler;
+    delete sampler; // TODO: Deleting this object causes a crash
     DEBUG_PRINT("Worker thread exiting cleanly");
 }
 

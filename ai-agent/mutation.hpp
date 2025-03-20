@@ -25,36 +25,15 @@
 /*                                                                               */
 /*********************************************************************************/
 
-#ifndef SHADER_GEN_AI_AGENT_SHADER_SAMPLER_HPP
-#define SHADER_GEN_AI_AGENT_SHADER_SAMPLER_HPP
+#ifndef AI_AGENT_MUTATION_HPP
+#define AI_AGENT_MUTATION_HPP
 
-#include <QtOpenGL/QOpenGLFunctions_4_3_Core>
-#include <QOffscreenSurface>
-#include <QOpenGLContext>
-#include <QOpenGLFramebufferObject>
-#include <QtOpenGL/QOpenGLShaderProgram>
 #include <string>
-#include <QImage>
 
-class ShaderSampler : protected QOpenGLFunctions_4_3_Core {
- public:
-  ShaderSampler();
-  ~ShaderSampler();
+namespace ai_agent_mutation {
+inline static std::string mutate(const std::string& child, const float& mutation_probability) {
+    return "";
+}
+}  // namespace ai_agent_mutation
 
-  bool initialize();
-  
-  QImage sample_once(const std::string& code);
-
- private:
-  void init_buffers();
-  bool compile_shader(const std::string& code, QOpenGLShaderProgram* program);
-
-  QOpenGLContext* context;
-  QOffscreenSurface* surface;
-  QOpenGLFramebufferObject* fbo;
-  
-  GLuint VAO;
-  GLuint VBO;
-};
-
-#endif  // SHADER_GEN_AI_AGENT_SHADER_SAMPLER_HPP
+#endif // AI_AGENT_MUTATION_HPP

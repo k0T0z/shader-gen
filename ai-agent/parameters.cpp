@@ -29,7 +29,7 @@
 
 // TODO: What about the maximum number of genes?
 
-const int maximum_population_size = 100; // Maximum number of graphs to apply genetic algorithm on
+const int maximum_population_size = 10; // Maximum number of graphs to apply genetic algorithm on
 const int maximum_generations = 100; // Maximum number of generations until the algorithm stops
 const float mutation_probability = 0.1f;
 const float crossover_probability = 0.8f;
