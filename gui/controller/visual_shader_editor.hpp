@@ -229,8 +229,6 @@ class VisualShaderEditor : public QWidget {
   QTimer* start_matching_timer;
   QTimer* stop_matching_timer;
 
-  ShaderSampler* shader_sampler;
-
   /**
    * @brief Initializes the UI
    * 

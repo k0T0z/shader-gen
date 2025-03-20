@@ -89,8 +89,7 @@ VisualShaderEditor::VisualShaderEditor(MessageModel* model, QWidget* parent)
       stop_matching_button(nullptr),
       matching_type_combo_box(nullptr),
       start_matching_timer(nullptr),
-      stop_matching_timer(nullptr),
-      shader_sampler(nullptr) {
+      stop_matching_timer(nullptr) {
   resize(1440, 720);
 
   VisualShaderEditor::init();
@@ -312,9 +311,6 @@ void VisualShaderEditor::init() {
   
   QObject::connect(start_matching_timer, &QTimer::timeout, this, &VisualShaderEditor::on_start_matching_timer_timeout);
   QObject::connect(stop_matching_timer, &QTimer::timeout, this, &VisualShaderEditor::on_stop_matching_timer_timeout);
-
-  shader_sampler = new ShaderSampler(this); // TODO: Deleting this object causes a crash
-  CHECK_CONDITION_TRUE(!shader_sampler->initialize(), "Failed to initialize the image extractor");
 
   // Set the top layer layout.
   top_layer->setLayout(menu_bar);
@@ -631,8 +627,6 @@ void VisualShaderEditor::on_start_matching_button_pressed() {
   ai_agent_main::MatchingType matching_type{static_cast<ai_agent_main::MatchingType>(matching_type_combo_box->currentData().toInt())};
   ai_agent_worker->set_matching_type(matching_type);
   ai_agent_worker->set_target_image(ai_agent_monitor->get_target_image());
-
-  ai_agent_worker->set_shader_sampler(shader_sampler);
 
   shared_memory->set_encoded_graph(ai_agent_utils::encode_graph(nodes_model, connections_model));
   

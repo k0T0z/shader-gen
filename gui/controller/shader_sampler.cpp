@@ -30,12 +30,11 @@
 #include "error_macros.hpp"
 #include "generator/visual_shader_generator.hpp"
 
-ShaderSampler::ShaderSampler(QObject* parent) : QObject(parent),
-                                                context(nullptr),
-                                                surface(nullptr),
-                                                fbo(nullptr),
-                                                VAO(0),
-                                                VBO(0) {}
+ShaderSampler::ShaderSampler() : context(nullptr),
+                                 surface(nullptr),
+                                 fbo(nullptr),
+                                 VAO(0),
+                                 VBO(0) {}
 
 ShaderSampler::~ShaderSampler() {
   if (isInitialized()) {
@@ -159,7 +158,7 @@ QImage ShaderSampler::sample_once(const std::string& code) {
 
   CHECK_CONDITION_TRUE_NON_VOID(!context->makeCurrent(surface), QImage(), "Failed to make OpenGL context current");
 
-  QOpenGLShaderProgram* program = new QOpenGLShaderProgram(this);
+  QOpenGLShaderProgram* program = new QOpenGLShaderProgram();
   if (!compile_shader(code, program)) {
     ERROR_PRINT("Failed to compile shader code");
     context->doneCurrent();

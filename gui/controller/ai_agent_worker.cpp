@@ -33,6 +33,7 @@
 
 #include "error_macros.hpp"
 #include "generator/visual_shader_generator.hpp"
+#include "gui/controller/shader_sampler.hpp"
 
 AIAgentWorker::AIAgentWorker(ShaderGenSharedMemory* shared_memory) : start_requested(false),
                                                                      exit_requested(false),
@@ -43,8 +44,7 @@ AIAgentWorker::AIAgentWorker(ShaderGenSharedMemory* shared_memory) : start_reque
                                                                      elitism_ratio(0.0f), 
                                                                      maximum_iterations(0),
                                                                      matching_type(ai_agent_main::MatchingType::PARAMETERS_ONLY),
-                                                                     shared_memory(shared_memory),
-                                                                     shader_sampler(nullptr) {
+                                                                     shared_memory(shared_memory) {
     worker = std::thread(&AIAgentWorker::worker_main, this);
 }
 
@@ -73,6 +73,9 @@ void AIAgentWorker::worker_main() {
 
     CHECK_PARAM_NULLPTR(shared_memory, "Shared memory is not set");
 
+    ShaderSampler* sampler = new ShaderSampler(); // TODO: Deleting this object causes a crash
+    CHECK_CONDITION_TRUE(!sampler->initialize(), "Failed to initialize the image extractor");
+
     while (true) {
         // Set is_stopped to false
         shared_memory->set_is_stopped(false);
@@ -92,7 +95,6 @@ void AIAgentWorker::worker_main() {
         if (stop_requested.load()) stop_requested.store(false);
 
         CONTINUE_IF_TRUE(target_image.isNull(), "Target image is not set");
-        CONTINUE_IF_TRUE(shader_sampler == nullptr, "AI Agent Monitor is not set");
 
         // Generate initial population
         const std::string encoded_graph = shared_memory->get_encoded_graph();
@@ -110,7 +112,7 @@ void AIAgentWorker::worker_main() {
         for (int i {0}; i < maximum_population_size; i++) {
             fitness_values.at(i) = ai_agent_main::get_fitness_value(
                 initial_population.at(i),
-                shader_sampler,
+                sampler,
                 reinterpret_cast<const uint32_t*>(target_image.bits()),
                 target_image.width(),
                 target_image.height()
@@ -170,6 +172,8 @@ void AIAgentWorker::worker_main() {
         //     }
         // }
     }
+
+    delete sampler;
     DEBUG_PRINT("Worker thread exiting cleanly");
 }
 

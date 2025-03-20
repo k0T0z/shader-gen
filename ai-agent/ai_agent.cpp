@@ -149,17 +149,7 @@ namespace ai_agent_main {
           shadergen_visual_shader_generator::to_input_output_connections_by_key(encoded_graph), code)};
         CHECK_CONDITION_TRUE_NON_VOID(!result, std::numeric_limits<unsigned long>::max(), "Failed to generate shader code");
 
-        QImage extracted_image;
-
-        // Call the sample_once method on the GUI thread and block until it returns
-        bool success = QMetaObject::invokeMethod(
-            shader_sampler, 
-            "sample_once", 
-            Qt::BlockingQueuedConnection, 
-            Q_RETURN_ARG(QImage, extracted_image), 
-            Q_ARG(const std::string, code) 
-        );
-        CHECK_CONDITION_TRUE_NON_VOID(!success, std::numeric_limits<unsigned long>::max(), "Failed to get fitness value");
+        QImage extracted_image = shader_sampler->sample_once(code);
 
         CHECK_CONDITION_TRUE_NON_VOID(extracted_image.isNull(), std::numeric_limits<unsigned long>::max(), "Failed to get fitness value");
 

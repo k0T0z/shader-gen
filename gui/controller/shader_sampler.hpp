@@ -38,13 +38,10 @@
 #include <memory>
 #include <string>
 #include <QImage>
-#include <QObject>
 
-class ShaderSampler : public QObject, protected QOpenGLFunctions_4_3_Core {
-  Q_OBJECT
-
+class ShaderSampler : protected QOpenGLFunctions_4_3_Core {
  public:
-  ShaderSampler(QObject* parent = nullptr);
+  ShaderSampler();
   ~ShaderSampler();
 
   bool initialize();
