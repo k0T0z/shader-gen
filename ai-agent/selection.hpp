@@ -38,20 +38,25 @@
 #include "ai-agent/utils/utils.hpp"
 
 namespace ai_agent_selection {
-inline static std::pair<std::string, std::string> select(const std::vector<std::pair<std::string, unsigned long>>& population_fitness) {
+enum class SelectionType {
+    ROULETTE_WHEEL
+};
+
+inline static std::pair<std::pair<std::string, unsigned long>, std::pair<std::string, unsigned long>> roulette_wheel_select(const std::vector<std::pair<std::string, unsigned long>>& population_fitness) {
     // Check if population size is sufficient to select two different parents
-    CHECK_CONDITION_TRUE_NON_VOID(population_fitness.size() < 2, std::make_pair("", ""), "Population size is less than 2");
+    CHECK_CONDITION_TRUE_NON_VOID(population_fitness.size() < 2, std::make_pair(std::make_pair("", 0), std::make_pair("", 0)), "Population size is less than 2");
+    CHECK_CONDITION_TRUE_NON_VOID(population_fitness.size() == 2, std::make_pair(population_fitness.at(0), population_fitness.at(1)), "Population size is exactly 2");
 
     // Find the maximum fitness value
     auto max_it = std::max_element(population_fitness.begin(), population_fitness.end(),
         [](const auto& a, const auto& b) { return a.second < b.second; });
     unsigned long fitness_max = max_it->second;
 
-    // Compute transformed fitness: fitness_max - fitness + 1
+    // Compute transformed fitness: fitness_max - fitness + 1 (Fitness Scaling)
     // This transforms fitness so that lower original fitness (better) gets higher transformed fitness
     std::vector<unsigned long> transformed_fitness(population_fitness.size());
     for (size_t i = 0; i < population_fitness.size(); ++i) {
-        transformed_fitness[i] = fitness_max - population_fitness[i].second + 1;
+        transformed_fitness.at(i) = fitness_max - population_fitness.at(i).second + 1;
     }
 
     // Compute sum of transformed fitness as double to avoid overflow and enable floating-point division
@@ -63,16 +68,16 @@ inline static std::pair<std::string, std::string> select(const std::vector<std::
     // Normalize fitness values
     std::vector<double> normalized(population_fitness.size());
     for (size_t i = 0; i < population_fitness.size(); ++i) {
-        normalized[i] = static_cast<double>(transformed_fitness[i]) / sum_fitness;
+        normalized.at(i) = static_cast<double>(transformed_fitness.at(i)) / sum_fitness;
     }
 
     // Pair each normalized value with its original index
     std::vector<std::pair<double, size_t>> indexed_normalized;
     for (size_t i = 0; i < population_fitness.size(); ++i) {
-        indexed_normalized.emplace_back(normalized[i], i);
+        indexed_normalized.emplace_back(normalized.at(i), i);
     }
 
-    // Sort by normalized value in ascending order (to match Python implementation)
+    // Sort by normalized value in ascending order
     std::sort(indexed_normalized.begin(), indexed_normalized.end(),
         [](const auto& a, const auto& b) { return a.first < b.first; });
 
@@ -80,8 +85,8 @@ inline static std::pair<std::string, std::string> select(const std::vector<std::
     std::vector<double> cumulative(indexed_normalized.size());
     double current = 0.0;
     for (size_t j = 0; j < indexed_normalized.size(); ++j) {
-        current += indexed_normalized[j].first;
-        cumulative[j] = current;
+        current += indexed_normalized.at(j).first;
+        cumulative.at(j) = current;
     }
 
     // Select first parent
@@ -107,7 +112,18 @@ inline static std::pair<std::string, std::string> select(const std::vector<std::
     } while (idx2 == idx1);
 
     // Return the selected chromosomes as a pair of strings
-    return std::make_pair(population_fitness[idx1].first, population_fitness[idx2].first);
+    return std::make_pair(population_fitness[idx1], population_fitness[idx2]);
+}
+
+inline static std::pair<std::pair<std::string, unsigned long>, std::pair<std::string, unsigned long>> select(const std::vector<std::pair<std::string, unsigned long>>& population_fitness, const SelectionType& selection_type = SelectionType::ROULETTE_WHEEL) {
+    switch (selection_type) {
+        case SelectionType::ROULETTE_WHEEL:
+            return roulette_wheel_select(population_fitness);
+        default:
+            break;
+    }
+
+    return std::make_pair(std::make_pair("", 0), std::make_pair("", 0));
 }
 }  // namespace ai_agent_selection
 

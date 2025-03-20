@@ -156,9 +156,14 @@ void AIAgentWorker::worker_main() {
 
         // Main loop
         // Starts from one because the initial population is already evaluated
-        for (int i {1}; (i < maximum_iterations) && !completed; i++) {
+        for (int i {1}; (i < maximum_population_size) && !completed; i++) {
+            const std::pair<std::pair<std::string, unsigned long>, std::pair<std::string, unsigned long>> selected_parents = ai_agent_selection::select(population_fitness);
 
+            if (stop_requested.load()) completed = true;
         }
+
+        SILENT_CONTINUE_IF_TRUE(stop_requested.load());
+        completed = false;
 
     }
 

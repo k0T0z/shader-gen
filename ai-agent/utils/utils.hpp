@@ -205,6 +205,11 @@ inline static std::mt19937& rand_engine() {
     return eng;
 }
 
+// Seed setter for the random engine.
+inline static void seed_rand_engine(const std::mt19937::result_type& seed) {
+    rand_engine().seed(seed);
+}
+
 //------------------------------------------------------------------------------
 // Generic random value generator
 //
