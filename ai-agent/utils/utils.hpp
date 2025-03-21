@@ -814,6 +814,18 @@ inline static std::vector<std::string> split_string(const std::string& str, cons
     while (std::getline(token_stream, token, delimiter)) tokens.push_back(token);
     return tokens;
 }
+
+inline static std::string join_string(const std::vector<std::string>& tokens, const char& delimiter) {
+    CHECK_CONDITION_TRUE_NON_VOID(tokens.empty(), "", "Tokens is empty.");
+    CHECK_CONDITION_TRUE_NON_VOID(tokens.size() == 1, tokens[0], "Tokens size is 1.");
+
+    std::ostringstream joined;
+    joined << tokens[0];
+    for (std::size_t i = 1; i < tokens.size(); ++i) {
+        joined << delimiter << tokens[i];
+    }
+    return joined.str();
+}
 }  // namespace ai_agent_utils
 
 #endif  // AI_AGENT_UTILS_HPP

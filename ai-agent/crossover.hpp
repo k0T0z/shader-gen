@@ -36,9 +36,16 @@
 
 #include "error_macros.hpp"
 #include "ai-agent/utils/utils.hpp"
+#include "ai-agent/ai_agent.hpp"
 
 namespace ai_agent_crossover {
-inline static std::pair<std::string, std::string> crossover(const std::pair<std::string, std::string>& parents, const int& crossover_probability, const int& num_crossover_points = 3) {
+inline static std::pair<std::string, std::string> crossover(
+    const std::pair<std::string, 
+    std::string>& parents, 
+    const int& crossover_probability, 
+    const int& num_crossover_points = 3,
+    const ai_agent_main::MatchingType& matching_type = ai_agent_main::MatchingType::PARAMETERS_ONLY
+) {
     // Extract parent chromosomes
     const std::string& parent1 = parents.first;
     const std::string& parent2 = parents.second;

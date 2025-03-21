@@ -126,7 +126,7 @@ void AIAgentWorker::worker_main() {
             );
 
             // Sleep for 200ms
-            std::this_thread::sleep_for(std::chrono::milliseconds(200));
+            // std::this_thread::sleep_for(std::chrono::milliseconds(200));
 
             if (stop_requested.load()) completed = true;
         }
