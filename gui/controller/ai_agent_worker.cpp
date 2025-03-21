@@ -161,6 +161,14 @@ void AIAgentWorker::worker_main() {
         for (int i {1}; (i < maximum_population_size) && !completed; i++) {
             const std::pair<std::pair<std::string, unsigned long>, std::pair<std::string, unsigned long>> selected_parents = ai_agent_selection::select(population_fitness);
 
+            const std::pair<std::string, std::string> children = ai_agent_crossover::crossover(
+                selected_parents.first.first,
+                selected_parents.second.first,
+                crossover_probability,
+                3,
+                matching_type
+            );
+
             if (stop_requested.load()) completed = true;
         }
 

@@ -64,14 +64,14 @@ namespace ai_agent_main {
             case MatchingType::PARAMETERS_ONLY: {
                 const std::vector<std::string> entities{ai_agent_utils::split_string(encoded_graph, ',')};
                 for (const auto& entity : entities) {
-                    const std::vector<std::string> tokens{ai_agent_utils::split_string(entity, ';')};
-                    const int entity_type = std::stoi(tokens.at(0));
+                    const std::vector<std::string> entity_tokens{ai_agent_utils::split_string(entity, ';')};
+                    const int entity_type = std::stoi(entity_tokens.at(0));
                     if (entity_type == 0) {
                         // Node
                         // Format: entity_type;node_id;node_type;field_number=value;field_number=value;...
-                        const int n_id = std::stoi(tokens.at(1));
-                        const int oneof_value_field_number = std::stoi(tokens.at(2));
-                        const std::vector<std::string> parameters{tokens.begin() + 3, tokens.end()};
+                        const int n_id = std::stoi(entity_tokens.at(1));
+                        const int oneof_value_field_number = std::stoi(entity_tokens.at(2));
+                        const std::vector<std::string> parameters{entity_tokens.begin() + 3, entity_tokens.end()};
                         for (int i{0}; i < maximum_population_size; ++i) {
                             std::vector<std::string> new_parameters;
                             new_parameters.resize(parameters.size());

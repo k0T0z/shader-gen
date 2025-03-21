@@ -181,6 +181,39 @@ inline static std::string encode_graph(const ProtoModel* nodes, const ProtoModel
     return encoded_graph;
 }
 
+inline static std::pair<std::string, std::string> filter_entities(const std::string& encoded_graph) {
+    std::pair<std::string, std::string> filtered_graph;
+
+    std::vector<std::string> nodes, connections;
+
+    std::vector<std::string> entities{split_string(encoded_graph, ',')};
+    for (const std::string& entity : entities) {
+        const std::vector<std::string> entity_tokens{ai_agent_utils::split_string(entity, ';')};
+        const int entity_type = std::stoi(entity_tokens.at(0));
+        if (entity_type == 0) nodes.emplace_back(entity);
+        else if (entity_type == 1) connections.emplace_back(entity);
+        else {
+            FAIL_AND_RETURN_NON_VOID(filtered_graph, "Invalid entity type: " + std::to_string(entity_type));
+        }
+    }
+
+    filtered_graph.first = join_string(nodes, ',');
+    filtered_graph.second = join_string(connections, ',');
+
+    return filtered_graph;
+}
+
+inline static std::pair<std::vector<std::string>, std::vector<std::string>> filter_entities_into_tokens(const std::string& encoded_graph) {
+    const std::pair<std::string, std::string> filtered_graph{filter_entities(encoded_graph)};
+
+    std::pair<std::vector<std::string>, std::vector<std::string>> filtered_graph_tokens;
+
+    filtered_graph_tokens.first = split_string(filtered_graph.first, ','); // Nodes
+    filtered_graph_tokens.second = split_string(filtered_graph.second, ','); // Connections
+
+    return filtered_graph_tokens;
+}
+
 //------------------------------------------------------------------------------
 // Example: Using a non-uniform distribution
 //

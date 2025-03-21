@@ -32,6 +32,7 @@ extern const int maximum_population_size;
 extern const int maximum_generations;
 extern const float mutation_probability;
 extern const float crossover_probability;
+extern const int num_crossover_points;
 extern const float elitism_ratio;
 extern const int maximum_iterations;
 extern const int maximum_nodes_per_graph;

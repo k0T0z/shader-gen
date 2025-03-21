@@ -278,6 +278,7 @@ if(SHADER_GEN_BUILD_TESTS)
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/ai-agent/test_fitness.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/ai-agent/test_ai_agent.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/ai-agent/test_selection.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/ai-agent/test_crossover.cpp
     )
 
     set(SHADER_GEN_TESTS_PROTO_FILES 
