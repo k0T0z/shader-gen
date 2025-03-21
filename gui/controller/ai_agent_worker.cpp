@@ -103,6 +103,8 @@ void AIAgentWorker::worker_main() {
         // Process with interrupt checks
         bool completed = false;
 
+        shared_memory->reset_broken_graphs_count();
+
         // Generate initial population
         const std::string encoded_graph = shared_memory->get_encoded_graph();
 
