@@ -57,7 +57,7 @@ enum class CrossoverType {
 inline static std::pair<std::string, std::string> multi_point_crossover(
     const std::string& parent1,
     const std::string& parent2,
-    const int& crossover_probability, 
+    const float& crossover_probability, 
     const ai_agent_main::MatchingType& matching_type = ai_agent_main::MatchingType::PARAMETERS_ONLY
 ) {
     const int num_crossover_points{ai_agent_utils::random_int_inclusive<int>(2, 4)};
@@ -75,13 +75,13 @@ inline static std::pair<std::string, std::string> multi_point_crossover(
             const size_t M = parent1_nodes.size();
 
             CHECK_CONDITION_TRUE_NON_VOID(parent2_nodes.size() != M, children, "Parent chromosomes must be of equal length");
-            CHECK_CONDITION_TRUE_NON_VOID(M < 2, children, "Crossover not possible with length < 2");
-            CHECK_CONDITION_TRUE_NON_VOID(M - 1 < static_cast<size_t>(num_crossover_points), children, "Not enough positions for the specified number of crossover points");
+            CHECK_CONDITION_TRUE_NON_VOID(M < 2ULL, children, "Crossover not possible with length < 2");
+            CHECK_CONDITION_TRUE_NON_VOID(M - 1ULL < static_cast<size_t>(num_crossover_points), children, "Not enough positions for the specified number of crossover points");
 
             // Generate unique crossover points (from 1 to M-1)
             std::set<size_t> points_set;
             while (points_set.size() < static_cast<size_t>(num_crossover_points)) {
-                size_t point = ai_agent_utils::random_int_include_first_exclude_second<size_t>(1, M); // [1, M-1]
+                size_t point = ai_agent_utils::random_int_include_first_exclude_second<size_t>(1ULL, M); // [1, M-1]
                 points_set.insert(point);
             }
             std::vector<size_t> crossover_points(points_set.begin(), points_set.end());
@@ -91,10 +91,10 @@ inline static std::pair<std::string, std::string> multi_point_crossover(
             std::vector<std::string> child1_nodes, child2_nodes;
             child1_nodes.reserve(M);
             child2_nodes.reserve(M);
-            size_t start = 0;
-            for (size_t i = 0; i < crossover_points.size(); ++i) {
+            size_t start = 0ULL;
+            for (size_t i = 0ULL; i < crossover_points.size(); ++i) {
                 size_t end = crossover_points.at(i);
-                if (i % 2 == 0) {
+                if (i % 2ULL == 0ULL) {
                     // Even segments: child1 takes from parent1, child2 takes from parent2
                     child1_nodes.insert(child1_nodes.end(), parent1_nodes.begin() + start, parent1_nodes.begin() + end);
                     child2_nodes.insert(child2_nodes.end(), parent2_nodes.begin() + start, parent2_nodes.begin() + end);
@@ -107,7 +107,7 @@ inline static std::pair<std::string, std::string> multi_point_crossover(
             }
             // Append the remaining segment
             if (start < M) {
-                if (crossover_points.size() % 2 == 0) {
+                if (crossover_points.size() % 2ULL == 0ULL) {
                     child1_nodes.insert(child1_nodes.end(), parent1_nodes.begin() + start, parent1_nodes.end());
                     child2_nodes.insert(child2_nodes.end(), parent2_nodes.begin() + start, parent2_nodes.end());
                 } else {
@@ -117,17 +117,17 @@ inline static std::pair<std::string, std::string> multi_point_crossover(
             }
 
             // Reconstruct child chromosomes using original tokens and replacing nodes
-            std::string child1 = ai_agent_utils::combine_entities_from_tokens(child1_nodes, parent1_filtered.second);
-            std::string child2 = ai_agent_utils::combine_entities_from_tokens(child2_nodes, parent2_filtered.second);
+            const std::string child1 = ai_agent_utils::combine_entities_from_tokens(child1_nodes, parent1_filtered.second);
+            const std::string child2 = ai_agent_utils::combine_entities_from_tokens(child2_nodes, parent2_filtered.second);
 
             // Apply crossover probability
-            float r1 = ai_agent_utils::random_real_include_first_exclude_second<float>(0.0f, 1.0f);
+            const float r1 = ai_agent_utils::random_real_include_first_exclude_second<float>(0.0f, 1.0f);
             if (r1 <= crossover_probability) {
                 children.first = child1;
             } else {
                 children.first = parent1;
             }
-            float r2 = ai_agent_utils::random_real_include_first_exclude_second<float>(0.0f, 1.0f);
+            const float r2 = ai_agent_utils::random_real_include_first_exclude_second<float>(0.0f, 1.0f);
             if (r2 <= crossover_probability) {
                 children.second = child2;
             } else {
@@ -146,7 +146,7 @@ inline static std::pair<std::string, std::string> multi_point_crossover(
 inline static std::pair<std::string, std::string> crossover(
     const std::string& parent1,
     const std::string& parent2,
-    const int& crossover_probability, 
+    const float& crossover_probability, 
     const CrossoverType& crossover_type = CrossoverType::MULTI_POINT,
     const ai_agent_main::MatchingType& matching_type = ai_agent_main::MatchingType::PARAMETERS_ONLY
 ) {

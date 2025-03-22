@@ -50,10 +50,10 @@ public:
     void worker_main();
 
     void set_maximum_population_size(const int& maximum_population_size) { this->maximum_population_size = maximum_population_size; }
+    void set_maximum_generations(const int& maximum_generations) { this->maximum_generations = maximum_generations; }
     void set_mutation_probability(const float& mutation_probability) { this->mutation_probability = mutation_probability; }
     void set_crossover_probability(const float& crossover_probability) { this->crossover_probability = crossover_probability; }
     void set_elitism_ratio(const float& elitism_ratio) { this->elitism_ratio = elitism_ratio; }
-    void set_maximum_iterations(const int& maximum_iterations) { this->maximum_iterations = maximum_iterations; }
 
     void set_matching_type(const ai_agent_main::MatchingType& matching_type) { this->matching_type = matching_type; }
     void set_target_image(const QImage& target_image) { this->target_image = target_image; }
@@ -63,16 +63,15 @@ private:
     
     std::mutex mtx;
     std::condition_variable cv;
-    int process_counter;
     std::atomic<bool> start_requested;
     std::atomic<bool> exit_requested;
     std::atomic<bool> stop_requested;
 
     int maximum_population_size;
+    int maximum_generations;
     float mutation_probability;
     float crossover_probability;
     float elitism_ratio;
-    int maximum_iterations;
 
     ai_agent_main::MatchingType matching_type;
     QImage target_image;

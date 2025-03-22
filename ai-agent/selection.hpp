@@ -44,36 +44,29 @@ enum class SelectionType {
 
 inline static std::pair<std::pair<std::string, unsigned long>, std::pair<std::string, unsigned long>> roulette_wheel_select(const std::vector<std::pair<std::string, unsigned long>>& population_fitness) {
     // Check if population size is sufficient to select two different parents
-    CHECK_CONDITION_TRUE_NON_VOID(population_fitness.size() < 2, std::make_pair(std::make_pair("", 0), std::make_pair("", 0)), "Population size is less than 2");
-    CHECK_CONDITION_TRUE_NON_VOID(population_fitness.size() == 2, std::make_pair(population_fitness.at(0), population_fitness.at(1)), "Population size is exactly 2");
+    CHECK_CONDITION_TRUE_NON_VOID(population_fitness.size() < 2ULL, std::make_pair(std::make_pair("", 0UL), std::make_pair("", 0UL)), "Population size is less than 2");
+    CHECK_CONDITION_TRUE_NON_VOID(population_fitness.size() == 2ULL, std::make_pair(population_fitness.at(0ULL), population_fitness.at(1ULL)), "Population size is exactly 2");
 
-    // Find the maximum fitness value
-    auto max_it = std::max_element(population_fitness.begin(), population_fitness.end(),
-        [](const auto& a, const auto& b) { return a.second < b.second; });
-    unsigned long fitness_max = max_it->second;
-
-    // Compute transformed fitness: fitness_max - fitness + 1 (Fitness Scaling)
-    // This transforms fitness so that lower original fitness (better) gets higher transformed fitness
-    std::vector<unsigned long> transformed_fitness(population_fitness.size());
-    for (size_t i = 0; i < population_fitness.size(); ++i) {
-        transformed_fitness.at(i) = fitness_max - population_fitness.at(i).second + 1;
-    }
-
-    // Compute sum of transformed fitness as double to avoid overflow and enable floating-point division
-    double sum_fitness = 0.0;
-    for (const auto& tf : transformed_fitness) {
-        sum_fitness += static_cast<double>(tf);
+    // Compute sum of fitness
+    unsigned long sum_fitness = 0UL;
+    for (const auto& pair : population_fitness) {
+        if (pair.second == 0UL) {
+            sum_fitness += 1UL;
+        } else {
+            sum_fitness += pair.second;
+        }
     }
 
     // Normalize fitness values
-    std::vector<double> normalized(population_fitness.size());
-    for (size_t i = 0; i < population_fitness.size(); ++i) {
-        normalized.at(i) = static_cast<double>(transformed_fitness.at(i)) / sum_fitness;
+    std::vector<long double> normalized(population_fitness.size());
+    for (size_t i = 0ULL; i < population_fitness.size(); ++i) {
+        const long double i_fitness = population_fitness.at(i).second == 0UL ? 1.0L : static_cast<long double>(population_fitness.at(i).second);
+        normalized.at(i) = i_fitness / static_cast<long double>(sum_fitness);
     }
 
     // Pair each normalized value with its original index
-    std::vector<std::pair<double, size_t>> indexed_normalized;
-    for (size_t i = 0; i < population_fitness.size(); ++i) {
+    std::vector<std::pair<long double, size_t>> indexed_normalized;
+    for (size_t i = 0ULL; i < population_fitness.size(); ++i) {
         indexed_normalized.emplace_back(normalized.at(i), i);
     }
 
@@ -82,37 +75,37 @@ inline static std::pair<std::pair<std::string, unsigned long>, std::pair<std::st
         [](const auto& a, const auto& b) { return a.first < b.first; });
 
     // Compute cumulative probabilities
-    std::vector<double> cumulative(indexed_normalized.size());
-    double current = 0.0;
-    for (size_t j = 0; j < indexed_normalized.size(); ++j) {
+    std::vector<long double> cumulative(indexed_normalized.size());
+    long double current = 0.0L;
+    for (size_t j = 0ULL; j < indexed_normalized.size(); ++j) {
         current += indexed_normalized.at(j).first;
         cumulative.at(j) = current;
     }
 
     // Select first parent
-    double r1 = ai_agent_utils::random_real_include_first_exclude_second<double>(0.0, 1.0);
+    long double r1 = ai_agent_utils::random_real_include_first_exclude_second<long double>(0.0L, 1.0L);
     auto it1 = std::lower_bound(cumulative.begin(), cumulative.end(), r1);
     size_t idx1;
     if (it1 == cumulative.end()) {
         idx1 = indexed_normalized.back().second;
     } else {
-        idx1 = indexed_normalized[std::distance(cumulative.begin(), it1)].second;
+        idx1 = indexed_normalized.at(std::distance(cumulative.begin(), it1)).second;
     }
 
     // Select second parent, ensuring it is different from the first
     size_t idx2;
     do {
-        double r2 = ai_agent_utils::random_real_include_first_exclude_second<double>(0.0, 1.0);
+        long double r2 = ai_agent_utils::random_real_include_first_exclude_second<long double>(0.0L, 1.0L);
         auto it2 = std::lower_bound(cumulative.begin(), cumulative.end(), r2);
         if (it2 == cumulative.end()) {
             idx2 = indexed_normalized.back().second;
         } else {
-            idx2 = indexed_normalized[std::distance(cumulative.begin(), it2)].second;
+            idx2 = indexed_normalized.at(std::distance(cumulative.begin(), it2)).second;
         }
     } while (idx2 == idx1);
 
     // Return the selected chromosomes as a pair of strings
-    return std::make_pair(population_fitness[idx1], population_fitness[idx2]);
+    return std::make_pair(population_fitness.at(idx1), population_fitness.at(idx2));
 }
 
 inline static std::pair<std::pair<std::string, unsigned long>, std::pair<std::string, unsigned long>> select(const std::vector<std::pair<std::string, unsigned long>>& population_fitness, const SelectionType& selection_type = SelectionType::ROULETTE_WHEEL) {
@@ -123,7 +116,7 @@ inline static std::pair<std::pair<std::string, unsigned long>, std::pair<std::st
             break;
     }
 
-    return std::make_pair(std::make_pair("", 0), std::make_pair("", 0));
+    return std::make_pair(std::make_pair("", 0UL), std::make_pair("", 0UL));
 }
 }  // namespace ai_agent_selection
 

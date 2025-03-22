@@ -78,6 +78,10 @@ bool ShaderSampler::initialize() {
   return true;
 }
 
+bool ShaderSampler::is_initialized() const {
+  return isInitialized();
+}
+
 void ShaderSampler::init_buffers() {
   const float vertices[] = {
     -1.0f,  1.0f,  0.0f,  1.0f,  // Vertex 1: Position (x,y), FragCoord (u,v)

@@ -43,10 +43,10 @@ AIAgentWorker::AIAgentWorker(ShaderGenSharedMemory* shared_memory) : start_reque
                                                                      exit_requested(false),
                                                                      stop_requested(false),
                                                                      maximum_population_size(0),
+                                                                     maximum_generations(0),
                                                                      mutation_probability(0.0f), 
                                                                      crossover_probability(0.0f), 
                                                                      elitism_ratio(0.0f), 
-                                                                     maximum_iterations(0),
                                                                      matching_type(ai_agent_main::MatchingType::PARAMETERS_ONLY),
                                                                      shared_memory(shared_memory) {
     worker = std::thread(&AIAgentWorker::worker_main, this);
@@ -75,34 +75,39 @@ void AIAgentWorker::stop_matching() {
 void AIAgentWorker::worker_main() {
     std::unique_lock<std::mutex> lock(mtx);
 
-    CHECK_PARAM_NULLPTR(shared_memory, "Shared memory is not set");
+    ShaderSampler* sampler{nullptr};
 
-    ShaderSampler* sampler = new ShaderSampler();
-    CHECK_CONDITION_TRUE(!sampler->initialize(), "Failed to initialize the image extractor");
+    bool is_first_run = true;
+    int run_id = -1;
 
     while (true) {
-        // Set is_stopped to false
-        shared_memory->set_is_stopped(false);
+        if (is_first_run) is_first_run = false;
+        else shared_memory->set_is_stopped(true);
 
         // Wait for either start command or exit request
         cv.wait(lock, [this]() {
-            return start_requested.load() || exit_requested;
+            return start_requested.load() || exit_requested.load();
         });
 
-        // Exit condition check
-        if (exit_requested) break;
+        if (exit_requested.load()) break;
 
-        // Reset start request
+        run_id++;
+
         if (start_requested.load()) start_requested.store(false);
-
-        // It doesn't make sense to stop before even starting
         if (stop_requested.load()) stop_requested.store(false);
 
+        CONTINUE_IF_TRUE(shared_memory == nullptr, "Shared memory is not set");
         CONTINUE_IF_TRUE(target_image.isNull(), "Target image is not set");
+
+        if (!sampler) {
+            sampler = new ShaderSampler();
+            CONTINUE_IF_TRUE(!sampler->initialize(), "Failed to initialize the sampler");
+        }
+
+        CONTINUE_IF_TRUE(!sampler->is_initialized(), "Sampler is not initialized");
 
         // Process with interrupt checks
         bool completed = false;
-
         shared_memory->reset_broken_graphs_count();
 
         // Generate initial population
@@ -116,63 +121,101 @@ void AIAgentWorker::worker_main() {
             initial_population
         ), "Failed to create initial population");
 
-        std::vector<unsigned long> fitness_values;
-        fitness_values.resize(maximum_population_size);
-        for (int i {0}; (i < maximum_population_size) && !completed; i++) {
-            fitness_values.at(i) = ai_agent_main::get_fitness_value(
-                initial_population.at(i),
-                sampler,
+        std::vector<std::pair<std::string, unsigned long>> population_fitness;
+        population_fitness.reserve(maximum_population_size);
+        for (const auto& genome : initial_population) {
+            const unsigned long fitness = ai_agent_main::get_fitness_value(
+                genome, 
+                sampler, 
                 reinterpret_cast<const uint32_t*>(target_image.bits()),
-                target_image.width(),
+                target_image.width(), 
                 target_image.height()
             );
-
-            // Sleep for 200ms
-            // std::this_thread::sleep_for(std::chrono::milliseconds(200));
-
-            if (stop_requested.load()) completed = true;
+            population_fitness.emplace_back(genome, fitness);
+            if (stop_requested.load()) {
+                completed = true;
+                break;
+            }
         }
+        SILENT_CONTINUE_IF_TRUE(completed);
 
-        SILENT_CONTINUE_IF_TRUE(stop_requested.load());
-        completed = false;
+        // Sort by fitness (lower is better)
+        std::sort(population_fitness.begin(), population_fitness.end(),
+                  [](const auto& a, const auto& b) { return a.second < b.second; });
+        shared_memory->set_best_individual(population_fitness.at(0));
 
-        // Create a vector of pairs of population and fitness values
-        std::vector<std::pair<std::string, unsigned long>> population_fitness;
-        population_fitness.resize(maximum_population_size);
-        for (int i {0}; (i < maximum_population_size) && !completed; i++) {
-            population_fitness.at(i) = std::make_pair(initial_population.at(i), fitness_values.at(i));
+        // Genetic algorithm loop
+        for (int i {1}; (i < maximum_generations) && !completed; i++) {
+            std::vector<std::pair<std::string, unsigned long>> new_population_fitness;
+            new_population_fitness.reserve(maximum_population_size);
 
-            if (stop_requested.load()) completed = true;
-        }
+            // Create the new population
+            for (int j {0}; (j < (int)((float)maximum_population_size * 0.5f)) && !completed; j++) {
+                // Selection
+                const std::pair<std::pair<std::string, unsigned long>, std::pair<std::string, unsigned long>> selected_parents = ai_agent_selection::select(population_fitness);
+                
+                // Crossover
+                const std::pair<std::string, std::string> children = ai_agent_crossover::crossover(
+                    selected_parents.first.first,
+                    selected_parents.second.first,
+                    crossover_probability
+                );
 
-        SILENT_CONTINUE_IF_TRUE(stop_requested.load());
-        completed = false;
+                // Mutation
+                const std::string mutated_child1 = ai_agent_mutation::mutate(children.first, mutation_probability);
+                const std::string mutated_child2 = ai_agent_mutation::mutate(children.second, mutation_probability);
 
-        // Sort the population based on fitness values
-        std::sort(population_fitness.begin(), population_fitness.end(), [](const std::pair<std::string, unsigned long>& a, const std::pair<std::string, unsigned long>& b) {
-            return a.second < b.second; // Ascending order
-        });
+                // Evaluate the fitness of the children
+                const unsigned long fitness_child1 = ai_agent_main::get_fitness_value(
+                    mutated_child1,
+                    sampler,
+                    reinterpret_cast<const uint32_t*>(target_image.bits()),
+                    target_image.width(),
+                    target_image.height()
+                );
 
-        // Send the best individual to the shared memory
-        shared_memory->set_encoded_graph(population_fitness.at(0).first);
+                const unsigned long fitness_child2 = ai_agent_main::get_fitness_value(
+                    mutated_child2,
+                    sampler,
+                    reinterpret_cast<const uint32_t*>(target_image.bits()),
+                    target_image.width(),
+                    target_image.height()
+                );
 
-        // Main loop
-        // Starts from one because the initial population is already evaluated
-        for (int i {1}; (i < maximum_population_size) && !completed; i++) {
-            const std::pair<std::pair<std::string, unsigned long>, std::pair<std::string, unsigned long>> selected_parents = ai_agent_selection::select(population_fitness);
+                BREAK_IF_TRUE(new_population_fitness.size() >= maximum_population_size, "Population size exceeded");
 
-            const std::pair<std::string, std::string> children = ai_agent_crossover::crossover(
-                selected_parents.first.first,
-                selected_parents.second.first,
-                crossover_probability
+                // Add the children to the new population
+                if (fitness_child1 < fitness_child2) {
+                    new_population_fitness.push_back(std::make_pair(mutated_child1, fitness_child1));
+                    if (new_population_fitness.size() < maximum_population_size) {
+                        new_population_fitness.push_back(std::make_pair(mutated_child2, fitness_child2));
+                    }
+                } else {
+                    new_population_fitness.push_back(std::make_pair(mutated_child2, fitness_child2));
+                    if (new_population_fitness.size() < maximum_population_size) {
+                        new_population_fitness.push_back(std::make_pair(mutated_child1, fitness_child1));
+                    }
+                }
+
+                if (stop_requested.load()) completed = true;
+            }
+
+            // Apply elitism
+            population_fitness = ai_agent_elitism::apply_elitism(
+                population_fitness,
+                new_population_fitness,
+                elitism_ratio
             );
 
+            // Send the best individual to the shared memory
+            shared_memory->set_best_individual(population_fitness.at(0));
+
             if (stop_requested.load()) completed = true;
         }
 
-        SILENT_CONTINUE_IF_TRUE(stop_requested.load());
-        completed = false;
-
+        DEBUG_PRINT("Run " + std::to_string(run_id) + " completed");
+        DEBUG_PRINT("Best fitness: " + std::to_string(population_fitness.at(0).second));
+        DEBUG_PRINT("Best individual: " + population_fitness.at(0).first);
     }
 
     delete sampler; // TODO: Deleting this object causes a crash

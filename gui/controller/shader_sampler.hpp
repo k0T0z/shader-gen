@@ -42,6 +42,7 @@ class ShaderSampler : protected QOpenGLFunctions_4_3_Core {
   ~ShaderSampler();
 
   bool initialize();
+  bool is_initialized() const;
   
   QImage sample_once(const std::string& code);
 

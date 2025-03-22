@@ -619,10 +619,10 @@ void VisualShaderEditor::on_start_matching_button_pressed() {
   CHECK_PARAM_NULLPTR(parameters_editor, "Parameters editor is null");
 
   ai_agent_worker->set_maximum_population_size(parameters_editor->get_maximum_population_size());
+  ai_agent_worker->set_maximum_generations(parameters_editor->get_maximum_generations());
   ai_agent_worker->set_mutation_probability(parameters_editor->get_mutation_probability());
   ai_agent_worker->set_crossover_probability(parameters_editor->get_crossover_probability());
   ai_agent_worker->set_elitism_ratio(parameters_editor->get_elitism_ratio());
-  ai_agent_worker->set_maximum_iterations(parameters_editor->get_maximum_iterations());
 
   ai_agent_main::MatchingType matching_type{static_cast<ai_agent_main::MatchingType>(matching_type_combo_box->currentData().toInt())};
   ai_agent_worker->set_matching_type(matching_type);

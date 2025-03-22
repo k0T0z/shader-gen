@@ -37,12 +37,22 @@ public:
 
     void set_encoded_graph(const std::string& graph) {
         std::lock_guard<std::mutex> lock(mutex);
-        encoded_graph = graph;
+        best_individual.first = graph;
     }
 
     std::string get_encoded_graph() const {
         std::lock_guard<std::mutex> lock(mutex);
-        return encoded_graph;
+        return best_individual.first;
+    }
+
+    void set_best_individual(const std::pair<std::string, unsigned long>& individual) {
+        std::lock_guard<std::mutex> lock(mutex);
+        best_individual = individual;
+    }
+
+    std::pair<std::string, unsigned long> get_best_individual() const {
+        std::lock_guard<std::mutex> lock(mutex);
+        return best_individual;
     }
 
     void set_is_stopped(const bool& stopped) {
@@ -72,7 +82,7 @@ public:
 
 private:
     mutable std::mutex mutex;
-    std::string encoded_graph;
+    std::pair<std::string, unsigned long> best_individual;
     bool is_stopped;
     int broken_graphs_count;
 };
