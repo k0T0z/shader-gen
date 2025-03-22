@@ -214,6 +214,21 @@ inline static std::pair<std::string, std::string> filter_entities(const std::str
     return {join_string(filtered_graph_tokens.first, ','), join_string(filtered_graph_tokens.second, ',')};
 }
 
+// Create a combine_entities function that combines the nodes and connections into a single string
+inline static std::string combine_entities_from_tokens(const std::vector<std::string>& nodes, const std::vector<std::string>& connections) {
+    std::string combined_entities;
+
+    combined_entities += join_string(nodes, ',');
+    combined_entities += ',';
+    combined_entities += join_string(connections, ',');
+
+    return combined_entities;
+}
+
+inline static std::string combine_entities(const std::string& nodes, const std::string& connections) {
+    return nodes + ',' + connections;
+}
+
 //------------------------------------------------------------------------------
 // Example: Using a non-uniform distribution
 //
