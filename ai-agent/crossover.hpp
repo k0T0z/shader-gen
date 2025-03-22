@@ -43,6 +43,17 @@ enum class CrossoverType {
     MULTI_POINT,
 };
 
+/**
+ * @brief 
+ * 
+ * @note Multi-point crossover is a discrete crossover operator.
+ * 
+ * @param parent1 
+ * @param parent2 
+ * @param crossover_probability 
+ * @param matching_type 
+ * @return std::pair<std::string, std::string> 
+ */
 inline static std::pair<std::string, std::string> multi_point_crossover(
     const std::string& parent1,
     const std::string& parent2,
