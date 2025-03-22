@@ -47,21 +47,25 @@ inline static std::pair<std::pair<std::string, unsigned long>, std::pair<std::st
     CHECK_CONDITION_TRUE_NON_VOID(population_fitness.size() < 2ULL, std::make_pair(std::make_pair("", 0UL), std::make_pair("", 0UL)), "Population size is less than 2");
     CHECK_CONDITION_TRUE_NON_VOID(population_fitness.size() == 2ULL, std::make_pair(population_fitness.at(0ULL), population_fitness.at(1ULL)), "Population size is exactly 2");
 
-    // Compute sum of fitness
-    unsigned long sum_fitness = 0UL;
-    for (const auto& pair : population_fitness) {
-        if (pair.second == 0UL) {
-            sum_fitness += 1UL;
-        } else {
-            sum_fitness += pair.second;
-        }
+    // Find the maximum fitness value
+    auto max_it = std::max_element(population_fitness.begin(), population_fitness.end(),
+        [](const auto& a, const auto& b) { return a.second < b.second; });
+    unsigned long fitness_max = max_it->second;
+
+    // Compute transformed fitness: fitness_max - fitness + 1 (Fitness Scaling)
+    // This transforms fitness so that lower original fitness (better) gets higher transformed fitness
+    std::vector<unsigned long> transformed_fitness(population_fitness.size());
+    for (size_t i = 0; i < population_fitness.size(); ++i) {
+        transformed_fitness.at(i) = fitness_max - population_fitness.at(i).second + 1;
     }
 
+    unsigned long sum_fitness = 0UL;
+    for (const auto& tf : transformed_fitness) sum_fitness += tf;
+
     // Normalize fitness values
-    std::vector<long double> normalized(population_fitness.size());
+    std::vector<double> normalized(population_fitness.size());
     for (size_t i = 0ULL; i < population_fitness.size(); ++i) {
-        const long double i_fitness = population_fitness.at(i).second == 0UL ? 1.0L : static_cast<long double>(population_fitness.at(i).second);
-        normalized.at(i) = i_fitness / static_cast<long double>(sum_fitness);
+        normalized.at(i) = static_cast<double>(transformed_fitness.at(i)) / static_cast<double>(sum_fitness);
     }
 
     // Pair each normalized value with its original index
