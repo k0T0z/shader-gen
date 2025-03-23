@@ -25,14 +25,60 @@
 /*                                                                               */
 /*********************************************************************************/
 
-#ifndef AI_AGENT_PARAMETERS_HPP
-#define AI_AGENT_PARAMETERS_HPP
+#ifndef AI_AGENT_WORKER_HPP
+#define AI_AGENT_WORKER_HPP
 
-extern const int maximum_population_size;
-extern const int maximum_generations;
-extern const float mutation_probability;
-extern const float crossover_probability;
-extern const float elitism_ratio;
-extern const int maximum_nodes_per_graph;
+#include <thread>
+#include <mutex>
+#include <condition_variable>
+#include <chrono>
 
-#endif // AI_AGENT_PARAMETERS_HPP
+#include <QImage>
+
+#include "ai-agent/ai_agent.hpp"
+#include "ai-agent/shared_memory.hpp"
+#include "gui/controller/ai_agent_monitor.hpp"
+
+class AIAgentWorker {
+public:
+    AIAgentWorker(ShaderGenSharedMemory* shared_memory);
+    ~AIAgentWorker();
+
+    void start_matching();
+    void stop_matching();
+
+    void worker_main();
+
+    void set_maximum_population_size(const int& maximum_population_size) { this->maximum_population_size = maximum_population_size; }
+    void set_maximum_generations(const int& maximum_generations) { this->maximum_generations = maximum_generations; }
+    void set_mutation_probability(const float& mutation_probability) { this->mutation_probability = mutation_probability; }
+    void set_crossover_probability(const float& crossover_probability) { this->crossover_probability = crossover_probability; }
+    void set_elitism_ratio(const float& elitism_ratio) { this->elitism_ratio = elitism_ratio; }
+
+    void set_matching_type(const ai_agent_main::MatchingType& matching_type) { this->matching_type = matching_type; }
+    void set_target_image(const QImage& target_image) { this->target_image = target_image; }
+    
+private:
+    std::thread worker;
+    
+    std::mutex mtx;
+    std::condition_variable cv;
+    std::atomic<bool> start_requested;
+    std::atomic<bool> exit_requested;
+    std::atomic<bool> stop_requested;
+
+    int maximum_population_size;
+    int maximum_generations;
+    float mutation_probability;
+    float crossover_probability;
+    float elitism_ratio;
+
+    ai_agent_main::MatchingType matching_type;
+    QImage target_image;
+
+    ShaderGenSharedMemory* shared_memory;
+
+    void stop_thread();
+};
+
+#endif // AI_AGENT_WORKER_HPP

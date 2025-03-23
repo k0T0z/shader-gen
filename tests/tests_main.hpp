@@ -25,14 +25,11 @@
 /*                                                                               */
 /*********************************************************************************/
 
-#ifndef AI_AGENT_PARAMETERS_HPP
-#define AI_AGENT_PARAMETERS_HPP
+#ifndef VISUAL_SHADER_TESTS_MAIN_HPP
+#define VISUAL_SHADER_TESTS_MAIN_HPP
 
-extern const int maximum_population_size;
-extern const int maximum_generations;
-extern const float mutation_probability;
-extern const float crossover_probability;
-extern const float elitism_ratio;
-extern const int maximum_nodes_per_graph;
+#ifndef SHADER_GEN_ROOTDIR
+#error "No root directory defined"
+#endif  // SHADER_GEN_ROOTDIR
 
-#endif // AI_AGENT_PARAMETERS_HPP
+#endif  // VISUAL_SHADER_TESTS_MAIN_HPP

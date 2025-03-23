@@ -65,10 +65,11 @@ void AIAgentParametersEditor::init() {
   };
 
   // Create rows for each parameter
+  create_parameter_row("Maximum Population Size", maximum_population_size);
+  create_parameter_row("Maximum Generations", maximum_generations);
   create_parameter_row("Mutation Probability", mutation_probability);
   create_parameter_row("Crossover Probability", crossover_probability);
   create_parameter_row("Elitism Ratio", elitism_ratio);
-  create_parameter_row("Maximum Iterations", maximum_iterations);
   create_parameter_row("Maximum Nodes Per Graph", maximum_nodes_per_graph);
 
   //////////////// Start of Footer ////////////////

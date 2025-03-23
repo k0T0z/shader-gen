@@ -72,8 +72,9 @@
 
 #include "gui/controller/renderer/renderer.hpp"
 
-#include "ai-agent/ai_agent.hpp"
-#include "gui/controller/fitness_calculator.hpp"
+#include "gui/controller/ai_agent_worker.hpp"
+#include "ai-agent/shared_memory.hpp"
+#include "gui/controller/ai_agent_monitor.hpp"
 #include "gui/controller/parameters_editor.hpp"
 #include "generator/visual_shader_node_port_type_generator.hpp"
 
@@ -149,6 +150,8 @@ class VisualShaderEditor : public QWidget {
   void on_match_image_button_pressed();
   void on_start_matching_button_pressed();
   void on_stop_matching_button_pressed();
+  void on_start_matching_timer_timeout();
+  void on_stop_matching_timer_timeout();
 
  private:
   QHBoxLayout* layout;
@@ -213,13 +216,18 @@ class VisualShaderEditor : public QWidget {
   ProtoModel* nodes_model;
   ProtoModel* connections_model;
 
+  ShaderGenSharedMemory* shared_memory;
+
   AIAgentWorker* ai_agent_worker;
-  AIAgentFitnessCalculator* fitness_calculator;
+  AIAgentMonitor* ai_agent_monitor;
   AIAgentParametersEditor* parameters_editor;
   StartMatchingButton* start_matching_button;
   StopMatchingButton* stop_matching_button;
 
   QComboBox* matching_type_combo_box;
+
+  QTimer* start_matching_timer;
+  QTimer* stop_matching_timer;
 
   /**
    * @brief Initializes the UI

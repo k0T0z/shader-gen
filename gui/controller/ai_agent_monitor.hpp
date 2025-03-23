@@ -25,8 +25,8 @@
 /*                                                                               */
 /*********************************************************************************/
 
-#ifndef SHADER_GEN_AI_AGENT_FITNESS_CALCULATOR_HPP
-#define SHADER_GEN_AI_AGENT_FITNESS_CALCULATOR_HPP
+#ifndef SHADER_GEN_AI_AGENT_MONITOR_HPP
+#define SHADER_GEN_AI_AGENT_MONITOR_HPP
 
 #include <QWidget>
 #include <QVBoxLayout>
@@ -36,7 +36,6 @@
 #include <QFileDialog>
 #include <QImage>
 #include <QtOpenGLWidgets/QOpenGLWidget>
-// #include <QOpenGLFunctions>
 #include <QTimer>
 #include <QElapsedTimer>
 #include <QtOpenGL/QOpenGLFunctions_4_3_Core>
@@ -45,22 +44,27 @@
 
 class CurrentOutputRenderer;
 
-class AIAgentFitnessCalculator : public QWidget {
+class AIAgentMonitor : public QWidget {
   Q_OBJECT
 
  public:
-  AIAgentFitnessCalculator(QWidget* parent = nullptr);
-  ~AIAgentFitnessCalculator() override = default;
+  AIAgentMonitor(QWidget* parent = nullptr);
+  ~AIAgentMonitor() override = default;
 
   void update_current_output(const std::string& code);
+  void update_fitness_value();
 
-  unsigned long get_fitness_value(const std::unordered_map<int, std::string>& encoded_nodes, const std::unordered_map<int, std::string>& encoded_connections) const;
   unsigned long get_fitness_value() const;
+
+  QImage get_target_image() const;
+
+  void set_fitness_value(const unsigned long& value) { fitness_value->setText(QString::number(value)); }
 
  private Q_SLOTS:
   void on_load_image_button_pressed();
   void on_calculate_fitness_button_pressed();
   void on_matching_type_combo_box_current_index_changed(int index);
+  void on_generate_random_image_button_pressed();
 
  private:
   QVBoxLayout* layout;
@@ -69,6 +73,7 @@ class AIAgentFitnessCalculator : public QWidget {
   QPushButton* load_image_button;
   QPushButton* calculate_fitness_button;
   QComboBox* matching_type_combo_box;
+  QPushButton* generate_random_image_button;
 
   QHBoxLayout* status_layout;
   QLabel* fitness_value_label;
@@ -92,6 +97,8 @@ class AIAgentFitnessCalculator : public QWidget {
    * 
    */
   void init();
+
+  QImage create_random_image(const int& width, const int& height);
 };
 
 class CurrentOutputRenderer : public QOpenGLWidget, protected QOpenGLFunctions_4_3_Core  {
@@ -103,9 +110,10 @@ class CurrentOutputRenderer : public QOpenGLWidget, protected QOpenGLFunctions_4
  
   void set_is_dynamic(const bool& is_dynamic);
 
+  void force_set_code(const std::string& code);
   void set_code(const std::string& code);
   
-  QImage get_pixel_data() const;
+  QImage get_pixel_data();
 
  private Q_SLOTS:
   void update_shader_program();
@@ -146,4 +154,4 @@ class CurrentOutputRenderer : public QOpenGLWidget, protected QOpenGLFunctions_4
   void cleanup();
 };
 
-#endif  // SHADER_GEN_AI_AGENT_FITNESS_CALCULATOR_HPP
+#endif  // SHADER_GEN_AI_AGENT_MONITOR_HPP

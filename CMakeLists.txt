@@ -140,6 +140,11 @@ set(SHADER_GEN_HPP_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/ai-agent/fitness.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/ai-agent/utils/utils.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/ai-agent/parameters.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/ai-agent/shared_memory.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/ai-agent/selection.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/ai-agent/crossover.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/ai-agent/mutation.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/ai-agent/elitism.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/generator/visual_shader_generator.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/generator/visual_shader_node_generators.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/generator/vs_node_noise_generators.hpp
@@ -154,11 +159,13 @@ set(SHADER_GEN_HPP_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/gui/model/oneof_model.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/gui/controller/visual_shader_editor.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/gui/controller/renderer/renderer.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/gui/controller/fitness_calculator.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/gui/controller/ai_agent_monitor.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/gui/controller/parameters_editor.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/gui/controller/ai_agent_worker.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/gui/model/utils/field_path.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/gui/model/utils/utils.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/gui/controller/utils/utils.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/gui/controller/shader_sampler.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/error_macros.hpp
 )
 
@@ -178,8 +185,10 @@ set(SHADER_GEN_CPP_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/gui/model/oneof_model.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/gui/controller/visual_shader_editor.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/gui/controller/renderer/renderer.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/gui/controller/fitness_calculator.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/gui/controller/ai_agent_monitor.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/gui/controller/parameters_editor.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/gui/controller/ai_agent_worker.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/gui/controller/shader_sampler.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/gui/model/utils/field_path.cpp
 )
 
@@ -267,6 +276,9 @@ if(SHADER_GEN_BUILD_TESTS)
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/generator/test_vs_generator.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/generator/test_vs_node_generators.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/ai-agent/test_fitness.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/ai-agent/test_ai_agent.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/ai-agent/test_selection.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/ai-agent/test_crossover.cpp
     )
 
     set(SHADER_GEN_TESTS_PROTO_FILES 
@@ -350,6 +362,7 @@ if(SHADER_GEN_BUILD_TESTS)
 
     target_compile_definitions(${SHADER_GEN_TESTS_EXECUTABLE_NAME} PRIVATE 
         $<$<CONFIG:Debug>:${SHADER_GEN_DEBUG_MACRO_NAME}> # Define ${SHADER_GEN_DEBUG_MACRO_NAME} for Debug builds
+        SHADER_GEN_ROOTDIR="${SHADER_GEN_ROOTDIR}"
     )
 
     enable_testing()

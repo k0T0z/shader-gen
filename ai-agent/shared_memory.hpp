@@ -25,14 +25,66 @@
 /*                                                                               */
 /*********************************************************************************/
 
-#ifndef AI_AGENT_PARAMETERS_HPP
-#define AI_AGENT_PARAMETERS_HPP
+#ifndef SHADER_GEN_SHARED_MEMORY_HPP
+#define SHADER_GEN_SHARED_MEMORY_HPP
 
-extern const int maximum_population_size;
-extern const int maximum_generations;
-extern const float mutation_probability;
-extern const float crossover_probability;
-extern const float elitism_ratio;
-extern const int maximum_nodes_per_graph;
+#include <mutex>
+#include <string>
 
-#endif // AI_AGENT_PARAMETERS_HPP
+class ShaderGenSharedMemory {
+public:
+    ShaderGenSharedMemory() : is_stopped(true), broken_graphs_count(0) {}
+
+    void set_encoded_graph(const std::string& graph) {
+        std::lock_guard<std::mutex> lock(mutex);
+        best_individual.first = graph;
+    }
+
+    std::string get_encoded_graph() const {
+        std::lock_guard<std::mutex> lock(mutex);
+        return best_individual.first;
+    }
+
+    void set_best_individual(const std::pair<std::string, unsigned long>& individual) {
+        std::lock_guard<std::mutex> lock(mutex);
+        best_individual = individual;
+    }
+
+    std::pair<std::string, unsigned long> get_best_individual() const {
+        std::lock_guard<std::mutex> lock(mutex);
+        return best_individual;
+    }
+
+    void set_is_stopped(const bool& stopped) {
+        std::lock_guard<std::mutex> lock(mutex);
+        is_stopped = stopped;
+    }
+
+    bool get_is_stopped() const {
+        std::lock_guard<std::mutex> lock(mutex);
+        return is_stopped;
+    }
+
+    void increment_broken_graphs_count() {
+        std::lock_guard<std::mutex> lock(mutex);
+        broken_graphs_count++;
+    }
+
+    int get_broken_graphs_count() const {
+        std::lock_guard<std::mutex> lock(mutex);
+        return broken_graphs_count;
+    }
+
+    void reset_broken_graphs_count() {
+        std::lock_guard<std::mutex> lock(mutex);
+        broken_graphs_count = 0;
+    }
+
+private:
+    mutable std::mutex mutex;
+    std::pair<std::string, unsigned long> best_individual;
+    bool is_stopped;
+    int broken_graphs_count;
+};
+
+#endif // SHADER_GEN_SHARED_MEMORY_HPP

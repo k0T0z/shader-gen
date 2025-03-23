@@ -25,14 +25,37 @@
 /*                                                                               */
 /*********************************************************************************/
 
-#ifndef AI_AGENT_PARAMETERS_HPP
-#define AI_AGENT_PARAMETERS_HPP
+#ifndef SHADER_GEN_AI_AGENT_SHADER_SAMPLER_HPP
+#define SHADER_GEN_AI_AGENT_SHADER_SAMPLER_HPP
 
-extern const int maximum_population_size;
-extern const int maximum_generations;
-extern const float mutation_probability;
-extern const float crossover_probability;
-extern const float elitism_ratio;
-extern const int maximum_nodes_per_graph;
+#include <QtOpenGL/QOpenGLFunctions_4_3_Core>
+#include <QOffscreenSurface>
+#include <QOpenGLContext>
+#include <QOpenGLFramebufferObject>
+#include <QtOpenGL/QOpenGLShaderProgram>
+#include <string>
+#include <QImage>
 
-#endif // AI_AGENT_PARAMETERS_HPP
+class ShaderSampler : protected QOpenGLFunctions_4_3_Core {
+ public:
+  ShaderSampler();
+  ~ShaderSampler();
+
+  bool initialize();
+  bool is_initialized() const;
+  
+  QImage sample_once(const std::string& code);
+
+ private:
+  void init_buffers();
+  bool compile_shader(const std::string& code, QOpenGLShaderProgram* program);
+
+  QOpenGLContext* context;
+  QOffscreenSurface* surface;
+  QOpenGLFramebufferObject* fbo;
+  
+  GLuint VAO;
+  GLuint VBO;
+};
+
+#endif  // SHADER_GEN_AI_AGENT_SHADER_SAMPLER_HPP

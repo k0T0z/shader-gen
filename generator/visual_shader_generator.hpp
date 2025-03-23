@@ -64,12 +64,16 @@ struct Connection {
 };
 
 std::unordered_map<int, std::shared_ptr<IVisualShaderProtoNode>> to_proto_nodes(const ProtoModel* nodes) noexcept;
+std::unordered_map<int, std::shared_ptr<IVisualShaderProtoNode>> to_proto_nodes(const std::string& encoded_graph) noexcept;
 
 std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>> to_generators(const ProtoModel* nodes) noexcept;
+std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>> to_generators(const std::string& encoded_graph) noexcept;
 
 std::unordered_map<int, std::shared_ptr<VisualShaderNodePortTypeGenerator>> to_port_type_generators(const ProtoModel* nodes) noexcept;
+std::unordered_map<int, std::shared_ptr<VisualShaderNodePortTypeGenerator>> to_port_type_generators(const std::string& encoded_graph) noexcept;
 
 std::pair<std::map<ConnectionKey, std::shared_ptr<Connection>>, std::map<ConnectionKey, std::shared_ptr<Connection>>> to_input_output_connections_by_key(const ProtoModel* connections) noexcept;
+std::pair<std::map<ConnectionKey, std::shared_ptr<Connection>>, std::map<ConnectionKey, std::shared_ptr<Connection>>> to_input_output_connections_by_key(const std::string& encoded_graph) noexcept;
 
 /**
  * @brief This function generates the shader code from the visual shader graph.

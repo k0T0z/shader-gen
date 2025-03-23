@@ -25,17 +25,23 @@
 /*                                                                               */
 /*********************************************************************************/
 
-#include "gui/controller/fitness_calculator.hpp"
+#include "gui/controller/ai_agent_monitor.hpp"
 
 #include "ai-agent/fitness.hpp"
-
+#include "ai-agent/utils/utils.hpp"
 #include "error_macros.hpp"
 
-AIAgentFitnessCalculator::AIAgentFitnessCalculator(QWidget* parent)
+AIAgentMonitor::AIAgentMonitor(QWidget* parent)
     : QWidget(parent),
       layout(nullptr),
       menu_bar(nullptr),
       load_image_button(nullptr),
+      calculate_fitness_button(nullptr),
+      matching_type_combo_box(nullptr),
+      generate_random_image_button(nullptr),
+      status_layout(nullptr),
+      fitness_value_label(nullptr),
+      fitness_value(nullptr),
       outputs_layout(nullptr),
       curent_output_renderer_layout(nullptr),
       current_output_renderer_label(nullptr),
@@ -45,10 +51,10 @@ AIAgentFitnessCalculator::AIAgentFitnessCalculator(QWidget* parent)
       target_output(nullptr) {
   resize(720, 360);
 
-  AIAgentFitnessCalculator::init();
+  AIAgentMonitor::init();
 }
 
-void AIAgentFitnessCalculator::init() {
+void AIAgentMonitor::init() {
   // Create the main layout.
   layout = new QVBoxLayout(this);
   layout->setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
@@ -69,7 +75,7 @@ void AIAgentFitnessCalculator::init() {
   load_image_button->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
   load_image_button->setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
   load_image_button->setToolTip("Load an image to match");
-  QObject::connect(load_image_button, &QPushButton::pressed, this, &AIAgentFitnessCalculator::on_load_image_button_pressed);
+  QObject::connect(load_image_button, &QPushButton::pressed, this, &AIAgentMonitor::on_load_image_button_pressed);
 
   menu_bar->addWidget(load_image_button);
 
@@ -77,7 +83,7 @@ void AIAgentFitnessCalculator::init() {
   calculate_fitness_button->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
   calculate_fitness_button->setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
   calculate_fitness_button->setToolTip("Calculate the fitness value (only for preview)");
-  QObject::connect(calculate_fitness_button, &QPushButton::pressed, this, &AIAgentFitnessCalculator::on_calculate_fitness_button_pressed);
+  QObject::connect(calculate_fitness_button, &QPushButton::pressed, this, &AIAgentMonitor::on_calculate_fitness_button_pressed);
 
   menu_bar->addWidget(calculate_fitness_button);
   
@@ -87,9 +93,17 @@ void AIAgentFitnessCalculator::init() {
   matching_type_combo_box->setToolTip("Select the matching type");
   matching_type_combo_box->addItem("Static");
   matching_type_combo_box->addItem("Dynamic");
-  QObject::connect(matching_type_combo_box, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &AIAgentFitnessCalculator::on_matching_type_combo_box_current_index_changed);
+  QObject::connect(matching_type_combo_box, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &AIAgentMonitor::on_matching_type_combo_box_current_index_changed);
 
   menu_bar->addWidget(matching_type_combo_box);
+
+  generate_random_image_button = new QPushButton("Generate Random Image", this);
+  generate_random_image_button->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
+  generate_random_image_button->setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
+  generate_random_image_button->setToolTip("Generate a random image for testing");
+  QObject::connect(generate_random_image_button, &QPushButton::pressed, this, &AIAgentMonitor::on_generate_random_image_button_pressed);
+
+  menu_bar->addWidget(generate_random_image_button);
 
   layout->addLayout(menu_bar, 1);
 
@@ -176,39 +190,64 @@ void AIAgentFitnessCalculator::init() {
   // this->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
 
   // Set the window title.
-  this->setWindowTitle("Fitness Calculator");
+  this->setWindowTitle("AI Agent Monitor");
   this->setLayout(layout);
 }
 
-void AIAgentFitnessCalculator::update_current_output(const std::string& code) {
+QImage AIAgentMonitor::create_random_image(const int& width, const int& height) {
+  QImage image(width, height, QImage::Format_ARGB32);
+  
+  for (int y = 0; y < height; ++y) {
+    for (int x = 0; x < width; ++x) {
+      const int alpha = 255;
+      // Generate random RGB components (0-255 inclusive)
+      const int red = ai_agent_utils::random_int_inclusive<int>(0, 255);
+      const int green = ai_agent_utils::random_int_inclusive<int>(0, 255);
+      const int blue = ai_agent_utils::random_int_inclusive<int>(0, 255);
+      
+      // Combine into ARGB32 pixel format and set the pixel
+      image.setPixel(x, y, qRgba(red, green, blue, alpha));
+    }
+  }
+  
+  return image;
+}
+
+void AIAgentMonitor::update_current_output(const std::string& code) {
   CHECK_CONDITION_TRUE(code.empty(), "Code is empty");
 
   current_output_renderer->set_code(code);
 }
 
-unsigned long AIAgentFitnessCalculator::get_fitness_value(const std::unordered_map<int, std::string>& encoded_nodes, const std::unordered_map<int, std::string>& encoded_connections) const {
-  return get_fitness_value();
+void AIAgentMonitor::update_fitness_value() {
+  fitness_value->setText(QString::number(get_fitness_value()));
 }
 
-unsigned long AIAgentFitnessCalculator::get_fitness_value() const {
-  CHECK_CONDITION_TRUE_NON_VOID(target_image.isNull(), 0UL, "No target image loaded");
+unsigned long AIAgentMonitor::get_fitness_value() const {
+  CHECK_CONDITION_TRUE_NON_VOID(target_image.isNull(), std::numeric_limits<unsigned long>::max(), "No target image loaded");
 
-  QImage current_image = current_output_renderer->get_pixel_data();
+  const QImage current_image = current_output_renderer->get_pixel_data();
 
-  CHECK_CONDITION_TRUE_NON_VOID(current_image.size() != target_image.size(), 0UL, "Size mismatch");
+  CHECK_CONDITION_TRUE_NON_VOID(current_image.isNull(), std::numeric_limits<unsigned long>::max(), "Failed to retrieve current image");
+  CHECK_CONDITION_TRUE_NON_VOID(current_image.size() != target_image.size(), std::numeric_limits<unsigned long>::max(), "Size mismatch");
 
   // Retrieve pointers to the pixel data.
   // QImage::bits() returns a pointer to the first pixel, and since our format is ARGB32,
   // we can safely reinterpret_cast to a uint32_t pointer.
   const uint32_t* pixels1 = reinterpret_cast<const uint32_t*>(current_image.bits());
   const uint32_t* pixels2 = reinterpret_cast<const uint32_t*>(target_image.bits());
-  int width = current_image.width();
-  int height = current_image.height();
+  const int width = current_image.width();
+  const int height = current_image.height();
 
   return ai_agent_fitness::calculate_fitness(pixels1, pixels2, width, height);
 }
 
-void AIAgentFitnessCalculator::on_load_image_button_pressed() {
+QImage AIAgentMonitor::get_target_image() const {
+  CHECK_CONDITION_TRUE_NON_VOID(target_image.isNull(), QImage(), "No target image loaded");
+  return target_image;
+}
+
+void AIAgentMonitor::on_load_image_button_pressed() {
   QString file_name = QFileDialog::getOpenFileName(this, "Load Target Image", "",
       "Images (*.png *.jpg *.jpeg *.bmp)");
 
@@ -226,12 +265,9 @@ void AIAgentFitnessCalculator::on_load_image_button_pressed() {
   }
 }
 
-void AIAgentFitnessCalculator::on_calculate_fitness_button_pressed() {
-  unsigned long val = get_fitness_value();
-  fitness_value->setText(QString::number(val));
-}
+void AIAgentMonitor::on_calculate_fitness_button_pressed() { update_fitness_value(); }
 
-void AIAgentFitnessCalculator::on_matching_type_combo_box_current_index_changed(int index) {
+void AIAgentMonitor::on_matching_type_combo_box_current_index_changed(int index) {
   if (index == 0) {
     DEBUG_PRINT("Static matching");
     current_output_renderer->set_is_dynamic(false);
@@ -239,6 +275,12 @@ void AIAgentFitnessCalculator::on_matching_type_combo_box_current_index_changed(
     DEBUG_PRINT("Dynamic matching");
     current_output_renderer->set_is_dynamic(true);
   }
+}
+
+void AIAgentMonitor::on_generate_random_image_button_pressed() {
+  target_image = create_random_image(256, 256);
+  target_output->clear();
+  target_output->setPixmap(QPixmap::fromImage(target_image));
 }
 
 CurrentOutputRenderer::CurrentOutputRenderer(QWidget* parent) : QOpenGLWidget(parent), 
@@ -277,6 +319,13 @@ void CurrentOutputRenderer::set_is_dynamic(const bool& is_dynamic) {
   }
 }
 
+void CurrentOutputRenderer::force_set_code(const std::string& code) {
+  SILENT_CHECK_CONDITION_TRUE(code == this->code);
+
+  this->code = code;
+  update_shader_program();
+}
+
 void CurrentOutputRenderer::set_code(const std::string& new_code) {
   SILENT_CHECK_CONDITION_TRUE(this->code == new_code);
 
@@ -285,8 +334,11 @@ void CurrentOutputRenderer::set_code(const std::string& new_code) {
   if (!compile_debounce_timer.isActive()) compile_debounce_timer.start();
 }
 
-QImage CurrentOutputRenderer::get_pixel_data() const {
-  return fbo->toImage().convertToFormat(QImage::Format_ARGB32);
+QImage CurrentOutputRenderer::get_pixel_data() {
+  makeCurrent();
+  QImage image = fbo->toImage();
+  doneCurrent();
+  return image.convertToFormat(QImage::Format_ARGB32);
 }
 
 void CurrentOutputRenderer::initializeGL() {
@@ -341,14 +393,18 @@ void CurrentOutputRenderer::paintGL() {
   if (is_dynamic) {
     CHECK_PARAM_NULLPTR(shader_program, "Shader program is null");
     
-    CHECK_CONDITION_TRUE(!shader_program->bind(), "Failed to bind shader program");
-    
     // Render to FBO at 256x256
     fbo->bind();
     glViewport(0, 0, 256, 256);
     
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
+
+    if (!shader_program->bind()) {
+      WARN_PRINT("Failed to bind shader program");
+      fbo->release();
+      return;
+    }
     
     int utime_location = shader_program->uniformLocation("uTime");
     if (utime_location != -1) {
@@ -366,14 +422,16 @@ void CurrentOutputRenderer::paintGL() {
   } else if (!static_rendered) {
     // For static shaders, render once to FBO
     CHECK_PARAM_NULLPTR(shader_program, "Shader program is null");
-  
-    CHECK_CONDITION_TRUE(!shader_program->bind(), "Failed to bind shader program");
 
     fbo->bind();
     glViewport(0, 0, 256, 256);
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
-    shader_program->bind();
+    if (!shader_program->bind()) {
+      WARN_PRINT("Failed to bind shader program");
+      fbo->release();
+      return;
+    }
     glBindVertexArray(VAO);
     glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
     glBindVertexArray(0);
@@ -431,20 +489,49 @@ void CurrentOutputRenderer::init_buffers() {
 
   glGenVertexArrays(1, &VAO);
   glGenBuffers(1, &VBO);
-  Q_ASSERT(VAO && VBO);
+
+  /// Check for OpenGL errors after resource allocation
+  GLenum err = glGetError();
+  if (err != GL_NO_ERROR) {
+    ERROR_PRINT("Failed to generate VAO or VBO: OpenGL error " + std::to_string(err));
+    glDeleteVertexArrays(1, &VAO);
+    glDeleteBuffers(1, &VBO);
+    return;
+  }
 
   glBindVertexArray(VAO);
-
   glBindBuffer(GL_ARRAY_BUFFER, VBO);
   glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
+  // Check for errors after buffer setup
+  err = glGetError();
+  if (err != GL_NO_ERROR) {
+    ERROR_PRINT("Failed to set up VBO: OpenGL error " + std::to_string(err));
+    glDeleteVertexArrays(1, &VAO);
+    glDeleteBuffers(1, &VBO);
+    glBindVertexArray(0);
+    return;
+  }
+
+  // Position attribute (x, y)
   glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
   glEnableVertexAttribArray(0);
 
+  // FragCoord attribute (u, v)
   glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
   glEnableVertexAttribArray(1);
 
+  // Unbind both VBO and VAO
+  glBindBuffer(GL_ARRAY_BUFFER, 0);
   glBindVertexArray(0);
+
+  err = glGetError();
+  if (err != GL_NO_ERROR) {
+    ERROR_PRINT("Error setting vertex attributes: OpenGL error " + std::to_string(err));
+    glDeleteVertexArrays(1, &VAO);
+    glDeleteBuffers(1, &VBO);
+    return;
+  }
 }
 
 void CurrentOutputRenderer::update_shader_program() {
@@ -511,9 +598,9 @@ void main() {
     return;
   }
 
-  if (new_program->uniformLocation("uTime") != -1 && !is_dynamic) {
-    WARN_PRINT("uTime uniform found in static shader code");
-  }
+  // if (new_program->uniformLocation("uTime") != -1 && !is_dynamic) {
+  //   WARN_PRINT("uTime uniform found in static shader code");
+  // }
   
   shader_program.swap(new_program);
 

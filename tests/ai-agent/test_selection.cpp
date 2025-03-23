@@ -25,14 +25,9 @@
 /*                                                                               */
 /*********************************************************************************/
 
-#ifndef AI_AGENT_PARAMETERS_HPP
-#define AI_AGENT_PARAMETERS_HPP
+#include "tests/ai-agent/test_selection.hpp"
 
-extern const int maximum_population_size;
-extern const int maximum_generations;
-extern const float mutation_probability;
-extern const float crossover_probability;
-extern const float elitism_ratio;
-extern const int maximum_nodes_per_graph;
-
-#endif // AI_AGENT_PARAMETERS_HPP
+void AIAgentSelectionTest::SetUp() {
+    // Seed the random engine for reproducibility
+    ai_agent_utils::seed_rand_engine(42);
+}

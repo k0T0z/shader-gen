@@ -28,65 +28,35 @@
 #ifndef AI_AGENT_HPP
 #define AI_AGENT_HPP
 
-#include <thread>
-#include <mutex>
-#include <condition_variable>
-#include <chrono>
+#include <string>
+#include <vector>
 
-#include <QGraphicsScene>
+#include "gui/controller/shader_sampler.hpp"
+#include "gui/controller/ai_agent_monitor.hpp"
 
-#include "gui/controller/fitness_calculator.hpp"
+namespace ai_agent_main {
 
-class AIAgentWorker {
-public:
     enum class MatchingType {
         PARAMETERS_ONLY,
         PARAMETERS_AND_CONNECTIONS,
         FULL_GRAPH,
     };
 
-    AIAgentWorker();
-    ~AIAgentWorker();
+    bool init(
+        const MatchingType& matching_type,
+        const std::string& encoded_graph,
+        const int& maximum_population_size, 
+        std::vector<std::string>& population_buffer
+    ) noexcept;
 
-    void start_matching();
-    void stop_matching();
+    unsigned long get_fitness_value(
+        const std::string& encoded_graph, 
+        ShaderSampler* shader_sampler,
+        const uint32_t* target_image_pixels, 
+        const int& width,
+        const int& height
+    ) noexcept;
 
-    void worker_main();
-
-    void set_mutation_probability(const float& mutation_probability) { this->mutation_probability = mutation_probability; }
-    void set_crossover_probability(const float& crossover_probability) { this->crossover_probability = crossover_probability; }
-    void set_elitism_ratio(const float& elitism_ratio) { this->elitism_ratio = elitism_ratio; }
-    void set_maximum_iterations(const int& maximum_iterations) { this->maximum_iterations = maximum_iterations; }
-
-    void set_fitness_calculator(AIAgentFitnessCalculator* fitness_calculator) { this->fitness_calculator = fitness_calculator; }
-
-    void set_matching_type(const MatchingType& matching_type) { this->matching_type = matching_type; }
-
-    void set_scene(QGraphicsScene* scene) { this->scene = scene; }
-    
-private:
-    std::thread worker;
-    
-    std::mutex mtx;
-    std::condition_variable cv;
-    int process_counter;
-    bool exit_requested;
-    std::atomic<bool> stop_requested;
-
-    float mutation_probability;
-    float crossover_probability;
-    float elitism_ratio;
-    int maximum_iterations;
-
-    AIAgentFitnessCalculator* fitness_calculator;
-
-    MatchingType matching_type;
-
-    QGraphicsScene* scene;
-
-    void stop_thread();
-
-    std::vector<std::pair<std::unordered_map<int, std::string>, std::unordered_map<int, std::string>>> generate_population(const int& population_size);
-};
+} // namespace ai_agent_main
 
 #endif // AI_AGENT_HPP

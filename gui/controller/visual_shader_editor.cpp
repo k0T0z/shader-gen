@@ -36,6 +36,8 @@
 #include "gui/controller/utils/utils.hpp"
 
 #include "generator/visual_shader_generator.hpp"
+#include "ai-agent/utils/utils.hpp"
+#include "ai-agent/ai_agent.hpp"
 
 using VisualShader = gui::model::schema::VisualShader;
 
@@ -79,12 +81,15 @@ VisualShaderEditor::VisualShaderEditor(MessageModel* model, QWidget* parent)
       visual_shader_model(model),
       nodes_model(nullptr),
       connections_model(nullptr),
+      shared_memory(nullptr),
       ai_agent_worker(nullptr),
-      fitness_calculator(nullptr),
+      ai_agent_monitor(nullptr),
       parameters_editor(nullptr),
       start_matching_button(nullptr),
       stop_matching_button(nullptr),
-      matching_type_combo_box(nullptr) {
+      matching_type_combo_box(nullptr),
+      start_matching_timer(nullptr),
+      stop_matching_timer(nullptr) {
   resize(1440, 720);
 
   VisualShaderEditor::init();
@@ -92,8 +97,9 @@ VisualShaderEditor::VisualShaderEditor(MessageModel* model, QWidget* parent)
 
 VisualShaderEditor::~VisualShaderEditor() {
   delete ai_agent_worker;
-  delete fitness_calculator;
+  delete ai_agent_monitor;
   delete parameters_editor;
+  delete shared_memory;
 }
 
 void VisualShaderEditor::init() {
@@ -268,8 +274,10 @@ void VisualShaderEditor::init() {
   menu_bar->addWidget(match_image_button);
   QObject::connect(match_image_button, &QPushButton::pressed, this, &VisualShaderEditor::on_match_image_button_pressed);
 
-  ai_agent_worker = new AIAgentWorker();
-  fitness_calculator = new AIAgentFitnessCalculator();
+  shared_memory = new ShaderGenSharedMemory();
+
+  ai_agent_worker = new AIAgentWorker(shared_memory);
+  ai_agent_monitor = new AIAgentMonitor();
   parameters_editor = new AIAgentParametersEditor();
   start_matching_button = new StartMatchingButton(scene_layer);
   start_matching_button->setToolTip("Start matching the shader to the loaded image");
@@ -288,11 +296,21 @@ void VisualShaderEditor::init() {
   matching_type_combo_box->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
   matching_type_combo_box->setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
   matching_type_combo_box->setToolTip("Select the type of matching to perform");
-  matching_type_combo_box->addItem("Parameters Only", static_cast<int>(AIAgentWorker::MatchingType::PARAMETERS_ONLY));
-  matching_type_combo_box->addItem("Parameters and Connections", static_cast<int>(AIAgentWorker::MatchingType::PARAMETERS_AND_CONNECTIONS));
-  matching_type_combo_box->addItem("Full Graph", static_cast<int>(AIAgentWorker::MatchingType::FULL_GRAPH));
+  matching_type_combo_box->addItem("Parameters Only", static_cast<int>(ai_agent_main::MatchingType::PARAMETERS_ONLY));
+  matching_type_combo_box->addItem("Parameters and Connections", static_cast<int>(ai_agent_main::MatchingType::PARAMETERS_AND_CONNECTIONS));
+  matching_type_combo_box->addItem("Full Graph", static_cast<int>(ai_agent_main::MatchingType::FULL_GRAPH));
   matching_type_combo_box->setCurrentIndex(0);
   menu_bar->addWidget(matching_type_combo_box);
+
+  start_matching_timer = new QTimer(this);
+  stop_matching_timer = new QTimer(this);
+
+  // Setup timers
+  start_matching_timer->setInterval(1000); // 1 second
+  stop_matching_timer->setInterval(500); // Check every 0.5 seconds
+  
+  QObject::connect(start_matching_timer, &QTimer::timeout, this, &VisualShaderEditor::on_start_matching_timer_timeout);
+  QObject::connect(stop_matching_timer, &QTimer::timeout, this, &VisualShaderEditor::on_stop_matching_timer_timeout);
 
   // Set the top layer layout.
   top_layer->setLayout(menu_bar);
@@ -568,57 +586,97 @@ void VisualShaderEditor::on_load_image_button_pressed() {
 }
 
 void VisualShaderEditor::on_match_image_button_pressed() {
-  SILENT_CHECK_CONDITION_TRUE(fitness_calculator->isVisible());
+  SILENT_CHECK_CONDITION_TRUE(ai_agent_monitor->isVisible());
   SILENT_CHECK_CONDITION_TRUE(parameters_editor->isVisible());
 
-  // Find the node connected to the output node and generate the shader code at it
-  VisualShaderNodeGraphicsObject* n_o{scene->get_node_graphics_object(0)};
-  CHECK_PARAM_NULLPTR(n_o, "Failed to get output node graphics object");
+  std::string code;
+      
+  bool result{shadergen_visual_shader_generator::generate_shader(
+    shadergen_visual_shader_generator::to_proto_nodes(nodes_model),
+    shadergen_visual_shader_generator::to_generators(nodes_model), 
+    shadergen_visual_shader_generator::to_port_type_generators(nodes_model),
+    shadergen_visual_shader_generator::to_input_output_connections_by_key(connections_model), code)};
+  CHECK_CONDITION_TRUE(!result, "Failed to generate shader code");
 
-  VisualShaderInputPortGraphicsObject* i_port{n_o->get_input_port_graphics_object(0)};
-  CHECK_PARAM_NULLPTR(i_port, "Failed to get output node input port graphics object");
+  ai_agent_monitor->update_current_output(code);
 
-  CHECK_CONDITION_TRUE(!i_port->is_connected(), "Output node is not connected");
-
-  const int c_id{i_port->get_c_id()};
-
-  VisualShaderConnectionGraphicsObject* c_o{scene->get_connection_graphics_object(c_id)};
-  CHECK_PARAM_NULLPTR(c_o, "Failed to get connection graphics object");
-
-  fitness_calculator->update_current_output(shadergen_visual_shader_generator::generate_preview_shader(shadergen_visual_shader_generator::to_proto_nodes(nodes_model),
-                                            shadergen_visual_shader_generator::to_generators(nodes_model), 
-                                            shadergen_visual_shader_generator::to_port_type_generators(nodes_model),
-                                            shadergen_visual_shader_generator::to_input_output_connections_by_key(connections_model), c_o->get_from_node_id(), 0));  // 0 is the output port index
-
-  
-  if (!fitness_calculator->isVisible()) fitness_calculator->show();
+  if (!ai_agent_monitor->isVisible()) ai_agent_monitor->show();
   if (!parameters_editor->isVisible()) parameters_editor->show();
 }
 
 void VisualShaderEditor::on_start_matching_button_pressed() {
+  const bool is_stopped{shared_memory->get_is_stopped()};
+  CHECK_CONDITION_TRUE(!is_stopped, "AI agent is already running");
+
+  CHECK_CONDITION_TRUE(start_matching_timer->isActive(), "Start matching timer is already active");
+
   CHECK_PARAM_NULLPTR(ai_agent_worker, "AI agent worker is null");
-  CHECK_PARAM_NULLPTR(fitness_calculator, "Fitness calculator is null");
+  CHECK_PARAM_NULLPTR(ai_agent_monitor, "AI Agent Monitor is null");
   CHECK_PARAM_NULLPTR(parameters_editor, "Parameters editor is null");
 
+  ai_agent_worker->set_maximum_population_size(parameters_editor->get_maximum_population_size());
+  ai_agent_worker->set_maximum_generations(parameters_editor->get_maximum_generations());
   ai_agent_worker->set_mutation_probability(parameters_editor->get_mutation_probability());
   ai_agent_worker->set_crossover_probability(parameters_editor->get_crossover_probability());
   ai_agent_worker->set_elitism_ratio(parameters_editor->get_elitism_ratio());
-  ai_agent_worker->set_maximum_iterations(parameters_editor->get_maximum_iterations());
 
-  ai_agent_worker->set_fitness_calculator(fitness_calculator);
-
-  AIAgentWorker::MatchingType matching_type{static_cast<AIAgentWorker::MatchingType>(matching_type_combo_box->currentData().toInt())};
+  ai_agent_main::MatchingType matching_type{static_cast<ai_agent_main::MatchingType>(matching_type_combo_box->currentData().toInt())};
   ai_agent_worker->set_matching_type(matching_type);
+  ai_agent_worker->set_target_image(ai_agent_monitor->get_target_image());
 
-  ai_agent_worker->set_scene(scene);
+  shared_memory->set_encoded_graph(ai_agent_utils::encode_graph(nodes_model, connections_model));
   
   ai_agent_worker->start_matching();
+
+  start_matching_timer->start();
+  if (stop_matching_timer->isActive()) stop_matching_timer->stop();
 }
 
 void VisualShaderEditor::on_stop_matching_button_pressed() {
+  const bool is_stopped{shared_memory->get_is_stopped()};
+  CHECK_CONDITION_TRUE(is_stopped, "AI agent is already stopped");
+
+  CHECK_CONDITION_TRUE(stop_matching_timer->isActive(), "Stop matching timer is already active");
+
   CHECK_PARAM_NULLPTR(ai_agent_worker, "AI agent worker is null");
 
   ai_agent_worker->stop_matching();
+
+  stop_matching_timer->start();
+  if (start_matching_timer->isActive()) start_matching_timer->stop();
+}
+
+void VisualShaderEditor::on_start_matching_timer_timeout() {
+  const bool is_stopped{shared_memory->get_is_stopped()};
+  if (is_stopped) {
+    start_matching_timer->stop();
+    return;
+  }
+
+  CHECK_PARAM_NULLPTR(shared_memory, "Shared memory is null");
+  CHECK_PARAM_NULLPTR(ai_agent_monitor, "AI Agent Monitor is null");
+
+  const std::pair<std::string, unsigned long> best_individual{shared_memory->get_best_individual()};
+
+  std::string code;
+      
+  bool result{shadergen_visual_shader_generator::generate_shader(
+    shadergen_visual_shader_generator::to_proto_nodes(best_individual.first),
+    shadergen_visual_shader_generator::to_generators(best_individual.first), 
+    shadergen_visual_shader_generator::to_port_type_generators(best_individual.first),
+    shadergen_visual_shader_generator::to_input_output_connections_by_key(best_individual.first), code)};
+  CHECK_CONDITION_TRUE(!result, "Failed to generate shader code");
+
+  ai_agent_monitor->update_current_output(code);
+  ai_agent_monitor->set_fitness_value(best_individual.second);
+}
+
+void VisualShaderEditor::on_stop_matching_timer_timeout() {
+  const bool is_stopped{shared_memory->get_is_stopped()};
+  SILENT_CHECK_CONDITION_TRUE(!is_stopped);
+
+  stop_matching_timer->stop();
+  if (start_matching_timer->isActive()) start_matching_timer->stop();
 }
 
 std::vector<std::string> VisualShaderEditor::parse_node_category_path(const std::string& n_category_path) {
@@ -797,9 +855,9 @@ bool VisualShaderGraphicsScene::add_node_to_model(const int& n_id, const std::sh
 
   int row_entry{nodes_model->append_row()};
 
-  CHECK_CONDITION_TRUE_NON_VOID(!update_node_in_model(n_id, VisualShader::VisualShaderNode::kIdFieldNumber, n_id, row_entry), false, "Failed to set node id");
-  CHECK_CONDITION_TRUE_NON_VOID(!update_node_in_model(n_id, VisualShader::VisualShaderNode::kXCoordinateFieldNumber, coordinate.x(), row_entry), false, "Failed to set node x coordinate");
-  CHECK_CONDITION_TRUE_NON_VOID(!update_node_in_model(n_id, VisualShader::VisualShaderNode::kYCoordinateFieldNumber, coordinate.y(), row_entry), false, "Failed to set node y coordinate");
+  CHECK_CONDITION_TRUE_NON_VOID(!update_node_in_model(-1, VisualShader::VisualShaderNode::kIdFieldNumber, n_id, row_entry), false, "Failed to set node id");
+  CHECK_CONDITION_TRUE_NON_VOID(!update_node_in_model(-1, VisualShader::VisualShaderNode::kXCoordinateFieldNumber, coordinate.x(), row_entry), false, "Failed to set node x coordinate");
+  CHECK_CONDITION_TRUE_NON_VOID(!update_node_in_model(-1, VisualShader::VisualShaderNode::kYCoordinateFieldNumber, coordinate.y(), row_entry), false, "Failed to set node y coordinate");
 
   // Pass any field number that is inside the oneof to enter te OneofModel.
   // You must also to pass true for `for_get_oneof` parameter.
@@ -1109,7 +1167,7 @@ bool VisualShaderGraphicsScene::add_node(const std::shared_ptr<IVisualShaderProt
 
 QVariant VisualShaderGraphicsScene::get_node_value(const int& n_id, const int& field_number, const int& row_entry) const {
   int t_row_entry{row_entry};
-  if (t_row_entry == -1) t_row_entry = find_node_entry(n_id);
+  if (t_row_entry == -1 && n_id != -1) t_row_entry = find_node_entry(n_id);
   CHECK_CONDITION_TRUE_NON_VOID(t_row_entry == -1, false, "Failed to find node entry");
 
   return visual_shader_model->data(
@@ -1119,7 +1177,7 @@ QVariant VisualShaderGraphicsScene::get_node_value(const int& n_id, const int& f
 
 QVariant VisualShaderGraphicsScene::get_node_field_value(const int& n_id, const int& field_number, const int& row_entry) const {
   int t_row_entry{row_entry};
-  if (t_row_entry == -1) t_row_entry = find_node_entry(n_id);
+  if (t_row_entry == -1 && n_id != -1) t_row_entry = find_node_entry(n_id);
   CHECK_CONDITION_TRUE_NON_VOID(t_row_entry == -1, false, "Failed to find node entry");
 
   const int oneof_value_field_number{get_node_type_field_number(t_row_entry)};
@@ -1185,7 +1243,7 @@ bool VisualShaderGraphicsScene::delete_node(const int& n_id, const int& in_port_
 
 bool VisualShaderGraphicsScene::update_node_in_model(const int& n_id, const int& field_number, const QVariant& value, const int& row_entry) {
   int t_row_entry{row_entry};
-  if (t_row_entry == -1) t_row_entry = find_node_entry(n_id);
+  if (t_row_entry == -1 && n_id != -1) t_row_entry = find_node_entry(n_id);
   CHECK_CONDITION_TRUE_NON_VOID(t_row_entry == -1, false, "Failed to find node entry");
 
   bool result{visual_shader_model->set_data(
@@ -1418,11 +1476,11 @@ bool VisualShaderGraphicsScene::add_connection_to_model(const int& c_id, const i
 
   int row_entry{connections_model->append_row()};
 
-  CHECK_CONDITION_TRUE_NON_VOID(!update_connection_in_model(c_id, VisualShader::VisualShaderConnection::kIdFieldNumber, c_id, row_entry), false, "Failed to update connection id");
-  CHECK_CONDITION_TRUE_NON_VOID(!update_connection_in_model(c_id, VisualShader::VisualShaderConnection::kFromNodeIdFieldNumber, from_node_id, row_entry), false, "Failed to update from node id");
-  CHECK_CONDITION_TRUE_NON_VOID(!update_connection_in_model(c_id, VisualShader::VisualShaderConnection::kFromPortIndexFieldNumber, from_port_index, row_entry), false, "Failed to update from port index");
-  CHECK_CONDITION_TRUE_NON_VOID(!update_connection_in_model(c_id, VisualShader::VisualShaderConnection::kToNodeIdFieldNumber, to_node_id, row_entry), false, "Failed to update to node id");
-  CHECK_CONDITION_TRUE_NON_VOID(!update_connection_in_model(c_id, VisualShader::VisualShaderConnection::kToPortIndexFieldNumber, to_port_index, row_entry), false, "Failed to update to port index");
+  CHECK_CONDITION_TRUE_NON_VOID(!update_connection_in_model(-1, VisualShader::VisualShaderConnection::kIdFieldNumber, c_id, row_entry), false, "Failed to update connection id");
+  CHECK_CONDITION_TRUE_NON_VOID(!update_connection_in_model(-1, VisualShader::VisualShaderConnection::kFromNodeIdFieldNumber, from_node_id, row_entry), false, "Failed to update from node id");
+  CHECK_CONDITION_TRUE_NON_VOID(!update_connection_in_model(-1, VisualShader::VisualShaderConnection::kFromPortIndexFieldNumber, from_port_index, row_entry), false, "Failed to update from port index");
+  CHECK_CONDITION_TRUE_NON_VOID(!update_connection_in_model(-1, VisualShader::VisualShaderConnection::kToNodeIdFieldNumber, to_node_id, row_entry), false, "Failed to update to node id");
+  CHECK_CONDITION_TRUE_NON_VOID(!update_connection_in_model(-1, VisualShader::VisualShaderConnection::kToPortIndexFieldNumber, to_port_index, row_entry), false, "Failed to update to port index");
 
   return true;
 }
@@ -1532,7 +1590,7 @@ bool VisualShaderGraphicsScene::is_valid_connection(const int& from_node_id, con
 
 int VisualShaderGraphicsScene::get_connection_value(const int& c_id, const int& field_number, const int& row_entry) const {
   int t_row_entry{row_entry};
-  if (t_row_entry == -1) t_row_entry = find_connection_entry(c_id);
+  if (t_row_entry == -1 && c_id != -1) t_row_entry = find_connection_entry(c_id);
   VALIDATE_INDEX_NON_VOID(t_row_entry, connections_model->rowCount(), false, "Connection entry not found");
 
   return visual_shader_model->data(
@@ -1690,7 +1748,7 @@ bool VisualShaderGraphicsScene::convert_to_temporary_connection(const int& c_id,
 
 bool VisualShaderGraphicsScene::update_connection_in_model(const int& c_id, const int& field_number, const int& value, const int& row_entry) {
   int t_row_entry{row_entry};
-  if (t_row_entry == -1) t_row_entry = find_connection_entry(c_id);
+  if (t_row_entry == -1 && c_id != -1) t_row_entry = find_connection_entry(c_id);
   VALIDATE_INDEX_NON_VOID(t_row_entry, connections_model->rowCount(), false, "Connection entry not found");
 
   bool result{visual_shader_model->set_data(

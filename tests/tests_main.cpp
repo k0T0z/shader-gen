@@ -25,6 +25,8 @@
 /*                                                                               */
 /*********************************************************************************/
 
+#include "tests/tests_main.hpp"
+
 #include <QApplication>
 #include <QtTest/QtTest>
 #include <gtest/gtest.h>
