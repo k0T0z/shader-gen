@@ -648,7 +648,10 @@ void VisualShaderEditor::on_stop_matching_button_pressed() {
 
 void VisualShaderEditor::on_start_matching_timer_timeout() {
   const bool is_stopped{shared_memory->get_is_stopped()};
-  SILENT_CHECK_CONDITION_TRUE(is_stopped);
+  if (is_stopped) {
+    start_matching_timer->stop();
+    return;
+  }
 
   CHECK_PARAM_NULLPTR(shared_memory, "Shared memory is null");
   CHECK_PARAM_NULLPTR(ai_agent_monitor, "AI Agent Monitor is null");
@@ -665,6 +668,7 @@ void VisualShaderEditor::on_start_matching_timer_timeout() {
   CHECK_CONDITION_TRUE(!result, "Failed to generate shader code");
 
   ai_agent_monitor->update_current_output(code);
+  ai_agent_monitor->set_fitness_value(best_individual.second);
 }
 
 void VisualShaderEditor::on_stop_matching_timer_timeout() {

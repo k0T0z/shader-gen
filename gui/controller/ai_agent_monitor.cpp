@@ -219,19 +219,16 @@ void AIAgentMonitor::update_current_output(const std::string& code) {
   current_output_renderer->set_code(code);
 }
 
-unsigned long AIAgentMonitor::get_fitness_value(const std::string& code) {
-  CHECK_CONDITION_TRUE_NON_VOID(code.empty(), std::numeric_limits<unsigned long>::max(), "Code is empty");
-
-  current_output_renderer->force_set_code(code);
-
-  return get_fitness_value();
+void AIAgentMonitor::update_fitness_value() {
+  fitness_value->setText(QString::number(get_fitness_value()));
 }
 
 unsigned long AIAgentMonitor::get_fitness_value() const {
   CHECK_CONDITION_TRUE_NON_VOID(target_image.isNull(), std::numeric_limits<unsigned long>::max(), "No target image loaded");
 
-  QImage current_image = current_output_renderer->get_pixel_data();
+  const QImage current_image = current_output_renderer->get_pixel_data();
 
+  CHECK_CONDITION_TRUE_NON_VOID(current_image.isNull(), std::numeric_limits<unsigned long>::max(), "Failed to retrieve current image");
   CHECK_CONDITION_TRUE_NON_VOID(current_image.size() != target_image.size(), std::numeric_limits<unsigned long>::max(), "Size mismatch");
 
   // Retrieve pointers to the pixel data.
@@ -239,8 +236,8 @@ unsigned long AIAgentMonitor::get_fitness_value() const {
   // we can safely reinterpret_cast to a uint32_t pointer.
   const uint32_t* pixels1 = reinterpret_cast<const uint32_t*>(current_image.bits());
   const uint32_t* pixels2 = reinterpret_cast<const uint32_t*>(target_image.bits());
-  int width = current_image.width();
-  int height = current_image.height();
+  const int width = current_image.width();
+  const int height = current_image.height();
 
   return ai_agent_fitness::calculate_fitness(pixels1, pixels2, width, height);
 }
@@ -268,10 +265,7 @@ void AIAgentMonitor::on_load_image_button_pressed() {
   }
 }
 
-void AIAgentMonitor::on_calculate_fitness_button_pressed() {
-  unsigned long val = get_fitness_value();
-  fitness_value->setText(QString::number(val));
-}
+void AIAgentMonitor::on_calculate_fitness_button_pressed() { update_fitness_value(); }
 
 void AIAgentMonitor::on_matching_type_combo_box_current_index_changed(int index) {
   if (index == 0) {

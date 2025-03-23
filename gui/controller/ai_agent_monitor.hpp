@@ -52,13 +52,13 @@ class AIAgentMonitor : public QWidget {
   ~AIAgentMonitor() override = default;
 
   void update_current_output(const std::string& code);
+  void update_fitness_value();
 
   unsigned long get_fitness_value() const;
 
   QImage get_target_image() const;
 
- public Q_SLOTS:
-  unsigned long get_fitness_value(const std::string& code);
+  void set_fitness_value(const unsigned long& value) { fitness_value->setText(QString::number(value)); }
 
  private Q_SLOTS:
   void on_load_image_button_pressed();
