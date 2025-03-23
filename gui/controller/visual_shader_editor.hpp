@@ -249,6 +249,11 @@ class VisualShaderEditor : public QWidget {
                                                 const std::string& category_path,
                                                 QTreeWidget* create_node_dialog_nodes_tree,
                                                 std::unordered_map<std::string, QTreeWidgetItem*>& category_path_map);
+
+  void update_graph_in_scene();
+  void update_parameters_only_graph_in_scene();
+  void update_parameters_and_connections_graph_in_scene();
+  void update_full_graph_in_scene();
 };
 
 class StartMatchingButton : public QPushButton
@@ -431,6 +436,7 @@ class VisualShaderGraphicsScene : public QGraphicsScene {
   bool delete_node_from_model(const int& n_id);
   bool delete_node_from_scene(const int& n_id, const int& in_port_count, const int& out_port_count);
   bool delete_node(const int& n_id, const int& in_port_count, const int& out_port_count);
+  bool delete_all_nodes();
 
   bool update_node_in_model(const int& n_id, const int& field_number, const QVariant& value, const int& row_entry = -1);
   bool update_node_field_in_model(const int& n_id, const int& field_number, const QVariant& value);
