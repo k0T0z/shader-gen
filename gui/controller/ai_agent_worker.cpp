@@ -58,18 +58,13 @@ AIAgentWorker::~AIAgentWorker() {
 }
 
 void AIAgentWorker::start_matching() {
-    {
-        std::lock_guard<std::mutex> lock(mtx);
-        start_requested = true;
-    }
+    std::lock_guard<std::mutex> lock(mtx);
+    start_requested = true;
     cv.notify_one();
 }
 
 void AIAgentWorker::stop_matching() {
-    {
-        std::lock_guard<std::mutex> lock(mtx);
-        stop_requested = true;
-    }
+    stop_requested = true;
 }
 
 void AIAgentWorker::worker_main() {
@@ -77,21 +72,20 @@ void AIAgentWorker::worker_main() {
 
     ShaderSampler* sampler{nullptr};
 
-    bool is_first_run = true;
     int run_id = -1;
 
     while (true) {
-        if (is_first_run) is_first_run = false;
-        else shared_memory->set_is_stopped(true);
+        shared_memory->set_is_stopped(true);
 
         // Wait for either start command or exit request
         cv.wait(lock, [this]() {
             return start_requested.load() || exit_requested.load();
         });
 
-        if (exit_requested.load()) break;
+        BREAK_IF_TRUE(exit_requested.load(), "Exiting worker thread...");
 
         run_id++;
+        shared_memory->set_is_stopped(false);
 
         if (start_requested.load()) start_requested.store(false);
         if (stop_requested.load()) stop_requested.store(false);
@@ -137,7 +131,8 @@ void AIAgentWorker::worker_main() {
                 break;
             }
         }
-        SILENT_CONTINUE_IF_TRUE(completed);
+
+        CONTINUE_IF_TRUE(completed, "Stopping the worker thread...");
 
         // Sort by fitness (lower is better)
         std::sort(population_fitness.begin(), population_fitness.end(),
@@ -200,6 +195,8 @@ void AIAgentWorker::worker_main() {
                 if (stop_requested.load()) completed = true;
             }
 
+            BREAK_IF_TRUE(completed, "Stopping the worker thread...");
+
             // Apply elitism
             population_fitness = ai_agent_elitism::apply_elitism(
                 population_fitness,
@@ -213,7 +210,9 @@ void AIAgentWorker::worker_main() {
             if (stop_requested.load()) completed = true;
         }
 
-        DEBUG_PRINT("Run " + std::to_string(run_id) + " completed");
+        CONTINUE_IF_TRUE(completed, "Stopping the worker thread...");
+
+        DEBUG_PRINT("Run #" + std::to_string(run_id+1) + " completed");
         DEBUG_PRINT("Best fitness: " + std::to_string(population_fitness.at(0).second));
         DEBUG_PRINT("Best individual: " + population_fitness.at(0).first);
     }
@@ -223,9 +222,8 @@ void AIAgentWorker::worker_main() {
 }
 
 void AIAgentWorker::stop_thread() {
-    {
-        std::lock_guard<std::mutex> lock(mtx);
-        exit_requested = true;
-    }
+    std::lock_guard<std::mutex> lock(mtx);
+    stop_requested = true;
+    exit_requested = true;
     cv.notify_one();
 }

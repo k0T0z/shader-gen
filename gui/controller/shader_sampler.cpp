@@ -185,9 +185,9 @@ QImage ShaderSampler::sample_once(const std::string& code) {
     return QImage();
   }
 
-  if (program->uniformLocation("uTime") != -1) {
-    WARN_PRINT("uTime uniform found in static shader code");
-  }
+  // if (program->uniformLocation("uTime") != -1) {
+  //   WARN_PRINT("uTime uniform found in static shader code");
+  // }
 
   glBindVertexArray(VAO);
   glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);

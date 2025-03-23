@@ -589,31 +589,27 @@ void VisualShaderEditor::on_match_image_button_pressed() {
   SILENT_CHECK_CONDITION_TRUE(ai_agent_monitor->isVisible());
   SILENT_CHECK_CONDITION_TRUE(parameters_editor->isVisible());
 
-  // Find the node connected to the output node and generate the shader code at it
-  VisualShaderNodeGraphicsObject* n_o{scene->get_node_graphics_object(0)};
-  CHECK_PARAM_NULLPTR(n_o, "Failed to get output node graphics object");
+  std::string code;
+      
+  bool result{shadergen_visual_shader_generator::generate_shader(
+    shadergen_visual_shader_generator::to_proto_nodes(nodes_model),
+    shadergen_visual_shader_generator::to_generators(nodes_model), 
+    shadergen_visual_shader_generator::to_port_type_generators(nodes_model),
+    shadergen_visual_shader_generator::to_input_output_connections_by_key(connections_model), code)};
+  CHECK_CONDITION_TRUE(!result, "Failed to generate shader code");
 
-  VisualShaderInputPortGraphicsObject* i_port{n_o->get_input_port_graphics_object(0)};
-  CHECK_PARAM_NULLPTR(i_port, "Failed to get output node input port graphics object");
+  ai_agent_monitor->update_current_output(code);
 
-  CHECK_CONDITION_TRUE(!i_port->is_connected(), "Output node is not connected");
-
-  const int c_id{i_port->get_c_id()};
-
-  VisualShaderConnectionGraphicsObject* c_o{scene->get_connection_graphics_object(c_id)};
-  CHECK_PARAM_NULLPTR(c_o, "Failed to get connection graphics object");
-
-  ai_agent_monitor->update_current_output(shadergen_visual_shader_generator::generate_preview_shader(shadergen_visual_shader_generator::to_proto_nodes(nodes_model),
-                                            shadergen_visual_shader_generator::to_generators(nodes_model), 
-                                            shadergen_visual_shader_generator::to_port_type_generators(nodes_model),
-                                            shadergen_visual_shader_generator::to_input_output_connections_by_key(connections_model), c_o->get_from_node_id(), 0));  // 0 is the output port index
-
-  
   if (!ai_agent_monitor->isVisible()) ai_agent_monitor->show();
   if (!parameters_editor->isVisible()) parameters_editor->show();
 }
 
 void VisualShaderEditor::on_start_matching_button_pressed() {
+  const bool is_stopped{shared_memory->get_is_stopped()};
+  CHECK_CONDITION_TRUE(!is_stopped, "AI agent is already running");
+
+  CHECK_CONDITION_TRUE(start_matching_timer->isActive(), "Start matching timer is already active");
+
   CHECK_PARAM_NULLPTR(ai_agent_worker, "AI agent worker is null");
   CHECK_PARAM_NULLPTR(ai_agent_monitor, "AI Agent Monitor is null");
   CHECK_PARAM_NULLPTR(parameters_editor, "Parameters editor is null");
@@ -632,28 +628,51 @@ void VisualShaderEditor::on_start_matching_button_pressed() {
   
   ai_agent_worker->start_matching();
 
-  if (!start_matching_timer->isActive()) start_matching_timer->start();
+  start_matching_timer->start();
   if (stop_matching_timer->isActive()) stop_matching_timer->stop();
 }
 
 void VisualShaderEditor::on_stop_matching_button_pressed() {
+  const bool is_stopped{shared_memory->get_is_stopped()};
+  CHECK_CONDITION_TRUE(is_stopped, "AI agent is already stopped");
+
+  CHECK_CONDITION_TRUE(stop_matching_timer->isActive(), "Stop matching timer is already active");
+
   CHECK_PARAM_NULLPTR(ai_agent_worker, "AI agent worker is null");
 
   ai_agent_worker->stop_matching();
 
+  stop_matching_timer->start();
   if (start_matching_timer->isActive()) start_matching_timer->stop();
-  if (!stop_matching_timer->isActive()) stop_matching_timer->start();
 }
 
 void VisualShaderEditor::on_start_matching_timer_timeout() {
   const bool is_stopped{shared_memory->get_is_stopped()};
-  if (is_stopped && start_matching_timer->isActive()) start_matching_timer->stop();
+  SILENT_CHECK_CONDITION_TRUE(is_stopped);
+
+  CHECK_PARAM_NULLPTR(shared_memory, "Shared memory is null");
+  CHECK_PARAM_NULLPTR(ai_agent_monitor, "AI Agent Monitor is null");
+
+  const std::pair<std::string, unsigned long> best_individual{shared_memory->get_best_individual()};
+
+  std::string code;
+      
+  bool result{shadergen_visual_shader_generator::generate_shader(
+    shadergen_visual_shader_generator::to_proto_nodes(best_individual.first),
+    shadergen_visual_shader_generator::to_generators(best_individual.first), 
+    shadergen_visual_shader_generator::to_port_type_generators(best_individual.first),
+    shadergen_visual_shader_generator::to_input_output_connections_by_key(best_individual.first), code)};
+  CHECK_CONDITION_TRUE(!result, "Failed to generate shader code");
+
+  ai_agent_monitor->update_current_output(code);
 }
 
 void VisualShaderEditor::on_stop_matching_timer_timeout() {
   const bool is_stopped{shared_memory->get_is_stopped()};
   SILENT_CHECK_CONDITION_TRUE(!is_stopped);
-  if (stop_matching_timer->isActive()) stop_matching_timer->stop();
+
+  stop_matching_timer->stop();
+  if (start_matching_timer->isActive()) start_matching_timer->stop();
 }
 
 std::vector<std::string> VisualShaderEditor::parse_node_category_path(const std::string& n_category_path) {

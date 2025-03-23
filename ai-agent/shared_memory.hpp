@@ -33,7 +33,7 @@
 
 class ShaderGenSharedMemory {
 public:
-    ShaderGenSharedMemory() : is_stopped(false), broken_graphs_count(0) {}
+    ShaderGenSharedMemory() : is_stopped(true), broken_graphs_count(0) {}
 
     void set_encoded_graph(const std::string& graph) {
         std::lock_guard<std::mutex> lock(mutex);
