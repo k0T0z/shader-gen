@@ -669,13 +669,13 @@ std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>> to_generator
       case VisualShader::VisualShaderNode::kVoronoiNoiseFieldNumber: {
           const std::vector<std::string> parameter_tokens{ai_agent_utils::split_string(parameters.at(0), '=')};
           const int field_number = std::stoi(parameter_tokens.at(0));
-          CONTINUE_IF_TRUE(field_number != VisualShaderNodeVoronoiNoise::kAngleOffsetFieldNumber, "Wrong field number.");
-          const float angle_offset{std::stof(parameter_tokens.at(1))};
-
+          CONTINUE_IF_TRUE(field_number != VisualShaderNodeVoronoiNoise::kCellDensityFieldNumber, "Wrong field number.");
+          const float cell_density{std::stof(parameter_tokens.at(1))};
+          
           const std::vector<std::string> parameter_tokens1{ai_agent_utils::split_string(parameters.at(1), '=')};
           const int field_number1 = std::stoi(parameter_tokens1.at(0));
-          CONTINUE_IF_TRUE(field_number1 != VisualShaderNodeVoronoiNoise::kCellDensityFieldNumber, "Wrong field number.");
-          const float cell_density{std::stof(parameter_tokens1.at(1))};
+          CONTINUE_IF_TRUE(field_number1 != VisualShaderNodeVoronoiNoise::kAngleOffsetFieldNumber, "Wrong field number.");
+          const float angle_offset{std::stof(parameter_tokens1.at(1))};
           
           generators[n_id] = std::make_shared<VisualShaderNodeGeneratorVoronoiNoise>(angle_offset, cell_density);
           break;
