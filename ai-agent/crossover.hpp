@@ -48,6 +48,10 @@ enum class CrossoverType {
  * 
  * @note Multi-point crossover is a discrete crossover operator.
  * 
+ * @todo This function need to support searching continuous parameters.
+ *       Using child1_i = parent1_i * beta_i + parent2_i * (1 - beta_i) and 
+ *       child2_i = parent1_i * (1 - beta_i) + parent2_i * beta_i
+ * 
  * @param parent1 
  * @param parent2 
  * @param crossover_probability 
