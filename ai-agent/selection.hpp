@@ -55,7 +55,7 @@ inline static std::pair<std::pair<std::string, unsigned long>, std::pair<std::st
     // Compute transformed fitness: fitness_max - fitness + 1 (Fitness Scaling)
     // This transforms fitness so that lower original fitness (better) gets higher transformed fitness
     std::vector<unsigned long> transformed_fitness(population_fitness.size());
-    for (size_t i = 0; i < population_fitness.size(); ++i) {
+    for (size_t i = 0ULL; i < population_fitness.size(); ++i) {
         transformed_fitness.at(i) = fitness_max - population_fitness.at(i).second + 1;
     }
 
@@ -63,9 +63,9 @@ inline static std::pair<std::pair<std::string, unsigned long>, std::pair<std::st
     for (const auto& tf : transformed_fitness) sum_fitness += tf;
 
     // Normalize fitness values
-    std::vector<double> normalized(population_fitness.size());
+    std::vector<long double> normalized(population_fitness.size());
     for (size_t i = 0ULL; i < population_fitness.size(); ++i) {
-        normalized.at(i) = static_cast<double>(transformed_fitness.at(i)) / static_cast<double>(sum_fitness);
+        normalized.at(i) = (static_cast<long double>(transformed_fitness.at(i))) / static_cast<long double>(sum_fitness);
     }
 
     // Pair each normalized value with its original index
