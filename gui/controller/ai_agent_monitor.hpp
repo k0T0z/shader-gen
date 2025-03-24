@@ -56,6 +56,7 @@ class AIAgentMonitor : public QWidget {
 
   unsigned long get_fitness_value() const;
 
+  QImage get_current_image();
   QImage get_target_image() const;
 
   void set_fitness_value(const unsigned long& value) { fitness_value->setText(QString::number(value)); }

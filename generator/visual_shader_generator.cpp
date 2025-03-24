@@ -860,11 +860,11 @@ std::pair<std::map<ConnectionKey, std::shared_ptr<Connection>>, std::map<Connect
   std::map<ConnectionKey, std::shared_ptr<Connection>> output_connections;
 
   const std::pair<std::vector<std::string>, std::vector<std::string>> filtered_graph_tokens{ai_agent_utils::filter_entities_into_tokens(encoded_graph)};
-  const std::vector<std::string> connection_entities{filtered_graph_tokens.first};
+  const std::vector<std::string> connection_entities{filtered_graph_tokens.second};
   for (const auto& connection_entity : connection_entities) {
     const std::vector<std::string> entity_tokens{ai_agent_utils::split_string(connection_entity, ';')};
     const int entity_type = std::stoi(ai_agent_utils::get_entity_type(entity_tokens));
-    CONTINUE_IF_TRUE(entity_type != 1, "Entity type is not a node.");
+    CONTINUE_IF_TRUE(entity_type != 1, "Entity type is not a connection.");
     std::shared_ptr<Connection> c = std::make_shared<Connection>();
     c->from.f_key.node = std::stoi(ai_agent_utils::get_connection_entity_from_node_id(entity_tokens));
     c->from.f_key.port = std::stoi(ai_agent_utils::get_connection_entity_from_port_index(entity_tokens));

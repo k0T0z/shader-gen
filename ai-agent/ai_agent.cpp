@@ -75,6 +75,11 @@ namespace ai_agent_main {
                         const int oneof_value_field_number = std::stoi(ai_agent_utils::get_node_entity_oneof_value_field_number(entity_tokens));
                         const std::vector<std::string> parameters{ai_agent_utils::get_node_entity_parameters(entity_tokens)};
 
+                        if (parameters.empty()) {
+                            population.at(i).push_back(node_entity);
+                            continue;
+                        }
+
                         std::vector<std::string> new_parameters;
                         new_parameters.resize(parameters.size());
 

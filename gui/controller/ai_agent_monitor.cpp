@@ -242,6 +242,10 @@ unsigned long AIAgentMonitor::get_fitness_value() const {
   return ai_agent_fitness::calculate_fitness(pixels1, pixels2, width, height);
 }
 
+QImage AIAgentMonitor::get_current_image() {
+  return current_output_renderer->get_pixel_data();
+}
+
 QImage AIAgentMonitor::get_target_image() const {
   CHECK_CONDITION_TRUE_NON_VOID(target_image.isNull(), QImage(), "No target image loaded");
   return target_image;
@@ -336,9 +340,11 @@ void CurrentOutputRenderer::set_code(const std::string& new_code) {
 
 QImage CurrentOutputRenderer::get_pixel_data() {
   makeCurrent();
-  QImage image = fbo->toImage();
+  const QImage extracted_img = fbo->toImage();
   doneCurrent();
-  return image.convertToFormat(QImage::Format_ARGB32);
+  // Save the image to disk for debugging
+  extracted_img.save("output.png");
+  return extracted_img.convertToFormat(QImage::Format_ARGB32);
 }
 
 void CurrentOutputRenderer::initializeGL() {

@@ -98,7 +98,7 @@ inline static std::vector<std::string> split_string(const std::string& str, cons
 
 inline static std::string join_string(const std::vector<std::string>& tokens, const char& delimiter) {
     CHECK_CONDITION_TRUE_NON_VOID(tokens.empty(), "", "Tokens is empty.");
-    CHECK_CONDITION_TRUE_NON_VOID(tokens.size() == 1, tokens.at(0), "Tokens size is 1.");
+    SILENT_CHECK_CONDITION_TRUE_NON_VOID(tokens.size() == 1, tokens.at(0));
 
     std::ostringstream joined;
     joined << tokens.at(0);
@@ -141,6 +141,11 @@ inline static std::string encode_graph(const ProtoModel* nodes, const ProtoModel
         CHECK_PARAM_NULLPTR_NON_VOID(node_type_model_casted, "", "Node type model is not a MessageModel.");
 
         const int field_count{node_type_model->columnCount()};
+
+        if (field_count == 0) {
+            encoded_graph.push_back(join_string({"0", std::to_string(n_id), std::to_string(oneof_value_field_number)}, ';'));
+            continue;
+        }
 
         std::vector<std::string> parameters;
         parameters.reserve(field_count);
@@ -187,36 +192,6 @@ inline static std::string encode_graph(const ProtoModel* nodes, const ProtoModel
     return join_string(encoded_graph, ',');
 }
 
-inline static std::pair<std::vector<std::string>, std::vector<std::string>> filter_entities_into_tokens(const std::string& encoded_graph) {
-    std::pair<std::vector<std::string>, std::vector<std::string>> filtered_graph_tokens;
-
-    std::vector<std::string> nodes, connections;
-
-    std::vector<std::string> entities{split_string(encoded_graph, ',')};
-    nodes.reserve(entities.size());
-    connections.reserve(entities.size());
-    for (const std::string& entity : entities) {
-        const std::vector<std::string> entity_tokens{ai_agent_utils::split_string(entity, ';')};
-        const int entity_type = std::stoi(entity_tokens.at(0));
-        if (entity_type == 0) nodes.push_back(entity);
-        else if (entity_type == 1) connections.push_back(entity);
-        else {
-            FAIL_AND_RETURN_NON_VOID(filtered_graph_tokens, "Invalid entity type: " + std::to_string(entity_type));
-        }
-    }
-
-    filtered_graph_tokens.first = nodes;
-    filtered_graph_tokens.second = connections;
-
-    return filtered_graph_tokens;
-}
-
-inline static std::pair<std::string, std::string> filter_entities(const std::string& encoded_graph) {
-    const std::pair<std::vector<std::string>, std::vector<std::string>> filtered_graph_tokens{filter_entities_into_tokens(encoded_graph)};
-
-    return {join_string(filtered_graph_tokens.first, ','), join_string(filtered_graph_tokens.second, ',')};
-}
-
 inline static std::string get_entity_type(const std::vector<std::string>& node_tokens) {
     return node_tokens.at(0);
 }
@@ -261,6 +236,36 @@ inline static std::string get_connection_entity_to_node_id(const std::vector<std
 
 inline static std::string get_connection_entity_to_port_index(const std::vector<std::string>& connection_tokens) {
     return connection_tokens.at(5);
+}
+
+inline static std::pair<std::vector<std::string>, std::vector<std::string>> filter_entities_into_tokens(const std::string& encoded_graph) {
+    std::pair<std::vector<std::string>, std::vector<std::string>> filtered_graph_tokens;
+
+    std::vector<std::string> nodes, connections;
+
+    std::vector<std::string> entities{split_string(encoded_graph, ',')};
+    nodes.reserve(entities.size());
+    connections.reserve(entities.size());
+    for (const std::string& entity : entities) {
+        const std::vector<std::string> entity_tokens{ai_agent_utils::split_string(entity, ';')};
+        const int entity_type = std::stoi(ai_agent_utils::get_entity_type(entity_tokens));
+        if (entity_type == 0) nodes.push_back(entity);
+        else if (entity_type == 1) connections.push_back(entity);
+        else {
+            FAIL_AND_RETURN_NON_VOID(filtered_graph_tokens, "Invalid entity type: " + std::to_string(entity_type));
+        }
+    }
+
+    filtered_graph_tokens.first = nodes;
+    filtered_graph_tokens.second = connections;
+
+    return filtered_graph_tokens;
+}
+
+inline static std::pair<std::string, std::string> filter_entities(const std::string& encoded_graph) {
+    const std::pair<std::vector<std::string>, std::vector<std::string>> filtered_graph_tokens{filter_entities_into_tokens(encoded_graph)};
+
+    return {join_string(filtered_graph_tokens.first, ','), join_string(filtered_graph_tokens.second, ',')};
 }
 
 // Create a combine_entities function that combines the nodes and connections into a single string

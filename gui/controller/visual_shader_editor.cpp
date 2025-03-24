@@ -669,6 +669,7 @@ void VisualShaderEditor::on_start_matching_timer_timeout() {
 
   ai_agent_monitor->update_current_output(code);
   ai_agent_monitor->set_fitness_value(best_individual.second);
+  // ai_agent_monitor->get_current_image(); // For Debugging
 
   update_graph_in_scene();
   scene->on_scene_update_requested();
@@ -745,13 +746,14 @@ void VisualShaderEditor::update_parameters_only_graph_in_scene() {
 
   for (const std::string& filtered_node : filtered_nodes) {
     const std::vector<std::string> entity_tokens{ai_agent_utils::split_string(filtered_node, ';')};
-    const int n_id = std::stoi(entity_tokens.at(1));
-    const std::vector<std::string> parameters{entity_tokens.begin() + 3, entity_tokens.end()};
+    const int n_id = std::stoi(ai_agent_utils::get_node_entity_id(entity_tokens));
+    const std::vector<std::string> parameters{ai_agent_utils::get_node_entity_parameters(entity_tokens)};
+    SILENT_CONTINUE_IF_TRUE(parameters.empty());
     for (int i{0}; i < parameters.size(); ++i) {
       const std::string parameter{parameters.at(i)}; // Format: field_number=value
       const std::vector<std::string> parameter_tokens{ai_agent_utils::split_string(parameter, '=')};
-      const int field_number = std::stoi(parameter_tokens.at(0));
-      const double value = std::stod(parameter_tokens.at(1));
+      const int field_number = std::stoi(ai_agent_utils::get_node_entity_parameter_field_number(parameter_tokens));
+      const double value = std::stod(ai_agent_utils::get_node_entity_parameter_value(parameter_tokens));
 
       scene->update_node(n_id, field_number, value);
     }
