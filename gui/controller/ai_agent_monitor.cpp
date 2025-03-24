@@ -48,7 +48,8 @@ AIAgentMonitor::AIAgentMonitor(QWidget* parent)
       current_output_renderer(nullptr),
       target_output_layout(nullptr),
       target_output_label(nullptr),
-      target_output(nullptr) {
+      target_output(nullptr),
+      fitness_plotter(nullptr) {
   resize(720, 360);
 
   AIAgentMonitor::init();
@@ -183,6 +184,15 @@ void AIAgentMonitor::init() {
   outputs_layout->addLayout(target_output_layout);
 
   layout->addLayout(outputs_layout, 3);
+
+  // Create the fitness plotter widget
+  fitness_plotter = new FitnessPlotterWidget(this);
+  fitness_plotter->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
+  fitness_plotter->setContentsMargins(10, 10, 10, 10);  // Left, top, right, bottom
+  fitness_plotter->setToolTip("The fitness plotter widget");
+  fitness_plotter->setFixedHeight(200);
+
+  layout->addWidget(fitness_plotter, 1);
 
   //////////////// Start of Footer ////////////////
 
