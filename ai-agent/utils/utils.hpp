@@ -88,12 +88,31 @@ inline static std::vector<int> get_node_type_population() {
     return node_type_population;
 }
 
+inline static std::vector<std::string> split_string(const std::string& str, const char& delimiter) {
+    std::vector<std::string> tokens;
+    std::string token;
+    std::istringstream token_stream(str);
+    while (std::getline(token_stream, token, delimiter)) tokens.push_back(token);
+    return tokens;
+}
+
+inline static std::string join_string(const std::vector<std::string>& tokens, const char& delimiter) {
+    CHECK_CONDITION_TRUE_NON_VOID(tokens.empty(), "", "Tokens is empty.");
+    CHECK_CONDITION_TRUE_NON_VOID(tokens.size() == 1, tokens.at(0), "Tokens size is 1.");
+
+    std::ostringstream joined;
+    joined << tokens.at(0);
+    for (std::size_t i = 1; i < tokens.size(); ++i) joined << delimiter << tokens.at(i);
+    return joined.str();
+}
+
 inline static std::string encode_graph(const ProtoModel* nodes, const ProtoModel* connections) {
-    std::string encoded_graph;
+    std::vector<std::string> encoded_graph;
+    encoded_graph.reserve(nodes->rowCount() + connections->rowCount());
 
     // Cast to ReapeatedMessageModel
     const RepeatedMessageModel* repeated_nodes{dynamic_cast<const RepeatedMessageModel*>(nodes)};
-    CHECK_PARAM_NULLPTR_NON_VOID(repeated_nodes, encoded_graph, "Nodes is not a repeated message model.");
+    CHECK_PARAM_NULLPTR_NON_VOID(repeated_nodes, "", "Nodes is not a repeated message model.");
     
     int n_size{nodes->rowCount()};
     for (int i{0}; i < n_size; ++i) {
@@ -107,47 +126,44 @@ inline static std::string encode_graph(const ProtoModel* nodes, const ProtoModel
             node_model->get_sub_model(FieldPath::Of<VisualShader::VisualShaderNode>(
                                         FieldPath::FieldNumber(VisualShader::VisualShaderNode::kInputFieldNumber)),
                                     false, true)};
-        CHECK_PARAM_NULLPTR_NON_VOID(oneof_model, encoded_graph, "Oneof Model is nullptr.");
+        CHECK_PARAM_NULLPTR_NON_VOID(oneof_model, "", "Oneof Model is nullptr.");
         const int oneof_value_field_number{oneof_model->get_oneof_value_field_number()};
-
-        std::string encoded_node;
-        encoded_node += "0;"; // 0 means Node and 1 means Connection
-        encoded_node += std::to_string(n_id) + ';';
-        encoded_node += std::to_string(oneof_value_field_number) + ';';
 
         // Cast to OneofModel
         const OneofModel* oneof_model_casted{dynamic_cast<const OneofModel*>(oneof_model)};
-        CHECK_PARAM_NULLPTR_NON_VOID(oneof_model_casted, encoded_graph, "Oneof Model is not a OneofModel.");
+        CHECK_PARAM_NULLPTR_NON_VOID(oneof_model_casted, "", "Oneof Model is not a OneofModel.");
 
         const ProtoModel* node_type_model{oneof_model_casted->get_sub_model(oneof_value_field_number)};
-        CHECK_PARAM_NULLPTR_NON_VOID(node_type_model, encoded_graph, "Node type model is nullptr.");
+        CHECK_PARAM_NULLPTR_NON_VOID(node_type_model, "", "Node type model is nullptr.");
 
         // Cast to MessageModel
         const MessageModel* node_type_model_casted{dynamic_cast<const MessageModel*>(node_type_model)};
-        CHECK_PARAM_NULLPTR_NON_VOID(node_type_model_casted, encoded_graph, "Node type model is not a MessageModel.");
+        CHECK_PARAM_NULLPTR_NON_VOID(node_type_model_casted, "", "Node type model is not a MessageModel.");
 
         const int field_count{node_type_model->columnCount()};
+
+        std::vector<std::string> parameters;
+        parameters.reserve(field_count);
+
         for (int j{0}; j < field_count; ++j) {
             const ProtoModel* field_model{node_type_model_casted->get_sub_model_by_index(j)};
-            CHECK_PARAM_NULLPTR_NON_VOID(field_model, encoded_graph, "Field model is nullptr.");
+            CHECK_PARAM_NULLPTR_NON_VOID(field_model, "", "Field model is nullptr.");
 
             const FieldDescriptor* field_descriptor{field_model->get_column_descriptor(0)};
-            CHECK_PARAM_NULLPTR_NON_VOID(field_descriptor, encoded_graph, "Field descriptor is nullptr.");
+            CHECK_PARAM_NULLPTR_NON_VOID(field_descriptor, "", "Field descriptor is nullptr.");
 
             const int field_number{field_descriptor->number()};
 
             const QVariant field_value{field_model->data()};
-            encoded_node += std::to_string(field_number) + '=' + field_value.toString().toStdString() + ';';
+            parameters.push_back(join_string({std::to_string(field_number), field_value.toString().toStdString()}, '='));
         }
 
-        encoded_node.pop_back(); // Remove the last semicolon
-
-        encoded_graph += encoded_node + ',';
+        encoded_graph.push_back(join_string({"0", std::to_string(n_id), std::to_string(oneof_value_field_number), join_string(parameters, ';')}, ';'));
     }
 
     // Cast to ReapeatedMessageModel
     const RepeatedMessageModel* repeated_connections{dynamic_cast<const RepeatedMessageModel*>(connections)};
-    CHECK_PARAM_NULLPTR_NON_VOID(repeated_connections, encoded_graph, "Connections is not a repeated message model.");
+    CHECK_PARAM_NULLPTR_NON_VOID(repeated_connections, "", "Connections is not a repeated message model.");
 
     int c_size{connections->rowCount()};
     for (int i{0}; i < c_size; ++i) {
@@ -165,24 +181,11 @@ inline static std::string encode_graph(const ProtoModel* nodes, const ProtoModel
         const int to_port_index{connection_model->get_sub_model(FieldPath::Of<VisualShader::VisualShaderConnection>(
             FieldPath::FieldNumber(VisualShader::VisualShaderConnection::kToPortIndexFieldNumber)))->data().toInt()};
 
-        std::string encoded_connection;
-        encoded_connection += "1;"; // 0 means Node and 1 means Connection
-        encoded_connection += std::to_string(c_id) + ';';
-        encoded_connection += std::to_string(from_node_id) + ';';
-        encoded_connection += std::to_string(from_port_index) + ';';
-        encoded_connection += std::to_string(to_node_id) + ';';
-        encoded_connection += std::to_string(to_port_index);
-
-        encoded_graph += encoded_connection + ',';
+        encoded_graph.push_back(join_string({"1", std::to_string(c_id), std::to_string(from_node_id), std::to_string(from_port_index), std::to_string(to_node_id), std::to_string(to_port_index)}, ';'));
     }
 
-    if (!encoded_graph.empty()) encoded_graph.pop_back(); // Remove the last comma
-
-    return encoded_graph;
+    return join_string(encoded_graph, ',');
 }
-
-inline static std::vector<std::string> split_string(const std::string& str, const char& delimiter);
-inline static std::string join_string(const std::vector<std::string>& tokens, const char& delimiter);
 
 inline static std::pair<std::vector<std::string>, std::vector<std::string>> filter_entities_into_tokens(const std::string& encoded_graph) {
     std::pair<std::vector<std::string>, std::vector<std::string>> filtered_graph_tokens;
@@ -214,19 +217,66 @@ inline static std::pair<std::string, std::string> filter_entities(const std::str
     return {join_string(filtered_graph_tokens.first, ','), join_string(filtered_graph_tokens.second, ',')};
 }
 
+inline static std::string get_entity_type(const std::vector<std::string>& node_tokens) {
+    return node_tokens.at(0);
+}
+
+inline static std::string get_node_entity_id(const std::vector<std::string>& node_tokens) {
+    return node_tokens.at(1);
+}
+
+inline static std::string get_node_entity_oneof_value_field_number(const std::vector<std::string>& node_tokens) {
+    return node_tokens.at(2);
+}
+
+inline static std::vector<std::string> get_node_entity_parameters(const std::vector<std::string>& node_tokens) {
+    std::vector<std::string> parameters;
+    parameters.insert(parameters.end(), node_tokens.begin() + 3, node_tokens.end());
+    return parameters;
+}
+
+inline static std::string get_node_entity_parameter_field_number(const std::vector<std::string>& parameter_tokens) {
+    return parameter_tokens.at(0);
+}
+
+inline static std::string get_node_entity_parameter_value(const std::vector<std::string>& parameter_tokens) {
+    return parameter_tokens.at(1);
+}
+
+inline static std::string get_connection_entity_id(const std::vector<std::string>& connection_tokens) {
+    return connection_tokens.at(1);
+}
+
+inline static std::string get_connection_entity_from_node_id(const std::vector<std::string>& connection_tokens) {
+    return connection_tokens.at(2);
+}
+
+inline static std::string get_connection_entity_from_port_index(const std::vector<std::string>& connection_tokens) {
+    return connection_tokens.at(3);
+}
+
+inline static std::string get_connection_entity_to_node_id(const std::vector<std::string>& connection_tokens) {
+    return connection_tokens.at(4);
+}
+
+inline static std::string get_connection_entity_to_port_index(const std::vector<std::string>& connection_tokens) {
+    return connection_tokens.at(5);
+}
+
 // Create a combine_entities function that combines the nodes and connections into a single string
 inline static std::string combine_entities_from_tokens(const std::vector<std::string>& nodes, const std::vector<std::string>& connections) {
     std::string combined_entities;
 
-    combined_entities += join_string(nodes, ',');
-    combined_entities += ',';
-    combined_entities += join_string(connections, ',');
+    const std::string combined_nodes{join_string(nodes, ',')};
+    const std::string combined_connections{join_string(connections, ',')};
+
+    combined_entities = join_string({combined_nodes, combined_connections}, ',');
 
     return combined_entities;
 }
 
 inline static std::string combine_entities(const std::string& nodes, const std::string& connections) {
-    return nodes + ',' + connections;
+    return join_string({nodes, connections}, ',');
 }
 
 //------------------------------------------------------------------------------
@@ -853,24 +903,6 @@ inline static DiscreteContinuousRangeVariant get_range_for_field(const int& node
     SILENT_CHECK_CONDITION_TRUE_NON_VOID(!discrete_range.empty(), discrete_range);
 
     return get_range_for_continuous_field(node_type, field_number);
-}
-
-inline static std::vector<std::string> split_string(const std::string& str, const char& delimiter) {
-    std::vector<std::string> tokens;
-    std::string token;
-    std::istringstream token_stream(str);
-    while (std::getline(token_stream, token, delimiter)) tokens.push_back(token);
-    return tokens;
-}
-
-inline static std::string join_string(const std::vector<std::string>& tokens, const char& delimiter) {
-    CHECK_CONDITION_TRUE_NON_VOID(tokens.empty(), "", "Tokens is empty.");
-    CHECK_CONDITION_TRUE_NON_VOID(tokens.size() == 1, tokens.at(0), "Tokens size is 1.");
-
-    std::ostringstream joined;
-    joined << tokens.at(0);
-    for (std::size_t i = 1; i < tokens.size(); ++i) joined << delimiter << tokens.at(i);
-    return joined.str();
 }
 }  // namespace ai_agent_utils
 
