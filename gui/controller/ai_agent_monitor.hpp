@@ -42,6 +42,8 @@
 #include <QtOpenGL/QOpenGLShaderProgram>
 #include <QOpenGLFramebufferObject>
 
+#include "gui/controller/fitness_plotter.hpp"
+
 class CurrentOutputRenderer;
 
 class AIAgentMonitor : public QWidget {
@@ -56,6 +58,7 @@ class AIAgentMonitor : public QWidget {
 
   unsigned long get_fitness_value() const;
 
+  QImage get_current_image();
   QImage get_target_image() const;
 
   void set_fitness_value(const unsigned long& value) { fitness_value->setText(QString::number(value)); }
@@ -91,6 +94,7 @@ class AIAgentMonitor : public QWidget {
 
   QImage target_image; // On every load, the target image is stored here
 
+  FitnessPlotterWidget* fitness_plotter;
 
   /**
    * @brief Initializes the UI

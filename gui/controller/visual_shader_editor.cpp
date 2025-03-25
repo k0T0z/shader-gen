@@ -620,7 +620,7 @@ void VisualShaderEditor::on_start_matching_button_pressed() {
   ai_agent_worker->set_crossover_probability(parameters_editor->get_crossover_probability());
   ai_agent_worker->set_elitism_ratio(parameters_editor->get_elitism_ratio());
 
-  ai_agent_main::MatchingType matching_type{static_cast<ai_agent_main::MatchingType>(matching_type_combo_box->currentData().toInt())};
+  const ai_agent_main::MatchingType matching_type{static_cast<ai_agent_main::MatchingType>(matching_type_combo_box->currentData().toInt())};
   ai_agent_worker->set_matching_type(matching_type);
   ai_agent_worker->set_target_image(ai_agent_monitor->get_target_image());
 
@@ -669,6 +669,10 @@ void VisualShaderEditor::on_start_matching_timer_timeout() {
 
   ai_agent_monitor->update_current_output(code);
   ai_agent_monitor->set_fitness_value(best_individual.second);
+  // ai_agent_monitor->get_current_image(); // For Debugging
+
+  update_graph_in_scene();
+  scene->on_scene_update_requested();
 }
 
 void VisualShaderEditor::on_stop_matching_timer_timeout() {
@@ -712,6 +716,56 @@ QTreeWidgetItem* VisualShaderEditor::find_or_create_category_item(
   category_path_map[category_path] = new_item;
 
   return new_item;
+}
+
+void VisualShaderEditor::update_graph_in_scene() {
+  const ai_agent_main::MatchingType matching_type{static_cast<ai_agent_main::MatchingType>(matching_type_combo_box->currentData().toInt())};
+  switch (matching_type) {
+    case ai_agent_main::MatchingType::PARAMETERS_ONLY:
+      update_parameters_only_graph_in_scene();
+      break;
+    case ai_agent_main::MatchingType::PARAMETERS_AND_CONNECTIONS:
+      update_parameters_and_connections_graph_in_scene();
+      break;
+    case ai_agent_main::MatchingType::FULL_GRAPH:
+      update_full_graph_in_scene();
+      break;
+    default:
+      ERROR_PRINT("Unknown matching type");
+      break;
+  }
+}
+
+void VisualShaderEditor::update_parameters_only_graph_in_scene() {
+  CHECK_PARAM_NULLPTR(shared_memory, "Shared memory is null");
+
+  const std::pair<std::string, unsigned long> best_individual{shared_memory->get_best_individual()};
+
+  const std::pair<std::vector<std::string>, std::vector<std::string>> filtered_entities = ai_agent_utils::filter_entities_into_tokens(best_individual.first);
+  const std::vector<std::string>& filtered_nodes{filtered_entities.first};
+
+  for (const std::string& filtered_node : filtered_nodes) {
+    const std::vector<std::string> entity_tokens{ai_agent_utils::split_string(filtered_node, ';')};
+    const int n_id = std::stoi(ai_agent_utils::get_node_entity_id(entity_tokens));
+    const std::vector<std::string> parameters{ai_agent_utils::get_node_entity_parameters(entity_tokens)};
+    SILENT_CONTINUE_IF_TRUE(parameters.empty());
+    for (int i{0}; i < parameters.size(); ++i) {
+      const std::string parameter{parameters.at(i)}; // Format: field_number=value
+      const std::vector<std::string> parameter_tokens{ai_agent_utils::split_string(parameter, '=')};
+      const int field_number = std::stoi(ai_agent_utils::get_node_entity_parameter_field_number(parameter_tokens));
+      const double value = std::stod(ai_agent_utils::get_node_entity_parameter_value(parameter_tokens));
+
+      scene->update_node(n_id, field_number, value);
+    }
+  }
+}
+
+void VisualShaderEditor::update_parameters_and_connections_graph_in_scene() {
+
+}
+
+void VisualShaderEditor::update_full_graph_in_scene() {
+
 }
 
 /**********************************************************************/
@@ -1241,6 +1295,16 @@ bool VisualShaderGraphicsScene::delete_node(const int& n_id, const int& in_port_
   return delete_node_from_model(n_id) && delete_node_from_scene(n_id, in_port_count, out_port_count);
 }
 
+bool VisualShaderGraphicsScene::delete_all_nodes() {
+  // Remove all nodes
+  for (auto& [n_id, n_o] : node_graphics_objects) {
+    if (n_id == 0) continue;  // Skip the output node
+    delete_node(n_id, n_o->get_input_port_count(), n_o->get_output_port_count());
+  }
+
+  return true;
+}
+
 bool VisualShaderGraphicsScene::update_node_in_model(const int& n_id, const int& field_number, const QVariant& value, const int& row_entry) {
   int t_row_entry{row_entry};
   if (t_row_entry == -1 && n_id != -1) t_row_entry = find_node_entry(n_id);
@@ -1323,6 +1387,8 @@ bool VisualShaderGraphicsScene::update_node_field_in_scene(const int& n_id, cons
   } else {
     FAIL_AND_RETURN_NON_VOID(false, "Unknown widget type");
   }
+
+  on_update_renderer_widgets_requested();
 
   widget->blockSignals(false); // Unblock signals
 

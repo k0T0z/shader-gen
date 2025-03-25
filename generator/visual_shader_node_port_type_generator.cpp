@@ -381,6 +381,18 @@ VisualShaderNodePortType VisualShaderNodePortTypeGeneratorVectorFunc::get_input_
     case VisualShaderNodeVectorFunc::FUNC_TYPE_UNSPECIFIED:
         return VisualShaderNodePortType::PORT_TYPE_UNSPECIFIED;
     default:
+        switch (type) {
+        case VisualShaderNodeVectorType::TYPE_VECTOR_UNSPECIFIED:
+            return VisualShaderNodePortType::PORT_TYPE_UNSPECIFIED;
+        case VisualShaderNodeVectorType::TYPE_VECTOR_2D:
+            return VisualShaderNodePortType::PORT_TYPE_VECTOR_2D;
+        case VisualShaderNodeVectorType::TYPE_VECTOR_3D:
+            return VisualShaderNodePortType::PORT_TYPE_VECTOR_3D;
+        case VisualShaderNodeVectorType::TYPE_VECTOR_4D:
+            return VisualShaderNodePortType::PORT_TYPE_VECTOR_4D;
+        default:
+            break;
+        }
         break;
     }
     return VisualShaderNodePortType::PORT_TYPE_UNSPECIFIED;
@@ -392,6 +404,18 @@ VisualShaderNodePortType VisualShaderNodePortTypeGeneratorVectorFunc::get_output
     case VisualShaderNodeVectorFunc::FUNC_TYPE_UNSPECIFIED:
         return VisualShaderNodePortType::PORT_TYPE_UNSPECIFIED;
     default:
+        switch (type) {
+        case VisualShaderNodeVectorType::TYPE_VECTOR_UNSPECIFIED:
+            return VisualShaderNodePortType::PORT_TYPE_UNSPECIFIED;
+        case VisualShaderNodeVectorType::TYPE_VECTOR_2D:
+            return VisualShaderNodePortType::PORT_TYPE_VECTOR_2D;
+        case VisualShaderNodeVectorType::TYPE_VECTOR_3D:
+            return VisualShaderNodePortType::PORT_TYPE_VECTOR_3D;
+        case VisualShaderNodeVectorType::TYPE_VECTOR_4D:
+            return VisualShaderNodePortType::PORT_TYPE_VECTOR_4D;
+        default:
+            break;
+        }
         break;
     }
     return VisualShaderNodePortType::PORT_TYPE_UNSPECIFIED;

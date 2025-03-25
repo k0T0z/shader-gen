@@ -25,13 +25,31 @@
 /*                                                                               */
 /*********************************************************************************/
 
-#include "ai-agent/parameters.hpp"
+#ifndef SHADER_GEN_AI_AGENT_FITNESS_PLOTTER_HPP
+#define SHADER_GEN_AI_AGENT_FITNESS_PLOTTER_HPP
 
-// TODO: What about the maximum number of genes?
+#include <QWidget>
+#include <QDateTime>
+#include <vector>
 
-const int maximum_population_size = 100; // Maximum number of graphs to apply genetic algorithm on
-const int maximum_generations = 500; // Maximum number of generations until the algorithm stops
-const float mutation_probability = 0.1f;
-const float crossover_probability = 0.8f;
-const float elitism_ratio = 0.2f;
-const int maximum_nodes_per_graph = 100; // If the matching type is FULL_GRAPH, we need to limit the number of nodes
+class QTimer;
+
+class FitnessPlotterWidget : public QWidget {
+    Q_OBJECT
+public:
+    explicit FitnessPlotterWidget(QWidget* parent = nullptr);
+    ~FitnessPlotterWidget();
+
+    void add_point(unsigned long fitness);
+    void start_timer();
+    void stop_timer();
+
+protected:
+    void paintEvent(QPaintEvent* event) override;
+
+private:
+    QTimer* timer;
+    std::vector<std::pair<QDateTime, unsigned long>> points;
+};
+
+#endif  // SHADER_GEN_AI_AGENT_FITNESS_PLOTTER_HPP

@@ -48,7 +48,8 @@ AIAgentMonitor::AIAgentMonitor(QWidget* parent)
       current_output_renderer(nullptr),
       target_output_layout(nullptr),
       target_output_label(nullptr),
-      target_output(nullptr) {
+      target_output(nullptr),
+      fitness_plotter(nullptr) {
   resize(720, 360);
 
   AIAgentMonitor::init();
@@ -184,6 +185,15 @@ void AIAgentMonitor::init() {
 
   layout->addLayout(outputs_layout, 3);
 
+  // Create the fitness plotter widget
+  fitness_plotter = new FitnessPlotterWidget(this);
+  fitness_plotter->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
+  fitness_plotter->setContentsMargins(10, 10, 10, 10);  // Left, top, right, bottom
+  fitness_plotter->setToolTip("The fitness plotter widget");
+  fitness_plotter->setFixedHeight(200);
+
+  layout->addWidget(fitness_plotter, 1);
+
   //////////////// Start of Footer ////////////////
 
   this->setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
@@ -240,6 +250,10 @@ unsigned long AIAgentMonitor::get_fitness_value() const {
   const int height = current_image.height();
 
   return ai_agent_fitness::calculate_fitness(pixels1, pixels2, width, height);
+}
+
+QImage AIAgentMonitor::get_current_image() {
+  return current_output_renderer->get_pixel_data();
 }
 
 QImage AIAgentMonitor::get_target_image() const {
@@ -336,9 +350,11 @@ void CurrentOutputRenderer::set_code(const std::string& new_code) {
 
 QImage CurrentOutputRenderer::get_pixel_data() {
   makeCurrent();
-  QImage image = fbo->toImage();
+  const QImage extracted_img = fbo->toImage();
   doneCurrent();
-  return image.convertToFormat(QImage::Format_ARGB32);
+  // Save the image to disk for debugging
+  extracted_img.save("output.png");
+  return extracted_img.convertToFormat(QImage::Format_ARGB32);
 }
 
 void CurrentOutputRenderer::initializeGL() {

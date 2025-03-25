@@ -57,77 +57,78 @@ namespace ai_agent_main {
         const int& maximum_population_size, 
         std::vector<std::string>& population_buffer
     ) noexcept {
-        population_buffer.clear();
-        population_buffer.resize(maximum_population_size);
+        std::vector<std::vector<std::string>> population;
+        population.resize(maximum_population_size);
 
         switch (matching_type) {
             case MatchingType::PARAMETERS_ONLY: {
-                const std::vector<std::string> entities{ai_agent_utils::split_string(encoded_graph, ',')};
-                for (const auto& entity : entities) {
-                    const std::vector<std::string> entity_tokens{ai_agent_utils::split_string(entity, ';')};
-                    const int entity_type = std::stoi(entity_tokens.at(0));
-                    if (entity_type == 0) {
-                        // Node
-                        // Format: entity_type;node_id;node_type;field_number=value;field_number=value;...
-                        const int n_id = std::stoi(entity_tokens.at(1));
-                        const int oneof_value_field_number = std::stoi(entity_tokens.at(2));
-                        const std::vector<std::string> parameters{entity_tokens.begin() + 3, entity_tokens.end()};
-                        for (int i{0}; i < maximum_population_size; ++i) {
-                            std::vector<std::string> new_parameters;
-                            new_parameters.resize(parameters.size());
-                            for (int j{0}; j < parameters.size(); ++j) {
-                                const std::string parameter{parameters.at(j)}; // Format: field_number=value
-                                const std::vector<std::string> parameter_tokens{ai_agent_utils::split_string(parameter, '=')};
-                                const int field_number = std::stoi(parameter_tokens.at(0));
-                                const ai_agent_utils::DiscreteContinuousRangeVariant range{ai_agent_utils::get_range_for_field(oneof_value_field_number, field_number)};
-                                std::string new_parameter;
-                                new_parameter += std::to_string(field_number) + '=';
-                                if (std::holds_alternative<std::vector<int>>(range)) {
-                                    const std::vector<int> discrete_range{std::get<std::vector<int>>(range)};
-                                    const int random_index{ai_agent_utils::random_int_inclusive<int>(0, (int)discrete_range.size() - 1)};
-                                    new_parameter += std::to_string(discrete_range.at(random_index)) + ';';
-                                } else if (std::holds_alternative<std::pair<ai_agent_utils::ContinuousRangeVariant, ai_agent_utils::ContinuousRangeVariant>>(range)) {
-                                    const std::pair<ai_agent_utils::ContinuousRangeVariant, ai_agent_utils::ContinuousRangeVariant> continuous_range{std::get<std::pair<ai_agent_utils::ContinuousRangeVariant, ai_agent_utils::ContinuousRangeVariant>>(range)};
-                                    if (std::holds_alternative<int>(continuous_range.first) && std::holds_alternative<int>(continuous_range.second)) {
-                                        const int lower_bound{std::get<int>(continuous_range.first)};
-                                        const int upper_bound{std::get<int>(continuous_range.second)};
-                                        const float random_value{ai_agent_utils::random_real_inclusive<float>(lower_bound, upper_bound)};
-                                        new_parameter += std::to_string(random_value) + ';';
-                                    } else if (std::holds_alternative<float>(continuous_range.first) && std::holds_alternative<float>(continuous_range.second)) {
-                                        const float lower_bound{std::get<float>(continuous_range.first)};
-                                        const float upper_bound{std::get<float>(continuous_range.second)};
-                                        const float random_value{ai_agent_utils::random_real_inclusive<float>(lower_bound, upper_bound)};
-                                        new_parameter += std::to_string(random_value) + ';';
-                                    }
-                                } else {
-                                    new_parameter += "0;";
-                                }
-                                new_parameter.pop_back(); // Remove the last semicolon
-                                new_parameters.at(j) = new_parameter;
-                            }
-                            std::string encoded_node;
-                            encoded_node += std::to_string(entity_type) + ';';
-                            encoded_node += std::to_string(n_id) + ';';
-                            encoded_node += std::to_string(oneof_value_field_number) + ';';
-                            for (const auto& new_parameter : new_parameters) encoded_node += new_parameter + ';';
+                const std::pair<std::vector<std::string>, std::vector<std::string>> filtered_graph_tokens{ai_agent_utils::filter_entities_into_tokens(encoded_graph)};
+                const std::vector<std::string> node_entities{filtered_graph_tokens.first};
+                for (const auto& node_entity : node_entities) {
+                    const std::vector<std::string> entity_tokens{ai_agent_utils::split_string(node_entity, ';')};
+                    const int entity_type = std::stoi(ai_agent_utils::get_entity_type(entity_tokens));
+                    CONTINUE_IF_TRUE(entity_type != 0, "Entity type is not a node");
 
-                            encoded_node.pop_back(); // Remove the last semicolon
+                    // Add the node entity to all individuals in the population with random parameters
+                    for (int i{0}; i < maximum_population_size; ++i) {
+                        const int n_id = std::stoi(ai_agent_utils::get_node_entity_id(entity_tokens));
+                        const int oneof_value_field_number = std::stoi(ai_agent_utils::get_node_entity_oneof_value_field_number(entity_tokens));
+                        const std::vector<std::string> parameters{ai_agent_utils::get_node_entity_parameters(entity_tokens)};
 
-                            population_buffer.at(i) += encoded_node + ',';
+                        if (parameters.empty()) {
+                            population.at(i).push_back(node_entity);
+                            continue;
                         }
-                    } else {
-                        // Connection
-                        for (int i{0}; i < maximum_population_size; ++i) population_buffer.at(i) += entity + ',';
-                    }
-                }
 
-                for (auto& entity : population_buffer) {
-                    if (!entity.empty()) entity.pop_back(); // Remove the last comma
+                        std::vector<std::string> new_parameters;
+                        new_parameters.resize(parameters.size());
+
+                        for (int j{0}; j < parameters.size(); ++j) {
+                            const std::string parameter{parameters.at(j)}; // Format: field_number=value
+                            const std::vector<std::string> parameter_tokens{ai_agent_utils::split_string(parameter, '=')};
+                            const int field_number = std::stoi(ai_agent_utils::get_node_entity_parameter_field_number(parameter_tokens));
+                            const ai_agent_utils::DiscreteContinuousRangeVariant range{ai_agent_utils::get_range_for_field(oneof_value_field_number, field_number)};
+                            std::string new_parameter;
+                            if (std::holds_alternative<std::vector<int>>(range)) {
+                                const std::vector<int> discrete_range{std::get<std::vector<int>>(range)};
+                                const int random_index{ai_agent_utils::random_int_inclusive<int>(0, (int)discrete_range.size() - 1)};
+                                new_parameter = ai_agent_utils::join_string({std::to_string(field_number), std::to_string(discrete_range.at(random_index))}, '=');
+                            } else if (std::holds_alternative<std::pair<ai_agent_utils::ContinuousRangeVariant, ai_agent_utils::ContinuousRangeVariant>>(range)) {
+                                const std::pair<ai_agent_utils::ContinuousRangeVariant, ai_agent_utils::ContinuousRangeVariant> continuous_range{std::get<std::pair<ai_agent_utils::ContinuousRangeVariant, ai_agent_utils::ContinuousRangeVariant>>(range)};
+                                if (std::holds_alternative<int>(continuous_range.first) && std::holds_alternative<int>(continuous_range.second)) {
+                                    const int lower_bound{std::get<int>(continuous_range.first)};
+                                    const int upper_bound{std::get<int>(continuous_range.second)};
+                                    const float random_value{ai_agent_utils::random_real_inclusive<float>(lower_bound, upper_bound)};
+                                    new_parameter = ai_agent_utils::join_string({std::to_string(field_number), std::to_string(random_value)}, '=');
+                                } else if (std::holds_alternative<float>(continuous_range.first) && std::holds_alternative<float>(continuous_range.second)) {
+                                    const float lower_bound{std::get<float>(continuous_range.first)};
+                                    const float upper_bound{std::get<float>(continuous_range.second)};
+                                    const float random_value{ai_agent_utils::random_real_inclusive<float>(lower_bound, upper_bound)};
+                                    new_parameter = ai_agent_utils::join_string({std::to_string(field_number), std::to_string(random_value)}, '=');
+                                }
+                            }
+                            new_parameters.at(j) = new_parameter;
+                        }
+
+                        // Add entity_type, node_id, oneof_value_field_number, and new_parameters to the ith individual
+                        population.at(i).push_back(ai_agent_utils::join_string({std::to_string(entity_type), std::to_string(n_id), std::to_string(oneof_value_field_number), ai_agent_utils::join_string(new_parameters, ';')}, ';'));
+                    } // for (int i{0}; i < maximum_population_size; ++i)
+                } // for (const auto& node_entity : node_entities)
+
+                // Add the connections as-is
+                const std::vector<std::string> connection_entities{filtered_graph_tokens.second};
+                for (int i{0}; i < maximum_population_size; ++i) {
+                    population.at(i).insert(population.at(i).end(), connection_entities.begin(), connection_entities.end());
                 }
                 break;
             }
             default:
                 break;
+        }
+
+        population_buffer.reserve(maximum_population_size);
+        for (int i{0}; i < maximum_population_size; ++i) {
+            population_buffer.push_back(ai_agent_utils::join_string(population.at(i), ','));
         }
 
         return true;
