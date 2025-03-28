@@ -1388,8 +1388,8 @@ bool VisualShaderGraphicsScene::update_node_field_in_scene(const int& n_id, cons
     FAIL_AND_RETURN_NON_VOID(false, "Unknown widget type");
   }
 
-  on_update_renderer_widgets_requested();
   revalidate_connections(n_id);
+  on_update_renderer_widgets_requested();
 
   widget->blockSignals(false); // Unblock signals
 
