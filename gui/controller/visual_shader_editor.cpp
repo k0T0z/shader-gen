@@ -1389,6 +1389,7 @@ bool VisualShaderGraphicsScene::update_node_field_in_scene(const int& n_id, cons
   }
 
   on_update_renderer_widgets_requested();
+  revalidate_connections(n_id);
 
   widget->blockSignals(false); // Unblock signals
 

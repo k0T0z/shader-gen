@@ -39,6 +39,8 @@ AIAgentMonitor::AIAgentMonitor(QWidget* parent)
       calculate_fitness_button(nullptr),
       matching_type_combo_box(nullptr),
       generate_random_image_button(nullptr),
+      sample_frame_button(nullptr),
+      save_frame_as_image_button(nullptr),
       status_layout(nullptr),
       fitness_value_label(nullptr),
       fitness_value(nullptr),
@@ -105,6 +107,22 @@ void AIAgentMonitor::init() {
   QObject::connect(generate_random_image_button, &QPushButton::pressed, this, &AIAgentMonitor::on_generate_random_image_button_pressed);
 
   menu_bar->addWidget(generate_random_image_button);
+
+  sample_frame_button = new QPushButton("Sample Frame", this);
+  sample_frame_button->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
+  sample_frame_button->setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
+  sample_frame_button->setToolTip("Sample the current frame to the target image");
+  QObject::connect(sample_frame_button, &QPushButton::pressed, this, &AIAgentMonitor::on_sample_frame_button_pressed);
+
+  menu_bar->addWidget(sample_frame_button);
+
+  save_frame_as_image_button = new QPushButton("Save Frame as Image", this);
+  save_frame_as_image_button->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
+  save_frame_as_image_button->setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
+  save_frame_as_image_button->setToolTip("Save the current frame as an image");
+  QObject::connect(save_frame_as_image_button, &QPushButton::pressed, this, &AIAgentMonitor::on_save_frame_as_image_button_pressed);
+
+  menu_bar->addWidget(save_frame_as_image_button);
 
   layout->addLayout(menu_bar, 1);
 
@@ -295,6 +313,25 @@ void AIAgentMonitor::on_generate_random_image_button_pressed() {
   target_image = create_random_image(256, 256);
   target_output->clear();
   target_output->setPixmap(QPixmap::fromImage(target_image));
+}
+
+void AIAgentMonitor::on_sample_frame_button_pressed() {
+  QImage current_image = current_output_renderer->get_pixel_data();
+  if (!current_image.isNull()) {
+    target_image = current_image.scaled(256, 256, Qt::IgnoreAspectRatio)
+        .convertToFormat(QImage::Format_ARGB32);
+    target_output->clear();
+    target_output->setPixmap(QPixmap::fromImage(target_image));
+  } else {
+    target_output->clear();
+    target_output->setText("Failed to sample frame.");
+  }
+}
+
+void AIAgentMonitor::on_save_frame_as_image_button_pressed() {
+  QImage current_image = current_output_renderer->get_pixel_data();
+  CHECK_CONDITION_TRUE(current_image.isNull(), "Failed to retrieve current image");
+  current_image.save("current_frame.png", "PNG");
 }
 
 CurrentOutputRenderer::CurrentOutputRenderer(QWidget* parent) : QOpenGLWidget(parent), 
