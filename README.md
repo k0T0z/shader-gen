@@ -34,6 +34,9 @@ Or mRGM, which stands for mini-RadialGM, is a simple and lightweight version of 
 > [!NOTE]  
 > You might be wondering when this will integrated into RGM, right? What? I can't hear you!
 
+> [!TIP]
+> Good news—our portable releases have zero external dependencies. Grab the latest Qt6 build for your platform here: [Releases](https://github.com/k0T0z/shader-gen/releases/tag/latest-qt6).
+
 ## Diffs from RadialGM
 
 - Improved the integration of the Google Protocol Buffers. There are some features inside Google Protocol Buffers' API that are not used in RadialGM.
