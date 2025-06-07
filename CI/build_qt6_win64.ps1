@@ -1,3 +1,5 @@
+# https://doc.qt.io/qt-6/windows-building.html
+
 param(
     [Parameter(Mandatory = $true, Position = 0)]
     [ValidateSet("Debug", "Release", "MinSizeRel", "RelWithDebInfo")]
@@ -24,11 +26,11 @@ $qtUrl    = "https://download.qt.io/official_releases/qt/$majorMinor/$Qt6Version
 
 # Download source
 Write-Host "Downloading Qt source from $qtUrl..."
-Invoke-WebRequest -Uri $qtUrl -OutFile $qtSrcZip
+Invoke-WebRequest -Uri $qtUrl -OutFile $qtSrcZip -Verbose
 
 # Extract
 Write-Host "Extracting Qt source..."
-Expand-Archive -Path $qtSrcZip -DestinationPath $env:GITHUB_WORKSPACE
+Expand-Archive -Path $qtSrcZip -DestinationPath $env:GITHUB_WORKSPACE -Verbose
 
 $qtSrcDir = Join-Path $env:GITHUB_WORKSPACE "qt-everywhere-src-$Qt6Version"
 
