@@ -20,16 +20,12 @@ jobs:
         with:
           ref: 'master-qt6'
           submodules: recursive
-  
-      - name: Install Qt
-        uses: jurplel/install-qt-action@v4
-        with:
-          version: '6'
-          host: 'windows'
-          target: 'desktop'
-          arch: 'win64_msvc2022_64'
-          dir: '${{ github.workspace }}'
-          setup-python: 'false'
+
+      - name: Install Qt6
+        shell: pwsh
+        run: |
+          Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+          .\CI\install_qt6.ps1 -Version 6.9.1 -InstallDir "$env:GITHUB_WORKSPACE\ThirdParty"
 
       - name: Build Protobuf
         shell: pwsh
