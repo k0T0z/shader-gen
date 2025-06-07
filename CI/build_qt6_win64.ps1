@@ -8,19 +8,19 @@ param(
     [string]$link_type,
 
     [Parameter(Mandatory = $true, Position = 2)]
-    [string]$install_dir,
+    [string]$install_dir
 )
 
 $Qt6Version = "6.9.1"
 $ErrorActionPreference = "Stop"
 
 # derive major.minor from version
-$parts       = $Qt6Version.Split('.')
-$majorMinor  = "$($parts[0]).$($parts[1])"
+$parts      = $Qt6Version.Split('.')
+$majorMinor = "$($parts[0]).$($parts[1])"
 
 # URLs and paths
 $qtSrcZip = "qt-everywhere-src-$Qt6Version.zip"
-$qtUrl = "https://download.qt.io/official_releases/qt/$majorMinor/$Qt6Version/single/$qtSrcZip"
+$qtUrl    = "https://download.qt.io/official_releases/qt/$majorMinor/$Qt6Version/single/$qtSrcZip"
 
 # Download source
 Write-Host "Downloading Qt source from $qtUrl..."
@@ -30,31 +30,50 @@ Invoke-WebRequest -Uri $qtUrl -OutFile $qtSrcZip
 Write-Host "Extracting Qt source..."
 Expand-Archive -Path $qtSrcZip -DestinationPath $env:GITHUB_WORKSPACE
 
-$qtSrcDir = "$env:GITHUB_WORKSPACE\qt-everywhere-src-$Qt6Version"
+$qtSrcDir = Join-Path $env:GITHUB_WORKSPACE "qt-everywhere-src-$Qt6Version"
 
 # Build Qt
 Set-Location $qtSrcDir
 
-# Create and switch to the build directory.
-New-Item -ItemType Directory -Path build | Set-Location
+# Create & switch to the build directory.
+if (-Not (Test-Path "build")) {
+    New-Item -ItemType Directory -Path build | Out-Null
+}
+Set-Location build
 
-Write-Host "Configuring Qt with prefix: $InstallDir"
+Write-Host "Configuring Qt with prefix: $install_dir"
 
 # Ensure Python and CMake are available
 python --version
 cmake --version
 
-# Build configuration
-# https://doc.qt.io/qt-6/configure-options.html
-$configureArgs = @("-prefix", "$install_dir")
+# Base configure args
+$configureArgs = @(
+    "-prefix", $install_dir,
+    "-D", "QT_BUILD_EXAMPLES_BY_DEFAULT=OFF",
+    "-D", "QT_BUILD_TESTS_BY_DEFAULT=OFF",
+    "-D", "QT_BUILD_TOOLS_BY_DEFAULT=ON"
+)
 
+# Add build-type flags
 switch ($build_type) {
-    "Debug"          { $configureArgs += "-debug" }
-    "Release"        { $configureArgs += "-release" }
-    "MinSizeRel"     { $configureArgs += "-release" $configureArgs += "-optimize-size" }
-    "RelWithDebInfo" { $configureArgs += "-release" $configureArgs += "-force-debug-info" }
+    "Debug" {
+        $configureArgs += "-debug"
+    }
+    "Release" {
+        $configureArgs += "-release"
+    }
+    "MinSizeRel" {
+        $configureArgs += "-release"
+        $configureArgs += "-optimize-size"
+    }
+    "RelWithDebInfo" {
+        $configureArgs += "-release"
+        $configureArgs += "-force-debug-info"
+    }
 }
 
+# Add link-type flag
 if ($link_type -eq "Static") {
     $configureArgs += "-static"
 } else {
@@ -62,13 +81,17 @@ if ($link_type -eq "Static") {
 }
 
 # Run configure
-Write-Host "Running configure..."
-& .\${qtSrcDir}\configure.bat @configureArgs -D QT_BUILD_EXAMPLES_BY_DEFAULT=OFF -D QT_BUILD_TESTS_BY_DEFAULT=OFF -D QT_BUILD_TOOLS_BY_DEFAULT=ON
+Write-Host "Running configure.bat with arguments:`n  $($configureArgs -join ' ')"
+& "$qtSrcDir\configure.bat" @configureArgs
 
-# Build with CMake
+# Build & install with CMake
 Write-Host "Starting build..."
 cmake --build . --parallel
+
+Write-Host "Installing to $install_dir..."
 cmake --install .
 
-# Return to the original workspace (assumes GITHUB_WORKSPACE is set).
+# Return to the workspace root
 Set-Location $env:GITHUB_WORKSPACE
+
+Write-Host "Qt build+install complete."
