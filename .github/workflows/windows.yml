@@ -23,15 +23,11 @@ jobs:
       with:
         submodules: recursive
 
-    - name: Install Qt
-      uses: jurplel/install-qt-action@v4
-      with:
-        version: '6'
-        host: 'windows'
-        target: 'desktop'
-        arch: 'win64_msvc2022_64'
-        dir: '${{ github.workspace }}'
-        setup-python: 'false'
+    - name: Build Qt6
+      shell: pwsh
+      run: |
+        Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+        .\CI\build_qt6_win64.ps1 Debug Dynamic "${{ github.workspace }}\qt6-lib"
 
     - name: Build Protobuf
       shell: pwsh
@@ -40,12 +36,11 @@ jobs:
 
         New-Item -ItemType Directory -Path "${{ github.workspace }}\protobuf-lib"
         Write-Output "Protobuf: '${{ github.workspace }}\protobuf-lib'"
-        Write-Output "Qt6: $env:Qt6_DIR"
         .\CI\build_protobuf_win64.ps1 Debug Dynamic "${{ github.workspace }}\protobuf-lib"
 
     - name: Configure CMake
       shell: pwsh
-      run: cmake -B build -G "Visual Studio 17 2022" -A x64 -DCMAKE_PREFIX_PATH="$env:Qt6_DIR;${{ github.workspace }}\protobuf-lib\lib\cmake" -DSHADER_GEN_BUILD_TESTS=ON
+      run: cmake -B build -G "Visual Studio 17 2022" -A x64 -DCMAKE_PREFIX_PATH="${{ github.workspace }}\qt6-lib\lib\cmake;${{ github.workspace }}\protobuf-lib\lib\cmake" -DSHADER_GEN_BUILD_TESTS=ON
 
     - name: Build project
       shell: pwsh
@@ -55,6 +50,7 @@ jobs:
       shell: pwsh
       run: |
         cp build\bin\Debug\*.dll build\Debug\
+        cp "${{ github.workspace }}\qt6-lib\bin\*.dll" build\Debug\
         cp "${{ github.workspace }}\protobuf-lib\bin\*.dll" build\Debug\
 
     - name: Run tests
