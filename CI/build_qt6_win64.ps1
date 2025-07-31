@@ -30,7 +30,7 @@ Invoke-WebRequest -Uri $qtUrl -OutFile $qtSrcZip -Verbose
 
 # Extract
 Write-Host "Extracting Qt source..."
-Expand-Archive -Path $qtSrcZip -DestinationPath $env:GITHUB_WORKSPACE -Verbose
+Expand-Archive -Path $qtSrcZip -DestinationPath $env:GITHUB_WORKSPACE
 
 $qtSrcDir = Join-Path $env:GITHUB_WORKSPACE "qt-everywhere-src-$Qt6Version"
 
@@ -52,9 +52,8 @@ cmake --version
 # Base configure args
 $configureArgs = @(
     "-prefix", $install_dir,
-    "-D", "QT_BUILD_EXAMPLES_BY_DEFAULT=OFF",
-    "-D", "QT_BUILD_TESTS_BY_DEFAULT=OFF",
-    "-D", "QT_BUILD_TOOLS_BY_DEFAULT=ON"
+    "-force-bundled-libs",
+    "--", "-G Visual Studio 17 2022 -A x64 -D QT_BUILD_EXAMPLES_BY_DEFAULT=OFF -D QT_BUILD_TESTS_BY_DEFAULT=OFF -D QT_BUILD_TOOLS_BY_DEFAULT=ON"
 )
 
 # Add build-type flags
