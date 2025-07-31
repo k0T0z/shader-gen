@@ -41,6 +41,8 @@ Set-Location $qtSrcDir
 if (-Not (Test-Path "build")) {
     New-Item -ItemType Directory -Path build | Out-Null
 }
+
+Write-Host "Current location: $(Get-Location)"
 Set-Location build
 
 Write-Host "Configuring Qt with prefix: $install_dir"
@@ -51,9 +53,7 @@ cmake --version
 
 # Base configure args
 $configureArgs = @(
-    "-prefix", $install_dir,
-    "-force-bundled-libs",
-    "--", "-G Visual Studio 17 2022 -A x64 -D QT_BUILD_EXAMPLES_BY_DEFAULT=OFF -D QT_BUILD_TESTS_BY_DEFAULT=OFF -D QT_BUILD_TOOLS_BY_DEFAULT=ON"
+    "-prefix", $install_dir
 )
 
 # Add build-type flags
@@ -80,6 +80,19 @@ if ($link_type -eq "Static") {
 } else {
     $configureArgs += "-shared"
 }
+
+# The “--” tells Qt’s configure.bat “what comes next goes to CMake”
+$configureArgs += "--"
+
+$configureArgs += "-G"
+$configureArgs += "Visual Studio 17 2022"
+
+$configureArgs += "-A"
+$configureArgs += "x64"
+
+$configureArgs += "QT_BUILD_EXAMPLES_BY_DEFAULT=OFF"
+$configureArgs += "QT_BUILD_TESTS_BY_DEFAULT=OFF"
+$configureArgs += "QT_BUILD_TOOLS_BY_DEFAULT=ON"
 
 # Run configure
 Write-Host "Running configure.bat with arguments:`n  $($configureArgs -join ' ')"
