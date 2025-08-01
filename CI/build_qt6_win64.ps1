@@ -34,17 +34,6 @@ Expand-Archive -Path $qtSrcZip -DestinationPath $env:GITHUB_WORKSPACE
 
 $qtSrcDir = Join-Path $env:GITHUB_WORKSPACE "qt-everywhere-src-$Qt6Version"
 
-# Build Qt
-Set-Location $qtSrcDir
-
-# Create & switch to the build directory.
-if (-Not (Test-Path "build")) {
-    New-Item -ItemType Directory -Path build | Out-Null
-}
-
-Write-Host "Current location: $(Get-Location)"
-Set-Location build
-
 Write-Host "Configuring Qt with prefix: $install_dir"
 
 # Ensure Python and CMake are available
@@ -53,7 +42,8 @@ cmake --version
 
 # Base configure args
 $configureArgs = @(
-    "-prefix", $install_dir
+    "-prefix", $install_dir,
+    "-submodules", "qtbase"
 )
 
 # Add build-type flags
@@ -72,6 +62,9 @@ switch ($build_type) {
         $configureArgs += "-release"
         $configureArgs += "-force-debug-info"
     }
+    default {
+        $configureArgs += "-debug-and-release"
+    }
 }
 
 # Add link-type flag
@@ -85,14 +78,27 @@ if ($link_type -eq "Static") {
 $configureArgs += "--"
 
 $configureArgs += "-G"
-$configureArgs += "Visual Studio 17 2022"
+$configureArgs += "Ninja" # The official supported generator for Qt6 on Windows.
 
-$configureArgs += "-A"
-$configureArgs += "x64"
-
+$configureArgs += "-D"
 $configureArgs += "QT_BUILD_EXAMPLES_BY_DEFAULT=OFF"
+
+$configureArgs += "-D"
 $configureArgs += "QT_BUILD_TESTS_BY_DEFAULT=OFF"
+
+$configureArgs += "-D"
 $configureArgs += "QT_BUILD_TOOLS_BY_DEFAULT=ON"
+
+# Build Qt
+Set-Location $qtSrcDir
+
+# Create & switch to the build directory.
+if (-Not (Test-Path "build")) {
+    New-Item -ItemType Directory -Path build | Out-Null
+}
+
+Write-Host "Current location: $(Get-Location)"
+Set-Location build
 
 # Run configure
 Write-Host "Running configure.bat with arguments:`n  $($configureArgs -join ' ')"
