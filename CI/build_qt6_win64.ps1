@@ -63,7 +63,7 @@ switch ($build_type) {
         $configureArgs += "-force-debug-info"
     }
     default {
-        $configureArgs += "-debug-and-release"
+        throw "Invalid build type: $build_type"
     }
 }
 
@@ -100,6 +100,10 @@ if (-Not (Test-Path "build")) {
 Write-Host "Current location: $(Get-Location)"
 Set-Location build
 
+Write-Host "Setting up Visual Studio environment..."
+$VSEdition = "Community"
+& "C:\Program Files (x86)\Microsoft Visual Studio\2022\$VSEdition\VC\Auxiliary\Build\vcvarsall.bat" amd64
+
 # Run configure
 Write-Host "Running configure.bat with arguments:`n  $($configureArgs -join ' ')"
 & "$qtSrcDir\configure.bat" @configureArgs
@@ -109,7 +113,7 @@ Write-Host "Starting build..."
 cmake --build . --parallel
 
 Write-Host "Installing to $install_dir..."
-cmake --install .
+cmake --install . --parallel
 
 # Return to the workspace root
 Set-Location $env:GITHUB_WORKSPACE
