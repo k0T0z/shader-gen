@@ -82,10 +82,10 @@ $configureArgs += "-G"
 $configureArgs += "Ninja" # The official supported generator for Qt6 on Windows.
 
 # We need to use MSVC
-$configureArgs += @(
-  "-D", "CMAKE_C_COMPILER=cl",
-  "-D", "CMAKE_CXX_COMPILER=cl"
-)
+# $configureArgs += @(
+#   "-D", "CMAKE_C_COMPILER=cl",
+#   "-D", "CMAKE_CXX_COMPILER=cl"
+# )
 
 $configureArgs += "-D"
 $configureArgs += "QT_BUILD_EXAMPLES_BY_DEFAULT=OFF"
