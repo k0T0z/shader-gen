@@ -29,16 +29,20 @@ jobs:
         update: true
         install: >-
           mingw-w64-x86_64-gcc
-          mingw-w64-x86_64-qt6-base-debug
           mingw-w64-x86_64-protobuf
           mingw-w64-x86_64-make
           mingw-w64-x86_64-cmake
 
+    - name: Build Qt6
+      shell: msys2 {0}
+      run: |
+        ./CI/build_qt6_win64_gcc.sh Debug Dynamic "${{ github.workspace }}/qt6-lib"
+
     - name: Configure CMake
       shell: msys2 {0}
-      run: cmake -B build -G "Unix Makefiles" -DCMAKE_MAKE_PROGRAM=mingw32-make -DSHADER_GEN_BUILD_TESTS=ON
+      run: cmake -B build -G "Unix Makefiles" -DCMAKE_PREFIX_PATH="${{ github.workspace }}/qt6-lib/lib/cmake" -DCMAKE_MAKE_PROGRAM=mingw32-make -DSHADER_GEN_BUILD_TESTS=ON
 
-    - name: Build project
+    - name: Build shader-gen
       shell: msys2 {0}
       run: |
         cmake --build build --config Debug --parallel $(nproc)
@@ -50,7 +54,9 @@ jobs:
 
     - name: Copy DLLs next to the executable
       shell: msys2 {0}
-      run: cp build/bin/*.dll build/
+      run: |
+        cp build/bin/*.dll build/
+        cp ${{ github.workspace }}/qt6-lib/bin/*.dll build/
 
     - name: Run tests
       shell: msys2 {0}

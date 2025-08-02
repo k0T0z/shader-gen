@@ -77,6 +77,11 @@ if ($link_type -eq "Static") {
 # The “--” tells Qt’s configure.bat “what comes next goes to CMake”
 $configureArgs += "--"
 
+$configureArgs += @(
+  "-D", "CMAKE_C_COMPILER=cl",
+  "-D", "CMAKE_CXX_COMPILER=cl"
+)
+
 # https://doc.qt.io/qt-6/configure-options.html#cmake-generators.
 $configureArgs += "-G"
 $configureArgs += "Ninja" # The official supported generator for Qt6 on Windows.

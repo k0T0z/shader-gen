@@ -38,7 +38,7 @@ jobs:
       shell: bash
       run: cmake -B build -G "Unix Makefiles" -DSHADER_GEN_BUILD_TESTS=ON
 
-    - name: Build project
+    - name: Build shader-gen
       shell: bash
       run: |
         cmake --build build --config Debug --parallel $(nproc)
