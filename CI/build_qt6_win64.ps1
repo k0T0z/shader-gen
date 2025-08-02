@@ -77,6 +77,7 @@ if ($link_type -eq "Static") {
 # The “--” tells Qt’s configure.bat “what comes next goes to CMake”
 $configureArgs += "--"
 
+# https://doc.qt.io/qt-6/configure-options.html#cmake-generators.
 $configureArgs += "-G"
 $configureArgs += "Ninja" # The official supported generator for Qt6 on Windows.
 
@@ -100,9 +101,10 @@ if (-Not (Test-Path "build")) {
 Write-Host "Current location: $(Get-Location)"
 Set-Location build
 
+# https://github.com/actions/runner-images/blob/main/images/windows/Windows2022-Readme.md#visual-studio-enterprise-2022.
 Write-Host "Setting up Visual Studio environment..."
-$VSEdition = "Community"
-& "C:\Program Files (x86)\Microsoft Visual Studio\2022\$VSEdition\VC\Auxiliary\Build\vcvarsall.bat" amd64
+$VSEdition = "Enterprise"
+& "C:\Program Files\Microsoft Visual Studio\2022\$VSEdition\VC\Auxiliary\Build\vcvarsall.bat" amd64
 
 # Run configure
 Write-Host "Running configure.bat with arguments:`n  $($configureArgs -join ' ')"
