@@ -86,6 +86,7 @@ fi
 # CMake options
 configureArgs+=("--")
 configureArgs+=("-G" "Ninja")
+configureArgs+=("-D" "CMAKE_C_COMPILER=gcc" "-D" "CMAKE_CXX_COMPILER=g++") # We need to use MinGW GCC
 configureArgs+=("-D" "QT_BUILD_EXAMPLES_BY_DEFAULT=OFF")
 configureArgs+=("-D" "QT_BUILD_TESTS_BY_DEFAULT=OFF")
 configureArgs+=("-D" "QT_BUILD_TOOLS_BY_DEFAULT=ON")

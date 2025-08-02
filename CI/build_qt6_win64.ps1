@@ -21,7 +21,7 @@ $parts      = $Qt6Version.Split('.')
 $majorMinor = "$($parts[0]).$($parts[1])"
 
 # URLs and paths
-$qtSrcCompressed = "qt-everywhere-src-$Qt6Version.tar.xz"
+$qtSrcCompressed = "qt-everywhere-src-$Qt6Version.zip"
 $qtUrl    = "https://download.qt.io/official_releases/qt/$majorMinor/$Qt6Version/single/$qtSrcCompressed"
 
 # Download source
@@ -30,9 +30,9 @@ Invoke-WebRequest -Uri $qtUrl -OutFile $qtSrcCompressed -Verbose
 
 # Extract
 Write-Host "Extracting Qt source..."
-tar -vxf $qtSrcCompressed
+Expand-Archive -Path $qtSrcCompressed -DestinationPath $env:GITHUB_WORKSPACE
 
-$qtSrcDir = "qt-everywhere-src-$Qt6Version"
+$qtSrcDir = Join-Path $env:GITHUB_WORKSPACE "qt-everywhere-src-$Qt6Version"
 
 Write-Host "Configuring Qt with prefix: $install_dir"
 
