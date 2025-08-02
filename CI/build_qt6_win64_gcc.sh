@@ -34,8 +34,8 @@ Qt6Version="6.9.1"
 majorMinor=$(echo "$Qt6Version" | cut -d. -f1-2)
 
 # URLs and paths
-qtSrcZip="qt-everywhere-src-$Qt6Version.zip"
-qtUrl="https://download.qt.io/official_releases/qt/$majorMinor/$Qt6Version/single/$qtSrcZip"
+qtSrcCompressed="qt-everywhere-src-$Qt6Version.tar.xz"
+qtUrl="https://download.qt.io/official_releases/qt/$majorMinor/$Qt6Version/single/$qtSrcCompressed"
 
 # Download source
 echo "Downloading Qt source from $qtUrl..."
@@ -43,7 +43,7 @@ curl -L -O "$qtUrl" || { echo "Download failed"; exit 1; }
 
 # Extract
 echo "Extracting Qt source..."
-unzip -q "$qtSrcZip" || { echo "Extraction failed"; exit 1; }
+tar -xf "$qtSrcCompressed"
 
 qtSrcDir="qt-everywhere-src-$Qt6Version"
 
