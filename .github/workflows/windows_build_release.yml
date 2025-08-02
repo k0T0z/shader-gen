@@ -25,8 +25,20 @@ jobs:
 
       - name: Add msbuild to PATH
         uses: microsoft/setup-msbuild@v2
+        with:
+          msbuild-architecture: x64
+
+      - name: Cache Qt6
+        id: cache-qt6
+        uses: actions/cache@v4
+        with:
+          path: ${{ github.workspace }}\qt6-lib
+          key: qt6-${{ runner.os }}-${{ hashFiles('CI\build_qt6_win64.ps1') }}
+          restore-keys: |
+            qt6-${{ runner.os }}-
 
       - name: Build Qt6
+        if: steps.cache-qt6.outputs.cache-hit != 'true'
         shell: pwsh
         run: |
           Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass

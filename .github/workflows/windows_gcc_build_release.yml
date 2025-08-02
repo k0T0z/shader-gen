@@ -34,7 +34,17 @@ jobs:
             mingw-w64-x86_64-python
             git
 
+      - name: Cache Qt6
+        id: cache-qt6
+        uses: actions/cache@v4
+        with:
+          path: ${{ github.workspace }}/qt6-lib
+          key: qt6-${{ runner.os }}-${{ hashFiles('CI/build_qt6_win64_gcc.sh') }}
+          restore-keys: |
+            qt6-${{ runner.os }}-
+
       - name: Build Qt6
+        if: steps.cache-qt6.outputs.cache-hit != 'true'
         shell: msys2 {0}
         run: |
           ./CI/build_qt6_win64_gcc.sh Release Static "${{ github.workspace }}/qt6-lib"
