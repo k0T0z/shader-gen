@@ -117,10 +117,10 @@ Write-Host "Running configure.bat with arguments:`n  $($configureArgs -join ' ')
 
 # Build & install with CMake
 Write-Host "Starting build..."
-cmake --build . --parallel
+cmake --build . --parallel --config $build_type
 
 Write-Host "Installing to $install_dir..."
-cmake --install . --parallel
+cmake --install . --parallel --config $build_type
 
 # Return to the workspace root
 Set-Location $env:GITHUB_WORKSPACE

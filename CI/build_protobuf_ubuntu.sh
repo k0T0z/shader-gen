@@ -78,7 +78,7 @@ cmake .. -G "Unix Makefiles" \
          -DCMAKE_CXX_STANDARD=17 \
          -Dprotobuf_BUILD_SHARED_LIBS="$SHARED_LIBS"
 
-make -j$(nproc) 
+make -j$(nproc)
 
 sudo make install
 

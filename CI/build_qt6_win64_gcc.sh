@@ -102,10 +102,10 @@ printf '  %s\n' "${configureArgs[@]}"
 
 # Build and install
 echo "Starting build..."
-cmake --build . --parallel || { echo "Build failed"; exit 1; }
+cmake --build . --config "$build_type" || { echo "Build failed"; exit 1; }
 
 echo "Installing to $install_dir..."
-cmake --install . --parallel || { echo "Installation failed"; exit 1; }
+cmake --install . --config "$build_type" || { echo "Installation failed"; exit 1; }
 
 cd ../..
 echo "Qt build+install complete."
