@@ -30,7 +30,7 @@ Invoke-WebRequest -Uri $qtUrl -OutFile $qtSrcCompressed -Verbose
 
 # Extract
 Write-Host "Extracting Qt source..."
-tar -xf $qtSrcCompressed
+tar -vxf $qtSrcCompressed
 
 $qtSrcDir = "qt-everywhere-src-$Qt6Version"
 
@@ -77,14 +77,15 @@ if ($link_type -eq "Static") {
 # The “--” tells Qt’s configure.bat “what comes next goes to CMake”
 $configureArgs += "--"
 
+# https://doc.qt.io/qt-6/configure-options.html#cmake-generators.
+$configureArgs += "-G"
+$configureArgs += "Ninja" # The official supported generator for Qt6 on Windows.
+
+# We need to use MSVC
 $configureArgs += @(
   "-D", "CMAKE_C_COMPILER=cl",
   "-D", "CMAKE_CXX_COMPILER=cl"
 )
-
-# https://doc.qt.io/qt-6/configure-options.html#cmake-generators.
-$configureArgs += "-G"
-$configureArgs += "Ninja" # The official supported generator for Qt6 on Windows.
 
 $configureArgs += "-D"
 $configureArgs += "QT_BUILD_EXAMPLES_BY_DEFAULT=OFF"
