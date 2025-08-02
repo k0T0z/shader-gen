@@ -4,10 +4,16 @@ on:
   push:
     branches:
       - master-qt6
+    paths-ignore:
+      - '*.md'
   pull_request:
     branches:
       - master-qt6
-  workflow_dispatch: 
+    paths-ignore:
+      - '*.md'
+  workflow_dispatch:
+    paths-ignore:
+      - '*.md'
 
 concurrency:
   group: ci-${{github.actor}}-${{github.head_ref || github.run_number}}-${{github.ref}}-windows-gcc
