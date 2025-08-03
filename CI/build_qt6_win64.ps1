@@ -43,7 +43,7 @@ cmake --version
 # https://github.com/actions/runner-images/blob/main/images/windows/Windows2022-Readme.md#visual-studio-enterprise-2022.
 Write-Host "Setting up Visual Studio environment..."
 $VSEdition = "Enterprise"
-& "D:\Program Files\Microsoft Visual Studio\2022\$VSEdition\Common7\Tools\Launch-VsDevShell.ps1" -Arch amd64
+& "C:\Program Files\Microsoft Visual Studio\2022\$VSEdition\Common7\Tools\Launch-VsDevShell.ps1" -Arch amd64
 
 # Base configure args
 $configureArgs = @(
