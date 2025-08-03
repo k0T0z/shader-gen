@@ -73,7 +73,7 @@ class VisualShaderProtoNode : public IVisualShaderProtoNode {
   VisualShaderProtoNode() : oneof_value_field_number(set_oneof_value_field_number()) {}
 
   std::string get_name() const override {
-    return Proto::descriptor()->name();
+    return std::string(Proto::descriptor()->name());
   }
 
   std::string get_caption() const override {
