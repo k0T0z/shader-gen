@@ -27,11 +27,6 @@ jobs:
       with:
         submodules: recursive
 
-    - name: Add msbuild to PATH
-      uses: microsoft/setup-msbuild@v2
-      with:
-        msbuild-architecture: x64
-
     - name: Cache Qt6
       id: cache-qt6
       uses: actions/cache@v4

@@ -40,6 +40,11 @@ Write-Host "Configuring Qt with prefix: $install_dir"
 python --version
 cmake --version
 
+# https://github.com/actions/runner-images/blob/main/images/windows/Windows2022-Readme.md#visual-studio-enterprise-2022.
+Write-Host "Setting up Visual Studio environment..."
+$VSEdition = "Enterprise"
+& "D:\Program Files\Microsoft Visual Studio\2022\$VSEdition\Common7\Tools\Launch-VsDevShell.ps1" -Arch amd64
+
 # Base configure args
 $configureArgs = @(
     "-prefix", $install_dir,
@@ -82,10 +87,10 @@ $configureArgs += "-G"
 $configureArgs += "Ninja" # The official supported generator for Qt6 on Windows.
 
 # We need to use MSVC
-# $configureArgs += @(
-#   "-D", "CMAKE_C_COMPILER=cl",
-#   "-D", "CMAKE_CXX_COMPILER=cl"
-# )
+$configureArgs += @(
+  "-D", "CMAKE_C_COMPILER=cl",
+  "-D", "CMAKE_CXX_COMPILER=cl"
+)
 
 $configureArgs += "-D"
 $configureArgs += "QT_BUILD_EXAMPLES_BY_DEFAULT=OFF"
@@ -106,11 +111,6 @@ if (-Not (Test-Path "build")) {
 
 Write-Host "Current location: $(Get-Location)"
 Set-Location build
-
-# https://github.com/actions/runner-images/blob/main/images/windows/Windows2022-Readme.md#visual-studio-enterprise-2022.
-Write-Host "Setting up Visual Studio environment..."
-$VSEdition = "Enterprise"
-& "C:\Program Files\Microsoft Visual Studio\2022\$VSEdition\VC\Auxiliary\Build\vcvarsall.bat" amd64
 
 # Run configure
 Write-Host "Running configure.bat with arguments:`n  $($configureArgs -join ' ')"
