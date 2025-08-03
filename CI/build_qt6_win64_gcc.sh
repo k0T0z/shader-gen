@@ -106,7 +106,7 @@ echo "Starting build..."
 cmake --build . --config "$build_type" || { echo "Build failed"; exit 1; }
 
 echo "Installing to $install_dir..."
-cmake --install . --config "$build_type" || { echo "Installation failed"; exit 1; }
+cmake --install . --parallel $(nproc) --config "$build_type" || { echo "Installation failed"; exit 1; }
 
 cd ../..
 echo "Qt build+install complete."

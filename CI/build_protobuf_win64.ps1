@@ -64,7 +64,7 @@ cmake .. -G "Visual Studio 17 2022" -A x64 `
 # Build and install.
 # DON'T use parallel builds with Protobuf on Windows as it breaks the CI.
 cmake --build . --config $build_type
-cmake --install . --config $build_type
+cmake --install . --parallel $env:NUMBER_OF_PROCESSORS --config $build_type
 
 # Return to the original workspace (assumes GITHUB_WORKSPACE is set).
 Set-Location $env:GITHUB_WORKSPACE
