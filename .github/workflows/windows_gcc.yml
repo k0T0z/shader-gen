@@ -90,6 +90,7 @@ jobs:
         echo "${{ github.workspace }}/build/bin" >> $GITHUB_PATH
         echo "${{ github.workspace }}/qt6-lib/bin" >> $GITHUB_PATH
         echo "${{ github.workspace }}/protobuf-lib/bin" >> $GITHUB_PATH
+        echo "/c/msys64/mingw64/bin" >> $GITHUB_PATH
 
     - name: Run tests
       shell: msys2 {0}
