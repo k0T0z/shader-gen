@@ -67,19 +67,6 @@ jobs:
         '${{ github.workspace }}\qt6-lib\bin' | Out-File -FilePath $Env:GITHUB_PATH -Encoding UTF8 -Append
         '${{ github.workspace }}\protobuf-lib\bin' | Out-File -FilePath $Env:GITHUB_PATH -Encoding UTF8 -Append
 
-    # - name: Copy DLLs next to the executable
-    #   shell: pwsh
-    #   run: |
-    #     $binDir = "${{ github.workspace }}\build\bin\Debug"
-    #     $destDir = "${{ github.workspace }}\build\Debug"
-        
-    #     # Copy DLLs
-    #     Copy-Item -Path "$binDir\*.dll" -Destination $destDir -Force
-    #     Copy-Item -Path "${{ github.workspace }}\qt6-lib\bin\*.dll" -Destination $destDir -Force
-    #     Copy-Item -Path "${{ github.workspace }}\protobuf-lib\bin\*.dll" -Destination $destDir -Force
-        
-    #     Write-Output "Copied DLLs to: $destDir"
-
     - name: Run tests
       shell: pwsh
       env:
