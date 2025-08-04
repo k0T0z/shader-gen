@@ -84,6 +84,14 @@ jobs:
         echo "Dependencies for shader-gen-tests.exe"
         ldd build/shader-gen-tests
 
+    - name: Check DLL Locations
+      shell: msys2 {0}
+      run: |
+        echo "Qt6 DLLs:"
+        ls -l "${{ github.workspace }}/qt6-lib/bin"
+        echo "Protobuf DLLs:"
+        ls -l "${{ github.workspace }}/protobuf-lib/bin"
+
     - name: Populate PATH
       shell: msys2 {0}
       run: |
