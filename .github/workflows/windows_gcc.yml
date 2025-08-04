@@ -84,24 +84,12 @@ jobs:
         echo "Dependencies for shader-gen-tests.exe"
         ldd build/shader-gen-tests
 
-    # - name: Populate PATH
-    #   shell: msys2 {0}
-    #   run: |
-    #     echo "${{ github.workspace }}/build/bin" >> $GITHUB_PATH
-    #     echo "${{ github.workspace }}/qt6-lib/bin" >> $GITHUB_PATH
-    #     echo "${{ github.workspace }}/protobuf-lib/bin" >> $GITHUB_PATH
-
-    - name: Copy DLLs next to the executable
-      shell: msys2 {0}
+    - name: Populate PATH
+      shell: pwsh
       run: |
-        binDir="${{ github.workspace }}/build/bin"
-        destDir="${{ github.workspace }}/build"
-
-        cp "$binDir/*.dll" "$destDir"
-        cp "${{ github.workspace }}/qt6-lib/bin/*.dll" "$destDir"
-        cp "${{ github.workspace }}/protobuf-lib/bin/*.dll" "$destDir"
-
-        echo "Copied DLLs to: $destDir"
+        '${{ github.workspace }}\build\bin' | Out-File -FilePath $Env:GITHUB_PATH -Encoding UTF8 -Append
+        '${{ github.workspace }}\qt6-lib\bin' | Out-File -FilePath $Env:GITHUB_PATH -Encoding UTF8 -Append
+        '${{ github.workspace }}\protobuf-lib\bin' | Out-File -FilePath $Env:GITHUB_PATH -Encoding UTF8 -Append
 
     - name: Run tests
       shell: msys2 {0}
