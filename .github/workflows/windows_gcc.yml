@@ -84,20 +84,20 @@ jobs:
         echo "Dependencies for shader-gen-tests.exe"
         ldd build/shader-gen-tests
 
-    - name: Check DLL Locations
-      shell: msys2 {0}
-      run: |
-        echo "Qt6 DLLs:"
-        ls -l "${{ github.workspace }}/qt6-lib/bin"
-        echo "Protobuf DLLs:"
-        ls -l "${{ github.workspace }}/protobuf-lib/bin"
-
     - name: Populate PATH
       shell: msys2 {0}
       run: |
-        echo "$(cygpath -u '${{ github.workspace }}/build/bin')" >> $GITHUB_PATH
-        echo "$(cygpath -u '${{ github.workspace }}/qt6-lib/bin')" >> $GITHUB_PATH
-        echo "$(cygpath -u '${{ github.workspace }}/protobuf-lib/bin')" >> $GITHUB_PATH
+        echo "${{ github.workspace }}/build/bin" >> $GITHUB_PATH
+        echo "${{ github.workspace }}/qt6-lib/bin" >> $GITHUB_PATH
+        echo "${{ github.workspace }}/protobuf-lib/bin" >> $GITHUB_PATH
+
+    - name: Check dependencies
+      shell: msys2 {0}
+      run: |
+        echo "Dependencies for shader-gen.exe"
+        ldd build/shader-gen
+        echo "Dependencies for shader-gen-tests.exe"
+        ldd build/shader-gen-tests
 
     - name: Run tests
       shell: msys2 {0}
