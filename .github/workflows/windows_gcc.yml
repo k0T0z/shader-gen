@@ -73,6 +73,12 @@ jobs:
         echo "build/bin" >> $GITHUB_PATH
         echo "${{ github.workspace }}/qt6-lib/bin" >> $GITHUB_PATH
 
+    - name: Copy DLLs next to the executable
+      shell: msys2 {0}
+      run: |
+        cp build/bin/*.dll build/
+        cp "${{ github.workspace }}/qt6-lib/bin/*.dll" build/
+
     - name: Run tests
       shell: msys2 {0}
       env:
