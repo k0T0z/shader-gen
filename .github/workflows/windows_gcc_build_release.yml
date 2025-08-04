@@ -38,7 +38,7 @@ jobs:
         id: cache-qt6
         uses: actions/cache@v4
         with:
-          path: ${{ github.workspace }}/qt6-lib
+          path: ${{ github.workspace }}/qt6-lib-static
           key: qt6-${{ runner.os }}-${{ hashFiles('CI/build_qt6_win64_gcc.sh') }}
           restore-keys: |
             qt6-${{ runner.os }}-
@@ -47,9 +47,19 @@ jobs:
         if: steps.cache-qt6.outputs.cache-hit != 'true'
         shell: msys2 {0}
         run: |
-          ./CI/build_qt6_win64_gcc.sh Release Static "${{ github.workspace }}/qt6-lib"
+          ./CI/build_qt6_win64_gcc.sh Release Static "${{ github.workspace }}/qt6-lib-static"
+
+      - name: Cache Protobuf
+        id: cache-protobuf
+        uses: actions/cache@v4
+        with:
+          path: ${{ github.workspace }}/protobuf-lib-static
+          key: protobuf-${{ runner.os }}-${{ hashFiles('CI/build_protobuf_win64_gcc.sh') }}
+          restore-keys: |
+            protobuf-${{ runner.os }}-
 
       - name: Build Protobuf
+        if: steps.cache-protobuf.outputs.cache-hit != 'true'
         shell: msys2 {0}
         run: |
           mkdir -p "${{ github.workspace }}/protobuf-lib-static"
@@ -59,11 +69,11 @@ jobs:
       - name: Populate PATH for 'windeployqt'
         shell: msys2 {0}
         run: |
-          echo "${{ github.workspace }}/qt6-lib/bin" >> $GITHUB_PATH
+          echo "${{ github.workspace }}/qt6-lib-static/bin" >> $GITHUB_PATH
   
       - name: Configure CMake
         shell: msys2 {0}
-        run: cmake -B build -G "Unix Makefiles" -DCMAKE_MAKE_PROGRAM=mingw32-make -DCMAKE_BUILD_TYPE=Release -DSHADER_GEN_LINK_STATIC=ON -DCMAKE_PREFIX_PATH="${{ github.workspace }}/qt6-lib/lib/cmake;${{ github.workspace }}/protobuf-lib-static/lib/cmake" -DSHADER_GEN_BUILD_PORTABLE_RELEASE_PACKAGE=ON
+        run: cmake -B build -G "Unix Makefiles" -DCMAKE_MAKE_PROGRAM=mingw32-make -DCMAKE_BUILD_TYPE=Release -DSHADER_GEN_LINK_STATIC=ON -DCMAKE_PREFIX_PATH="${{ github.workspace }}/qt6-lib-static/lib/cmake;${{ github.workspace }}/protobuf-lib-static/lib/cmake" -DSHADER_GEN_BUILD_PORTABLE_RELEASE_PACKAGE=ON
   
       - name: Build shader-gen
         shell: msys2 {0}

@@ -33,7 +33,6 @@ jobs:
         update: true
         install: >-
           mingw-w64-x86_64-gcc
-          mingw-w64-x86_64-protobuf
           mingw-w64-x86_64-make
           mingw-w64-x86_64-cmake
           mingw-w64-x86_64-python
@@ -53,9 +52,26 @@ jobs:
       run: |
         ./CI/build_qt6_win64_gcc.sh Debug Dynamic "${{ github.workspace }}/qt6-lib"
 
+    - name: Cache Protobuf
+      id: cache-protobuf
+      uses: actions/cache@v4
+      with:
+        path: ${{ github.workspace }}/protobuf-lib
+        key: protobuf-${{ runner.os }}-${{ hashFiles('CI/build_protobuf_win64_gcc.sh') }}
+        restore-keys: |
+          protobuf-${{ runner.os }}-
+
+    - name: Build Protobuf
+      if: steps.cache-protobuf.outputs.cache-hit != 'true'
+      shell: msys2 {0}
+      run: |
+        mkdir -p "${{ github.workspace }}/protobuf-lib"
+        echo "Protobuf: '${{ github.workspace }}/protobuf-lib'"
+        ./CI/build_protobuf_win64_gcc.sh Debug Dynamic "${{ github.workspace }}/protobuf-lib"
+
     - name: Configure CMake
       shell: msys2 {0}
-      run: cmake -B build -G "Unix Makefiles" -DCMAKE_PREFIX_PATH="${{ github.workspace }}/qt6-lib/lib/cmake" -DCMAKE_MAKE_PROGRAM=mingw32-make -DSHADER_GEN_BUILD_TESTS=ON
+      run: cmake -B build -G "Unix Makefiles" -DCMAKE_PREFIX_PATH="${{ github.workspace }}/qt6-lib/lib/cmake;${{ github.workspace }}/protobuf-lib/lib/cmake" -DCMAKE_MAKE_PROGRAM=mingw32-make -DSHADER_GEN_BUILD_TESTS=ON
 
     - name: Build shader-gen
       shell: msys2 {0}
