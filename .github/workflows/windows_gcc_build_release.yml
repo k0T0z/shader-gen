@@ -67,9 +67,9 @@ jobs:
           ./CI/build_protobuf_win64_gcc.sh Release Static "${{ github.workspace }}/protobuf-lib-static"
 
       - name: Populate PATH for 'windeployqt'
-        shell: pwsh
+        shell: msys2 {0}
         run: |
-          '${{ github.workspace }}\qt6-lib-static\bin' | Out-File -FilePath $Env:GITHUB_PATH -Encoding UTF8 -Append
+          echo "$(cygpath -u '${{ github.workspace }}/qt6-lib-static/bin')" >> $GITHUB_PATH
   
       - name: Configure CMake
         shell: msys2 {0}

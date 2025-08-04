@@ -85,11 +85,11 @@ jobs:
         ldd build/shader-gen-tests
 
     - name: Populate PATH
-      shell: pwsh
+      shell: msys2 {0}
       run: |
-        '${{ github.workspace }}\build\bin' | Out-File -FilePath $Env:GITHUB_PATH -Encoding UTF8 -Append
-        '${{ github.workspace }}\qt6-lib\bin' | Out-File -FilePath $Env:GITHUB_PATH -Encoding UTF8 -Append
-        '${{ github.workspace }}\protobuf-lib\bin' | Out-File -FilePath $Env:GITHUB_PATH -Encoding UTF8 -Append
+        echo "$(cygpath -u '${{ github.workspace }}/build/bin')" >> $GITHUB_PATH
+        echo "$(cygpath -u '${{ github.workspace }}/qt6-lib/bin')" >> $GITHUB_PATH
+        echo "$(cygpath -u '${{ github.workspace }}/protobuf-lib/bin')" >> $GITHUB_PATH
 
     - name: Run tests
       shell: msys2 {0}
