@@ -33,6 +33,7 @@ jobs:
             mingw-w64-x86_64-cmake
             mingw-w64-x86_64-python
             git
+          path-type: inherit
 
       - name: Cache Qt6
         id: cache-qt6
@@ -69,7 +70,7 @@ jobs:
       - name: Populate PATH for 'windeployqt'
         shell: msys2 {0}
         run: |
-          echo "$(cygpath -u '${{ github.workspace }}/qt6-lib-static/bin')" >> $GITHUB_PATH
+          echo "${{ github.workspace }}/qt6-lib-static/bin" >> $GITHUB_PATH
   
       - name: Configure CMake
         shell: msys2 {0}

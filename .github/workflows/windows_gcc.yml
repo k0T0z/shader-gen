@@ -37,6 +37,7 @@ jobs:
           mingw-w64-x86_64-cmake
           mingw-w64-x86_64-python
           git
+        path-type: inherit # https://github.com/msys2/setup-msys2/tree/main?tab=readme-ov-file#path-type
 
     - name: Cache Qt6
       id: cache-qt6
@@ -84,7 +85,7 @@ jobs:
         echo "Dependencies for shader-gen-tests.exe"
         ldd build/shader-gen-tests
 
-    - name: Populate PATH
+    - name: Populate PATH # https://www.msys2.org/wiki/MSYS2-introduction/#path
       shell: msys2 {0}
       run: |
         echo "${{ github.workspace }}/build/bin" >> $GITHUB_PATH
