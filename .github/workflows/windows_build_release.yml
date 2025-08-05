@@ -1,12 +1,6 @@
 name: Windows Build and Release
 
 on:
-  workflow_run:
-    workflows:
-      - "Windows Build"
-    types:
-      - completed
-    branches: [master-qt6]
   workflow_dispatch:
 
 concurrency:
@@ -16,7 +10,7 @@ concurrency:
 jobs:
   release:
     runs-on: windows-latest
-    if: github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push'
+    if: github.ref == 'refs/heads/master-qt6'
 
     steps:
       - name: Checkout repository
