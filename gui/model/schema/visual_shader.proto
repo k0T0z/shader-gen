@@ -36,65 +36,62 @@ message VisualShader {
     message VisualShaderNode {
         optional int32 id = 1;
         
-        optional double x_coordinate = 2;
-        optional double y_coordinate = 3;
-        
         oneof node_type {
-            VisualShaderNodeInput input = 4;
-            VisualShaderNodeOutput output = 5;
+            VisualShaderNodeInput input = 2;
+            VisualShaderNodeOutput output = 3;
 
             /*************************************/
             /* CONSTANTS                         */
             /*************************************/
-            VisualShaderNodeFloatConstant float_constant = 6;
-            VisualShaderNodeIntConstant int_constant = 7;
-            VisualShaderNodeUIntConstant uint_constant = 8;
-            VisualShaderNodeBooleanConstant boolean_constant = 9;
-            VisualShaderNodeColorConstant color_constant = 10;
-            VisualShaderNodeVec2Constant vec2_constant = 11;
-            VisualShaderNodeVec3Constant vec3_constant = 12;
-            VisualShaderNodeVec4Constant vec4_constant = 13;
+            VisualShaderNodeFloatConstant float_constant = 4;
+            VisualShaderNodeIntConstant int_constant = 5;
+            VisualShaderNodeUIntConstant uint_constant = 6;
+            VisualShaderNodeBooleanConstant boolean_constant = 7;
+            VisualShaderNodeColorConstant color_constant = 8;
+            VisualShaderNodeVec2Constant vec2_constant = 9;
+            VisualShaderNodeVec3Constant vec3_constant = 10;
+            VisualShaderNodeVec4Constant vec4_constant = 11;
             
             /*************************************/
             /* OPERATORS                         */
             /*************************************/
-            VisualShaderNodeFloatOp float_op = 14;
-            VisualShaderNodeIntOp int_op = 15;
-            VisualShaderNodeUIntOp uint_op = 16;
-            VisualShaderNodeVectorOp vector_op = 17;
+            VisualShaderNodeFloatOp float_op = 12;
+            VisualShaderNodeIntOp int_op = 13;
+            VisualShaderNodeUIntOp uint_op = 14;
+            VisualShaderNodeVectorOp vector_op = 15;
 
             /*************************************/
             /* Funcs Node                        */
             /*************************************/
-            VisualShaderNodeFloatFunc float_func = 18;
-            VisualShaderNodeIntFunc int_func = 19;
-            VisualShaderNodeUIntFunc uint_func = 20;
-            VisualShaderNodeVectorFunc vector_func = 21;
+            VisualShaderNodeFloatFunc float_func = 16;
+            VisualShaderNodeIntFunc int_func = 17;
+            VisualShaderNodeUIntFunc uint_func = 18;
+            VisualShaderNodeVectorFunc vector_func = 19;
 
             /*************************************/
             /* NOISE                             */
             /*************************************/
-            VisualShaderNodeValueNoise value_noise = 22;
-            VisualShaderNodePerlinNoise perlin_noise = 23;
-            VisualShaderNodeVoronoiNoise voronoi_noise = 24;
+            VisualShaderNodeValueNoise value_noise = 20;
+            VisualShaderNodePerlinNoise perlin_noise = 21;
+            VisualShaderNodeVoronoiNoise voronoi_noise = 22;
 
             /*************************************/
             /* MISC                              */
             /*************************************/
-            VisualShaderNodeDotProduct dot_product = 25;
-            VisualShaderNodeVectorLen vector_len = 26;
-            VisualShaderNodeClamp clamp = 27;
-            VisualShaderNodeVectorDistance vector_distance = 28;
-            VisualShaderNode2dVectorCompose vector_2d_compose = 29;
-            VisualShaderNode3dVectorCompose vector_3d_compose = 30;
-            VisualShaderNode4dVectorCompose vector_4d_compose = 31;
-            VisualShaderNode2dVectorDecompose vector_2d_decompose = 32;
-            VisualShaderNode3dVectorDecompose vector_3d_decompose = 33;
-            VisualShaderNode4dVectorDecompose vector_4d_decompose = 34;
-            VisualShaderNodeIf if_node = 35;
-            VisualShaderNodeSwitch switch_node = 36;
-            VisualShaderNodeIs is = 37;
-            VisualShaderNodeCompare compare = 38;
+            VisualShaderNodeDotProduct dot_product = 23;
+            VisualShaderNodeVectorLen vector_len = 24;
+            VisualShaderNodeClamp clamp = 25;
+            VisualShaderNodeVectorDistance vector_distance = 26;
+            VisualShaderNode2dVectorCompose vector_2d_compose = 27;
+            VisualShaderNode3dVectorCompose vector_3d_compose = 28;
+            VisualShaderNode4dVectorCompose vector_4d_compose = 29;
+            VisualShaderNode2dVectorDecompose vector_2d_decompose = 30;
+            VisualShaderNode3dVectorDecompose vector_3d_decompose = 31;
+            VisualShaderNode4dVectorDecompose vector_4d_decompose = 32;
+            VisualShaderNodeIf if_node = 33;
+            VisualShaderNodeSwitch switch_node = 34;
+            VisualShaderNodeIs is = 35;
+            VisualShaderNodeCompare compare = 36;
         }
     }
     
