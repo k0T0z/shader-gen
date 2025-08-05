@@ -1,11 +1,12 @@
 name: Windows GCC Build and Release
 
 on:
-  push:
-    branches:
-      - master-qt6
-    paths-ignore:
-      - '*.md'
+  workflow_run:
+    workflows:
+      - "Windows GCC Build"
+    types:
+      - completed
+    branches: [master-qt6]
   workflow_dispatch:
 
 concurrency:
@@ -13,8 +14,9 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build:
+  release:
     runs-on: windows-latest
+    if: github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push'
 
     steps:
       - name: Checkout repository
