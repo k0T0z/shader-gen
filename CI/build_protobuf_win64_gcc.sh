@@ -71,6 +71,6 @@ cmake .. -G "Unix Makefiles" \
          -DCMAKE_MODULE_LINKER_FLAGS="-Wl,--no-undefined"
 
 cmake --build . --config "$BUILD_TYPE"
-cmake --install . --config "$BUILD_TYPE"
+cmake --install . --parallel $(nproc) --config "$BUILD_TYPE"
 
 cd "$GITHUB_WORKSPACE"

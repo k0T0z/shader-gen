@@ -4,10 +4,14 @@ on:
   push:
     branches:
       - master-qt6
+    paths-ignore:
+      - '*.md'
   pull_request:
     branches:
       - master-qt6
-  workflow_dispatch: 
+    paths-ignore:
+      - '*.md'
+  workflow_dispatch:
 
 concurrency:
   group: ci-${{github.actor}}-${{github.head_ref || github.run_number}}-${{github.ref}}-windows-gcc
@@ -29,16 +33,49 @@ jobs:
         update: true
         install: >-
           mingw-w64-x86_64-gcc
-          mingw-w64-x86_64-qt6-base-debug
-          mingw-w64-x86_64-protobuf
           mingw-w64-x86_64-make
           mingw-w64-x86_64-cmake
+          mingw-w64-x86_64-python
+          git
+        path-type: inherit # https://github.com/msys2/setup-msys2/tree/main?tab=readme-ov-file#path-type
+
+    - name: Cache Qt6
+      id: cache-qt6
+      uses: actions/cache@v4
+      with:
+        path: ${{ github.workspace }}/qt6-lib
+        key: qt6-${{ runner.os }}-${{ hashFiles('CI/build_qt6_win64_gcc.sh') }}
+        restore-keys: |
+          qt6-${{ runner.os }}-
+
+    - name: Build Qt6
+      if: steps.cache-qt6.outputs.cache-hit != 'true'
+      shell: msys2 {0}
+      run: |
+        ./CI/build_qt6_win64_gcc.sh Debug Dynamic "${{ github.workspace }}/qt6-lib"
+
+    - name: Cache Protobuf
+      id: cache-protobuf
+      uses: actions/cache@v4
+      with:
+        path: ${{ github.workspace }}/protobuf-lib
+        key: protobuf-${{ runner.os }}-${{ hashFiles('CI/build_protobuf_win64_gcc.sh') }}
+        restore-keys: |
+          protobuf-${{ runner.os }}-
+
+    - name: Build Protobuf
+      if: steps.cache-protobuf.outputs.cache-hit != 'true'
+      shell: msys2 {0}
+      run: |
+        mkdir -p "${{ github.workspace }}/protobuf-lib"
+        echo "Protobuf: '${{ github.workspace }}/protobuf-lib'"
+        ./CI/build_protobuf_win64_gcc.sh Debug Dynamic "${{ github.workspace }}/protobuf-lib"
 
     - name: Configure CMake
       shell: msys2 {0}
-      run: cmake -B build -G "Unix Makefiles" -DCMAKE_MAKE_PROGRAM=mingw32-make -DSHADER_GEN_BUILD_TESTS=ON
+      run: cmake -B build -G "Unix Makefiles" -DCMAKE_PREFIX_PATH="${{ github.workspace }}/qt6-lib/lib/cmake;${{ github.workspace }}/protobuf-lib/lib/cmake" -DCMAKE_MAKE_PROGRAM=mingw32-make -DSHADER_GEN_BUILD_TESTS=ON
 
-    - name: Build project
+    - name: Build shader-gen
       shell: msys2 {0}
       run: |
         cmake --build build --config Debug --parallel $(nproc)
@@ -48,9 +85,20 @@ jobs:
         echo "Dependencies for shader-gen-tests.exe"
         ldd build/shader-gen-tests
 
-    - name: Copy DLLs next to the executable
+    - name: Populate PATH # https://www.msys2.org/wiki/MSYS2-introduction/#path
       shell: msys2 {0}
-      run: cp build/bin/*.dll build/
+      run: |
+        echo "${{ github.workspace }}/build/bin" >> $GITHUB_PATH
+        echo "${{ github.workspace }}/qt6-lib/bin" >> $GITHUB_PATH
+        echo "${{ github.workspace }}/protobuf-lib/bin" >> $GITHUB_PATH
+
+    - name: Check dependencies
+      shell: msys2 {0}
+      run: |
+        echo "Dependencies for shader-gen.exe"
+        ldd build/shader-gen
+        echo "Dependencies for shader-gen-tests.exe"
+        ldd build/shader-gen-tests
 
     - name: Run tests
       shell: msys2 {0}

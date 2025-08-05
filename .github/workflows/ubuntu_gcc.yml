@@ -4,10 +4,14 @@ on:
   push:
     branches:
       - master-qt6
+    paths-ignore:
+      - '*.md'
   pull_request:
     branches:
       - master-qt6
-  workflow_dispatch: 
+    paths-ignore:
+      - '*.md'
+  workflow_dispatch:
 
 concurrency:
   group: ci-${{github.actor}}-${{github.head_ref || github.run_number}}-${{github.ref}}-ubuntu-gcc
@@ -38,7 +42,7 @@ jobs:
       shell: bash
       run: cmake -B build -G "Unix Makefiles" -DSHADER_GEN_BUILD_TESTS=ON
 
-    - name: Build project
+    - name: Build shader-gen
       shell: bash
       run: |
         cmake --build build --config Debug --parallel $(nproc)
