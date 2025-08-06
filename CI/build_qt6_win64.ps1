@@ -100,13 +100,31 @@ $configureArgs += @(
 
 switch ($link_type) {
     "Dynamic" {
+        switch ($build_type) {
+            "Debug" {
+                $msvcRuntime = 'MultiThreadedDebugDLL'
+            }
+            default {
+                $msvcRuntime = 'MultiThreadedDLL'
+            }
+        }
+
         $configureArgs += @(
-            "-D", 'CMAKE_MSVC_RUNTIME_LIBRARY="MultiThreaded$<$<CONFIG:Debug>:Debug>DLL"'
+            "-D", "CMAKE_MSVC_RUNTIME_LIBRARY=$msvcRuntime"
         )
     }
     "Static" {
+        switch ($build_type) {
+            "Debug" {
+                $msvcRuntime = 'MultiThreadedDebug'
+            }
+            default {
+                $msvcRuntime = 'MultiThreaded'
+            }
+        }
+
         $configureArgs += @(
-            "-D", 'CMAKE_MSVC_RUNTIME_LIBRARY="MultiThreaded$<$<CONFIG:Debug>:Debug>"'
+            "-D", "CMAKE_MSVC_RUNTIME_LIBRARY=$msvcRuntime"
         )
     }
     default {
