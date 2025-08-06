@@ -55,3 +55,9 @@ Or mRGM, which stands for mini-RadialGM, is a simple and lightweight version of 
 ## Rules
 
 I personally follow these rules to make the codebase clean and maintainable: [The Power of Ten – Rules for Developing Safety Critical Code](https://www.cs.otago.ac.nz/cosc345/resources/nasa-10-rules.pdf)
+
+## Acknowledgements
+
+> [!NOTE]
+> The way my ``Visual Shader Editor`` and ``Generator`` are written is inspired by [Godot](https://github.com/godotengine/godot) Game Engine. Check [Godot's LICENSE](https://github.com/godotengine/godot/blob/master/LICENSE.txt) for more info.
+
