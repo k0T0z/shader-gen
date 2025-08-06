@@ -20,32 +20,32 @@ jobs:
           submodules: recursive
 
       - name: Cache Qt6
-        id: cache-qt6
+        id: cache-qt6-static
         uses: actions/cache@v4
         with:
           path: ${{ github.workspace }}\qt6-lib-static
-          key: qt6-${{ runner.os }}-${{ hashFiles('CI\build_qt6_win64.ps1') }}
+          key: qt6-static-${{ runner.os }}-${{ hashFiles('CI\build_qt6_win64.ps1') }}
           restore-keys: |
-            qt6-${{ runner.os }}-
+            qt6-static-${{ runner.os }}-
 
       - name: Build Qt6
-        if: steps.cache-qt6.outputs.cache-hit != 'true'
+        if: steps.cache-qt6-static.outputs.cache-hit != 'true'
         shell: pwsh
         run: |
           Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
           .\CI\build_qt6_win64.ps1 Release Static "${{ github.workspace }}\qt6-lib-static"
 
       - name: Cache Protobuf
-        id: cache-protobuf
+        id: cache-protobuf-static
         uses: actions/cache@v4
         with:
           path: ${{ github.workspace }}\protobuf-lib-static
-          key: protobuf-${{ runner.os }}-${{ hashFiles('CI\build_protobuf_win64.ps1') }}
+          key: protobuf-static-${{ runner.os }}-${{ hashFiles('CI\build_protobuf_win64.ps1') }}
           restore-keys: |
-            protobuf-${{ runner.os }}-
+            protobuf-static-${{ runner.os }}-
 
       - name: Build Protobuf
-        if: steps.cache-protobuf.outputs.cache-hit != 'true'
+        if: steps.cache-protobuf-static.outputs.cache-hit != 'true'
         shell: pwsh
         run: |
           Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
