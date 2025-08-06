@@ -101,12 +101,12 @@ $configureArgs += @(
 switch ($link_type) {
     "Dynamic" {
         $configureArgs += @(
-            "-D", "CMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded$<$<CONFIG:Debug>:Debug>DLL"
+            "-D", 'CMAKE_MSVC_RUNTIME_LIBRARY="MultiThreaded$<$<CONFIG:Debug>:Debug>DLL"'
         )
     }
     "Static" {
         $configureArgs += @(
-            "-D", "CMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded$<$<CONFIG:Debug>:Debug>"
+            "-D", 'CMAKE_MSVC_RUNTIME_LIBRARY="MultiThreaded$<$<CONFIG:Debug>:Debug>"'
         )
     }
     default {
