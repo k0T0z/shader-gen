@@ -76,6 +76,7 @@ cmake .. -G "Unix Makefiles" \
          -Dprotobuf_ABSL_PROVIDER=package \
          -DCMAKE_BUILD_TYPE="$BUILD_TYPE" \
          -DCMAKE_CXX_STANDARD=17 \
+         -DBUILD_SHARED_LIBS="$SHARED_LIBS" \
          -Dprotobuf_BUILD_SHARED_LIBS="$SHARED_LIBS"
 
 make -j$(nproc)
