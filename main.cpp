@@ -36,15 +36,31 @@
 
 #include "gui/controller/visual_shader_editor.hpp"
 #include "gui/model/message_model.hpp"
+#include "generator/visual_shader_generator.hpp"
+
+// The leak reports are not enough, it is better to use UMDH
+// https://learn.microsoft.com/en-us/windows-hardware/drivers/debugger/umdh
+#if defined(SHADER_GEN_DEBUG) && defined(_MSC_VER)
+#include <crtdbg.h>
+#endif  // SHADER_GEN_DEBUG && _MSC_VER
 
 using VisualShader = gui::model::schema::VisualShader;
 
 int main(int argc, char** argv) {
+  DEBUG_PRINT(license_notices);
+
   // Verify that the version of the library that we linked against is
   // compatible with the version of the headers we compiled against.
   GOOGLE_PROTOBUF_VERIFY_VERSION;
 
+#if defined(SHADER_GEN_DEBUG) && defined(_MSC_VER)
+  // Enable run-time memory check for debug builds in MSVC
+  _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
+#endif  // SHADER_GEN_DEBUG && _MSC_VER
+
+#ifdef SHADER_GEN_DEBUG
   qputenv("QT_DEBUG_PLUGINS", "1");  // Enable plugin diagnostics
+#endif  // SHADER_GEN_DEBUG
 
   QApplication shader_gen_app(argc, argv);
   QCoreApplication::setOrganizationName(ENIGMA_ORG_NAME);
@@ -67,7 +83,6 @@ int main(int argc, char** argv) {
 
   VisualShaderEditor* w = new VisualShaderEditor(root_model);
 
-  w->resize(1440, 720);
   w->show();
 
   int result{shader_gen_app.exec()};

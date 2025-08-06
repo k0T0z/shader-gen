@@ -36,6 +36,31 @@
 #include "gui/model/repeated_message_model.hpp"
 #include "generator/vs_node_noise_generators.hpp"
 #include "gui/model/utils/utils.hpp"
+#include "ai-agent/utils/utils.hpp"
+
+using EnumDescriptor = google::protobuf::EnumDescriptor;
+
+// Global variable holding the license notice.
+const std::string license_notices = 
+"/***********************************************************************************/\n"
+"/*  ShaderGen, a visual shader editor that can generate GLSL code using            */\n"
+"/*  Artificial Intelligence.                                                       */\n"
+"/*  Copyright (C) 2024 - present  Seif Kandil (k0T0z) (https://k0t0z.github.io/)   */\n"
+"/*                                                                                 */\n"
+"/*  This program is free software: you can redistribute it and/or modify           */\n"
+"/*  it under the terms of the GNU General Public License as published by           */\n"
+"/*  the Free Software Foundation, either version 3 of the License, or              */\n"
+"/*  (at your option) any later version.                                            */\n"
+"/*                                                                                 */\n"
+"/*  This program is distributed in the hope that it will be useful,                */\n"
+"/*  but WITHOUT ANY WARRANTY; without even the implied warranty of                 */\n"
+"/*  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the                  */\n"
+"/*  GNU General Public License for more details.                                   */\n"
+"/*                                                                                 */\n"
+"/*  You should have received a copy of the GNU General Public License              */\n"
+"/*  along with this program.  If not, see <https://www.gnu.org/licenses/>.         */\n"
+"/***********************************************************************************/\n"
+"\n";
 
 namespace shadergen_visual_shader_generator {
 std::unordered_map<int, std::shared_ptr<IVisualShaderProtoNode>> to_proto_nodes(const ProtoModel* nodes) noexcept {
@@ -64,6 +89,27 @@ std::unordered_map<int, std::shared_ptr<IVisualShaderProtoNode>> to_proto_nodes(
     CHECK_PARAM_NULLPTR_NON_VOID(oneof_model, proto_nodes, "Oneof Model is nullptr.");
     const int oneof_value_field_number{oneof_model->get_oneof_value_field_number()};
 
+    proto_nodes[n_id] = shadergen_utils::get_proto_node_by_oneof_value_field_number(oneof_value_field_number);
+    CHECK_PARAM_NULLPTR_NON_VOID(proto_nodes[n_id], proto_nodes, "Proto node is nullptr.");
+  }
+
+  return proto_nodes;
+}
+
+std::unordered_map<int, std::shared_ptr<IVisualShaderProtoNode>> to_proto_nodes(const std::string& encoded_graph) noexcept {
+  std::unordered_map<int, std::shared_ptr<IVisualShaderProtoNode>> proto_nodes;
+
+  const std::pair<std::vector<std::string>, std::vector<std::string>> filtered_graph_tokens{ai_agent_utils::filter_entities_into_tokens(encoded_graph)};
+  const std::vector<std::string> node_entities{filtered_graph_tokens.first};
+  for (const auto& node_entity : node_entities) {
+    const std::vector<std::string> entity_tokens{ai_agent_utils::split_string(node_entity, ';')};
+    const int entity_type = std::stoi(ai_agent_utils::get_entity_type(entity_tokens));
+    CONTINUE_IF_TRUE(entity_type != 0, "Entity type is not a node.");
+    const int n_id = std::stoi(ai_agent_utils::get_node_entity_id(entity_tokens));
+    if (proto_nodes.find(n_id) != proto_nodes.end()) {
+      FAIL_AND_RETURN_NON_VOID(proto_nodes, "Node id already exists.");
+    }
+    const int oneof_value_field_number = std::stoi(ai_agent_utils::get_node_entity_oneof_value_field_number(entity_tokens));
     proto_nodes[n_id] = shadergen_utils::get_proto_node_by_oneof_value_field_number(oneof_value_field_number);
     CHECK_PARAM_NULLPTR_NON_VOID(proto_nodes[n_id], proto_nodes, "Proto node is nullptr.");
   }
@@ -102,8 +148,11 @@ std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>> to_generator
         const ProtoModel* input_model{oneof_model->get_sub_model(FieldPath::Of<VisualShader::VisualShaderNode>(
             FieldPath::FieldNumber(VisualShader::VisualShaderNode::kInputFieldNumber)))};
 
-        const VisualShaderNodeInputType input_type{input_model->get_sub_model(FieldPath::Of<VisualShaderNodeInput>(
-            FieldPath::FieldNumber(VisualShaderNodeInput::kTypeFieldNumber)))->data().toInt()};
+        const ProtoModel* input_type_model{input_model->get_sub_model(FieldPath::Of<VisualShaderNodeInput>(
+          FieldPath::FieldNumber(VisualShaderNodeInput::kTypeFieldNumber)))};
+
+        const VisualShaderNodeInput::VisualShaderNodeInputType input_type{input_type_model->data().toInt()};
+
         generators[n_id] = std::make_shared<VisualShaderNodeGeneratorInput>(input_type);
         break;
       }
@@ -188,7 +237,7 @@ std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>> to_generator
           const ProtoModel* float_op_model{oneof_model->get_sub_model(FieldPath::Of<VisualShader::VisualShaderNode>(
             FieldPath::FieldNumber(VisualShader::VisualShaderNode::kFloatOpFieldNumber)))};
 
-          const VisualShaderNodeFloatOp::VisualShaderNodeFloatOpType op_type {float_op_model->get_sub_model(FieldPath::Of<VisualShaderNodeFloatOp>(FieldPath::FieldNumber(VisualShaderNodeFloatOp::kOpFieldNumber)))->data().toInt()};
+          const VisualShaderNodeFloatOp::VisualShaderNodeFloatOpType op_type {float_op_model->get_sub_model(FieldPath::Of<VisualShaderNodeFloatOp>(FieldPath::FieldNumber(VisualShaderNodeFloatOp::kOpTypeFieldNumber)))->data().toInt()};
           generators[n_id] = std::make_shared<VisualShaderNodeGeneratorFloatOp>(op_type);
           break;
       }
@@ -196,7 +245,7 @@ std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>> to_generator
           const ProtoModel* int_op_model{oneof_model->get_sub_model(FieldPath::Of<VisualShader::VisualShaderNode>(
             FieldPath::FieldNumber(VisualShader::VisualShaderNode::kIntOpFieldNumber)))};
 
-          const VisualShaderNodeIntOp::VisualShaderNodeIntOpType op_type {int_op_model->get_sub_model(FieldPath::Of<VisualShaderNodeIntOp>(FieldPath::FieldNumber(VisualShaderNodeIntOp::kOpFieldNumber)))->data().toInt()};
+          const VisualShaderNodeIntOp::VisualShaderNodeIntOpType op_type {int_op_model->get_sub_model(FieldPath::Of<VisualShaderNodeIntOp>(FieldPath::FieldNumber(VisualShaderNodeIntOp::kOpTypeFieldNumber)))->data().toInt()};
           generators[n_id] = std::make_shared<VisualShaderNodeGeneratorIntOp>(op_type);
           break;
       }
@@ -204,7 +253,7 @@ std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>> to_generator
           const ProtoModel* uint_op_model{oneof_model->get_sub_model(FieldPath::Of<VisualShader::VisualShaderNode>(
             FieldPath::FieldNumber(VisualShader::VisualShaderNode::kUintOpFieldNumber)))};
 
-          const VisualShaderNodeUIntOp::VisualShaderNodeUIntOpType op_type {uint_op_model->get_sub_model(FieldPath::Of<VisualShaderNodeUIntOp>(FieldPath::FieldNumber(VisualShaderNodeUIntOp::kOpFieldNumber)))->data().toInt()};
+          const VisualShaderNodeUIntOp::VisualShaderNodeUIntOpType op_type {uint_op_model->get_sub_model(FieldPath::Of<VisualShaderNodeUIntOp>(FieldPath::FieldNumber(VisualShaderNodeUIntOp::kOpTypeFieldNumber)))->data().toInt()};
           generators[n_id] = std::make_shared<VisualShaderNodeGeneratorUIntOp>(op_type);
           break;
       }
@@ -212,8 +261,11 @@ std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>> to_generator
           const ProtoModel* vector_op_model{oneof_model->get_sub_model(FieldPath::Of<VisualShader::VisualShaderNode>(
             FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVectorOpFieldNumber)))};
 
-          const VisualShaderNodeVectorType type {vector_op_model->get_sub_model(FieldPath::Of<VisualShaderNodeVectorOp>(FieldPath::FieldNumber(VisualShaderNodeVectorOp::kTypeFieldNumber)))->data().toInt()};
-          const VisualShaderNodeVectorOp::VisualShaderNodeVectorOpType op_type {vector_op_model->get_sub_model(FieldPath::Of<VisualShaderNodeVectorOp>(FieldPath::FieldNumber(VisualShaderNodeVectorOp::kOpFieldNumber)))->data().toInt()};
+          const ProtoModel* vector_type_model{vector_op_model->get_sub_model(FieldPath::Of<VisualShaderNodeVectorOp>(
+            FieldPath::FieldNumber(VisualShaderNodeVectorOp::kVecTypeFieldNumber)))};
+
+          const VisualShaderNodeVectorType type {vector_type_model->data().toInt()};
+          const VisualShaderNodeVectorOp::VisualShaderNodeVectorOpType op_type {vector_op_model->get_sub_model(FieldPath::Of<VisualShaderNodeVectorOp>(FieldPath::FieldNumber(VisualShaderNodeVectorOp::kOpTypeFieldNumber)))->data().toInt()};
 
           generators[n_id] = std::make_shared<VisualShaderNodeGeneratorVectorOp>(type, op_type);
           break;
@@ -222,7 +274,7 @@ std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>> to_generator
           const ProtoModel* float_func_model{oneof_model->get_sub_model(FieldPath::Of<VisualShader::VisualShaderNode>(
             FieldPath::FieldNumber(VisualShader::VisualShaderNode::kFloatFuncFieldNumber)))};
 
-          const VisualShaderNodeFloatFunc::VisualShaderNodeFloatFuncType func_type {float_func_model->get_sub_model(FieldPath::Of<VisualShaderNodeFloatFunc>(FieldPath::FieldNumber(VisualShaderNodeFloatFunc::kFuncFieldNumber)))->data().toInt()};
+          const VisualShaderNodeFloatFunc::VisualShaderNodeFloatFuncType func_type {float_func_model->get_sub_model(FieldPath::Of<VisualShaderNodeFloatFunc>(FieldPath::FieldNumber(VisualShaderNodeFloatFunc::kFuncTypeFieldNumber)))->data().toInt()};
           generators[n_id] = std::make_shared<VisualShaderNodeGeneratorFloatFunc>(func_type);
           break;
       }
@@ -230,7 +282,7 @@ std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>> to_generator
           const ProtoModel* int_func_model{oneof_model->get_sub_model(FieldPath::Of<VisualShader::VisualShaderNode>(
             FieldPath::FieldNumber(VisualShader::VisualShaderNode::kIntFuncFieldNumber)))};
 
-          const VisualShaderNodeIntFunc::VisualShaderNodeIntFuncType func_type {int_func_model->get_sub_model(FieldPath::Of<VisualShaderNodeIntFunc>(FieldPath::FieldNumber(VisualShaderNodeIntFunc::kFuncFieldNumber)))->data().toInt()};
+          const VisualShaderNodeIntFunc::VisualShaderNodeIntFuncType func_type {int_func_model->get_sub_model(FieldPath::Of<VisualShaderNodeIntFunc>(FieldPath::FieldNumber(VisualShaderNodeIntFunc::kFuncTypeFieldNumber)))->data().toInt()};
           generators[n_id] = std::make_shared<VisualShaderNodeGeneratorIntFunc>(func_type);
           break;
       }
@@ -238,7 +290,7 @@ std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>> to_generator
           const ProtoModel* uint_func_model{oneof_model->get_sub_model(FieldPath::Of<VisualShader::VisualShaderNode>(
             FieldPath::FieldNumber(VisualShader::VisualShaderNode::kUintFuncFieldNumber)))};
 
-          const VisualShaderNodeUIntFunc::VisualShaderNodeUIntFuncType func_type {uint_func_model->get_sub_model(FieldPath::Of<VisualShaderNodeUIntFunc>(FieldPath::FieldNumber(VisualShaderNodeUIntFunc::kFuncFieldNumber)))->data().toInt()};
+          const VisualShaderNodeUIntFunc::VisualShaderNodeUIntFuncType func_type {uint_func_model->get_sub_model(FieldPath::Of<VisualShaderNodeUIntFunc>(FieldPath::FieldNumber(VisualShaderNodeUIntFunc::kFuncTypeFieldNumber)))->data().toInt()};
           generators[n_id] = std::make_shared<VisualShaderNodeGeneratorUIntFunc>(func_type);
           break;
       }
@@ -246,8 +298,11 @@ std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>> to_generator
           const ProtoModel* vector_func_model{oneof_model->get_sub_model(FieldPath::Of<VisualShader::VisualShaderNode>(
             FieldPath::FieldNumber(VisualShader::VisualShaderNode::kVectorFuncFieldNumber)))};
 
-          const VisualShaderNodeVectorType type {vector_func_model->get_sub_model(FieldPath::Of<VisualShaderNodeVectorFunc>(FieldPath::FieldNumber(VisualShaderNodeVectorFunc::kTypeFieldNumber)))->data().toInt()};
-          const VisualShaderNodeVectorFunc::VisualShaderNodeVectorFuncType func_type {vector_func_model->get_sub_model(FieldPath::Of<VisualShaderNodeVectorFunc>(FieldPath::FieldNumber(VisualShaderNodeVectorFunc::kFuncFieldNumber)))->data().toInt()};
+          const ProtoModel* vector_type_model{vector_func_model->get_sub_model(FieldPath::Of<VisualShaderNodeVectorFunc>(
+            FieldPath::FieldNumber(VisualShaderNodeVectorFunc::kVecTypeFieldNumber)))};
+
+          const VisualShaderNodeVectorType type {vector_type_model->data().toInt()};
+          const VisualShaderNodeVectorFunc::VisualShaderNodeVectorFuncType func_type {vector_func_model->get_sub_model(FieldPath::Of<VisualShaderNodeVectorFunc>(FieldPath::FieldNumber(VisualShaderNodeVectorFunc::kFuncTypeFieldNumber)))->data().toInt()};
 
           generators[n_id] = std::make_shared<VisualShaderNodeGeneratorVectorFunc>(type, func_type);
           break;
@@ -289,20 +344,8 @@ std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>> to_generator
           generators[n_id] = std::make_shared<VisualShaderNodeGeneratorClamp>();
           break;
       }
-      case VisualShader::VisualShaderNode::kStepFieldNumber: {
-          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorStep>();
-          break;
-      }
-      case VisualShader::VisualShaderNode::kSmoothStepFieldNumber: {
-          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorSmoothStep>();
-          break;
-      }
       case VisualShader::VisualShaderNode::kVectorDistanceFieldNumber: {
           generators[n_id] = std::make_shared<VisualShaderNodeGeneratorVectorDistance>();
-          break;
-      }
-      case VisualShader::VisualShaderNode::kMixFieldNumber: {
-          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorMix>();
           break;
       }
       case VisualShader::VisualShaderNode::kVector2DComposeFieldNumber: {
@@ -337,7 +380,11 @@ std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>> to_generator
           const ProtoModel* switch_model{oneof_model->get_sub_model(FieldPath::Of<VisualShader::VisualShaderNode>(
             FieldPath::FieldNumber(VisualShader::VisualShaderNode::kSwitchNodeFieldNumber)))};
 
-          const VisualShaderNodeSwitch::VisualShaderNodeSwitchOpType type {switch_model->get_sub_model(FieldPath::Of<VisualShaderNodeSwitch>(FieldPath::FieldNumber(VisualShaderNodeSwitch::kTypeFieldNumber)))->data().toInt()};
+          const ProtoModel* switch_type_model{switch_model->get_sub_model(FieldPath::Of<VisualShaderNodeSwitch>(
+            FieldPath::FieldNumber(VisualShaderNodeSwitch::kTypeFieldNumber)))};
+
+          const VisualShaderNodeSwitch::VisualShaderNodeSwitchType type {switch_type_model->data().toInt()};
+
           generators[n_id] = std::make_shared<VisualShaderNodeGeneratorSwitch>(type);
           break;
       }
@@ -345,7 +392,7 @@ std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>> to_generator
           const ProtoModel* is_model{oneof_model->get_sub_model(FieldPath::Of<VisualShader::VisualShaderNode>(
             FieldPath::FieldNumber(VisualShader::VisualShaderNode::kIsFieldNumber)))};
 
-          const VisualShaderNodeIs::Function func {is_model->get_sub_model(FieldPath::Of<VisualShaderNodeIs>(FieldPath::FieldNumber(VisualShaderNodeIs::kFuncFieldNumber)))->data().toInt()};
+          const VisualShaderNodeIs::VisualShaderNodeIsFunction func {is_model->get_sub_model(FieldPath::Of<VisualShaderNodeIs>(FieldPath::FieldNumber(VisualShaderNodeIs::kFuncFieldNumber)))->data().toInt()};
           generators[n_id] = std::make_shared<VisualShaderNodeGeneratorIs>(func);
           break;
       }
@@ -353,9 +400,13 @@ std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>> to_generator
           const ProtoModel* compare_model{oneof_model->get_sub_model(FieldPath::Of<VisualShader::VisualShaderNode>(
             FieldPath::FieldNumber(VisualShader::VisualShaderNode::kCompareFieldNumber)))};
 
-          const VisualShaderNodeCompare::ComparisonType type {compare_model->get_sub_model(FieldPath::Of<VisualShaderNodeCompare>(FieldPath::FieldNumber(VisualShaderNodeCompare::kTypeFieldNumber)))->data().toInt()};
-            const VisualShaderNodeCompare::Function func {compare_model->get_sub_model(FieldPath::Of<VisualShaderNodeCompare>(FieldPath::FieldNumber(VisualShaderNodeCompare::kFuncFieldNumber)))->data().toInt()};
-            const VisualShaderNodeCompare::Condition cond {compare_model->get_sub_model(FieldPath::Of<VisualShaderNodeCompare>(FieldPath::FieldNumber(VisualShaderNodeCompare::kCondFieldNumber)))->data().toInt()};
+          const ProtoModel* compare_type_model{compare_model->get_sub_model(FieldPath::Of<VisualShaderNodeCompare>(
+            FieldPath::FieldNumber(VisualShaderNodeCompare::kTypeFieldNumber)))};
+
+          const VisualShaderNodeCompare::VisualShaderNodeCompareType type {compare_type_model->data().toInt()};
+          const VisualShaderNodeCompare::VisualShaderNodeCompareFunction func {compare_model->get_sub_model(FieldPath::Of<VisualShaderNodeCompare>(FieldPath::FieldNumber(VisualShaderNodeCompare::kFuncFieldNumber)))->data().toInt()};
+          const VisualShaderNodeCompare::VisualShaderNodeCompareCondition cond {compare_model->get_sub_model(FieldPath::Of<VisualShaderNodeCompare>(FieldPath::FieldNumber(VisualShaderNodeCompare::kCondFieldNumber)))->data().toInt()};
+
           generators[n_id] = std::make_shared<VisualShaderNodeGeneratorCompare>(type, func, cond);
           break;
       }
@@ -366,6 +417,403 @@ std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>> to_generator
   }
 
   return generators;
+}
+
+std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>> to_generators(const std::string& encoded_graph) noexcept {
+  std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>> generators;
+
+  const std::pair<std::vector<std::string>, std::vector<std::string>> filtered_graph_tokens{ai_agent_utils::filter_entities_into_tokens(encoded_graph)};
+  const std::vector<std::string> node_entities{filtered_graph_tokens.first};
+  for (const auto& node_entity : node_entities) {
+    const std::vector<std::string> entity_tokens{ai_agent_utils::split_string(node_entity, ';')};
+    const int entity_type = std::stoi(ai_agent_utils::get_entity_type(entity_tokens));
+    CONTINUE_IF_TRUE(entity_type != 0, "Entity type is not a node.");
+    const int n_id = std::stoi(ai_agent_utils::get_node_entity_id(entity_tokens));
+    if (generators.find(n_id) != generators.end()) {
+      FAIL_AND_RETURN_NON_VOID(generators, "Node ID already exists in the generators map.");
+    }
+    const int oneof_value_field_number = std::stoi(ai_agent_utils::get_node_entity_oneof_value_field_number(entity_tokens));
+    const std::vector<std::string> parameters{ai_agent_utils::get_node_entity_parameters(entity_tokens)};
+    
+    switch (oneof_value_field_number) {
+      case VisualShader::VisualShaderNode::kInputFieldNumber: {
+        const std::vector<std::string> parameter_tokens{ai_agent_utils::split_string(parameters.at(0), '=')};
+        const int field_number = std::stoi(ai_agent_utils::get_node_entity_parameter_field_number(parameter_tokens));
+        CONTINUE_IF_TRUE(field_number != VisualShaderNodeInput::kTypeFieldNumber, "Wrong field number.");
+        const VisualShaderNodeInput::VisualShaderNodeInputType input_type{std::stoi(ai_agent_utils::get_node_entity_parameter_value(parameter_tokens))};
+
+        generators[n_id] = std::make_shared<VisualShaderNodeGeneratorInput>(input_type);
+        break;
+      }
+      case VisualShader::VisualShaderNode::kOutputFieldNumber: {
+        generators[n_id] = std::make_shared<VisualShaderNodeGeneratorOutput>();
+        break;
+      }
+      case VisualShader::VisualShaderNode::kFloatConstantFieldNumber: {
+          const std::vector<std::string> parameter_tokens{ai_agent_utils::split_string(parameters.at(0), '=')};
+          const int field_number = std::stoi(ai_agent_utils::get_node_entity_parameter_field_number(parameter_tokens));
+          CONTINUE_IF_TRUE(field_number != VisualShaderNodeFloatConstant::kValueFieldNumber, "Wrong field number.");
+          const float value{std::stof(ai_agent_utils::get_node_entity_parameter_value(parameter_tokens))};
+
+          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorFloatConstant>(value);
+          break;
+      }
+      case VisualShader::VisualShaderNode::kIntConstantFieldNumber: {
+          const std::vector<std::string> parameter_tokens{ai_agent_utils::split_string(parameters.at(0), '=')};
+          const int field_number = std::stoi(ai_agent_utils::get_node_entity_parameter_field_number(parameter_tokens));
+          CONTINUE_IF_TRUE(field_number != VisualShaderNodeIntConstant::kValueFieldNumber, "Wrong field number.");
+          const int value{std::stoi(ai_agent_utils::get_node_entity_parameter_value(parameter_tokens))};
+
+          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorIntConstant>(value);
+          break;
+      }
+      case VisualShader::VisualShaderNode::kUintConstantFieldNumber: {
+          const std::vector<std::string> parameter_tokens{ai_agent_utils::split_string(parameters.at(0), '=')};
+          const int field_number = std::stoi(ai_agent_utils::get_node_entity_parameter_field_number(parameter_tokens));
+          CONTINUE_IF_TRUE(field_number != VisualShaderNodeUIntConstant::kValueFieldNumber, "Wrong field number.");
+          const unsigned int value{std::stoul(ai_agent_utils::get_node_entity_parameter_value(parameter_tokens))};
+
+          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorUIntConstant>(value);
+          break;
+      }
+      case VisualShader::VisualShaderNode::kBooleanConstantFieldNumber: {
+          const std::vector<std::string> parameter_tokens{ai_agent_utils::split_string(parameters.at(0), '=')};
+          const int field_number = std::stoi(ai_agent_utils::get_node_entity_parameter_field_number(parameter_tokens));
+          CONTINUE_IF_TRUE(field_number != VisualShaderNodeBooleanConstant::kValueFieldNumber, "Wrong field number.");
+          const bool value{(bool)std::stoi(ai_agent_utils::get_node_entity_parameter_value(parameter_tokens))};
+
+          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorBoolConstant>(value);
+          break;
+      }
+      case VisualShader::VisualShaderNode::kColorConstantFieldNumber: {
+          const std::vector<std::string> parameter_tokens{ai_agent_utils::split_string(parameters.at(0), '=')};
+          const int field_number = std::stoi(ai_agent_utils::get_node_entity_parameter_field_number(parameter_tokens));
+          CONTINUE_IF_TRUE(field_number != VisualShaderNodeColorConstant::kRFieldNumber, "Wrong field number.");
+          const float r{std::stof(ai_agent_utils::get_node_entity_parameter_value(parameter_tokens))};
+
+          const std::vector<std::string> parameter_tokens1{ai_agent_utils::split_string(parameters.at(1), '=')};
+          const int field_number1 = std::stoi(ai_agent_utils::get_node_entity_parameter_field_number(parameter_tokens1));
+          CONTINUE_IF_TRUE(field_number1 != VisualShaderNodeColorConstant::kGFieldNumber, "Wrong field number.");
+          const float g{std::stof(ai_agent_utils::get_node_entity_parameter_value(parameter_tokens1))};
+
+          const std::vector<std::string> parameter_tokens2{ai_agent_utils::split_string(parameters.at(2), '=')};
+          const int field_number2 = std::stoi(ai_agent_utils::get_node_entity_parameter_field_number(parameter_tokens2)); 
+          CONTINUE_IF_TRUE(field_number2 != VisualShaderNodeColorConstant::kBFieldNumber, "Wrong field number.");
+          const float b{std::stof(ai_agent_utils::get_node_entity_parameter_value(parameter_tokens2))};
+
+          const std::vector<std::string> parameter_tokens3{ai_agent_utils::split_string(parameters.at(3), '=')};
+          const int field_number3 = std::stoi(ai_agent_utils::get_node_entity_parameter_field_number(parameter_tokens3));
+          CONTINUE_IF_TRUE(field_number3 != VisualShaderNodeColorConstant::kAFieldNumber, "Wrong field number.");
+          const float a{std::stof(ai_agent_utils::get_node_entity_parameter_value(parameter_tokens3))};
+
+          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorColorConstant>(r, g, b, a);
+          break;
+      }
+      case VisualShader::VisualShaderNode::kVec2ConstantFieldNumber: {
+          const std::vector<std::string> parameter_tokens{ai_agent_utils::split_string(parameters.at(0), '=')};
+          const int field_number = std::stoi(ai_agent_utils::get_node_entity_parameter_field_number(parameter_tokens));
+          CONTINUE_IF_TRUE(field_number != VisualShaderNodeVec2Constant::kXFieldNumber, "Wrong field number.");
+          const float x{std::stof(ai_agent_utils::get_node_entity_parameter_value(parameter_tokens))};
+
+          const std::vector<std::string> parameter_tokens1{ai_agent_utils::split_string(parameters.at(1), '=')};  
+          const int field_number1 = std::stoi(ai_agent_utils::get_node_entity_parameter_field_number(parameter_tokens1));
+          CONTINUE_IF_TRUE(field_number1 != VisualShaderNodeVec2Constant::kYFieldNumber, "Wrong field number.");
+          const float y{std::stof(ai_agent_utils::get_node_entity_parameter_value(parameter_tokens1))};
+          
+          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorVec2Constant>(x, y);
+          break;
+      }
+      case VisualShader::VisualShaderNode::kVec3ConstantFieldNumber: {
+          const std::vector<std::string> parameter_tokens{ai_agent_utils::split_string(parameters.at(0), '=')};
+          const int field_number = std::stoi(ai_agent_utils::get_node_entity_parameter_field_number(parameter_tokens));
+          CONTINUE_IF_TRUE(field_number != VisualShaderNodeVec3Constant::kXFieldNumber, "Wrong field number.");
+          const float x{std::stof(ai_agent_utils::get_node_entity_parameter_value(parameter_tokens))};
+
+          const std::vector<std::string> parameter_tokens1{ai_agent_utils::split_string(parameters.at(1), '=')};
+          const int field_number1 = std::stoi(ai_agent_utils::get_node_entity_parameter_field_number(parameter_tokens1));
+          CONTINUE_IF_TRUE(field_number1 != VisualShaderNodeVec3Constant::kYFieldNumber, "Wrong field number.");
+          const float y{std::stof(ai_agent_utils::get_node_entity_parameter_value(parameter_tokens1))};
+
+          const std::vector<std::string> parameter_tokens2{ai_agent_utils::split_string(parameters.at(2), '=')};
+          const int field_number2 = std::stoi(ai_agent_utils::get_node_entity_parameter_field_number(parameter_tokens2));
+          CONTINUE_IF_TRUE(field_number2 != VisualShaderNodeVec3Constant::kZFieldNumber, "Wrong field number.");
+          const float z{std::stof(ai_agent_utils::get_node_entity_parameter_value(parameter_tokens2))};
+          
+          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorVec3Constant>(x, y, z);
+          break;
+      }
+      case VisualShader::VisualShaderNode::kVec4ConstantFieldNumber: {
+          const std::vector<std::string> parameter_tokens{ai_agent_utils::split_string(parameters.at(0), '=')};
+          const int field_number = std::stoi(ai_agent_utils::get_node_entity_parameter_field_number(parameter_tokens));
+          CONTINUE_IF_TRUE(field_number != VisualShaderNodeVec4Constant::kXFieldNumber, "Wrong field number.");
+          const float x{std::stof(ai_agent_utils::get_node_entity_parameter_value(parameter_tokens))};
+
+          const std::vector<std::string> parameter_tokens1{ai_agent_utils::split_string(parameters.at(1), '=')};
+          const int field_number1 = std::stoi(ai_agent_utils::get_node_entity_parameter_field_number(parameter_tokens1));
+          CONTINUE_IF_TRUE(field_number1 != VisualShaderNodeVec4Constant::kYFieldNumber, "Wrong field number.");
+          const float y{std::stof(ai_agent_utils::get_node_entity_parameter_value(parameter_tokens1))};
+
+          const std::vector<std::string> parameter_tokens2{ai_agent_utils::split_string(parameters.at(2), '=')};
+          const int field_number2 = std::stoi(ai_agent_utils::get_node_entity_parameter_field_number(parameter_tokens2));
+          CONTINUE_IF_TRUE(field_number2 != VisualShaderNodeVec4Constant::kZFieldNumber, "Wrong field number.");
+          const float z{std::stof(ai_agent_utils::get_node_entity_parameter_value(parameter_tokens2))};
+
+          const std::vector<std::string> parameter_tokens3{ai_agent_utils::split_string(parameters.at(3), '=')};
+          const int field_number3 = std::stoi(ai_agent_utils::get_node_entity_parameter_field_number(parameter_tokens3));
+          CONTINUE_IF_TRUE(field_number3 != VisualShaderNodeVec4Constant::kWFieldNumber, "Wrong field number.");
+          const float w{std::stof(ai_agent_utils::get_node_entity_parameter_value(parameter_tokens3))};
+          
+          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorVec4Constant>(x, y, z, w);
+          break;
+      }
+      case VisualShader::VisualShaderNode::kFloatOpFieldNumber: {
+          const std::vector<std::string> parameter_tokens{ai_agent_utils::split_string(parameters.at(0), '=')};
+          const int field_number = std::stoi(ai_agent_utils::get_node_entity_parameter_field_number(parameter_tokens));
+          CONTINUE_IF_TRUE(field_number != VisualShaderNodeFloatOp::kOpTypeFieldNumber, "Wrong field number.");
+          const VisualShaderNodeFloatOp::VisualShaderNodeFloatOpType op_type{std::stoi(ai_agent_utils::get_node_entity_parameter_value(parameter_tokens))};
+          
+          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorFloatOp>(op_type);
+          break;
+      }
+      case VisualShader::VisualShaderNode::kIntOpFieldNumber: {
+          const std::vector<std::string> parameter_tokens{ai_agent_utils::split_string(parameters.at(0), '=')};
+          const int field_number = std::stoi(ai_agent_utils::get_node_entity_parameter_field_number(parameter_tokens));
+          CONTINUE_IF_TRUE(field_number != VisualShaderNodeIntOp::kOpTypeFieldNumber, "Wrong field number.");
+          const VisualShaderNodeIntOp::VisualShaderNodeIntOpType op_type{std::stoi(ai_agent_utils::get_node_entity_parameter_value(parameter_tokens))};
+          
+          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorIntOp>(op_type);
+          break;
+      }
+      case VisualShader::VisualShaderNode::kUintOpFieldNumber: {
+          const std::vector<std::string> parameter_tokens{ai_agent_utils::split_string(parameters.at(0), '=')};
+          const int field_number = std::stoi(ai_agent_utils::get_node_entity_parameter_field_number(parameter_tokens));
+          CONTINUE_IF_TRUE(field_number != VisualShaderNodeUIntOp::kOpTypeFieldNumber, "Wrong field number.");
+          const VisualShaderNodeUIntOp::VisualShaderNodeUIntOpType op_type{std::stoi(ai_agent_utils::get_node_entity_parameter_value(parameter_tokens))};
+          
+          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorUIntOp>(op_type);
+          break;
+      }
+      case VisualShader::VisualShaderNode::kVectorOpFieldNumber: {
+          const std::vector<std::string> parameter_tokens{ai_agent_utils::split_string(parameters.at(0), '=')};
+          const int field_number = std::stoi(ai_agent_utils::get_node_entity_parameter_field_number(parameter_tokens));
+          CONTINUE_IF_TRUE(field_number != VisualShaderNodeVectorOp::kVecTypeFieldNumber, "Wrong field number.");
+          const VisualShaderNodeVectorType type{std::stoi(ai_agent_utils::get_node_entity_parameter_value(parameter_tokens))};
+
+          const std::vector<std::string> parameter_tokens1{ai_agent_utils::split_string(parameters.at(1), '=')};
+          const int field_number1 = std::stoi(ai_agent_utils::get_node_entity_parameter_field_number(parameter_tokens1));
+          CONTINUE_IF_TRUE(field_number1 != VisualShaderNodeVectorOp::kOpTypeFieldNumber, "Wrong field number.");
+          const VisualShaderNodeVectorOp::VisualShaderNodeVectorOpType op_type{std::stoi(ai_agent_utils::get_node_entity_parameter_value(parameter_tokens))};
+
+          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorVectorOp>(type, op_type);
+          break;
+      }
+      case VisualShader::VisualShaderNode::kFloatFuncFieldNumber: {
+          const std::vector<std::string> parameter_tokens{ai_agent_utils::split_string(parameters.at(0), '=')};
+          const int field_number = std::stoi(ai_agent_utils::get_node_entity_parameter_field_number(parameter_tokens));
+          CONTINUE_IF_TRUE(field_number != VisualShaderNodeFloatFunc::kFuncTypeFieldNumber, "Wrong field number.");
+          const VisualShaderNodeFloatFunc::VisualShaderNodeFloatFuncType func_type{std::stoi(ai_agent_utils::get_node_entity_parameter_value(parameter_tokens))};
+          
+          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorFloatFunc>(func_type);
+          break;
+      }
+      case VisualShader::VisualShaderNode::kIntFuncFieldNumber: {
+          const std::vector<std::string> parameter_tokens{ai_agent_utils::split_string(parameters.at(0), '=')};
+          const int field_number = std::stoi(ai_agent_utils::get_node_entity_parameter_field_number(parameter_tokens));
+          CONTINUE_IF_TRUE(field_number != VisualShaderNodeIntFunc::kFuncTypeFieldNumber, "Wrong field number.");
+          const VisualShaderNodeIntFunc::VisualShaderNodeIntFuncType func_type{std::stoi(ai_agent_utils::get_node_entity_parameter_value(parameter_tokens))};
+          
+          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorIntFunc>(func_type);
+          break;
+      }
+      case VisualShader::VisualShaderNode::kUintFuncFieldNumber: {
+          const std::vector<std::string> parameter_tokens{ai_agent_utils::split_string(parameters.at(0), '=')};
+          const int field_number = std::stoi(ai_agent_utils::get_node_entity_parameter_field_number(parameter_tokens));
+          CONTINUE_IF_TRUE(field_number != VisualShaderNodeUIntFunc::kFuncTypeFieldNumber, "Wrong field number.");
+          const VisualShaderNodeUIntFunc::VisualShaderNodeUIntFuncType func_type{std::stoi(ai_agent_utils::get_node_entity_parameter_value(parameter_tokens))};
+          
+          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorUIntFunc>(func_type);
+          break;
+      }
+      case VisualShader::VisualShaderNode::kVectorFuncFieldNumber: {
+          const std::vector<std::string> parameter_tokens{ai_agent_utils::split_string(parameters.at(0), '=')};
+          const int field_number = std::stoi(ai_agent_utils::get_node_entity_parameter_field_number(parameter_tokens));
+          CONTINUE_IF_TRUE(field_number != VisualShaderNodeVectorFunc::kVecTypeFieldNumber, "Wrong field number.");
+          const VisualShaderNodeVectorType type{std::stoi(ai_agent_utils::get_node_entity_parameter_value(parameter_tokens))};
+
+          const std::vector<std::string> parameter_tokens1{ai_agent_utils::split_string(parameters.at(1), '=')};
+          const int field_number1 = std::stoi(ai_agent_utils::get_node_entity_parameter_field_number(parameter_tokens1));
+          CONTINUE_IF_TRUE(field_number1 != VisualShaderNodeVectorFunc::kFuncTypeFieldNumber, "Wrong field number.");
+          const VisualShaderNodeVectorFunc::VisualShaderNodeVectorFuncType func_type{std::stoi(ai_agent_utils::get_node_entity_parameter_value(parameter_tokens))};
+
+          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorVectorFunc>(type, func_type);
+          break;
+      }
+      case VisualShader::VisualShaderNode::kValueNoiseFieldNumber: {
+          const std::vector<std::string> parameter_tokens{ai_agent_utils::split_string(parameters.at(0), '=')};
+          const int field_number = std::stoi(ai_agent_utils::get_node_entity_parameter_field_number(parameter_tokens));
+          CONTINUE_IF_TRUE(field_number != VisualShaderNodeValueNoise::kScaleFieldNumber, "Wrong field number.");
+          const float scale{std::stof(ai_agent_utils::get_node_entity_parameter_value(parameter_tokens))};
+
+          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorValueNoise>(scale);
+          break;
+      }
+      case VisualShader::VisualShaderNode::kPerlinNoiseFieldNumber: {
+          const std::vector<std::string> parameter_tokens{ai_agent_utils::split_string(parameters.at(0), '=')};
+          const int field_number = std::stoi(ai_agent_utils::get_node_entity_parameter_field_number(parameter_tokens));
+          CONTINUE_IF_TRUE(field_number != VisualShaderNodePerlinNoise::kScaleFieldNumber, "Wrong field number.");
+          const float scale{std::stof(ai_agent_utils::get_node_entity_parameter_value(parameter_tokens))};
+          
+          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorPerlinNoise>(scale);
+          break;
+      }
+      case VisualShader::VisualShaderNode::kVoronoiNoiseFieldNumber: {
+          const std::vector<std::string> parameter_tokens{ai_agent_utils::split_string(parameters.at(0), '=')};
+          const int field_number = std::stoi(ai_agent_utils::get_node_entity_parameter_field_number(parameter_tokens));
+          CONTINUE_IF_TRUE(field_number != VisualShaderNodeVoronoiNoise::kCellDensityFieldNumber, "Wrong field number.");
+          const float cell_density{std::stof(ai_agent_utils::get_node_entity_parameter_value(parameter_tokens))};
+          
+          const std::vector<std::string> parameter_tokens1{ai_agent_utils::split_string(parameters.at(1), '=')};
+          const int field_number1 = std::stoi(ai_agent_utils::get_node_entity_parameter_field_number(parameter_tokens1));
+          CONTINUE_IF_TRUE(field_number1 != VisualShaderNodeVoronoiNoise::kAngleOffsetFieldNumber, "Wrong field number.");
+          const float angle_offset{std::stof(ai_agent_utils::get_node_entity_parameter_value(parameter_tokens1))};
+          
+          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorVoronoiNoise>(angle_offset, cell_density);
+          break;
+      }
+      case VisualShader::VisualShaderNode::kDotProductFieldNumber: {
+          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorDotProduct>();
+          break;
+      }
+      case VisualShader::VisualShaderNode::kVectorLenFieldNumber: {
+          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorVectorLen>();
+          break;
+      }
+      case VisualShader::VisualShaderNode::kClampFieldNumber: {
+          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorClamp>();
+          break;
+      }
+      case VisualShader::VisualShaderNode::kVectorDistanceFieldNumber: {
+          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorVectorDistance>();
+          break;
+      }
+      case VisualShader::VisualShaderNode::kVector2DComposeFieldNumber: {
+          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorVectorCompose>(VisualShaderNodeVectorType::TYPE_VECTOR_2D);
+          break;
+      }
+      case VisualShader::VisualShaderNode::kVector3DComposeFieldNumber: {
+          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorVectorCompose>(VisualShaderNodeVectorType::TYPE_VECTOR_3D);
+          break;
+      }
+      case VisualShader::VisualShaderNode::kVector4DComposeFieldNumber: {
+          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorVectorCompose>(VisualShaderNodeVectorType::TYPE_VECTOR_4D);
+          break;
+      }
+      case VisualShader::VisualShaderNode::kVector2DDecomposeFieldNumber: {
+          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorVectorDecompose>(VisualShaderNodeVectorType::TYPE_VECTOR_2D);
+          break;
+      }
+      case VisualShader::VisualShaderNode::kVector3DDecomposeFieldNumber: {
+          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorVectorDecompose>(VisualShaderNodeVectorType::TYPE_VECTOR_3D);
+          break;
+      }
+      case VisualShader::VisualShaderNode::kVector4DDecomposeFieldNumber: {
+          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorVectorDecompose>(VisualShaderNodeVectorType::TYPE_VECTOR_4D);
+          break;
+      }
+      case VisualShader::VisualShaderNode::kIfNodeFieldNumber: {
+          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorIf>();
+          break;
+      }
+      case VisualShader::VisualShaderNode::kSwitchNodeFieldNumber: {
+          const std::vector<std::string> parameter_tokens{ai_agent_utils::split_string(parameters.at(0), '=')};
+          const int field_number = std::stoi(ai_agent_utils::get_node_entity_parameter_field_number(parameter_tokens));
+          CONTINUE_IF_TRUE(field_number != VisualShaderNodeSwitch::kTypeFieldNumber, "Wrong field number.");
+          const VisualShaderNodeSwitch::VisualShaderNodeSwitchType type{std::stoi(ai_agent_utils::get_node_entity_parameter_value(parameter_tokens))};
+
+          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorSwitch>(type);
+          break;
+      }
+      case VisualShader::VisualShaderNode::kIsFieldNumber: {
+          const std::vector<std::string> parameter_tokens{ai_agent_utils::split_string(parameters.at(0), '=')};
+          const int field_number = std::stoi(ai_agent_utils::get_node_entity_parameter_field_number(parameter_tokens));
+          CONTINUE_IF_TRUE(field_number != VisualShaderNodeIs::kFuncFieldNumber, "Wrong field number.");
+          const VisualShaderNodeIs::VisualShaderNodeIsFunction func{std::stoi(ai_agent_utils::get_node_entity_parameter_value(parameter_tokens))};
+          
+          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorIs>(func);
+          break;
+      }
+      case VisualShader::VisualShaderNode::kCompareFieldNumber: {
+          const std::vector<std::string> parameter_tokens{ai_agent_utils::split_string(parameters.at(0), '=')};
+          const int field_number = std::stoi(ai_agent_utils::get_node_entity_parameter_field_number(parameter_tokens));
+          CONTINUE_IF_TRUE(field_number != VisualShaderNodeCompare::kTypeFieldNumber, "Wrong field number.");
+          const VisualShaderNodeCompare::VisualShaderNodeCompareType type{std::stoi(ai_agent_utils::get_node_entity_parameter_value(parameter_tokens))};
+
+          const std::vector<std::string> parameter_tokens1{ai_agent_utils::split_string(parameters.at(1), '=')};
+          const int field_number1 = std::stoi(ai_agent_utils::get_node_entity_parameter_field_number(parameter_tokens1));
+          CONTINUE_IF_TRUE(field_number1 != VisualShaderNodeCompare::kFuncFieldNumber, "Wrong field number.");
+          const VisualShaderNodeCompare::VisualShaderNodeCompareFunction func{std::stoi(ai_agent_utils::get_node_entity_parameter_value(parameter_tokens1))};
+
+          const std::vector<std::string> parameter_tokens2{ai_agent_utils::split_string(parameters.at(2), '=')};
+          const int field_number2 = std::stoi(ai_agent_utils::get_node_entity_parameter_field_number(parameter_tokens2));
+          CONTINUE_IF_TRUE(field_number2 != VisualShaderNodeCompare::kCondFieldNumber, "Wrong field number.");
+          const VisualShaderNodeCompare::VisualShaderNodeCompareCondition cond{std::stoi(ai_agent_utils::get_node_entity_parameter_value(parameter_tokens2))};
+
+          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorCompare>(type, func, cond);
+          break;
+      }
+      default:
+        WARN_PRINT("Unsupported node type: " + std::to_string(oneof_value_field_number));
+        break;
+    }
+  }
+
+  return generators;
+}
+
+std::unordered_map<int, std::shared_ptr<VisualShaderNodePortTypeGenerator>> to_port_type_generators(const ProtoModel* nodes) noexcept {
+  int size{nodes->rowCount()};
+  std::unordered_map<int, std::shared_ptr<VisualShaderNodePortTypeGenerator>> port_type_generators;
+
+  // Cast to ReapeatedMessageModel
+  const RepeatedMessageModel* repeated_nodes{dynamic_cast<const RepeatedMessageModel*>(nodes)};
+  CHECK_PARAM_NULLPTR_NON_VOID(repeated_nodes, port_type_generators, "Nodes is not a repeated message model.");
+
+  for (int i{0}; i < size; ++i) {
+    const MessageModel* node_model{repeated_nodes->get_sub_model(i)};
+
+    const int n_id{node_model->get_sub_model(FieldPath::Of<VisualShader::VisualShaderNode>(
+        FieldPath::FieldNumber(VisualShader::VisualShaderNode::kIdFieldNumber)))->data().toInt()};
+
+    if (port_type_generators.find(n_id) != port_type_generators.end()) {
+      FAIL_AND_RETURN_NON_VOID(port_type_generators, "Node id already exists.");
+    }
+
+    port_type_generators[n_id] = shadergen_utils::get_port_type_generator(node_model);
+    CHECK_PARAM_NULLPTR_NON_VOID(port_type_generators[n_id], port_type_generators, "Proto node is nullptr.");
+  }
+
+  return port_type_generators;
+}
+
+std::unordered_map<int, std::shared_ptr<VisualShaderNodePortTypeGenerator>> to_port_type_generators(const std::string& encoded_graph) noexcept {
+  std::unordered_map<int, std::shared_ptr<VisualShaderNodePortTypeGenerator>> port_type_generators;
+
+  const std::pair<std::vector<std::string>, std::vector<std::string>> filtered_graph_tokens{ai_agent_utils::filter_entities_into_tokens(encoded_graph)};
+  const std::vector<std::string> node_entities{filtered_graph_tokens.first};
+  for (const auto& node_entity : node_entities) {
+    const std::vector<std::string> entity_tokens{ai_agent_utils::split_string(node_entity, ';')};
+    const int entity_type = std::stoi(ai_agent_utils::get_entity_type(entity_tokens));
+    CONTINUE_IF_TRUE(entity_type != 0, "Entity type is not a node.");
+    const int n_id = std::stoi(ai_agent_utils::get_node_entity_id(entity_tokens));
+    if (port_type_generators.find(n_id) != port_type_generators.end()) {
+      FAIL_AND_RETURN_NON_VOID(port_type_generators, "Node id already exists.");
+    }
+    
+    port_type_generators[n_id] = shadergen_utils::get_port_type_generator(node_entity);
+    CHECK_PARAM_NULLPTR_NON_VOID(port_type_generators[n_id], port_type_generators, "Proto node is nullptr.");
+  }
+
+  return port_type_generators;
 }
 
 std::pair<std::map<ConnectionKey, std::shared_ptr<Connection>>, std::map<ConnectionKey, std::shared_ptr<Connection>>> to_input_output_connections_by_key(const ProtoModel* connections) noexcept {
@@ -407,11 +855,44 @@ std::pair<std::map<ConnectionKey, std::shared_ptr<Connection>>, std::map<Connect
   return std::make_pair(input_connections, output_connections);
 }
 
+std::pair<std::map<ConnectionKey, std::shared_ptr<Connection>>, std::map<ConnectionKey, std::shared_ptr<Connection>>> to_input_output_connections_by_key(const std::string& encoded_graph) noexcept {
+  std::map<ConnectionKey, std::shared_ptr<Connection>> input_connections;
+  std::map<ConnectionKey, std::shared_ptr<Connection>> output_connections;
+
+  const std::pair<std::vector<std::string>, std::vector<std::string>> filtered_graph_tokens{ai_agent_utils::filter_entities_into_tokens(encoded_graph)};
+  const std::vector<std::string> connection_entities{filtered_graph_tokens.second};
+  for (const auto& connection_entity : connection_entities) {
+    const std::vector<std::string> entity_tokens{ai_agent_utils::split_string(connection_entity, ';')};
+    const int entity_type = std::stoi(ai_agent_utils::get_entity_type(entity_tokens));
+    CONTINUE_IF_TRUE(entity_type != 1, "Entity type is not a connection.");
+    std::shared_ptr<Connection> c = std::make_shared<Connection>();
+    c->from.f_key.node = std::stoi(ai_agent_utils::get_connection_entity_from_node_id(entity_tokens));
+    c->from.f_key.port = std::stoi(ai_agent_utils::get_connection_entity_from_port_index(entity_tokens));
+    c->to.f_key.node = std::stoi(ai_agent_utils::get_connection_entity_to_node_id(entity_tokens));
+    c->to.f_key.port = std::stoi(ai_agent_utils::get_connection_entity_to_port_index(entity_tokens));
+
+    ConnectionKey from_key;
+    from_key.f_key.node = c->from.f_key.node;
+    from_key.f_key.port = c->from.f_key.port;
+
+    output_connections[from_key] = c;
+
+    ConnectionKey to_key;
+    to_key.f_key.node = c->to.f_key.node;
+    to_key.f_key.port = c->to.f_key.port;
+
+    input_connections[to_key] = c;
+  }
+
+  return std::make_pair(input_connections, output_connections);
+}
+
 // Define generate_shader_for_each_node to use it in generate_shader
 static inline bool generate_shader_for_each_node(std::string& global_code, std::string& global_code_per_node,
                                                  std::string& func_code,
                                                  const std::unordered_map<int, std::shared_ptr<IVisualShaderProtoNode>>& proto_nodes,
                                                  const std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>>& generators,
+                                                 const std::unordered_map<int, std::shared_ptr<VisualShaderNodePortTypeGenerator>>& port_type_generators,
                                                  const std::map<ConnectionKey, std::shared_ptr<Connection>>& input_connections,
                                                  const std::map<ConnectionKey, std::shared_ptr<Connection>>& output_connections,
                                                  const int& node_id, 
@@ -420,6 +901,7 @@ static inline bool generate_shader_for_each_node(std::string& global_code, std::
 
 bool generate_shader(const std::unordered_map<int, std::shared_ptr<IVisualShaderProtoNode>>& proto_nodes, 
                      const std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>>& generators, 
+                     const std::unordered_map<int, std::shared_ptr<VisualShaderNodePortTypeGenerator>>& port_type_generators, 
                      const std::pair<std::map<ConnectionKey, std::shared_ptr<Connection>>, std::map<ConnectionKey, std::shared_ptr<Connection>>>& input_output_connections_by_key, 
                      std::string& code_buffer) noexcept {
   static const std::string func_name{"main"};   
@@ -440,6 +922,7 @@ bool generate_shader(const std::unordered_map<int, std::shared_ptr<IVisualShader
                                             func_code, 
                                             proto_nodes, 
                                             generators, 
+                                            port_type_generators,
                                             input_output_connections_by_key.first,
                                             input_output_connections_by_key.second, 0, 
                                             processed,
@@ -450,7 +933,8 @@ bool generate_shader(const std::unordered_map<int, std::shared_ptr<IVisualShader
   func_code += std::string("}") + "\n\n";
   shader_code += func_code;
 
-  std::string generated_code{global_code};
+  std::string generated_code{license_notices};
+  generated_code += global_code;
   generated_code += global_code_per_node;
 
   generated_code += shader_code;
@@ -462,6 +946,7 @@ bool generate_shader(const std::unordered_map<int, std::shared_ptr<IVisualShader
 
 std::string generate_preview_shader(const std::unordered_map<int, std::shared_ptr<IVisualShaderProtoNode>>& proto_nodes, 
                                     const std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>>& generators, 
+                                    const std::unordered_map<int, std::shared_ptr<VisualShaderNodePortTypeGenerator>>& port_type_generators,
                                     const std::pair<std::map<ConnectionKey, std::shared_ptr<Connection>>, std::map<ConnectionKey, std::shared_ptr<Connection>>>& input_output_connections_by_key, 
                                     const int& node_id, const int& port) noexcept { 
   static const std::string preview_func_name{"main"};
@@ -469,6 +954,7 @@ std::string generate_preview_shader(const std::unordered_map<int, std::shared_pt
 
   CHECK_CONDITION_TRUE_NON_VOID(proto_nodes.find(node_id) == proto_nodes.end(), std::string(), "Node ID not found in proto nodes.");
   CHECK_CONDITION_TRUE_NON_VOID(generators.find(node_id) == generators.end(), std::string(), "Node ID not found in generators.");
+  CHECK_CONDITION_TRUE_NON_VOID(port_type_generators.find(node_id) == port_type_generators.end(), std::string(), "Node ID not found in port type generators.");
 
   const std::shared_ptr<IVisualShaderProtoNode> proto_node{proto_nodes.at(node_id)};
   CHECK_PARAM_NULLPTR_NON_VOID(proto_node, std::string(), "Proto node is null.");
@@ -488,6 +974,7 @@ std::string generate_preview_shader(const std::unordered_map<int, std::shared_pt
                                             shader_code, 
                                             proto_nodes, 
                                             generators, 
+                                            port_type_generators,
                                             input_output_connections_by_key.first,
                                             input_output_connections_by_key.second, 
                                             node_id,
@@ -498,15 +985,9 @@ std::string generate_preview_shader(const std::unordered_map<int, std::shared_pt
 
   global_code += "out vec4 " + output_var + ";" + std::string("\n");
 
-  VisualShaderNodePortType from_port_type{VisualShaderNodePortType::PORT_TYPE_UNSPECIFIED};
+  std::shared_ptr<VisualShaderNodePortTypeGenerator> port_type_generator{port_type_generators.at(node_id)};
 
-  if (auto input_node = std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNodeInput>>(proto_node)) {
-    // For Input node, type is by input type
-    const std::shared_ptr<VisualShaderNodeGenerator> generator{generators.at(node_id)};
-    from_port_type = shadergen_utils::get_enum_value_port_type_by_value(VisualShaderNodeInputType_descriptor(), generator->get_input_type());
-  } else {
-    from_port_type = proto_node->get_output_port_type(port);
-  }
+  VisualShaderNodePortType from_port_type{port_type_generator->get_output_port_type(port)};
 
   switch (from_port_type) {
     case VisualShaderNodePortType::PORT_TYPE_SCALAR:
@@ -539,12 +1020,14 @@ std::string generate_preview_shader(const std::unordered_map<int, std::shared_pt
       break;
     default:
       shader_code += std::string("\t") + output_var + " = vec4(vec3(0.0), 1.0);" + std::string("\n");
+      WARN_PRINT("Unsupported port type: " + std::to_string((int)from_port_type));
       break;
   }
 
   shader_code += std::string("}") + "\n\n";
 
-  std::string generated_code{global_code};
+  std::string generated_code{license_notices};
+  generated_code += global_code;
   generated_code += global_code_per_node;
 
   generated_code += shader_code;
@@ -556,6 +1039,7 @@ static inline bool generate_shader_for_each_node(std::string& global_code, std::
                                                  std::string& func_code,
                                                  const std::unordered_map<int, std::shared_ptr<IVisualShaderProtoNode>>& proto_nodes,
                                                  const std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>>& generators,
+                                                 const std::unordered_map<int, std::shared_ptr<VisualShaderNodePortTypeGenerator>>& port_type_generators,
                                                  const std::map<ConnectionKey, std::shared_ptr<Connection>>& input_connections,
                                                  const std::map<ConnectionKey, std::shared_ptr<Connection>>& output_connections,
                                                  const int& node_id, 
@@ -563,9 +1047,11 @@ static inline bool generate_shader_for_each_node(std::string& global_code, std::
                                                  std::unordered_set<std::string>& global_processed) noexcept {
   CHECK_CONDITION_TRUE_NON_VOID(proto_nodes.find(node_id) == proto_nodes.end(), false, "Node id not found in proto nodes.");
   CHECK_CONDITION_TRUE_NON_VOID(generators.find(node_id) == generators.end(), false, "Node id not found in generators.");
+  CHECK_CONDITION_TRUE_NON_VOID(port_type_generators.find(node_id) == port_type_generators.end(), false, "Node id not found in port type generators.");
 
   const std::shared_ptr<IVisualShaderProtoNode> proto_node{proto_nodes.at(node_id)};
   const std::shared_ptr<VisualShaderNodeGenerator> generator{generators.at(node_id)};
+  const std::shared_ptr<VisualShaderNodePortTypeGenerator> port_type_generator{port_type_generators.at(node_id)};
 
   // Check inputs recursively.
   int input_port_count{proto_node->get_input_port_count()};
@@ -591,6 +1077,7 @@ static inline bool generate_shader_for_each_node(std::string& global_code, std::
                                               func_code, 
                                               proto_nodes, 
                                               generators, 
+                                              port_type_generators,
                                               input_connections,
                                               output_connections, 
                                               from_node,
@@ -627,16 +1114,9 @@ static inline bool generate_shader_for_each_node(std::string& global_code, std::
       int from_node{(int)c->from.f_key.node};
       int from_port{(int)c->from.f_key.port};
 
-      VisualShaderNodePortType to_port_type{proto_node->get_input_port_type(i)};
-      VisualShaderNodePortType from_port_type{VisualShaderNodePortType::PORT_TYPE_UNSPECIFIED};
+      VisualShaderNodePortType to_port_type{port_type_generator->get_input_port_type(i)};
 
-      if (auto input_node = std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNodeInput>>(proto_nodes.at(from_node))) {
-        // For Input node, type is by input type
-        const std::shared_ptr<VisualShaderNodeGenerator> t_generator{generators.at(from_node)};
-        from_port_type = shadergen_utils::get_enum_value_port_type_by_value(VisualShaderNodeInputType_descriptor(), t_generator->get_input_type());
-      } else {
-        from_port_type = proto_nodes.at(from_node)->get_output_port_type(from_port);
-      }
+      VisualShaderNodePortType from_port_type{port_type_generators.at(from_node)->get_output_port_type(from_port)};
 
       std::string from_var{"var_from_n" + std::to_string(from_node) + "_p" + std::to_string(from_port)};
 
@@ -664,8 +1144,10 @@ static inline bool generate_shader_for_each_node(std::string& global_code, std::
               case VisualShaderNodePortType::PORT_TYPE_VECTOR_4D: {
                 input_vars.at(i) = from_var + ".x";
               } break;
-              default:
-                break;
+              default: {
+                input_vars.at(i) = "0.0";
+                WARN_PRINT("Unsupported port type: " + std::to_string((int)from_port_type));
+              } break;
             }
           } break;
           case VisualShaderNodePortType::PORT_TYPE_SCALAR_INT: {
@@ -688,8 +1170,10 @@ static inline bool generate_shader_for_each_node(std::string& global_code, std::
               case VisualShaderNodePortType::PORT_TYPE_VECTOR_4D: {
                 input_vars.at(i) = "int(" + from_var + ".x)";
               } break;
-              default:
-                break;
+              default: {
+                input_vars.at(i) = "0";
+                WARN_PRINT("Unsupported port type: " + std::to_string((int)from_port_type));
+              } break;
             }
           } break;
           case VisualShaderNodePortType::PORT_TYPE_SCALAR_UINT: {
@@ -712,8 +1196,10 @@ static inline bool generate_shader_for_each_node(std::string& global_code, std::
               case VisualShaderNodePortType::PORT_TYPE_VECTOR_4D: {
                 input_vars.at(i) = "uint(" + from_var + ".x)";
               } break;
-              default:
-                break;
+              default: {
+                input_vars.at(i) = "0u";
+                WARN_PRINT("Unsupported port type: " + std::to_string((int)from_port_type));
+              } break;
             }
           } break;
           case VisualShaderNodePortType::PORT_TYPE_BOOLEAN: {
@@ -736,8 +1222,10 @@ static inline bool generate_shader_for_each_node(std::string& global_code, std::
               case VisualShaderNodePortType::PORT_TYPE_VECTOR_4D: {
                 input_vars.at(i) = "all(bvec4(" + from_var + "))";
               } break;
-              default:
-                break;
+              default:{
+                input_vars.at(i) = "false";
+                WARN_PRINT("Unsupported port type: " + std::to_string((int)from_port_type));
+              } break;
             }
           } break;
           case VisualShaderNodePortType::PORT_TYPE_VECTOR_2D: {
@@ -758,8 +1246,10 @@ static inline bool generate_shader_for_each_node(std::string& global_code, std::
               case VisualShaderNodePortType::PORT_TYPE_VECTOR_4D: {
                 input_vars.at(i) = "vec2(" + from_var + ".xy)";
               } break;
-              default:
-                break;
+              default: {
+                input_vars.at(i) = "vec2(0.0)";
+                WARN_PRINT("Unsupported port type: " + std::to_string((int)from_port_type));
+              } break;
             }
           } break;
           case VisualShaderNodePortType::PORT_TYPE_VECTOR_3D: {
@@ -782,8 +1272,10 @@ static inline bool generate_shader_for_each_node(std::string& global_code, std::
               case VisualShaderNodePortType::PORT_TYPE_VECTOR_4D: {
                 input_vars.at(i) = "vec3(" + from_var + ".xyz)";
               } break;
-              default:
-                break;
+              default: {
+                input_vars.at(i) = "vec3(0.0)";
+                WARN_PRINT("Unsupported port type: " + std::to_string((int)from_port_type));
+              } break;
             }
           } break;
           case VisualShaderNodePortType::PORT_TYPE_VECTOR_4D: {
@@ -806,19 +1298,25 @@ static inline bool generate_shader_for_each_node(std::string& global_code, std::
               case VisualShaderNodePortType::PORT_TYPE_VECTOR_3D: {
                 input_vars.at(i) = "vec4(" + from_var + ", 1.0)";
               } break;
-              default:
-                break;
+              default: {
+                input_vars.at(i) = "vec4(vec3(0.0), 1.0)";
+                WARN_PRINT("Unsupported port type: " + std::to_string((int)from_port_type));
+              } break;
             }
           } break;
-          default:
-            break;
+          default: {
+            input_vars.at(i) = "0.0";
+            WARN_PRINT("Unsupported port type: " + std::to_string((int)to_port_type));
+          } break;
         }  // end of switch (to_port_type)
       }  // end of if (to_port_type == from_port_type)
     } else {
       // Add the default value.
 
+      VisualShaderNodePortType in_port_type{port_type_generator->get_input_port_type(i)};
+
       // For Output node, type is by port
-      switch (proto_node->get_input_port_type(i)) {
+      switch (in_port_type) {
         case VisualShaderNodePortType::PORT_TYPE_SCALAR: {
           float val{0.0f};
           input_vars.at(i) = "var_to_n" + std::to_string(node_id) + "_p" + std::to_string(i);
@@ -880,19 +1378,12 @@ static inline bool generate_shader_for_each_node(std::string& global_code, std::
   std::vector<std::string> output_vars;
   output_vars.resize(output_port_count);
 
-  if (generator->is_simple_decl()) {
-    // Generate less code for some simple_decl nodes.
+  if (!generator->is_scoped_assignment()) {
+    // Generate less code for some scoped_assignment nodes.
     for (int i{0}; i < output_port_count; i++) {
       std::string from_var{"var_from_n" + std::to_string(node_id) + "_p" + std::to_string(i)};
 
-      VisualShaderNodePortType from_port_type{VisualShaderNodePortType::PORT_TYPE_UNSPECIFIED};
-
-      if (auto input_node = std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNodeInput>>(proto_node)) {
-        // For Input node, type is by input type
-        from_port_type = shadergen_utils::get_enum_value_port_type_by_value(VisualShaderNodeInputType_descriptor(), generator->get_input_type());
-      } else {
-        from_port_type = proto_node->get_output_port_type(i);
-      }
+      VisualShaderNodePortType from_port_type{port_type_generator->get_output_port_type(i)};
 
       switch (from_port_type) {
         case VisualShaderNodePortType::PORT_TYPE_SCALAR:
@@ -924,14 +1415,7 @@ static inline bool generate_shader_for_each_node(std::string& global_code, std::
     for (int i{0}; i < output_port_count; i++) {
       output_vars.at(i) = "var_from_n" + std::to_string(node_id) + "_p" + std::to_string(i);
 
-      VisualShaderNodePortType from_port_type{VisualShaderNodePortType::PORT_TYPE_UNSPECIFIED};
-
-      if (auto input_node = std::dynamic_pointer_cast<VisualShaderProtoNode<VisualShaderNodeInput>>(proto_node)) {
-        // For Input node, type is by input type
-        from_port_type = shadergen_utils::get_enum_value_port_type_by_value(VisualShaderNodeInputType_descriptor(), generator->get_input_type());
-      } else {
-        from_port_type = proto_node->get_output_port_type(i);
-      }
+      VisualShaderNodePortType from_port_type{port_type_generator->get_output_port_type(i)};
 
       switch (from_port_type) {
         case VisualShaderNodePortType::PORT_TYPE_SCALAR:

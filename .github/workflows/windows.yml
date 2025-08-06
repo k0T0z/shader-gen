@@ -4,10 +4,14 @@ on:
   push:
     branches:
       - master-qt6
+    paths-ignore:
+      - '*.md'
   pull_request:
     branches:
       - master-qt6
-  workflow_dispatch: 
+    paths-ignore:
+      - '*.md'
+  workflow_dispatch:
 
 concurrency:
   group: ci-${{github.actor}}-${{github.head_ref || github.run_number}}-${{github.ref}}-windows-msvc
@@ -21,43 +25,60 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
       with:
-        ref: 'master-qt6'
         submodules: recursive
 
-    - name: Install Qt
-      uses: jurplel/install-qt-action@v4
+    - name: Cache Qt6
+      id: cache-qt6
+      uses: actions/cache@v4
       with:
-        version: '6'
-        host: 'windows'
-        target: 'desktop'
-        arch: 'win64_msvc2022_64'
-        dir: '${{ github.workspace }}'
-        setup-python: 'false'
+        path: ${{ github.workspace }}\qt6-lib
+        key: qt6-${{ runner.os }}-${{ hashFiles('CI\build_qt6_win64.ps1') }}
+        restore-keys: |
+          qt6-${{ runner.os }}-
+
+    - name: Build Qt6
+      if: steps.cache-qt6.outputs.cache-hit != 'true'
+      shell: pwsh
+      run: |
+        Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+        .\CI\build_qt6_win64.ps1 Debug Dynamic "${{ github.workspace }}\qt6-lib"
+
+    - name: Cache Protobuf
+      id: cache-protobuf
+      uses: actions/cache@v4
+      with:
+        path: ${{ github.workspace }}\protobuf-lib
+        key: protobuf-${{ runner.os }}-${{ hashFiles('CI\build_protobuf_win64.ps1') }}
+        restore-keys: |
+          protobuf-${{ runner.os }}-
 
     - name: Build Protobuf
+      if: steps.cache-protobuf.outputs.cache-hit != 'true'
       shell: pwsh
       run: |
         Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 
         New-Item -ItemType Directory -Path "${{ github.workspace }}\protobuf-lib"
         Write-Output "Protobuf: '${{ github.workspace }}\protobuf-lib'"
-        Write-Output "Qt6: $env:Qt6_DIR"
         .\CI\build_protobuf_win64.ps1 Debug Dynamic "${{ github.workspace }}\protobuf-lib"
 
     - name: Configure CMake
       shell: pwsh
-      run: cmake -B build -G "Visual Studio 17 2022" -A x64 -DCMAKE_PREFIX_PATH="$env:Qt6_DIR;${{ github.workspace }}\protobuf-lib\lib\cmake" -DSHADER_GEN_BUILD_TESTS=ON
+      run: cmake -B build -G "Visual Studio 17 2022" -A x64 -DCMAKE_PREFIX_PATH="${{ github.workspace }}\qt6-lib\lib\cmake;${{ github.workspace }}\protobuf-lib\lib\cmake" -DSHADER_GEN_BUILD_TESTS=ON -DBUILD_SHARED_LIBS=ON
 
-    - name: Build project
+    - name: Build shader-gen
       shell: pwsh
       run: cmake --build build --config Debug --parallel $env:NUMBER_OF_PROCESSORS
 
-    - name: Copy DLLs next to the executable
+    - name: Populate PATH
       shell: pwsh
       run: |
-        cp build\bin\Debug\*.dll build\Debug\
-        cp "${{ github.workspace }}\protobuf-lib\bin\*.dll" build\Debug\
+        '${{ github.workspace }}\build\bin\Debug' | Out-File -FilePath $Env:GITHUB_PATH -Encoding UTF8 -Append
+        '${{ github.workspace }}\qt6-lib\bin' | Out-File -FilePath $Env:GITHUB_PATH -Encoding UTF8 -Append
+        '${{ github.workspace }}\protobuf-lib\bin' | Out-File -FilePath $Env:GITHUB_PATH -Encoding UTF8 -Append
 
     - name: Run tests
       shell: pwsh
+      env:
+        QT_QPA_PLATFORM: offscreen # Required for running UI tests without a display
       run: ctest --test-dir build --parallel $env:NUMBER_OF_PROCESSORS --output-on-failure --verbose -C Debug

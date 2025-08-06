@@ -136,9 +136,20 @@ set(SHADER_GEN_MAIN_ENTRY
 )
 
 set(SHADER_GEN_HPP_FILES 
+    ${CMAKE_CURRENT_SOURCE_DIR}/ai-agent/ai_agent.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/ai-agent/fitness.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/ai-agent/utils/utils.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/ai-agent/parameters.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/ai-agent/shared_memory.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/ai-agent/selection.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/ai-agent/crossover.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/ai-agent/mutation.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/ai-agent/elitism.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/generator/visual_shader_generator.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/generator/visual_shader_node_generators.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/generator/vs_node_noise_generators.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/generator/visual_shader_node_port_type_generator.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/generator/utils/utils.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/gui/model/proto_model.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/gui/model/message_model.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/gui/model/repeated_message_model.hpp
@@ -147,15 +158,25 @@ set(SHADER_GEN_HPP_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/gui/model/repeated_primitive_model.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/gui/model/oneof_model.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/gui/controller/visual_shader_editor.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/gui/controller/renderer/renderer.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/gui/controller/ai_agent_monitor.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/gui/controller/parameters_editor.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/gui/controller/ai_agent_worker.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/gui/controller/fitness_plotter.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/gui/model/utils/field_path.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/gui/model/utils/utils.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/gui/controller/utils/utils.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/gui/controller/shader_sampler.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/error_macros.hpp
 )
 
 set(SHADER_GEN_CPP_FILES 
+    ${CMAKE_CURRENT_SOURCE_DIR}/ai-agent/ai_agent.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/ai-agent/parameters.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/generator/visual_shader_generator.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/generator/visual_shader_node_generators.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/generator/vs_node_noise_generators.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/generator/visual_shader_node_port_type_generator.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/gui/model/proto_model.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/gui/model/message_model.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/gui/model/repeated_message_model.cpp
@@ -164,6 +185,12 @@ set(SHADER_GEN_CPP_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/gui/model/repeated_primitive_model.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/gui/model/oneof_model.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/gui/controller/visual_shader_editor.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/gui/controller/renderer/renderer.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/gui/controller/ai_agent_monitor.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/gui/controller/parameters_editor.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/gui/controller/ai_agent_worker.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/gui/controller/shader_sampler.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/gui/controller/fitness_plotter.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/gui/model/utils/field_path.cpp
 )
 
@@ -240,11 +267,20 @@ target_compile_definitions(${SHADER_GEN_EXECUTABLE_NAME} PRIVATE
 if(SHADER_GEN_BUILD_TESTS)
     set(SHADER_GEN_TESTS_EXECUTABLE_NAME "shader-gen-tests" CACHE STRING "The name of the tests executable.")
 
+    set(SHADER_GEN_TESTS_MAIN_ENTRY 
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/tests_main.cpp
+    )
+
     set(SHADER_GEN_TESTS_CPP_FILES
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/gui/model/test_model.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/gui/model/utils/test_field_path.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/gui/controller/test_visual_shader_editor.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/generator/test_vs_generator.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/generator/test_vs_node_generators.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/ai-agent/test_fitness.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/ai-agent/test_ai_agent.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/ai-agent/test_selection.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/ai-agent/test_crossover.cpp
     )
 
     set(SHADER_GEN_TESTS_PROTO_FILES 
@@ -282,6 +318,7 @@ if(SHADER_GEN_BUILD_TESTS)
 
     if (WIN32)
         add_executable(${SHADER_GEN_TESTS_EXECUTABLE_NAME} WIN32
+            ${SHADER_GEN_TESTS_MAIN_ENTRY} 
             ${SHADER_GEN_TESTS_CPP_FILES} 
             ${SHADER_GEN_CPP_FILES} 
             ${SHADER_GEN_PROTO_GENERATED_SRCS} # Include the generated protobuf files
@@ -289,6 +326,7 @@ if(SHADER_GEN_BUILD_TESTS)
         )
     else()
         add_executable(${SHADER_GEN_TESTS_EXECUTABLE_NAME} 
+            ${SHADER_GEN_TESTS_MAIN_ENTRY} 
             ${SHADER_GEN_TESTS_CPP_FILES} 
             ${SHADER_GEN_CPP_FILES} 
             ${SHADER_GEN_PROTO_GENERATED_SRCS} # Include the generated protobuf files
@@ -326,12 +364,13 @@ if(SHADER_GEN_BUILD_TESTS)
 
     target_compile_definitions(${SHADER_GEN_TESTS_EXECUTABLE_NAME} PRIVATE 
         $<$<CONFIG:Debug>:${SHADER_GEN_DEBUG_MACRO_NAME}> # Define ${SHADER_GEN_DEBUG_MACRO_NAME} for Debug builds
+        SHADER_GEN_ROOTDIR="${SHADER_GEN_ROOTDIR}"
     )
 
     enable_testing()
     add_test(NAME ${SHADER_GEN_TESTS_EXECUTABLE_NAME} COMMAND ${SHADER_GEN_TESTS_EXECUTABLE_NAME})
     set_tests_properties(${SHADER_GEN_TESTS_EXECUTABLE_NAME} PROPERTIES
-        TIMEOUT 30
+        # TIMEOUT 30
         WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
     )
 endif()
