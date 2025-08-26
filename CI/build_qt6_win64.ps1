@@ -73,10 +73,16 @@ switch ($build_type) {
 }
 
 # Add link-type flag
-if ($link_type -eq "Static") {
-    $configureArgs += "-static"
-} else {
-    $configureArgs += "-shared"
+switch ($link_type) {
+    "Dynamic" {
+        $configureArgs += "-shared"
+    }
+    "Static" {
+        $configureArgs += "-static"
+    }
+    default {
+        throw "Invalid link type: $link_type"
+    }
 }
 
 # The “--” tells Qt’s configure.bat “what comes next goes to CMake”
@@ -91,6 +97,40 @@ $configureArgs += @(
   "-D", "CMAKE_C_COMPILER=cl",
   "-D", "CMAKE_CXX_COMPILER=cl"
 )
+
+switch ($link_type) {
+    "Dynamic" {
+        switch ($build_type) {
+            "Debug" {
+                $msvcRuntime = 'MultiThreadedDebugDLL'
+            }
+            default {
+                $msvcRuntime = 'MultiThreadedDLL'
+            }
+        }
+
+        $configureArgs += @(
+            "-D", "CMAKE_MSVC_RUNTIME_LIBRARY=$msvcRuntime"
+        )
+    }
+    "Static" {
+        switch ($build_type) {
+            "Debug" {
+                $msvcRuntime = 'MultiThreadedDebug'
+            }
+            default {
+                $msvcRuntime = 'MultiThreaded'
+            }
+        }
+
+        $configureArgs += @(
+            "-D", "CMAKE_MSVC_RUNTIME_LIBRARY=$msvcRuntime"
+        )
+    }
+    default {
+        throw "Invalid link type: $link_type"
+    }
+}
 
 $configureArgs += "-D"
 $configureArgs += "QT_BUILD_EXAMPLES_BY_DEFAULT=OFF"

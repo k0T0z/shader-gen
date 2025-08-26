@@ -73,7 +73,7 @@ jobs:
 
     - name: Configure CMake
       shell: msys2 {0}
-      run: cmake -B build -G "Unix Makefiles" -DCMAKE_PREFIX_PATH="${{ github.workspace }}/qt6-lib/lib/cmake;${{ github.workspace }}/protobuf-lib/lib/cmake" -DCMAKE_MAKE_PROGRAM=mingw32-make -DSHADER_GEN_BUILD_TESTS=ON
+      run: cmake -B build -G "Unix Makefiles" -DCMAKE_PREFIX_PATH="${{ github.workspace }}/qt6-lib/lib/cmake;${{ github.workspace }}/protobuf-lib/lib/cmake" -DCMAKE_MAKE_PROGRAM=mingw32-make -DSHADER_GEN_BUILD_TESTS=ON -DBUILD_SHARED_LIBS=ON
 
     - name: Build shader-gen
       shell: msys2 {0}

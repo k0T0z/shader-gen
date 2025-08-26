@@ -1,12 +1,6 @@
 name: Windows GCC Build and Release
 
 on:
-  workflow_run:
-    workflows:
-      - "Windows GCC Build"
-    types:
-      - completed
-    branches: [master-qt6]
   workflow_dispatch:
 
 concurrency:
@@ -16,7 +10,7 @@ concurrency:
 jobs:
   release:
     runs-on: windows-latest
-    if: github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push'
+    if: github.ref == 'refs/heads/master-qt6'
 
     steps:
       - name: Checkout repository
@@ -38,31 +32,31 @@ jobs:
           path-type: inherit
 
       - name: Cache Qt6
-        id: cache-qt6
+        id: cache-qt6-static
         uses: actions/cache@v4
         with:
           path: ${{ github.workspace }}/qt6-lib-static
-          key: qt6-${{ runner.os }}-${{ hashFiles('CI/build_qt6_win64_gcc.sh') }}
+          key: qt6-static-${{ runner.os }}-${{ hashFiles('CI/build_qt6_win64_gcc.sh') }}
           restore-keys: |
-            qt6-${{ runner.os }}-
+            qt6-static-${{ runner.os }}-
 
       - name: Build Qt6
-        if: steps.cache-qt6.outputs.cache-hit != 'true'
+        if: steps.cache-qt6-static.outputs.cache-hit != 'true'
         shell: msys2 {0}
         run: |
           ./CI/build_qt6_win64_gcc.sh Release Static "${{ github.workspace }}/qt6-lib-static"
 
       - name: Cache Protobuf
-        id: cache-protobuf
+        id: cache-protobuf-static
         uses: actions/cache@v4
         with:
           path: ${{ github.workspace }}/protobuf-lib-static
-          key: protobuf-${{ runner.os }}-${{ hashFiles('CI/build_protobuf_win64_gcc.sh') }}
+          key: protobuf-static-${{ runner.os }}-${{ hashFiles('CI/build_protobuf_win64_gcc.sh') }}
           restore-keys: |
-            protobuf-${{ runner.os }}-
+            protobuf-static-${{ runner.os }}-
 
       - name: Build Protobuf
-        if: steps.cache-protobuf.outputs.cache-hit != 'true'
+        if: steps.cache-protobuf-static.outputs.cache-hit != 'true'
         shell: msys2 {0}
         run: |
           mkdir -p "${{ github.workspace }}/protobuf-lib-static"
@@ -76,7 +70,7 @@ jobs:
   
       - name: Configure CMake
         shell: msys2 {0}
-        run: cmake -B build -G "Unix Makefiles" -DCMAKE_MAKE_PROGRAM=mingw32-make -DCMAKE_BUILD_TYPE=Release -DSHADER_GEN_LINK_STATIC=ON -DCMAKE_PREFIX_PATH="${{ github.workspace }}/qt6-lib-static/lib/cmake;${{ github.workspace }}/protobuf-lib-static/lib/cmake" -DSHADER_GEN_BUILD_PORTABLE_RELEASE_PACKAGE=ON
+        run: cmake -B build -G "Unix Makefiles" -DCMAKE_MAKE_PROGRAM=mingw32-make -DCMAKE_BUILD_TYPE=Release -DSHADER_GEN_LINK_STATIC=ON -DCMAKE_PREFIX_PATH="${{ github.workspace }}/qt6-lib-static/lib/cmake;${{ github.workspace }}/protobuf-lib-static/lib/cmake" -DSHADER_GEN_BUILD_PORTABLE_RELEASE_PACKAGE=ON -DBUILD_SHARED_LIBS=OFF
   
       - name: Build shader-gen
         shell: msys2 {0}
