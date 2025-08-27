@@ -87,6 +87,8 @@ VisualShaderEditor::VisualShaderEditor(MessageModel* model, QWidget* parent)
       parameters_editor(nullptr),
       start_matching_button(nullptr),
       stop_matching_button(nullptr),
+      refresh_coordinates_button(nullptr),
+      to_csv_button(nullptr),
       matching_type_combo_box(nullptr),
       start_matching_timer(nullptr),
       stop_matching_timer(nullptr) {

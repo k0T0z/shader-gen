@@ -180,6 +180,9 @@ class VisualShaderEditor : public QWidget {
   QPushButton* load_image_button;
   QPushButton* match_image_button;
 
+  QPushButton* refresh_coordinates_button;
+  QPushButton* to_csv_button;
+
   QAction* create_node_action;
 
   ////////////////////////////////////
