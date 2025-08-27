@@ -469,8 +469,6 @@ void VisualShaderEditor::load_graph() {
   const int nodes_size{nodes_model->rowCount()};
   for (int i{0}; i < nodes_size; ++i) {
     const int n_id = scene->get_node_value(-1, VisualShader::VisualShaderNode::kIdFieldNumber, i).toInt();
-    const double x = scene->get_node_value(-1, VisualShader::VisualShaderNode::kXCoordinateFieldNumber, i).toDouble();
-    const double y = scene->get_node_value(-1, VisualShader::VisualShaderNode::kYCoordinateFieldNumber, i).toDouble();
     
     std::shared_ptr<IVisualShaderProtoNode> proto_node;
 
@@ -487,7 +485,7 @@ void VisualShaderEditor::load_graph() {
     proto_node = shadergen_utils::get_proto_node_by_oneof_value_field_number(oneof_value_field_number);
     CHECK_PARAM_NULLPTR(proto_node, "Proto node is nullptr.");
 
-    const bool result{scene->add_node_to_scene(n_id, proto_node, QPointF(x, y))};
+    const bool result{scene->add_node_to_scene(n_id, proto_node, {0, 0})};
     CONTINUE_IF_TRUE(!result, "Failed to add node to scene");
   }
 
@@ -910,8 +908,6 @@ bool VisualShaderGraphicsScene::add_node_to_model(const int& n_id, const std::sh
   int row_entry{nodes_model->append_row()};
 
   CHECK_CONDITION_TRUE_NON_VOID(!update_node_in_model(-1, VisualShader::VisualShaderNode::kIdFieldNumber, n_id, row_entry), false, "Failed to set node id");
-  CHECK_CONDITION_TRUE_NON_VOID(!update_node_in_model(-1, VisualShader::VisualShaderNode::kXCoordinateFieldNumber, coordinate.x(), row_entry), false, "Failed to set node x coordinate");
-  CHECK_CONDITION_TRUE_NON_VOID(!update_node_in_model(-1, VisualShader::VisualShaderNode::kYCoordinateFieldNumber, coordinate.y(), row_entry), false, "Failed to set node y coordinate");
 
   // Pass any field number that is inside the oneof to enter te OneofModel.
   // You must also to pass true for `for_get_oneof` parameter.
@@ -1343,14 +1339,6 @@ bool VisualShaderGraphicsScene::update_node_in_scene(const int& n_id, const int&
     case VisualShader::VisualShaderNode::kIdFieldNumber:
       FAIL_AND_RETURN_NON_VOID(false, "Cannot update the node id");
       break;
-    case VisualShader::VisualShaderNode::kXCoordinateFieldNumber:
-      n_o->set_x_coordinate(value.toDouble());
-      n_o->update_layout();
-      break;
-    case VisualShader::VisualShaderNode::kYCoordinateFieldNumber:
-      n_o->set_y_coordinate(value.toDouble());
-      n_o->update_layout();
-      break;
     default:
       FAIL_AND_RETURN_NON_VOID(false, "Unknown field number");
       break;
@@ -1370,20 +1358,42 @@ bool VisualShaderGraphicsScene::update_node_field_in_scene(const int& n_id, cons
 
   QWidget* widget{it2->second};
 
-  widget->blockSignals(true); // Block signals to prevent saving the value to the model
-
   if (auto combo_box{dynamic_cast<VisualShaderNodeFieldComboBox*>(widget)}) {
+    QObject::disconnect(combo_box, &VisualShaderNodeFieldComboBox::node_update_requested, this,
+                        &VisualShaderGraphicsScene::update_node_field_in_model);
     combo_box->set_current_index(value.toInt());
+    QObject::connect(combo_box, &VisualShaderNodeFieldComboBox::node_update_requested, this,
+                     &VisualShaderGraphicsScene::update_node_field_in_model);
   } else if (auto line_edit_float{dynamic_cast<VisualShaderNodeFieldLineEditFloat*>(widget)}) {
+    QObject::disconnect(line_edit_float, &VisualShaderNodeFieldLineEditFloat::node_update_requested, this,
+                        &VisualShaderGraphicsScene::update_node_field_in_model);
     line_edit_float->set_current_text(value.toString().toStdString());
+    QObject::connect(line_edit_float, &VisualShaderNodeFieldLineEditFloat::node_update_requested, this,
+                     &VisualShaderGraphicsScene::update_node_field_in_model);
   } else if (auto line_edit_int{dynamic_cast<VisualShaderNodeFieldLineEditInt*>(widget)})  {
+    QObject::disconnect(line_edit_int, &VisualShaderNodeFieldLineEditInt::node_update_requested, this,
+                        &VisualShaderGraphicsScene::update_node_field_in_model);
     line_edit_int->set_current_text(value.toString().toStdString());
+    QObject::connect(line_edit_int, &VisualShaderNodeFieldLineEditInt::node_update_requested, this,
+                     &VisualShaderGraphicsScene::update_node_field_in_model);
   } else if (auto line_edit_uint{dynamic_cast<VisualShaderNodeFieldLineEditUInt*>(widget)}) {
+    QObject::disconnect(line_edit_uint, &VisualShaderNodeFieldLineEditUInt::node_update_requested, this,
+                        &VisualShaderGraphicsScene::update_node_field_in_model);
     line_edit_uint->set_current_text(value.toString().toStdString());
+    QObject::connect(line_edit_uint, &VisualShaderNodeFieldLineEditUInt::node_update_requested, this,
+                     &VisualShaderGraphicsScene::update_node_field_in_model);
   } else if (auto check_box{dynamic_cast<VisualShaderNodeFieldCheckBox*>(widget)}) {
+    QObject::disconnect(check_box, &VisualShaderNodeFieldCheckBox::node_update_requested, this,
+                        &VisualShaderGraphicsScene::update_node_field_in_model);
     check_box->set_checked(value.toBool());
+    QObject::connect(check_box, &VisualShaderNodeFieldCheckBox::node_update_requested, this,
+                     &VisualShaderGraphicsScene::update_node_field_in_model);
   } else if (auto spin_box{dynamic_cast<VisualShaderNodeFieldSpinBox*>(widget)}) {
+    QObject::disconnect(spin_box, &VisualShaderNodeFieldSpinBox::node_update_requested, this,
+                        &VisualShaderGraphicsScene::update_node_field_in_model);
     spin_box->set_value(value.toInt());
+    QObject::connect(spin_box, &VisualShaderNodeFieldSpinBox::node_update_requested, this,
+                     &VisualShaderGraphicsScene::update_node_field_in_model);
   } else {
     FAIL_AND_RETURN_NON_VOID(false, "Unknown widget type");
   }
@@ -1391,14 +1401,19 @@ bool VisualShaderGraphicsScene::update_node_field_in_scene(const int& n_id, cons
   revalidate_connections(n_id);
   on_update_renderer_widgets_requested();
 
-  widget->blockSignals(false); // Unblock signals
-
   return true;
 }
 
 bool VisualShaderGraphicsScene::update_node(const int& n_id, const int& field_number, const QVariant& value) {
   return update_node_field_in_model(n_id, field_number, value) &&
          update_node_field_in_scene(n_id, field_number, value);
+}
+
+void VisualShaderGraphicsScene::move_node(const int& n_id, const QPointF& new_coordinate) {
+  VisualShaderNodeGraphicsObject* n_o{this->get_node_graphics_object(n_id)};
+
+  // Call itemChange and it will emit node_moved signal which will call on_node_moved and move all the connections
+  n_o->itemChange(n_o->ItemScenePositionHasChanged, new_coordinate);
 }
 
 void VisualShaderGraphicsScene::on_update_renderer_widgets_requested() {
@@ -1893,6 +1908,24 @@ bool VisualShaderGraphicsScene::update_connection(const int& c_id, const int& no
          update_connection_in_scene(c_id, node_id_field_number, node_id, port_index);
 }
 
+void VisualShaderGraphicsScene::move_connection(const int& c_id, const bool& start_c_i,
+    const QPointF& new_start_c_i_coordinate, const bool& end_c_i,
+    const QPointF& new_end_c_i_coordinate) {
+  VisualShaderConnectionGraphicsObject* c_o{get_connection_graphics_object(c_id)};
+  SILENT_CHECK_PARAM_NULLPTR(c_o);
+
+  VisualShaderGraphicsScene::move_connection(c_o, start_c_i, new_start_c_i_coordinate,
+                                             end_c_i, new_end_c_i_coordinate);
+}
+
+void VisualShaderGraphicsScene::move_connection(VisualShaderConnectionGraphicsObject* c_o, const bool& start_c_i,
+    const QPointF& new_start_c_i_coordinate, const bool& end_c_i,
+    const QPointF& new_end_c_i_coordinate) {
+  if (start_c_i) c_o->set_start_coordinate(new_start_c_i_coordinate);
+  if (end_c_i) c_o->set_end_coordinate(new_end_c_i_coordinate);
+  c_o->update_layout();
+}
+
 VisualShaderNodeGraphicsObject* VisualShaderGraphicsScene::get_node_graphics_object(const int& n_id) const {
   VisualShaderNodeGraphicsObject* n_o{nullptr};
 
@@ -1954,8 +1987,7 @@ void VisualShaderGraphicsScene::on_port_dragged(QGraphicsObject* port, const QPo
       return;
     }
 
-    c_o->set_end_coordinate(coordinate);
-    c_o->update_layout();
+    move_connection(c_o, false, {-1, -1}, true, coordinate);
 
     return;
   }
@@ -1970,8 +2002,7 @@ void VisualShaderGraphicsScene::on_port_dragged(QGraphicsObject* port, const QPo
     return;
   }
 
-  c_o->set_end_coordinate(coordinate);
-  c_o->update_layout();
+  move_connection(c_o, false, {-1, -1}, true, coordinate);
 }
 
 void VisualShaderGraphicsScene::on_port_dropped(QGraphicsObject* port, const QPointF& coordinate) {
@@ -2061,28 +2092,21 @@ void VisualShaderGraphicsScene::on_port_dropped(QGraphicsObject* port, const QPo
   }
 }
 
-void VisualShaderGraphicsScene::on_node_moved(const int& n_id, const int& in_port_count, const int& out_port_count,
-                                              const QPointF& new_coordinate) {
-  int row_entry{find_node_entry(n_id)};
-  VALIDATE_INDEX(row_entry, nodes_model->rowCount(), "Node entry not found");
-
-  CHECK_CONDITION_TRUE(!update_node_in_model(n_id, VisualShader::VisualShaderNode::kXCoordinateFieldNumber, new_coordinate.x()), "Failed to update node x coordinate");
-  CHECK_CONDITION_TRUE(!update_node_in_model(n_id, VisualShader::VisualShaderNode::kYCoordinateFieldNumber, new_coordinate.y()), "Failed to update node y coordinate");
-
+void VisualShaderGraphicsScene::on_node_moved(const int& n_id, const QPointF& new_coordinate) {
   // Update coordinates of all connected connections
   VisualShaderNodeGraphicsObject* n_o{this->get_node_graphics_object(n_id)};
+
+  int in_port_count{n_o->get_input_port_count()};
 
   for (int i{0}; i < in_port_count; i++) {
     VisualShaderInputPortGraphicsObject* i_port{n_o->get_input_port_graphics_object(i)};
     SILENT_CONTINUE_IF_TRUE(!i_port || !i_port->is_connected());
 
     const int c_id{i_port->get_c_id()};
-    VisualShaderConnectionGraphicsObject* c_o{get_connection_graphics_object(c_id)};
-    SILENT_CONTINUE_IF_TRUE(!c_o);
-
-    c_o->set_end_coordinate(i_port->get_global_coordinate());
-    c_o->update_layout();
+    move_connection(c_id, false, {-1, -1}, true, i_port->get_global_coordinate());
   }
+
+  int out_port_count{n_o->get_output_port_count()};
 
   for (int i{0}; i < out_port_count; i++) {
     VisualShaderOutputPortGraphicsObject* o_port{n_o->get_output_port_graphics_object(i)};
@@ -2094,8 +2118,7 @@ void VisualShaderGraphicsScene::on_node_moved(const int& n_id, const int& in_por
       VisualShaderConnectionGraphicsObject* c_o{get_connection_graphics_object(c_id)};
       SILENT_CONTINUE_IF_TRUE(!c_o);
 
-      c_o->set_start_coordinate(o_port->get_global_coordinate());
-      c_o->update_layout();
+      move_connection(c_id, true, o_port->get_global_coordinate(), false, {-1, -1});
     }
   }
 }
@@ -2926,7 +2949,7 @@ void VisualShaderNodeGraphicsObject::paint(QPainter* painter, const QStyleOption
 
 QVariant VisualShaderNodeGraphicsObject::itemChange(GraphicsItemChange change, const QVariant& value) {
   if (change == ItemScenePositionHasChanged) {
-    Q_EMIT node_moved(n_id, in_port_count, out_port_count, scenePos());
+    Q_EMIT node_moved(n_id, value.toPointF());
   }
   return QGraphicsObject::itemChange(change, value);
 }

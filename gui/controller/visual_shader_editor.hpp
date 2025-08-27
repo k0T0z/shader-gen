@@ -444,6 +444,8 @@ class VisualShaderGraphicsScene : public QGraphicsScene {
   bool update_node_field_in_scene(const int& n_id, const int& field_number, const QVariant& value);
   bool update_node(const int& n_id, const int& field_number, const QVariant& value);
 
+  void move_node(const int& n_id, const QPointF& new_coordinate);
+
   void set_model(ProtoModel* visual_shader_model) { this->visual_shader_model = visual_shader_model; }
   void set_nodes_model(ProtoModel* nodes_model) { this->nodes_model = nodes_model; }
   void set_connections_model(ProtoModel* connections_model) { this->connections_model = connections_model; }
@@ -487,6 +489,12 @@ class VisualShaderGraphicsScene : public QGraphicsScene {
   bool update_connection_in_scene(const int& c_id, const int& field_number, const int& node_id, const int& port_index);
   bool update_connection(const int& c_id, const int& node_id_field_number, const int& port_index_field_number, const int& node_id, const int& port_index);
 
+  void move_connection(const int& c_id, const bool& start_c_i, const QPointF& new_start_c_i_coordinate,
+                       const bool& end_c_i, const QPointF& new_end_c_i_coordinate);
+  void move_connection(VisualShaderConnectionGraphicsObject* c_o, const bool& start_c_i,
+                       const QPointF& new_start_c_i_coordinate, const bool& end_c_i,
+                       const QPointF& new_end_c_i_coordinate);
+
   VisualShaderNodeGraphicsObject* get_node_graphics_object(const int& n_id) const;
   VisualShaderConnectionGraphicsObject* get_connection_graphics_object(const int& c_id) const;
 
@@ -528,8 +536,7 @@ class VisualShaderGraphicsScene : public QGraphicsScene {
    * @param n_id 
    * @param new_coordinate 
    */
-  void on_node_moved(const int& n_id, const int& in_port_count, const int& out_port_count,
-                     const QPointF& new_coordinate);
+  void on_node_moved(const int& n_id, const QPointF& new_coordinate);
 
   /**
    * @brief Called when a delete node action is triggered.
@@ -720,7 +727,7 @@ class VisualShaderNodeGraphicsObject : public QGraphicsObject {
    * @param n_id 
    * @param new_coordinate 
    */
-  void node_moved(const int& n_id, const int& in_port_count, const int& out_port_count, const QPointF& new_coordinate);
+  void node_moved(const int& n_id, const QPointF& new_coordinate);
 
   void in_port_pressed(VisualShaderInputPortGraphicsObject* port, const QPointF& coordinate);
   void in_port_dragged(VisualShaderInputPortGraphicsObject* port, const QPointF& coordinate);
@@ -741,6 +748,8 @@ class VisualShaderNodeGraphicsObject : public QGraphicsObject {
  public Q_SLOTS:
   void on_preview_shader_button_pressed();
   void on_port_type_update_requested();
+
+  QVariant itemChange(GraphicsItemChange change, const QVariant& value) override;
 
  private Q_SLOTS:
   /**
@@ -861,7 +870,6 @@ class VisualShaderNodeGraphicsObject : public QGraphicsObject {
    * @param widget 
    */
   void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget = nullptr) override;
-  QVariant itemChange(GraphicsItemChange change, const QVariant& value) override;
   void contextMenuEvent(QGraphicsSceneContextMenuEvent* event) override;
   void mouseReleaseEvent(QGraphicsSceneMouseEvent* event) override;
 };
