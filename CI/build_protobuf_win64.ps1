@@ -8,7 +8,7 @@ param(
     [string]$link_type,
 
     [Parameter(Mandatory = $true, Position = 2)]
-    [string]$protobuf_prefix
+    [string]$install_dir
 )
 
 $PROTOBUF_LATEST_TAG = "v29.3"
@@ -22,9 +22,9 @@ switch ($link_type) {
 }
 
 # Check if the install prefix directory exists; if not, create it.
-if (-not (Test-Path -Path $protobuf_prefix -PathType Container)) {
-    Write-Output "Install prefix directory '$protobuf_prefix' does not exist. Creating it..."
-    New-Item -ItemType Directory -Path $protobuf_prefix -Force | Out-Null
+if (-not (Test-Path -Path $install_dir -PathType Container)) {
+    Write-Output "Install prefix directory '$install_dir' does not exist. Creating it..."
+    New-Item -ItemType Directory -Path $install_dir -Force | Out-Null
 }
 
 Write-Output "Installing Protobuf '$PROTOBUF_LATEST_TAG' with build type '$build_type' and link type '$link_type' (shared libs: '$shared_libs')..."
@@ -41,25 +41,29 @@ New-Item -ItemType Directory -Path build | Set-Location
 
 # Note that we don't need to set CMAKE_MSVC_RUNTIME_LIBRARY as Protobuf already does this for us.
 
-# Configure the build with CMake using the provided build type and shared libraries setting.
-cmake .. -G "Visual Studio 17 2022" -A x64 `
-         -Dprotobuf_BUILD_TESTS=OFF `
-         -Dprotobuf_BUILD_CONFORMANCE=OFF `
-         -Dprotobuf_BUILD_EXAMPLES=OFF `
-         -Dprotobuf_ABSL_PROVIDER=module `
-         -DCMAKE_BUILD_TYPE="$build_type" `
-         -DCMAKE_CXX_STANDARD=17 `
-         -Dprotobuf_BUILD_SHARED_LIBS="$shared_libs" `
-         -DCMAKE_INSTALL_PREFIX="$protobuf_prefix" `
-                                                   `
-         -DABSL_PROPAGATE_CXX_STD=ON `
-         -DBUILD_TESTING=OFF `
-         -DABSL_BUILD_TESTING=OFF `
-         -DABSL_USE_GOOGLETEST_HEAD=OFF `
-         -DABSL_ENABLE_INSTALL=ON `
-         -DBUILD_SHARED_LIBS="$shared_libs" `
-         -DABSL_BUILD_MONOLITHIC_SHARED_LIBS="$shared_libs" `
-         -DCMAKE_MODULE_LINKER_FLAGS='-Wl,--no-undefined'
+# Base configure args
+$configureArgs = @(
+    "-G", "Visual Studio 17 2022", "-A", "x64"
+    "-D" "protobuf_BUILD_TESTS=OFF"
+    "-D" "protobuf_BUILD_CONFORMANCE=OFF"
+    "-D" "protobuf_BUILD_EXAMPLES=OFF"
+    "-D" "protobuf_ABSL_PROVIDER=module"
+    "-D" "CMAKE_BUILD_TYPE='$build_type'"
+    "-D" "CMAKE_CXX_STANDARD=17"
+    "-D" "BUILD_SHARED_LIBS='$shared_libs'"
+    "-D" "protobuf_BUILD_SHARED_LIBS='$shared_libs'"
+    "-D" "CMAKE_INSTALL_PREFIX='$install_dir'"
+
+    "-D" "ABSL_PROPAGATE_CXX_STD=ON"
+    "-D" "BUILD_TESTING=OFF"
+    "-D" "ABSL_BUILD_TESTING=OFF"
+    "-D" "ABSL_USE_GOOGLETEST_HEAD=OFF"
+    "-D" "ABSL_ENABLE_INSTALL=ON"
+    "-D" "ABSL_BUILD_MONOLITHIC_SHARED_LIBS='$shared_libs'"
+    "-D" "CMAKE_MODULE_LINKER_FLAGS='-Wl,--no-undefined'"
+)
+
+cmake .. @configureArgs
 
 # Build and install.
 # DON'T use parallel builds with Protobuf on Windows as it breaks the CI.

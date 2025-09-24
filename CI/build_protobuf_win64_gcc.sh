@@ -9,36 +9,43 @@ if [ "$#" -ne 3 ]; then
     exit 1
 fi
 
-BUILD_TYPE=$1
-LINK_TYPE=$2
-INSTALL_PREFIX=$3
+build_type=$1
+link_type=$2
+install_dir=$3
 
-# Validate BUILD_TYPE
-if [ "$BUILD_TYPE" != "Debug" ] && [ "$BUILD_TYPE" != "Release" ] && [ "$BUILD_TYPE" != "MinSizeRel" ] && [ "$BUILD_TYPE" != "RelWithDebInfo" ]; then
-    echo "Error: Invalid BUILD_TYPE '$BUILD_TYPE'. Valid options: Debug, Release, MinSizeRel, RelWithDebInfo."
-    exit 1
-fi
+# Validate build_type
+case "$build_type" in
+    Debug|Release|MinSizeRel|RelWithDebInfo) ;;
+    *) 
+        echo "Invalid build type: $build_type"
+        exit 1
+        ;;
+esac
 
-# Validate LINK_TYPE
-if [ "$LINK_TYPE" != "Dynamic" ] && [ "$LINK_TYPE" != "Static" ]; then
-    echo "Error: Invalid LINK_TYPE '$LINK_TYPE'. Valid options: Dynamic, Static."
-    exit 1
-fi
+# Validate link_type
+case "$link_type" in
+    Dynamic|Static) ;;
+    *)
+        echo "Invalid link type: $link_type"
+        exit 1
+        ;;
+esac
 
-# Set shared libraries flag based on LINK_TYPE
-if [ "$LINK_TYPE" = "Dynamic" ]; then
-    SHARED_LIBS="ON"
-else
-    SHARED_LIBS="OFF"
-fi
+case "$link_type" in
+    Static)
+        shared_libs="OFF"
+        ;;
+    Dynamic)
+        shared_libs="ON"
+        ;;
+esac
 
 # Check if the install prefix directory exists; if not, create it
-if [ ! -d "$INSTALL_PREFIX" ]; then
-    echo "Install prefix directory '$INSTALL_PREFIX' does not exist. Creating it..."
-    mkdir -p "$INSTALL_PREFIX"
+if [ ! -d "$install_dir" ]; then
+    echo "Install prefix directory '$install_dir' does not exist. Creating it..."
+    mkdir -p "$install_dir"
 fi
 
-# Fetch the latest tag (hard-coded)
 PROTOBUF_LATEST_TAG=v29.3
 
 # Build and install Protobuf
@@ -50,25 +57,33 @@ git submodule update --init --recursive
 
 mkdir build && cd build
 
-cmake .. -G "Unix Makefiles" \
-         -DCMAKE_MAKE_PROGRAM=mingw32-make \
-         -Dprotobuf_BUILD_TESTS=OFF \
-         -Dprotobuf_BUILD_CONFORMANCE=OFF \
-         -Dprotobuf_BUILD_EXAMPLES=OFF \
-         -Dprotobuf_ABSL_PROVIDER=module \
-         -DCMAKE_BUILD_TYPE="$BUILD_TYPE" \
-         -DCMAKE_CXX_STANDARD=17 \
-         -Dprotobuf_BUILD_SHARED_LIBS="$SHARED_LIBS" \
-         -DCMAKE_INSTALL_PREFIX="$INSTALL_PREFIX" \
-                                                  \
-         -DABSL_PROPAGATE_CXX_STD=ON \
-         -DBUILD_TESTING=OFF \
-         -DABSL_BUILD_TESTING=OFF \
-         -DABSL_USE_GOOGLETEST_HEAD=OFF \
-         -DABSL_ENABLE_INSTALL=ON \
-         -DBUILD_SHARED_LIBS="$SHARED_LIBS" \
-         -DABSL_BUILD_MONOLITHIC_SHARED_LIBS="$SHARED_LIBS" \
-         -DCMAKE_MODULE_LINKER_FLAGS="-Wl,--no-undefined"
+# Configure arguments
+configureArgs=(
+    "-G" "Unix Makefiles"
+    "-D" "CMAKE_MAKE_PROGRAM=mingw32-make"
+    "-D" "protobuf_BUILD_TESTS=OFF"
+    "-D" "protobuf_BUILD_CONFORMANCE=OFF"
+    "-D" "protobuf_BUILD_EXAMPLES=OFF"
+    "-D" "protobuf_ABSL_PROVIDER=module"
+    "-D" "CMAKE_BUILD_TYPE='$build_type'"
+    "-D" "CMAKE_CXX_STANDARD=17"
+    "-D" "BUILD_SHARED_LIBS='$shared_libs'"
+    "-D" "protobuf_BUILD_SHARED_LIBS='$shared_libs'"
+    "-D" "CMAKE_INSTALL_PREFIX='$install_dir'"
+
+    "-D" "ABSL_PROPAGATE_CXX_STD=ON"
+    "-D" "BUILD_TESTING=OFF"
+    "-D" "ABSL_BUILD_TESTING=OFF"
+    "-D" "ABSL_USE_GOOGLETEST_HEAD=OFF"
+    "-D" "ABSL_ENABLE_INSTALL=ON"
+    "-D" "ABSL_BUILD_MONOLITHIC_SHARED_LIBS='$shared_libs'"
+    "-D" "CMAKE_MODULE_LINKER_FLAGS='-Wl,--no-undefined'"
+)
+
+echo "Running configure with arguments:"
+printf '  %s\n' "${configureArgs[@]}"
+
+cmake .. "${configureArgs[@]}" || { echo "Configuration failed"; exit 1; }
 
 cmake --build . --config "$BUILD_TYPE"
 cmake --install . --parallel $(nproc) --config "$BUILD_TYPE"
