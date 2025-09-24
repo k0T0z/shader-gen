@@ -49,7 +49,7 @@ fi
 PROTOBUF_LATEST_TAG=v29.3
 
 # Build and install Protobuf
-echo "Installing Protobuf $PROTOBUF_LATEST_TAG with build type '$BUILD_TYPE' and link type '$LINK_TYPE' (shared libs: $SHARED_LIBS)..."
+echo "Installing Protobuf $PROTOBUF_LATEST_TAG with build type '$build_type' and link type '$link_type' (shared libs: $shared_libs)..."
 git clone --depth 1 -b "$PROTOBUF_LATEST_TAG" https://github.com/protocolbuffers/protobuf.git
 cd protobuf
 
@@ -85,7 +85,7 @@ printf '  %s\n' "${configureArgs[@]}"
 
 cmake .. "${configureArgs[@]}" || { echo "Configuration failed"; exit 1; }
 
-cmake --build . --config "$BUILD_TYPE"
-cmake --install . --parallel $(nproc) --config "$BUILD_TYPE"
+cmake --build . --config "$build_type"
+cmake --install . --parallel $(nproc) --config "$build_type"
 
 cd "$GITHUB_WORKSPACE"
