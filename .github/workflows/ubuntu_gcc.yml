@@ -37,17 +37,9 @@ jobs:
       run: |
         chmod +x ./CI/build_protobuf_ubuntu.sh
         sudo ./CI/build_protobuf_ubuntu.sh Debug Dynamic
-
-        # which protoc is being used
-        which protoc /usr/local/bin/protoc-29.3.0
-
-        # show missing deps for that executable
-        ldd /usr/local/bin/protoc-29.3.0 | grep "not found" -B1 || true
-
-        # see any absl libs installed
-        ls -l /usr/local/lib/libabsl* || true
-
         sudo ldconfig
+        # show missing deps for that executable
+        ldd /usr/local/bin/protoc | grep "not found" -B1 || true
 
     - name: Configure CMake
       shell: bash
