@@ -43,24 +43,24 @@ New-Item -ItemType Directory -Path build | Set-Location
 
 # Base configure args
 $configureArgs = @(
-    "-G", "Visual Studio 17 2022", "-A", "x64"
-    "-D" "protobuf_BUILD_TESTS=OFF"
-    "-D" "protobuf_BUILD_CONFORMANCE=OFF"
-    "-D" "protobuf_BUILD_EXAMPLES=OFF"
-    "-D" "protobuf_ABSL_PROVIDER=module"
-    "-D" "CMAKE_BUILD_TYPE='$build_type'"
-    "-D" "CMAKE_CXX_STANDARD=17"
-    "-D" "BUILD_SHARED_LIBS='$shared_libs'"
-    "-D" "protobuf_BUILD_SHARED_LIBS='$shared_libs'"
-    "-D" "CMAKE_INSTALL_PREFIX='$install_dir'"
+    "-G", "Visual Studio 17 2022", "-A", "x64",
+    "-D", "protobuf_BUILD_TESTS=OFF",
+    "-D", "protobuf_BUILD_CONFORMANCE=OFF",
+    "-D", "protobuf_BUILD_EXAMPLES=OFF",
+    "-D", "protobuf_ABSL_PROVIDER=module",
+    "-D", "CMAKE_BUILD_TYPE='$build_type'",
+    "-D", "CMAKE_CXX_STANDARD=17",
+    "-D", "BUILD_SHARED_LIBS='$shared_libs'",
+    "-D", "protobuf_BUILD_SHARED_LIBS='$shared_libs'",
+    "-D", "CMAKE_INSTALL_PREFIX='$install_dir'",
 
-    "-D" "ABSL_PROPAGATE_CXX_STD=ON"
-    "-D" "BUILD_TESTING=OFF"
-    "-D" "ABSL_BUILD_TESTING=OFF"
-    "-D" "ABSL_USE_GOOGLETEST_HEAD=OFF"
-    "-D" "ABSL_ENABLE_INSTALL=ON"
-    "-D" "ABSL_BUILD_MONOLITHIC_SHARED_LIBS='$shared_libs'"
-    "-D" "CMAKE_MODULE_LINKER_FLAGS='-Wl,--no-undefined'"
+    "-D", "ABSL_PROPAGATE_CXX_STD=ON",
+    "-D", "BUILD_TESTING=OFF",
+    "-D", "ABSL_BUILD_TESTING=OFF",
+    "-D", "ABSL_USE_GOOGLETEST_HEAD=OFF",
+    "-D", "ABSL_ENABLE_INSTALL=ON",
+    "-D", "ABSL_BUILD_MONOLITHIC_SHARED_LIBS='$shared_libs'",
+    "-D", "CMAKE_MODULE_LINKER_FLAGS='-Wl,--no-undefined'"
 )
 
 cmake .. @configureArgs
