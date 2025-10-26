@@ -30,6 +30,12 @@ case "$link_type" in
         ;;
 esac
 
+# Check if the install prefix directory exists; if not, create it
+if [ ! -d "$install_dir" ]; then
+    echo "Install prefix directory '$install_dir' does not exist. Creating it..."
+    mkdir -p "$install_dir"
+fi
+
 Qt6Version="6.9.1"
 majorMinor=$(echo "$Qt6Version" | cut -d. -f1-2)
 
@@ -76,12 +82,14 @@ case "$build_type" in
         ;;
 esac
 
-# Add link-type flag
-if [ "$link_type" = "Static" ]; then
-    configureArgs+=("-static")
-else
-    configureArgs+=("-shared")
-fi
+case "$link_type" in
+    Static)
+        configureArgs+=("-static")
+        ;;
+    Dynamic)
+        configureArgs+=("-shared")
+        ;;
+esac
 
 # CMake options
 configureArgs+=("--")

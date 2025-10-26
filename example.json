@@ -2,70 +2,52 @@
  "nodes": [
   {
    "id": 0,
-   "xCoordinate": 680.97423946630022,
-   "yCoordinate": 42.7313608209828,
    "output": {}
   },
   {
    "id": 1,
-   "xCoordinate": -313.66637198380988,
-   "yCoordinate": -172.7437990635475,
    "input": {
     "type": "INPUT_TYPE_UV"
    }
   },
   {
    "id": 2,
-   "xCoordinate": -394.58320417673485,
-   "yCoordinate": 121.82983723429142,
    "input": {
     "type": "INPUT_TYPE_TIME"
    }
   },
   {
    "id": 3,
-   "xCoordinate": -131.830794022181,
-   "yCoordinate": -151.83270759796017,
    "perlinNoise": {
     "scale": 50
    }
   },
   {
    "id": 4,
-   "xCoordinate": -226.38529456222804,
-   "yCoordinate": 137.28586136102984,
    "floatFunc": {
     "funcType": "FUNC_TYPE_SIN"
    }
   },
   {
    "id": 5,
-   "xCoordinate": -268.20747749340268,
-   "yCoordinate": 342.76006445767058,
    "floatConstant": {
     "value": 2
    }
   },
   {
    "id": 6,
-   "xCoordinate": -7.2734231184651534,
-   "yCoordinate": 202.74666942721626,
    "floatOp": {
     "opType": "OP_TYPE_DIV"
    }
   },
   {
    "id": 7,
-   "xCoordinate": 257.29734281570495,
-   "yCoordinate": 28.184514584052494,
    "floatOp": {
     "opType": "OP_TYPE_SUB"
    }
   },
   {
    "id": 8,
-   "xCoordinate": 476.40921425946772,
-   "yCoordinate": 37.276293482133909,
    "floatFunc": {
     "funcType": "FUNC_TYPE_ROUND"
    }

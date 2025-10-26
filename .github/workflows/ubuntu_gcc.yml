@@ -37,6 +37,11 @@ jobs:
       run: |
         chmod +x ./CI/build_protobuf_ubuntu.sh
         sudo ./CI/build_protobuf_ubuntu.sh Debug Dynamic
+        
+        sudo ldconfig # Fixes: error while loading shared libraries: libabsl_log_internal_globals.so.2401.0.0: cannot open shared object file: No such file or directory
+
+        # show missing deps for that executable
+        ldd /usr/local/bin/protoc | grep "not found" -B1 || true
 
     - name: Configure CMake
       shell: bash
