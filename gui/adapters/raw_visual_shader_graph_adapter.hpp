@@ -25,44 +25,16 @@
 /*                                                                               */
 /*********************************************************************************/
 
-#ifndef ENIGMA_VISUAL_SHADER_GENERATOR_HPP
-#define ENIGMA_VISUAL_SHADER_GENERATOR_HPP
-
-#include <string>
-#include <vector>
-#include <map>
-#include <unordered_map>
-#include <memory>
+#ifndef RAW_VISUAL_SHADER_GRAPH_ADAPTER_HPP
+#define RAW_VISUAL_SHADER_GRAPH_ADAPTER_HPP
 
 #include "generator/raw_visual_shader_graph.hpp"
-#include "generator/visual_shader_node_generators.hpp"
-#include "generator/visual_shader_node_port_type_generator.hpp"
-#include "generator/utils/utils.hpp"
-#include "gui/controller/vs_proto_node.hpp"
+#include "gui/model/proto_model.hpp"
 
-extern const std::string license_notices;
+namespace shadergen_gui_adapters {
 
-namespace shadergen_visual_shader_generator {
+RawVisualShaderGraph to_raw_graph(const ProtoModel* nodes, const ProtoModel* connections) noexcept;
 
-union ConnectionKey {
-  struct FragmentedKey {
-    uint64_t node : 32;
-    uint64_t port : 32;
-  } f_key;
-  uint64_t key;
-  ConnectionKey() : key(0) {}
-  bool operator<(const ConnectionKey& key) const { return this->key < key.key; }
-};
+}  // namespace shadergen_gui_adapters
 
-struct Connection {
-  ConnectionKey from;
-  ConnectionKey to;
-};
-
-bool generate_shader(const RawVisualShaderGraph& graph, std::string& code_buffer) noexcept;
-
-std::string generate_preview_shader(const RawVisualShaderGraph& graph,
-                                     const int& node_id, const int& port) noexcept;
-}  // namespace shadergen_visual_shader_generator
-
-#endif  // ENIGMA_VISUAL_SHADER_GENERATOR_HPP
+#endif  // RAW_VISUAL_SHADER_GRAPH_ADAPTER_HPP

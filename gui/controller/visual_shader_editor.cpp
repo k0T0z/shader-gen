@@ -1,6 +1,6 @@
 /*********************************************************************************/
 /*                                                                               */
-/*  Copyright (C) 2024 Seif Kandil (k0T0z)                                       */
+/*  Copyright (C) 2026 Seif Kandil (k0T0z)                                       */
 /*                                                                               */
 /*  This file is a part of the ENIGMA Development Environment.                   */
 /*                                                                               */
@@ -36,8 +36,74 @@
 #include "gui/controller/utils/utils.hpp"
 
 #include "generator/visual_shader_generator.hpp"
+#include "gui/adapters/raw_visual_shader_graph_adapter.hpp"
 #include "ai-agent/utils/utils.hpp"
 #include "ai-agent/ai_agent.hpp"
+
+namespace {
+
+inline static RawVisualShaderGraph decode_encoded_graph_to_raw(const std::string& encoded_graph) noexcept {
+    RawVisualShaderGraph graph;
+
+    std::vector<std::string> node_entities;
+    std::vector<std::string> conn_entities;
+    node_entities.reserve(8);
+    conn_entities.reserve(8);
+
+    const std::vector<std::string> entities{ai_agent_utils::split_string(encoded_graph, ',')};
+    for (const std::string& entity : entities) {
+        const std::vector<std::string> tok{ai_agent_utils::split_string(entity, ';')};
+        if (tok.empty()) continue;
+        const int entity_type = std::stoi(tok.at(0));
+        if (entity_type == 0) node_entities.push_back(entity);
+        else if (entity_type == 1) conn_entities.push_back(entity);
+    }
+
+    graph.headers = node_entities;
+
+    std::unordered_map<int, int> node_id_to_index;
+    node_id_to_index.reserve(node_entities.size());
+    for (std::size_t i = 0; i < node_entities.size(); ++i) {
+        const std::vector<std::string> tok{ai_agent_utils::split_string(node_entities[i], ';')};
+        if (tok.size() < 3) continue;
+        const int n_id = std::stoi(tok.at(1));
+        node_id_to_index[n_id] = static_cast<int>(i);
+    }
+
+    const std::size_t N{graph.headers.size()};
+    graph.adj_matrix.assign(N, std::vector<std::string>(N, ""));
+
+    for (const std::string& conn_entity : conn_entities) {
+        const std::vector<std::string> tok{ai_agent_utils::split_string(conn_entity, ';')};
+        if (tok.size() < 6) continue;
+        const int from_node_id{std::stoi(tok.at(2))};
+        const int from_port{std::stoi(tok.at(3))};
+        const int to_node_id{std::stoi(tok.at(4))};
+        const int to_port{std::stoi(tok.at(5))};
+
+        const auto from_it{node_id_to_index.find(from_node_id)};
+        const auto to_it{node_id_to_index.find(to_node_id)};
+        if (from_it == node_id_to_index.end() || to_it == node_id_to_index.end()) continue;
+
+        const std::size_t i{static_cast<std::size_t>(from_it->second)};
+        const std::size_t j{static_cast<std::size_t>(to_it->second)};
+
+        std::ostringstream oss;
+        oss << from_port << ',' << to_port;
+        const std::string fragment{oss.str()};
+
+        std::string& cell{graph.adj_matrix[i][j]};
+        if (cell.empty()) {
+            cell = fragment;
+        } else {
+            cell = cell + ';' + fragment;
+        }
+    }
+
+    return graph;
+}
+
+}  // namespace
 
 using VisualShader = gui::model::schema::VisualShader;
 
@@ -550,11 +616,8 @@ void VisualShaderEditor::on_create_node_button_pressed() {
 void VisualShaderEditor::on_preview_shader_button_pressed() {
   std::string code;
 
-  bool result{shadergen_visual_shader_generator::generate_shader(
-    shadergen_visual_shader_generator::to_proto_nodes(nodes_model),
-    shadergen_visual_shader_generator::to_generators(nodes_model), 
-    shadergen_visual_shader_generator::to_port_type_generators(nodes_model),
-    shadergen_visual_shader_generator::to_input_output_connections_by_key(connections_model), code)};
+  const RawVisualShaderGraph graph{shadergen_gui_adapters::to_raw_graph(nodes_model, connections_model)};
+  bool result{shadergen_visual_shader_generator::generate_shader(graph, code)};
   CHECK_CONDITION_TRUE(!result, "Failed to generate shader code");
 
   code_previewer->setPlainText(QString::fromStdString(code));
@@ -591,11 +654,8 @@ void VisualShaderEditor::on_match_image_button_pressed() {
 
   std::string code;
       
-  bool result{shadergen_visual_shader_generator::generate_shader(
-    shadergen_visual_shader_generator::to_proto_nodes(nodes_model),
-    shadergen_visual_shader_generator::to_generators(nodes_model), 
-    shadergen_visual_shader_generator::to_port_type_generators(nodes_model),
-    shadergen_visual_shader_generator::to_input_output_connections_by_key(connections_model), code)};
+  const RawVisualShaderGraph graph{shadergen_gui_adapters::to_raw_graph(nodes_model, connections_model)};
+  bool result{shadergen_visual_shader_generator::generate_shader(graph, code)};
   CHECK_CONDITION_TRUE(!result, "Failed to generate shader code");
 
   ai_agent_monitor->update_current_output(code);
@@ -660,11 +720,8 @@ void VisualShaderEditor::on_start_matching_timer_timeout() {
 
   std::string code;
       
-  bool result{shadergen_visual_shader_generator::generate_shader(
-    shadergen_visual_shader_generator::to_proto_nodes(best_individual.first),
-    shadergen_visual_shader_generator::to_generators(best_individual.first), 
-    shadergen_visual_shader_generator::to_port_type_generators(best_individual.first),
-    shadergen_visual_shader_generator::to_input_output_connections_by_key(best_individual.first), code)};
+  const RawVisualShaderGraph graph{decode_encoded_graph_to_raw(best_individual.first)};
+  bool result{shadergen_visual_shader_generator::generate_shader(graph, code)};
   CHECK_CONDITION_TRUE(!result, "Failed to generate shader code");
 
   ai_agent_monitor->update_current_output(code);
@@ -1427,10 +1484,9 @@ void VisualShaderGraphicsScene::on_update_renderer_widgets_requested() {
       continue;
     }
 
-    spw->set_code(shadergen_visual_shader_generator::generate_preview_shader(shadergen_visual_shader_generator::to_proto_nodes(nodes_model),
-                                    shadergen_visual_shader_generator::to_generators(nodes_model), 
-                                    shadergen_visual_shader_generator::to_port_type_generators(nodes_model),
-                                    shadergen_visual_shader_generator::to_input_output_connections_by_key(connections_model), n_id, 0));  // 0 is the output port index
+    spw->set_code(shadergen_visual_shader_generator::generate_preview_shader(
+        shadergen_gui_adapters::to_raw_graph(nodes_model, connections_model),
+        n_id, 0));  // 0 is the output port index
   }
 
   on_scene_update_requested();
