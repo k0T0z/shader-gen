@@ -99,6 +99,8 @@ configureArgs+=("-D" "QT_BUILD_EXAMPLES_BY_DEFAULT=OFF")
 configureArgs+=("-D" "QT_BUILD_TESTS_BY_DEFAULT=OFF")
 configureArgs+=("-D" "QT_BUILD_TOOLS_BY_DEFAULT=ON")
 
+configureArgs+=("-D" "CMAKE_DISABLE_FIND_PACKAGE_PostgreSQL=TRUE") # disable postresql finding
+
 # Build configuration
 cd "$qtSrcDir" || exit
 mkdir -p build
