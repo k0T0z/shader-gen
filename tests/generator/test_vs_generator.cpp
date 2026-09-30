@@ -43,12 +43,12 @@ TEST(VisualShaderGeneratorTest, TestGenerateShader) {
   graph.headers.resize(8);
   graph.headers[0] = "0;0;3";                                    // Output (oneof=3): id=0, no params
   graph.headers[1] = "0;1;2;1=2";                                // Input (oneof=2): id=1, type=2 (TIME)
-  graph.headers[2] = "0;2;16;1=0";                               // FloatFunc (oneof=16): id=2, func_type=0 (SIN)
-  graph.headers[3] = "0;3;12;1=3";                               // FloatOp (oneof=12): id=3, op_type=3 (DIV)
+  graph.headers[2] = "0;2;16;1=1";                               // FloatFunc (oneof=16): id=2, func_type=1 (SIN)
+  graph.headers[3] = "0;3;12;1=4";                               // FloatOp (oneof=12): id=3, op_type=4 (DIV)
   graph.headers[4] = "0;4;2;1=1";                                // Input (oneof=2): id=4, type=1 (UV)
   graph.headers[5] = "0;5;20;1=100.000000";                      // ValueNoise (oneof=20): id=5, scale=100.0
-  graph.headers[6] = "0;6;12;1=1";                               // FloatOp (oneof=12): id=6, op_type=1 (SUB)
-  graph.headers[7] = "0;7;16;1=15";                              // FloatFunc (oneof=16): id=7, func_type=15 (ROUND)
+  graph.headers[6] = "0;6;12;1=2";                               // FloatOp (oneof=12): id=6, op_type=2 (SUB)
+  graph.headers[7] = "0;7;16;1=16";                              // FloatFunc (oneof=16): id=7, func_type=16 (ROUND)
 
   const std::size_t N{8};
   graph.adj_matrix.assign(N, std::vector<std::string>(N, ""));
