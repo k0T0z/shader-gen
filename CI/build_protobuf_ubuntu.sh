@@ -1,16 +1,44 @@
-#!/bin/bash
+#################################################################################
+#                                                                               #
+#  Copyright (C) 2026 Seif Kandil (k0T0z)                                       #
+#                                                                               #
+#  This file is a part of the ENIGMA Development Environment.                   #
+#                                                                               #
+#                                                                               #
+#  ENIGMA is free software: you can redistribute it and/or modify it under the  #
+#  terms of the GNU General Public License as published by the Free Software    #
+#  Foundation, version 3 of the license or any later version.                   #
+#                                                                               #
+#  This application and its source code is distributed AS-IS, WITHOUT ANY       #
+#  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS    #
+#  FOR A PARTICULAR PURPOSE. See the GNU General Public License for more        #
+#  details.                                                                     #
+#                                                                               #
+#  You should have recieved a copy of the GNU General Public License along      #
+#  with this code. If not, see <http://www.gnu.org/licenses/>                   #
+#                                                                               #
+#  ENIGMA is an environment designed to create games and other programs with a  #
+#  high-level, fully compilable language. Developers of ENIGMA or anything      #
+#  associated with ENIGMA are in no way responsible for its users or            #
+#  applications created by its users, or damages caused by the environment      #
+#  or programs made in the environment.                                         #
+#                                                                               #
+#################################################################################
+
 set -e
 
-# Validate input arguments: build_type and link_type must be provided.
-if [ "$#" -ne 2 ]; then
-    echo "Usage: $0 <build_type> <link_type>"
+# Validate input arguments: build_type, link_type, and optional version
+if [ $# -ne 3 ]; then
+    echo "Usage: $0 <build_type> <link_type> <version>"
     echo "Valid build types: Debug, Release, MinSizeRel, RelWithDebInfo"
     echo "Valid link types: Dynamic, Static"
+    echo "version: Protobuf version/tag"
     exit 1
 fi
 
 build_type=$1
 link_type=$2
+version=$3
 
 # Validate build_type
 case "$build_type" in
@@ -39,7 +67,7 @@ case "$link_type" in
         ;;
 esac
 
-PROTOBUF_LATEST_TAG=v29.3
+PROTOBUF_LATEST_TAG="$version"
 
 # Build and install Protobuf
 echo "Installing Protobuf $PROTOBUF_LATEST_TAG with build type '$build_type' and link type '$link_type'..."

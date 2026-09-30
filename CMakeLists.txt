@@ -1,6 +1,6 @@
 #################################################################################
 #                                                                               #
-#  Copyright (C) 2024 Seif Kandil (k0T0z)                                       #
+#  Copyright (C) 2026 Seif Kandil (k0T0z)                                       #
 #                                                                               #
 #  This file is a part of the ENIGMA Development Environment.                   #
 #                                                                               #
@@ -167,6 +167,7 @@ set(SHADER_GEN_HPP_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/gui/model/utils/utils.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/gui/controller/utils/utils.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/gui/controller/shader_sampler.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/gui/adapters/raw_visual_shader_graph_adapter.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/error_macros.hpp
 )
 
@@ -192,6 +193,7 @@ set(SHADER_GEN_CPP_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/gui/controller/shader_sampler.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/gui/controller/fitness_plotter.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/gui/model/utils/field_path.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/gui/adapters/raw_visual_shader_graph_adapter.cpp
 )
 
 set(SHADER_GEN_PROTO_FILES 
@@ -207,8 +209,10 @@ set(SHADER_GEN_RC_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/assets/resources.rc
 )
 
+# Uncomment WIN32 if you want Windows GUI application instead of console application.
+# Console application don't return immediately in terminal.
 if (WIN32)
-    add_executable(${SHADER_GEN_EXECUTABLE_NAME} WIN32
+    add_executable(${SHADER_GEN_EXECUTABLE_NAME} # WIN32
         ${SHADER_GEN_MAIN_ENTRY} 
         ${SHADER_GEN_CPP_FILES} 
         ${SHADER_GEN_PROTO_GENERATED_SRCS} # Include the generated protobuf files

@@ -1,6 +1,6 @@
 /*********************************************************************************/
 /*                                                                               */
-/*  Copyright (C) 2024 Seif Kandil (k0T0z)                                       */
+/*  Copyright (C) 2026 Seif Kandil (k0T0z)                                       */
 /*                                                                               */
 /*  This file is a part of the ENIGMA Development Environment.                   */
 /*                                                                               */
@@ -28,12 +28,79 @@
 #include "ai-agent/ai_agent.hpp"
 
 #include <algorithm>
+#include <sstream>
+#include <unordered_map>
 #include <QMetaObject>
 #include <QImage>
 
 #include "ai-agent/utils/utils.hpp"
 #include "generator/visual_shader_generator.hpp"
 #include "ai-agent/fitness.hpp"
+
+namespace {
+
+inline static RawVisualShaderGraph decode_encoded_graph(const std::string& encoded_graph) noexcept {
+    RawVisualShaderGraph graph;
+
+    std::vector<std::string> node_entities;
+    std::vector<std::string> conn_entities;
+    node_entities.reserve(8);
+    conn_entities.reserve(8);
+
+    const std::vector<std::string> entities{ai_agent_utils::split_string(encoded_graph, ',')};
+    for (const std::string& entity : entities) {
+        const std::vector<std::string> tok{ai_agent_utils::split_string(entity, ';')};
+        if (tok.empty()) continue;
+        const int entity_type = std::stoi(tok.at(0));
+        if (entity_type == 0) node_entities.push_back(entity);
+        else if (entity_type == 1) conn_entities.push_back(entity);
+    }
+
+    graph.headers = node_entities;
+
+    std::unordered_map<int, int> node_id_to_index;
+    node_id_to_index.reserve(node_entities.size());
+    for (std::size_t i = 0; i < node_entities.size(); ++i) {
+        const std::vector<std::string> tok{ai_agent_utils::split_string(node_entities[i], ';')};
+        if (tok.size() < 3) continue;
+        const int n_id = std::stoi(tok.at(1));
+        node_id_to_index[n_id] = static_cast<int>(i);
+    }
+
+    const std::size_t N{graph.headers.size()};
+    graph.adj_matrix.assign(N, std::vector<std::string>(N, ""));
+
+    for (const std::string& conn_entity : conn_entities) {
+        const std::vector<std::string> tok{ai_agent_utils::split_string(conn_entity, ';')};
+        if (tok.size() < 6) continue;
+        const int from_node_id{std::stoi(tok.at(2))};
+        const int from_port{std::stoi(tok.at(3))};
+        const int to_node_id{std::stoi(tok.at(4))};
+        const int to_port{std::stoi(tok.at(5))};
+
+        const auto from_it{node_id_to_index.find(from_node_id)};
+        const auto to_it{node_id_to_index.find(to_node_id)};
+        if (from_it == node_id_to_index.end() || to_it == node_id_to_index.end()) continue;
+
+        const std::size_t i{static_cast<std::size_t>(from_it->second)};
+        const std::size_t j{static_cast<std::size_t>(to_it->second)};
+
+        std::ostringstream oss;
+        oss << from_port << ',' << to_port;
+        const std::string fragment{oss.str()};
+
+        std::string& cell{graph.adj_matrix[i][j]};
+        if (cell.empty()) {
+            cell = fragment;
+        } else {
+            cell = cell + ';' + fragment;
+        }
+    }
+
+    return graph;
+}
+
+}  // namespace
 
 namespace ai_agent_main {
     
@@ -143,11 +210,8 @@ namespace ai_agent_main {
     ) noexcept {
         std::string code;
       
-        bool result{shadergen_visual_shader_generator::generate_shader(
-          shadergen_visual_shader_generator::to_proto_nodes(encoded_graph),
-          shadergen_visual_shader_generator::to_generators(encoded_graph), 
-          shadergen_visual_shader_generator::to_port_type_generators(encoded_graph),
-          shadergen_visual_shader_generator::to_input_output_connections_by_key(encoded_graph), code)};
+        const RawVisualShaderGraph graph{decode_encoded_graph(encoded_graph)};
+        bool result{shadergen_visual_shader_generator::generate_shader(graph, code)};
         CHECK_CONDITION_TRUE_NON_VOID(!result, std::numeric_limits<unsigned long>::max(), "Failed to generate shader code");
 
         QImage extracted_image = shader_sampler->sample_once(code);

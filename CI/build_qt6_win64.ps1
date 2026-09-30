@@ -1,3 +1,30 @@
+#################################################################################
+#                                                                               #
+#  Copyright (C) 2026 Seif Kandil (k0T0z)                                       #
+#                                                                               #
+#  This file is a part of the ENIGMA Development Environment.                   #
+#                                                                               #
+#                                                                               #
+#  ENIGMA is free software: you can redistribute it and/or modify it under the  #
+#  terms of the GNU General Public License as published by the Free Software    #
+#  Foundation, version 3 of the license or any later version.                   #
+#                                                                               #
+#  This application and its source code is distributed AS-IS, WITHOUT ANY       #
+#  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS    #
+#  FOR A PARTICULAR PURPOSE. See the GNU General Public License for more        #
+#  details.                                                                     #
+#                                                                               #
+#  You should have recieved a copy of the GNU General Public License along      #
+#  with this code. If not, see <http://www.gnu.org/licenses/>                   #
+#                                                                               #
+#  ENIGMA is an environment designed to create games and other programs with a  #
+#  high-level, fully compilable language. Developers of ENIGMA or anything      #
+#  associated with ENIGMA are in no way responsible for its users or            #
+#  applications created by its users, or damages caused by the environment      #
+#  or programs made in the environment.                                         #
+#                                                                               #
+#################################################################################
+
 # https://doc.qt.io/qt-6/windows-building.html
 
 param(
@@ -10,10 +37,13 @@ param(
     [string]$link_type,
 
     [Parameter(Mandatory = $true, Position = 2)]
-    [string]$install_dir
+    [string]$install_dir,
+
+    [Parameter(Mandatory = $true, Position = 3)]
+    [string]$version
 )
 
-$Qt6Version = "6.9.1"
+$Qt6Version = $version
 $ErrorActionPreference = "Stop"
 
 # derive major.minor from version
@@ -40,10 +70,43 @@ Write-Host "Configuring Qt with prefix: $install_dir"
 python --version
 cmake --version
 
-# https://github.com/actions/runner-images/blob/main/images/windows/Windows2022-Readme.md#visual-studio-enterprise-2022.
 Write-Host "Setting up Visual Studio environment..."
-$VSEdition = "Enterprise"
-& "C:\Program Files\Microsoft Visual Studio\2022\$VSEdition\Common7\Tools\Launch-VsDevShell.ps1" -Arch amd64
+if (Get-Command cl.exe -ErrorAction SilentlyContinue) {
+    Write-Host "MSVC compiler (cl.exe) is already available in PATH."
+} else {
+    $devShell = $null
+    $vsWhere = Join-Path ${env:ProgramFiles(x86)} "Microsoft Visual Studio\Installer\vswhere.exe"
+    if (Test-Path $vsWhere) {
+        $vsPath = (& $vsWhere -products * -latest -property installationPath)
+        if ($vsPath) {
+            $candidate = Join-Path ($vsPath.Trim()) "Common7\Tools\Launch-VsDevShell.ps1"
+            if (Test-Path $candidate) {
+                $devShell = $candidate
+            }
+        }
+    }
+
+    if (-not $devShell) {
+        $editions = @("Enterprise", "Professional", "Community")
+        foreach ($year in @("2022", "18", "2019")) {
+            foreach ($edition in $editions) {
+                $candidate = "C:\Program Files\Microsoft Visual Studio\$year\$edition\Common7\Tools\Launch-VsDevShell.ps1"
+                if (Test-Path $candidate) {
+                    $devShell = $candidate
+                    break
+                }
+            }
+            if ($devShell) { break }
+        }
+    }
+
+    if ($devShell -and (Test-Path $devShell)) {
+        Write-Host "Using dev shell: $devShell"
+        & $devShell -Arch amd64 -SkipAutomaticLocation
+    } else {
+        throw "Could not find Launch-VsDevShell.ps1. Please ensure Visual Studio is installed with C++ workload."
+    }
+}
 
 # Base configure args
 $configureArgs = @(
