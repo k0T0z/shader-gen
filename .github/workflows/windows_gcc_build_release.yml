@@ -70,7 +70,7 @@ jobs:
         if: steps.cache-qt6-static.outputs.cache-hit != 'true'
         shell: msys2 {0}
         run: |
-          ./CI/build_qt6_win64_gcc.sh Release Static "${{ github.workspace }}/qt6-lib-static"
+          bash ./CI/build_qt6_win64_gcc.sh Release Static "${{ github.workspace }}/qt6-lib-static"
 
       - name: Cache Protobuf
         id: cache-protobuf-static
@@ -87,7 +87,7 @@ jobs:
         run: |
           mkdir -p "${{ github.workspace }}/protobuf-lib-static"
           echo "Protobuf: '${{ github.workspace }}/protobuf-lib-static'"
-          ./CI/build_protobuf_win64_gcc.sh Release Static "${{ github.workspace }}/protobuf-lib-static"
+          bash ./CI/build_protobuf_win64_gcc.sh Release Static "${{ github.workspace }}/protobuf-lib-static"
 
       - name: Populate PATH for 'windeployqt'
         shell: msys2 {0}

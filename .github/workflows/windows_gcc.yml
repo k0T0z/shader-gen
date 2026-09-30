@@ -80,7 +80,7 @@ jobs:
       if: steps.cache-qt6.outputs.cache-hit != 'true'
       shell: msys2 {0}
       run: |
-        ./CI/build_qt6_win64_gcc.sh Debug Dynamic "${{ github.workspace }}/qt6-lib"
+        bash ./CI/build_qt6_win64_gcc.sh Debug Dynamic "${{ github.workspace }}/qt6-lib"
 
     - name: Cache Protobuf
       id: cache-protobuf
@@ -97,7 +97,7 @@ jobs:
       run: |
         mkdir -p "${{ github.workspace }}/protobuf-lib"
         echo "Protobuf: '${{ github.workspace }}/protobuf-lib'"
-        ./CI/build_protobuf_win64_gcc.sh Debug Dynamic "${{ github.workspace }}/protobuf-lib"
+        bash ./CI/build_protobuf_win64_gcc.sh Debug Dynamic "${{ github.workspace }}/protobuf-lib"
 
     - name: Configure CMake
       shell: msys2 {0}

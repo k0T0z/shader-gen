@@ -63,7 +63,7 @@ jobs:
       shell: bash
       run: |
         chmod +x ./CI/build_protobuf_ubuntu.sh
-        sudo ./CI/build_protobuf_ubuntu.sh Debug Dynamic
+        sudo bash ./CI/build_protobuf_ubuntu.sh Debug Dynamic
         
         sudo ldconfig # Fixes: error while loading shared libraries: libabsl_log_internal_globals.so.2401.0.0: cannot open shared object file: No such file or directory
 
