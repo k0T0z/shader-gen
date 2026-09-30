@@ -37,8 +37,7 @@ param(
     [Parameter(Mandatory = $true, Position = 2)]
     [string]$install_dir,
 
-    [Parameter(Mandatory = $false, Position = 3)]
-    [Alias("protobuf_version")]
+    [Parameter(Mandatory = $true, Position = 3)]
     [string]$version
 )
 

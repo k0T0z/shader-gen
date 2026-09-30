@@ -28,8 +28,8 @@
 set -e
 
 # Validate input arguments: build_type, link_type, and optional version
-if [ "$#" -lt 2 ] || [ "$#" -gt 3 ]; then
-    echo "Usage: $0 <build_type> <link_type> [version]"
+if [ $# -ne 3 ]; then
+    echo "Usage: $0 <build_type> <link_type> <version>"
     echo "Valid build types: Debug, Release, MinSizeRel, RelWithDebInfo"
     echo "Valid link types: Dynamic, Static"
     echo "version: Protobuf version/tag"

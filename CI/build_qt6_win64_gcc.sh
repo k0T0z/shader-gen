@@ -28,8 +28,8 @@
 set -e
 
 # Check for required arguments
-if [ $# -lt 3 ] || [ $# -gt 4 ]; then
-    echo "Usage: $0 <build_type> <link_type> <install_dir> [version]"
+if [ $# -ne 4 ]; then
+    echo "Usage: $0 <build_type> <link_type> <install_dir> <version>"
     echo "  build_type: Debug | Release | MinSizeRel | RelWithDebInfo"
     echo "  link_type: Dynamic | Static"
     echo "  install_dir: Path to installation prefix"

@@ -28,8 +28,8 @@
 set -e
 
 # Check for the required arguments: BUILD_TYPE, LINK_TYPE, INSTALL_PREFIX, and optional VERSION
-if [ "$#" -lt 3 ] || [ "$#" -gt 4 ]; then
-    echo "Usage: $0 <BUILD_TYPE> <LINK_TYPE> <INSTALL_PREFIX> [VERSION]"
+if [ $# -ne 4 ]; then
+    echo "Usage: $0 <BUILD_TYPE> <LINK_TYPE> <INSTALL_PREFIX> <VERSION>"
     echo "Valid BUILD_TYPE values: Debug, Release, MinSizeRel, RelWithDebInfo"
     echo "Valid LINK_TYPE values: Dynamic, Static"
     echo "VERSION: Protobuf version/tag"
