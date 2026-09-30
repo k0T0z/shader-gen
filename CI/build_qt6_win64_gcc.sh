@@ -100,6 +100,7 @@ configureArgs+=("-D" "QT_BUILD_TESTS_BY_DEFAULT=OFF")
 configureArgs+=("-D" "QT_BUILD_TOOLS_BY_DEFAULT=ON")
 
 # Use the MSYS2/MinGW PostgreSQL installation.
+# C:/Program Files/PostgreSQL/17/lib/libpq.a has link issues with Qt.
 configureArgs+=("-D" "PostgreSQL_ROOT=/mingw64")
 
 # Build configuration
