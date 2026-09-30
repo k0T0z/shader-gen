@@ -40,10 +40,43 @@ Write-Host "Configuring Qt with prefix: $install_dir"
 python --version
 cmake --version
 
-# https://github.com/actions/runner-images/blob/main/images/windows/Windows2022-Readme.md#visual-studio-enterprise-2022.
 Write-Host "Setting up Visual Studio environment..."
-$VSEdition = "Enterprise"
-& "C:\Program Files\Microsoft Visual Studio\2022\$VSEdition\Common7\Tools\Launch-VsDevShell.ps1" -Arch amd64
+if (Get-Command cl.exe -ErrorAction SilentlyContinue) {
+    Write-Host "MSVC compiler (cl.exe) is already available in PATH."
+} else {
+    $devShell = $null
+    $vsWhere = Join-Path ${env:ProgramFiles(x86)} "Microsoft Visual Studio\Installer\vswhere.exe"
+    if (Test-Path $vsWhere) {
+        $vsPath = (& $vsWhere -products * -latest -property installationPath)
+        if ($vsPath) {
+            $candidate = Join-Path ($vsPath.Trim()) "Common7\Tools\Launch-VsDevShell.ps1"
+            if (Test-Path $candidate) {
+                $devShell = $candidate
+            }
+        }
+    }
+
+    if (-not $devShell) {
+        $editions = @("Enterprise", "Professional", "Community")
+        foreach ($year in @("2022", "18", "2019")) {
+            foreach ($edition in $editions) {
+                $candidate = "C:\Program Files\Microsoft Visual Studio\$year\$edition\Common7\Tools\Launch-VsDevShell.ps1"
+                if (Test-Path $candidate) {
+                    $devShell = $candidate
+                    break
+                }
+            }
+            if ($devShell) { break }
+        }
+    }
+
+    if ($devShell -and (Test-Path $devShell)) {
+        Write-Host "Using dev shell: $devShell"
+        & $devShell -Arch amd64 -SkipAutomaticLocation
+    } else {
+        throw "Could not find Launch-VsDevShell.ps1. Please ensure Visual Studio is installed with C++ workload."
+    }
+}
 
 # Base configure args
 $configureArgs = @(
