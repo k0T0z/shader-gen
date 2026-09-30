@@ -76,7 +76,7 @@ jobs:
         run: |
           Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 
-          New-Item -ItemType Directory -Path "${{ github.workspace }}\protobuf-lib-static"
+          New-Item -ItemType Directory -Path "${{ github.workspace }}\protobuf-lib-static" -Force
           Write-Output "Protobuf: '${{ github.workspace }}\protobuf-lib-static'"
           .\CI\build_protobuf_win64.ps1 Release Static "${{ github.workspace }}\protobuf-lib-static"
 
