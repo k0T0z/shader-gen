@@ -1,3 +1,5 @@
+#!/bin/bash
+
 #################################################################################
 #                                                                               #
 #  Copyright (C) 2026 Seif Kandil (k0T0z)                                       #
@@ -25,7 +27,6 @@
 #                                                                               #
 #################################################################################
 
-#!/bin/bash
 set -e
 
 # Validate input arguments: build_type and link_type must be provided.

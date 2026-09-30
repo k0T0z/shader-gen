@@ -1,3 +1,5 @@
+#!/bin/bash
+
 #################################################################################
 #                                                                               #
 #  Copyright (C) 2026 Seif Kandil (k0T0z)                                       #
@@ -24,8 +26,6 @@
 #  or programs made in the environment.                                         #
 #                                                                               #
 #################################################################################
-
-#!/bin/bash
 
 # Check for required arguments
 if [ $# -ne 3 ]; then
