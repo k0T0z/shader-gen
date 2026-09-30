@@ -44,6 +44,10 @@ concurrency:
   group: ci-${{github.actor}}-${{github.head_ref || github.run_number}}-${{github.ref}}-windows-msvc
   cancel-in-progress: true
 
+env:
+  QT_VERSION: "6.12.0"
+  PROTOBUF_VERSION: "v29.3"
+
 jobs:
   build:
     runs-on: windows-2022
@@ -59,8 +63,9 @@ jobs:
       uses: actions/cache@v4
       with:
         path: ${{ github.workspace }}\qt6-lib
-        key: qt6-${{ runner.os }}-${{ hashFiles('CI\build_qt6_win64.ps1') }}
+        key: qt6-${{ env.QT_VERSION }}-${{ runner.os }}-${{ hashFiles('CI\build_qt6_win64.ps1') }}
         restore-keys: |
+          qt6-${{ env.QT_VERSION }}-${{ runner.os }}-
           qt6-${{ runner.os }}-
 
     - name: Build Qt6
@@ -68,15 +73,16 @@ jobs:
       shell: pwsh
       run: |
         Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
-        .\CI\build_qt6_win64.ps1 Debug Dynamic "${{ github.workspace }}\qt6-lib"
+        .\CI\build_qt6_win64.ps1 Debug Dynamic "${{ github.workspace }}\qt6-lib" "${{ env.QT_VERSION }}"
 
     - name: Cache Protobuf
       id: cache-protobuf
       uses: actions/cache@v4
       with:
         path: ${{ github.workspace }}\protobuf-lib
-        key: protobuf-${{ runner.os }}-${{ hashFiles('CI\build_protobuf_win64.ps1') }}
+        key: protobuf-${{ env.PROTOBUF_VERSION }}-${{ runner.os }}-${{ hashFiles('CI\build_protobuf_win64.ps1') }}
         restore-keys: |
+          protobuf-${{ env.PROTOBUF_VERSION }}-${{ runner.os }}-
           protobuf-${{ runner.os }}-
 
     - name: Build Protobuf
@@ -87,7 +93,7 @@ jobs:
 
         New-Item -ItemType Directory -Path "${{ github.workspace }}\protobuf-lib" -Force
         Write-Output "Protobuf: '${{ github.workspace }}\protobuf-lib'"
-        .\CI\build_protobuf_win64.ps1 Debug Dynamic "${{ github.workspace }}\protobuf-lib"
+        .\CI\build_protobuf_win64.ps1 Debug Dynamic "${{ github.workspace }}\protobuf-lib" "${{ env.PROTOBUF_VERSION }}"
 
     - name: Configure CMake
       shell: pwsh

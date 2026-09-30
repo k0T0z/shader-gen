@@ -27,17 +27,19 @@
 
 set -e
 
-# Check for the required arguments: BUILD_TYPE, LINK_TYPE, and INSTALL_PREFIX
-if [ "$#" -ne 3 ]; then
-    echo "Usage: $0 <BUILD_TYPE> <LINK_TYPE> <INSTALL_PREFIX>"
+# Check for the required arguments: BUILD_TYPE, LINK_TYPE, INSTALL_PREFIX, and optional VERSION
+if [ "$#" -lt 3 ] || [ "$#" -gt 4 ]; then
+    echo "Usage: $0 <BUILD_TYPE> <LINK_TYPE> <INSTALL_PREFIX> [VERSION]"
     echo "Valid BUILD_TYPE values: Debug, Release, MinSizeRel, RelWithDebInfo"
     echo "Valid LINK_TYPE values: Dynamic, Static"
+    echo "VERSION: Protobuf version/tag"
     exit 1
 fi
 
 build_type=$1
 link_type=$2
 install_dir=$3
+version=$4
 
 # Validate build_type
 case "$build_type" in
@@ -72,7 +74,7 @@ if [ ! -d "$install_dir" ]; then
     mkdir -p "$install_dir"
 fi
 
-PROTOBUF_LATEST_TAG=v29.3
+PROTOBUF_LATEST_TAG="$version"
 
 # Build and install Protobuf
 echo "Installing Protobuf $PROTOBUF_LATEST_TAG with build type '$build_type' and link type '$link_type' (shared libs: $shared_libs)..."

@@ -34,6 +34,10 @@ concurrency:
   group: ci-${{github.actor}}-${{github.head_ref || github.run_number}}-${{github.ref}}-windows
   cancel-in-progress: true
 
+env:
+  QT_VERSION: "6.12.0"
+  PROTOBUF_VERSION: "v29.3"
+
 jobs:
   release:
     runs-on: windows-latest
@@ -50,8 +54,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ github.workspace }}\qt6-lib-static
-          key: qt6-static-${{ runner.os }}-${{ hashFiles('CI\build_qt6_win64.ps1') }}
+          key: qt6-static-${{ env.QT_VERSION }}-${{ runner.os }}-${{ hashFiles('CI\build_qt6_win64.ps1') }}
           restore-keys: |
+            qt6-static-${{ env.QT_VERSION }}-${{ runner.os }}-
             qt6-static-${{ runner.os }}-
 
       - name: Build Qt6
@@ -59,15 +64,16 @@ jobs:
         shell: pwsh
         run: |
           Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
-          .\CI\build_qt6_win64.ps1 Release Static "${{ github.workspace }}\qt6-lib-static"
+          .\CI\build_qt6_win64.ps1 Release Static "${{ github.workspace }}\qt6-lib-static" "${{ env.QT_VERSION }}"
 
       - name: Cache Protobuf
         id: cache-protobuf-static
         uses: actions/cache@v4
         with:
           path: ${{ github.workspace }}\protobuf-lib-static
-          key: protobuf-static-${{ runner.os }}-${{ hashFiles('CI\build_protobuf_win64.ps1') }}
+          key: protobuf-static-${{ env.PROTOBUF_VERSION }}-${{ runner.os }}-${{ hashFiles('CI\build_protobuf_win64.ps1') }}
           restore-keys: |
+            protobuf-static-${{ env.PROTOBUF_VERSION }}-${{ runner.os }}-
             protobuf-static-${{ runner.os }}-
 
       - name: Build Protobuf
@@ -78,7 +84,7 @@ jobs:
 
           New-Item -ItemType Directory -Path "${{ github.workspace }}\protobuf-lib-static" -Force
           Write-Output "Protobuf: '${{ github.workspace }}\protobuf-lib-static'"
-          .\CI\build_protobuf_win64.ps1 Release Static "${{ github.workspace }}\protobuf-lib-static"
+          .\CI\build_protobuf_win64.ps1 Release Static "${{ github.workspace }}\protobuf-lib-static" "${{ env.PROTOBUF_VERSION }}"
 
       - name: Populate PATH for 'windeployqt'
         shell: pwsh

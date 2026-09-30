@@ -37,10 +37,14 @@ param(
     [string]$link_type,
 
     [Parameter(Mandatory = $true, Position = 2)]
-    [string]$install_dir
+    [string]$install_dir,
+
+    [Parameter(Mandatory = $false, Position = 3)]
+    [Alias("qt_version", "qt6_version")]
+    [string]$version
 )
 
-$Qt6Version = "6.9.1"
+$Qt6Version = $version
 $ErrorActionPreference = "Stop"
 
 # derive major.minor from version

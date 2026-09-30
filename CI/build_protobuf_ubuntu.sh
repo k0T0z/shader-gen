@@ -27,16 +27,18 @@
 
 set -e
 
-# Validate input arguments: build_type and link_type must be provided.
-if [ "$#" -ne 2 ]; then
-    echo "Usage: $0 <build_type> <link_type>"
+# Validate input arguments: build_type, link_type, and optional version
+if [ "$#" -lt 2 ] || [ "$#" -gt 3 ]; then
+    echo "Usage: $0 <build_type> <link_type> [version]"
     echo "Valid build types: Debug, Release, MinSizeRel, RelWithDebInfo"
     echo "Valid link types: Dynamic, Static"
+    echo "version: Protobuf version/tag"
     exit 1
 fi
 
 build_type=$1
 link_type=$2
+version=$3
 
 # Validate build_type
 case "$build_type" in
@@ -65,7 +67,7 @@ case "$link_type" in
         ;;
 esac
 
-PROTOBUF_LATEST_TAG=v29.3
+PROTOBUF_LATEST_TAG="$version"
 
 # Build and install Protobuf
 echo "Installing Protobuf $PROTOBUF_LATEST_TAG with build type '$build_type' and link type '$link_type'..."

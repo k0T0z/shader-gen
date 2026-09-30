@@ -28,16 +28,20 @@
 set -e
 
 # Check for required arguments
-if [ $# -ne 3 ]; then
-    echo "Usage: $0 <build_type> <link_type> <install_dir>"
+if [ $# -lt 3 ] || [ $# -gt 4 ]; then
+    echo "Usage: $0 <build_type> <link_type> <install_dir> [version]"
     echo "  build_type: Debug | Release | MinSizeRel | RelWithDebInfo"
     echo "  link_type: Dynamic | Static"
+    echo "  install_dir: Path to installation prefix"
+    echo "  version: Qt version"
     exit 1
 fi
 
 build_type=$1
 link_type=$2
 install_dir=$3
+Qt6Version=$4
+majorMinor=$(echo "$Qt6Version" | cut -d. -f1-2)
 
 # Validate build_type
 case "$build_type" in
@@ -62,9 +66,6 @@ if [ ! -d "$install_dir" ]; then
     echo "Install prefix directory '$install_dir' does not exist. Creating it..."
     mkdir -p "$install_dir"
 fi
-
-Qt6Version="6.9.1"
-majorMinor=$(echo "$Qt6Version" | cut -d. -f1-2)
 
 # URLs and paths
 qtSrcCompressed="qt-everywhere-src-$Qt6Version.tar.xz"

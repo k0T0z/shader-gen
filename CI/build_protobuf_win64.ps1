@@ -35,10 +35,15 @@ param(
     [string]$link_type,
 
     [Parameter(Mandatory = $true, Position = 2)]
-    [string]$install_dir
+    [string]$install_dir,
+
+    [Parameter(Mandatory = $false, Position = 3)]
+    [Alias("protobuf_version")]
+    [string]$version
 )
 
-$PROTOBUF_LATEST_TAG = "v29.3"
+$PROTOBUF_LATEST_TAG = $version
+
 $ErrorActionPreference = 'Stop'
 
 # Determine the CMake flag for shared library builds based on link_type.
