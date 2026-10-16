@@ -168,6 +168,7 @@ set(SHADER_GEN_HPP_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/gui/controller/utils/utils.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/gui/controller/shader_sampler.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/gui/adapters/raw_visual_shader_graph_adapter.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/coordinates_generator/coordinates_generator.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/error_macros.hpp
 )
 
@@ -194,6 +195,7 @@ set(SHADER_GEN_CPP_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/gui/controller/fitness_plotter.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/gui/model/utils/field_path.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/gui/adapters/raw_visual_shader_graph_adapter.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/coordinates_generator/coordinates_generator.cpp
 )
 
 set(SHADER_GEN_PROTO_FILES 
@@ -359,6 +361,14 @@ if(SHADER_GEN_BUILD_TESTS)
         Qt${SHADER_GEN_QT_VERSION}::Test
         protobuf::libprotobuf 
     )
+
+    # Static Qt builds only auto-import the default platform plugin (QWindows).
+    # Explicitly pull in the offscreen platform plugin so tests can run headless
+    # with QT_QPA_PLATFORM=offscreen.
+    if(TARGET Qt${SHADER_GEN_QT_VERSION}::QOffscreenIntegrationPlugin)
+        qt_import_plugins(${SHADER_GEN_TESTS_EXECUTABLE_NAME}
+            INCLUDE Qt${SHADER_GEN_QT_VERSION}::QOffscreenIntegrationPlugin)
+    endif()
 
     target_include_directories(${SHADER_GEN_TESTS_EXECUTABLE_NAME} PRIVATE 
         "${CMAKE_CURRENT_SOURCE_DIR}/"

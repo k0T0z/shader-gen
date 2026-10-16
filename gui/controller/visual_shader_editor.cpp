@@ -37,6 +37,7 @@
 
 #include "generator/visual_shader_generator.hpp"
 #include "gui/adapters/raw_visual_shader_graph_adapter.hpp"
+#include "core/coordinates_generator/coordinates_generator.hpp"
 #include "ai-agent/utils/utils.hpp"
 #include "ai-agent/ai_agent.hpp"
 
@@ -369,6 +370,14 @@ void VisualShaderEditor::init() {
   matching_type_combo_box->addItem("Full Graph", static_cast<int>(ai_agent_main::MatchingType::FULL_GRAPH));
   matching_type_combo_box->setCurrentIndex(0);
   menu_bar->addWidget(matching_type_combo_box);
+
+  refresh_coordinates_button = new QPushButton("Refresh Coordinates", scene_layer);
+  refresh_coordinates_button->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
+  refresh_coordinates_button->setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
+  refresh_coordinates_button->setToolTip("Recompute the position of every node using the Reingold-Tilford tree layout");
+  menu_bar->addWidget(refresh_coordinates_button);
+  QObject::connect(refresh_coordinates_button, &QPushButton::pressed, this,
+                   &VisualShaderEditor::on_refresh_coordinates_button_pressed);
 
   start_matching_timer = new QTimer(this);
   stop_matching_timer = new QTimer(this);
@@ -738,6 +747,22 @@ void VisualShaderEditor::on_stop_matching_timer_timeout() {
 
   stop_matching_timer->stop();
   if (start_matching_timer->isActive()) start_matching_timer->stop();
+}
+
+void VisualShaderEditor::on_refresh_coordinates_button_pressed() {
+  CHECK_PARAM_NULLPTR(nodes_model, "Nodes model is null");
+  CHECK_PARAM_NULLPTR(connections_model, "Connections model is null");
+
+  const RawVisualShaderGraph graph{shadergen_gui_adapters::to_raw_graph(nodes_model, connections_model)};
+
+  const std::unordered_map<int, QPointF> coordinates{
+      shadergen_coordinates_generator::generate_coordinates(graph)};
+
+  for (const auto& [n_id, coordinate] : coordinates) {
+    scene->move_node(n_id, coordinate);
+  }
+
+  scene->on_scene_update_requested();
 }
 
 std::vector<std::string> VisualShaderEditor::parse_node_category_path(const std::string& n_category_path) {
@@ -1470,9 +1495,11 @@ bool VisualShaderGraphicsScene::update_node(const int& n_id, const int& field_nu
 
 void VisualShaderGraphicsScene::move_node(const int& n_id, const QPointF& new_coordinate) {
   VisualShaderNodeGraphicsObject* n_o{this->get_node_graphics_object(n_id)};
+  SILENT_CHECK_CONDITION_TRUE(!n_o);
 
-  // Call itemChange and it will emit node_moved signal which will call on_node_moved and move all the connections
-  n_o->itemChange(n_o->ItemScenePositionHasChanged, new_coordinate);
+  // setPos emits ItemScenePositionHasChanged which emits node_moved and calls
+  // on_node_moved so that all the connections attached to the node are moved too.
+  n_o->setPos(new_coordinate);
 }
 
 void VisualShaderGraphicsScene::on_update_renderer_widgets_requested() {
