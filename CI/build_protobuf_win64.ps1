@@ -41,9 +41,29 @@ param(
     [string]$version
 )
 
-$PROTOBUF_LATEST_TAG = $version
-
 $ErrorActionPreference = 'Stop'
+
+# Set up the MSVC 2022 x64 build environment.
+. "$PSScriptRoot\setup_msvc_win64.ps1"
+
+$PROTOBUF_LATEST_TAG = $version
+$PROTOBUF_LATEST_TAG_WITHOUT_V = $PROTOBUF_LATEST_TAG.Replace("v", "")
+
+# URLs and paths
+$pbSrcCompressed = "protobuf-$PROTOBUF_LATEST_TAG_WITHOUT_V.zip"
+$pbUrl    = "https://github.com/protocolbuffers/protobuf/releases/download/$PROTOBUF_LATEST_TAG/$pbSrcCompressed"
+
+# Download source
+Write-Host "Downloading Protobuf source from $pbUrl..."
+Invoke-WebRequest -Uri $pbUrl -OutFile $pbSrcCompressed -Verbose
+
+# Extract
+Write-Host "Extracting Protobuf source..."
+Expand-Archive -Path $pbSrcCompressed -DestinationPath $env:GITHUB_WORKSPACE
+
+$pbSrcDir = Join-Path $env:GITHUB_WORKSPACE "protobuf-$PROTOBUF_LATEST_TAG_WITHOUT_V"
+
+Write-Host "Configuring Protobuf with prefix: $install_dir"
 
 # Determine the CMake flag for shared library builds based on link_type.
 switch ($link_type) {
@@ -52,47 +72,27 @@ switch ($link_type) {
     default   { throw "Invalid link_type '$link_type'. Expected 'Dynamic' or 'Static'." }
 }
 
-# Check if the install prefix directory exists; if not, create it.
-if (-not (Test-Path -Path $install_dir -PathType Container)) {
-    Write-Output "Install prefix directory '$install_dir' does not exist. Creating it..."
-    New-Item -ItemType Directory -Path $install_dir -Force | Out-Null
-}
-
-Write-Output "Installing Protobuf '$PROTOBUF_LATEST_TAG' with build type '$build_type' and link type '$link_type' (shared libs: '$shared_libs')..."
-
-# Clone the Protobuf repository.
-git clone --depth 1 -b $PROTOBUF_LATEST_TAG https://github.com/protocolbuffers/protobuf.git
-Set-Location protobuf
-
-# Update submodules.
-git submodule update --init --recursive
-
-# Create and switch to the build directory.
-New-Item -ItemType Directory -Path build | Set-Location
-
-# Note that we don't need to set CMAKE_MSVC_RUNTIME_LIBRARY as Protobuf already does this for us.
-
 # Base configure args
 $configureArgs = @(
     "-G", "Visual Studio 17 2022", "-A", "x64",
-    "-D", "protobuf_BUILD_TESTS=OFF",
-    "-D", "protobuf_BUILD_CONFORMANCE=OFF",
-    "-D", "protobuf_BUILD_EXAMPLES=OFF",
-    "-D", "protobuf_ABSL_PROVIDER=module",
+    "-D", "protobuf_FORCE_FETCH_DEPENDENCIES=ON",
     "-D", "CMAKE_BUILD_TYPE='$build_type'",
     "-D", "CMAKE_CXX_STANDARD=17",
     "-D", "BUILD_SHARED_LIBS='$shared_libs'",
     "-D", "protobuf_BUILD_SHARED_LIBS='$shared_libs'",
-    "-D", "CMAKE_INSTALL_PREFIX='$install_dir'",
-
-    "-D", "ABSL_PROPAGATE_CXX_STD=ON",
-    "-D", "BUILD_TESTING=OFF",
-    "-D", "ABSL_BUILD_TESTING=OFF",
-    "-D", "ABSL_USE_GOOGLETEST_HEAD=OFF",
-    "-D", "ABSL_ENABLE_INSTALL=ON",
-    "-D", "ABSL_BUILD_MONOLITHIC_SHARED_LIBS='$shared_libs'",
-    "-D", "CMAKE_MODULE_LINKER_FLAGS='-Wl,--no-undefined'"
+    "-D", "CMAKE_INSTALL_PREFIX='$install_dir'"
 )
+
+# Build Protobuf
+Set-Location $pbSrcDir
+
+# Create & switch to the build directory.
+if (-Not (Test-Path "build")) {
+    New-Item -ItemType Directory -Path build | Out-Null
+}
+
+Write-Host "Current location: $(Get-Location)"
+Set-Location build
 
 cmake .. @configureArgs
 

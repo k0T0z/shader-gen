@@ -70,48 +70,14 @@ Write-Host "Configuring Qt with prefix: $install_dir"
 python --version
 cmake --version
 
-Write-Host "Setting up Visual Studio environment..."
-if (Get-Command cl.exe -ErrorAction SilentlyContinue) {
-    Write-Host "MSVC compiler (cl.exe) is already available in PATH."
-} else {
-    $devShell = $null
-    $vsWhere = Join-Path ${env:ProgramFiles(x86)} "Microsoft Visual Studio\Installer\vswhere.exe"
-    if (Test-Path $vsWhere) {
-        $vsPath = (& $vsWhere -products * -latest -property installationPath)
-        if ($vsPath) {
-            $candidate = Join-Path ($vsPath.Trim()) "Common7\Tools\Launch-VsDevShell.ps1"
-            if (Test-Path $candidate) {
-                $devShell = $candidate
-            }
-        }
-    }
-
-    if (-not $devShell) {
-        $editions = @("Enterprise", "Professional", "Community")
-        foreach ($year in @("2022", "18", "2019")) {
-            foreach ($edition in $editions) {
-                $candidate = "C:\Program Files\Microsoft Visual Studio\$year\$edition\Common7\Tools\Launch-VsDevShell.ps1"
-                if (Test-Path $candidate) {
-                    $devShell = $candidate
-                    break
-                }
-            }
-            if ($devShell) { break }
-        }
-    }
-
-    if ($devShell -and (Test-Path $devShell)) {
-        Write-Host "Using dev shell: $devShell"
-        & $devShell -Arch amd64 -SkipAutomaticLocation
-    } else {
-        throw "Could not find Launch-VsDevShell.ps1. Please ensure Visual Studio is installed with C++ workload."
-    }
-}
+# Set up the MSVC 2022 x64 build environment.
+. "$PSScriptRoot\setup_msvc_win64.ps1"
 
 # Base configure args
 $configureArgs = @(
     "-prefix", $install_dir,
-    "-submodules", "qtbase"
+    "-submodules", "qtbase",
+    "-skip", "qtdeclarative,qtmultimedia"
 )
 
 # Add build-type flags

@@ -2,5 +2,5 @@
 
 ## Packages' Versions
 
-Protobuf: 29.3
+Protobuf: v36.2
 Qt: 6.12.0

@@ -68,35 +68,39 @@ case "$link_type" in
 esac
 
 PROTOBUF_LATEST_TAG="$version"
+PROTOBUF_LATEST_TAG_WITHOUT_V="${PROTOBUF_LATEST_TAG#v}"
+
+# URLs and paths
+pbSrcCompressed="protobuf-$PROTOBUF_LATEST_TAG_WITHOUT_V.tar.gz"
+pbUrl="https://github.com/protocolbuffers/protobuf/releases/download/$PROTOBUF_LATEST_TAG/$pbSrcCompressed"
+
+# Download source
+echo "Downloading Protobuf source from $pbUrl..."
+curl -L -O "$pbUrl" || { echo "Download failed"; exit 1; }
+
+# Extract
+echo "Extracting Protobuf source..."
+tar -xf "$pbSrcCompressed"
+
+pbSrcDir="protobuf-$PROTOBUF_LATEST_TAG_WITHOUT_V"
 
 # Build and install Protobuf
 echo "Installing Protobuf $PROTOBUF_LATEST_TAG with build type '$build_type' and link type '$link_type'..."
-git clone --depth 1 -b "$PROTOBUF_LATEST_TAG" https://github.com/protocolbuffers/protobuf.git
-cd protobuf
+cd "$pbSrcDir"
 
-git submodule update --init --recursive
-
-mkdir build && cd build
+# Create & switch to the build directory.
+mkdir -p build
+echo "Current location: $(pwd)"
+cd build
 
 # Configure arguments
 configureArgs=(
     "-G" "Unix Makefiles"
-    "-D" "protobuf_BUILD_TESTS=OFF"
-    "-D" "protobuf_BUILD_CONFORMANCE=OFF"
-    "-D" "protobuf_BUILD_EXAMPLES=OFF"
-    "-D" "protobuf_ABSL_PROVIDER=module"
+    "-D" "protobuf_FORCE_FETCH_DEPENDENCIES=ON"
     "-D" "CMAKE_BUILD_TYPE='$build_type'"
     "-D" "CMAKE_CXX_STANDARD=17"
     "-D" "BUILD_SHARED_LIBS='$shared_libs'"
     "-D" "protobuf_BUILD_SHARED_LIBS='$shared_libs'"
-
-    "-D" "ABSL_PROPAGATE_CXX_STD=ON"
-    "-D" "BUILD_TESTING=OFF"
-    "-D" "ABSL_BUILD_TESTING=OFF"
-    "-D" "ABSL_USE_GOOGLETEST_HEAD=OFF"
-    "-D" "ABSL_ENABLE_INSTALL=ON"
-    "-D" "ABSL_BUILD_MONOLITHIC_SHARED_LIBS='$shared_libs'"
-    "-D" "CMAKE_MODULE_LINKER_FLAGS='-Wl,--no-undefined'"
 )
 
 echo "Running configure with arguments:"

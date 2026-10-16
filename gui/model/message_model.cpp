@@ -90,11 +90,11 @@ void MessageModel::build_sub_models() {
     } else {
       if (shadergen_utils::is_inside_real_oneof(field_desc)) {
         const OneofDescriptor* oneof_desc{field_desc->real_containing_oneof()};
-        auto it = m_sub_models_by_oneof_name.find(oneof_desc->name());
+        auto it = m_sub_models_by_oneof_name.find(std::string(oneof_desc->name()));
         SILENT_CONTINUE_IF_TRUE(it != m_sub_models_by_oneof_name.end());
         ProtoModel* sub_model{new OneofModel(m_message_buffer, oneof_desc, this, i)};
         sub_model->build_sub_models();
-        m_sub_models_by_oneof_name[oneof_desc->name()] = sub_model;
+        m_sub_models_by_oneof_name[std::string(oneof_desc->name())] = sub_model;
       } else {
         switch (field_desc->cpp_type()) {
           case FieldDescriptor::CppType::CPPTYPE_MESSAGE: {
@@ -161,7 +161,7 @@ const ProtoModel* MessageModel::get_sub_model_by_index(const int& field_index) c
   CHECK_PARAM_NULLPTR_NON_VOID(m_desc, nullptr, "Message descriptor is null.");
   VALIDATE_INDEX_NON_VOID(field_index, columnCount(), nullptr,
                           "Requesting sub-model of invalid field index " + std::to_string(field_index) +
-                              " of MessageModel " + m_desc->full_name());
+                              " of MessageModel " + std::string(m_desc->full_name()));
   return m_sub_models_by_field_number.at(m_desc->field(field_index)->number());
 }
 
@@ -170,7 +170,7 @@ const ProtoModel* MessageModel::get_sub_model(const int& field_number) const {
   const FieldDescriptor* field_desc{m_desc->FindFieldByNumber(field_number)};
   if (shadergen_utils::is_inside_real_oneof(field_desc)) {
     const OneofDescriptor* oneof_desc{field_desc->real_containing_oneof()};
-    auto it{m_sub_models_by_oneof_name.find(oneof_desc->name())};
+    auto it{m_sub_models_by_oneof_name.find(std::string(oneof_desc->name()))};
     SILENT_CHECK_CONDITION_TRUE_NON_VOID(it == m_sub_models_by_oneof_name.end(), nullptr);
     return it->second;
   }
@@ -184,7 +184,7 @@ const ProtoModel* MessageModel::get_sub_model(const FieldPath& path, const bool&
                                               const bool& for_get_oneof) const {
   SILENT_CHECK_PARAM_NULLPTR_NON_VOID(m_message_buffer, nullptr);
   CHECK_PARAM_NULLPTR_NON_VOID(m_desc, nullptr, "Message descriptor is null.");
-  CHECK_CONDITION_TRUE_NON_VOID(!path.is_valid(), nullptr, "Invalid path for " + m_desc->full_name());
+  CHECK_CONDITION_TRUE_NON_VOID(!path.is_valid(), nullptr, "Invalid path for " + std::string(m_desc->full_name()));
   SILENT_CHECK_CONDITION_TRUE_NON_VOID(path.is_empty(), this);
 
   int fn{-1};
@@ -195,7 +195,7 @@ const ProtoModel* MessageModel::get_sub_model(const FieldPath& path, const bool&
 
   if (shadergen_utils::is_inside_real_oneof(field_desc)) {
     const OneofDescriptor* oneof_desc{field_desc->real_containing_oneof()};
-    auto it{m_sub_models_by_oneof_name.find(oneof_desc->name())};
+    auto it{m_sub_models_by_oneof_name.find(std::string(oneof_desc->name()))};
     SILENT_CHECK_CONDITION_TRUE_NON_VOID(it == m_sub_models_by_oneof_name.end(), nullptr);
     return it->second->get_sub_model(path, for_set_data, for_get_oneof);
   }
@@ -203,7 +203,7 @@ const ProtoModel* MessageModel::get_sub_model(const FieldPath& path, const bool&
   auto it{m_sub_models_by_field_number.find(fn)};
   CHECK_CONDITION_TRUE_NON_VOID(
       it == m_sub_models_by_field_number.end(), nullptr,
-      "Sub-model under " + m_desc->full_name() + " not found for field number " + std::to_string(fn));
+      "Sub-model under " + std::string(m_desc->full_name()) + " not found for field number " + std::to_string(fn));
 
   CHECK_CONDITION_TRUE_NON_VOID(!path.skip_component(), nullptr, "Failed to skip field number.");
 
@@ -216,7 +216,7 @@ const FieldDescriptor* MessageModel::get_column_descriptor(const int& column) co
   CHECK_PARAM_NULLPTR_NON_VOID(m_desc, nullptr, "Message descriptor is null.");
   VALIDATE_INDEX_NON_VOID(column, columnCount(), nullptr,
                           "Requesting descriptor of invalid column (field index) " + std::to_string(column) +
-                              " of MessageModel " + m_desc->full_name());
+                              " of MessageModel " + std::string(m_desc->full_name()));
   return m_desc->field(column);
 }
 
@@ -273,7 +273,7 @@ QVariant MessageModel::data(const QModelIndex& index, [[maybe_unused]] int role)
 
   if (shadergen_utils::is_inside_real_oneof(field_desc)) {
     const OneofDescriptor* oneof_desc{field_desc->real_containing_oneof()};
-    auto it{m_sub_models_by_oneof_name.find(oneof_desc->name())};
+    auto it{m_sub_models_by_oneof_name.find(std::string(oneof_desc->name()))};
     SILENT_CHECK_CONDITION_TRUE_NON_VOID(it == m_sub_models_by_oneof_name.end(), QVariant());
     return get_sub_model(field_desc->number())->data(this->index(0, map_to_oneof_index(index.column()), index), role);
   }
@@ -298,7 +298,7 @@ bool MessageModel::setData(const QModelIndex& index, const QVariant& value, int 
 
   if (shadergen_utils::is_inside_real_oneof(field_desc)) {
     const OneofDescriptor* oneof_desc{field_desc->real_containing_oneof()};
-    auto it{m_sub_models_by_oneof_name.find(oneof_desc->name())};
+    auto it{m_sub_models_by_oneof_name.find(std::string(oneof_desc->name()))};
     SILENT_CHECK_CONDITION_TRUE_NON_VOID(it == m_sub_models_by_oneof_name.end(), false);
     return const_cast<ProtoModel*>(get_sub_model(field_desc->number()))
         ->setData(this->index(0, map_to_oneof_index(index.column()), index), value, role);
@@ -319,7 +319,7 @@ QVariant MessageModel::headerData(int section, [[maybe_unused]] Qt::Orientation 
   const FieldDescriptor* field_desc{get_column_descriptor(section)};
   CHECK_PARAM_NULLPTR_NON_VOID(field_desc, QVariant(), "Field is null.");
 
-  return QString::fromStdString(field_desc->full_name());
+  return QString::fromStdString(std::string(field_desc->full_name()));
 }
 
 void MessageModel::clear_sub_models() {

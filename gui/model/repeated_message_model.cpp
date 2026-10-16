@@ -40,7 +40,7 @@ RepeatedMessageModel::RepeatedMessageModel(Message* message_buffer, const FieldD
       m_field_desc(field_desc) {}
 
 void RepeatedMessageModel::build_sub_models() {
-  CHECK_CONDITION_TRUE(!m_field_desc->is_repeated(), "Field " + m_field_desc->full_name() + " is not repeated.");
+  CHECK_CONDITION_TRUE(!m_field_desc->is_repeated(), "Field " + std::string(m_field_desc->full_name()) + " is not repeated.");
   CHECK_PARAM_NULLPTR(m_field_desc->message_type(), "Field does not have a message type.");
 
   int size{rowCount()};
@@ -89,7 +89,7 @@ MessageModel* RepeatedMessageModel::get_sub_model(const int& index) const {
 
 const ProtoModel* RepeatedMessageModel::get_sub_model(const FieldPath& path, const bool& for_set_data,
                                                       const bool& for_get_oneof) const {
-  CHECK_CONDITION_TRUE_NON_VOID(!path.is_valid(), nullptr, "Invalid path for " + m_field_desc->full_name());
+  CHECK_CONDITION_TRUE_NON_VOID(!path.is_valid(), nullptr, "Invalid path for " + std::string(m_field_desc->full_name()));
   SILENT_CHECK_CONDITION_TRUE_NON_VOID(path.is_empty(), this);
 
   int index{-1};

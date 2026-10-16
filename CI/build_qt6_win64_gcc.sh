@@ -92,6 +92,7 @@ gcc --version || { echo "MINGW gcc not found"; exit 1; }
 configureArgs=(
     "-prefix" "$install_dir"
     "-submodules" "qtbase"
+    "-skip" "qtdeclarative,qtmultimedia"
 )
 
 # Add build-type flags
@@ -131,9 +132,12 @@ configureArgs+=("-D" "QT_BUILD_TOOLS_BY_DEFAULT=ON")
 # C:/Program Files/PostgreSQL/17/lib/libpq.a has link issues with Qt.
 configureArgs+=("-D" "PostgreSQL_ROOT=/mingw64")
 
-# Build configuration
+# Build Qt
 cd "$qtSrcDir" || exit
+
+# Create & switch to the build directory.
 mkdir -p build
+echo "Current location: $(pwd)"
 cd build || exit
 
 echo "Running configure with arguments:"

@@ -36,7 +36,7 @@ concurrency:
 
 env:
   QT_VERSION: "6.12.0"
-  PROTOBUF_VERSION: "v29.3"
+  PROTOBUF_VERSION: "v36.2"
 
 jobs:
   release:
