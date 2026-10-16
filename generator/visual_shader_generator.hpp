@@ -33,6 +33,7 @@
 #include <map>
 #include <unordered_map>
 #include <memory>
+#include <utility>
 
 #include "generator/raw_visual_shader_graph.hpp"
 #include "generator/visual_shader_node_generators.hpp"
@@ -44,15 +45,7 @@ extern const std::string license_notices;
 
 namespace shadergen_visual_shader_generator {
 
-union ConnectionKey {
-  struct FragmentedKey {
-    uint64_t node : 32;
-    uint64_t port : 32;
-  } f_key;
-  uint64_t key;
-  ConnectionKey() : key(0) {}
-  bool operator<(const ConnectionKey& key) const { return this->key < key.key; }
-};
+using ConnectionKey = std::pair<int, int>;
 
 struct Connection {
   ConnectionKey from;

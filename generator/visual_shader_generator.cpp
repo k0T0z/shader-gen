@@ -512,20 +512,11 @@ static std::pair<std::map<ConnectionKey, std::shared_ptr<Connection>>, std::map<
         if (ports.size() < 2) continue;
 
         std::shared_ptr<Connection> c = std::make_shared<Connection>();
-        c->from.f_key.node = from_node_id;
-        c->from.f_key.port = std::stoi(ports.at(0));
-        c->to.f_key.node = to_node_id;
-        c->to.f_key.port = std::stoi(ports.at(1));
+        c->from = {from_node_id, std::stoi(ports.at(0))};
+        c->to = {to_node_id, std::stoi(ports.at(1))};
 
-        ConnectionKey from_key;
-        from_key.f_key.node = c->from.f_key.node;
-        from_key.f_key.port = c->from.f_key.port;
-        output_connections[from_key] = c;
-
-        ConnectionKey to_key;
-        to_key.f_key.node = c->to.f_key.node;
-        to_key.f_key.port = c->to.f_key.port;
-        input_connections[to_key] = c;
+        output_connections[c->from] = c;
+        input_connections[c->to] = c;
       }
     }
   }
@@ -703,9 +694,7 @@ static inline bool generate_shader_for_each_node(std::string& global_code, std::
 
   int input_port_count{proto_node->get_input_port_count()};
   for (int i{0}; i < input_port_count; i++) {
-    ConnectionKey key;
-    key.f_key.node = node_id;
-    key.f_key.port = i;
+    ConnectionKey key{node_id, i};
 
     if (input_connections.find(key) == input_connections.end()) {
       continue;
@@ -713,7 +702,7 @@ static inline bool generate_shader_for_each_node(std::string& global_code, std::
 
     const std::shared_ptr<Connection> c{input_connections.at(key)};
 
-    int from_node{(int)c->from.f_key.node};
+    int from_node{c->from.first};
 
     if (processed.find(from_node) != processed.end()) {
       continue;
@@ -748,15 +737,13 @@ static inline bool generate_shader_for_each_node(std::string& global_code, std::
   input_vars.resize(proto_node->get_input_port_count());
 
   for (int i{0}; i < input_port_count; i++) {
-    ConnectionKey key;
-    key.f_key.node = node_id;
-    key.f_key.port = i;
+    ConnectionKey key{node_id, i};
 
     if (input_connections.find(key) != input_connections.end()) {
       const std::shared_ptr<Connection> c{input_connections.at(key)};
 
-      int from_node{(int)c->from.f_key.node};
-      int from_port{(int)c->from.f_key.port};
+      int from_node{c->from.first};
+      int from_port{c->from.second};
 
       VisualShaderNodePortType to_port_type{port_type_generator->get_input_port_type(i)};
 
