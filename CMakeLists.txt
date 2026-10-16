@@ -48,6 +48,7 @@ set(SHADER_GEN_PROJECT_NAME "Shader Gen")
 set(SHADER_GEN_PROJECT_VERSION "2.0.0")
 set(SHADER_GEN_PROJECT_DESCRIPTION "Shader Gen is a tool to generate shaders using machine learning.")
 set(SHADER_GEN_EXECUTABLE_NAME "shader-gen")
+set(SHADER_GEN_PROTO_LIBRARY_NAME "${SHADER_GEN_EXECUTABLE_NAME}-proto")
 
 # Use objdump for Windows MinGW to get runtime dependencies (instead of dumpbin for MSVC)
 # https://cmake.org/cmake/help/latest/command/file.html#variable:CMAKE_GET_RUNTIME_DEPENDENCIES_TOOL
@@ -217,14 +218,12 @@ if (WIN32)
     add_executable(${SHADER_GEN_EXECUTABLE_NAME} # WIN32
         ${SHADER_GEN_MAIN_ENTRY} 
         ${SHADER_GEN_CPP_FILES} 
-        ${SHADER_GEN_PROTO_GENERATED_SRCS} # Include the generated protobuf files
         ${SHADER_GEN_RC_FILES}
     )
 else()
     add_executable(${SHADER_GEN_EXECUTABLE_NAME}  
         ${SHADER_GEN_MAIN_ENTRY} 
         ${SHADER_GEN_CPP_FILES} 
-        ${SHADER_GEN_PROTO_GENERATED_SRCS} # Include the generated protobuf files
     )
 endif()
 
@@ -238,19 +237,31 @@ find_package(Protobuf CONFIG REQUIRED)
 set(PROTOC_OUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/gui/model/schema")
 file(MAKE_DIRECTORY ${PROTOC_OUT_DIRECTORY})
 
+# The generated protobuf sources are shared between the main executable and the
+# tests. Generating them once per consuming target would register the same output
+# files twice, letting protoc race on them during parallel builds (MSB8066).
+# Generate and compile them once into a static library that both targets link.
+add_library(${SHADER_GEN_PROTO_LIBRARY_NAME} STATIC ${SHADER_GEN_PROTO_FILES})
+
 # https://stackoverflow.com/a/54254098/14629018
 protobuf_generate(
-    TARGET ${SHADER_GEN_EXECUTABLE_NAME}
+    TARGET ${SHADER_GEN_PROTO_LIBRARY_NAME}
     LANGUAGE cpp
-    OUT_VAR SHADER_GEN_PROTO_GENERATED_SRCS
     PROTOC_OUT_DIR ${PROTOC_OUT_DIRECTORY} # Output directory for the generated files
-    PROTOS ${SHADER_GEN_PROTO_FILES} # The proto files
     IMPORT_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/gui/model/schema # For the imports in the proto files
+)
+
+target_link_libraries(${SHADER_GEN_PROTO_LIBRARY_NAME} PUBLIC protobuf::libprotobuf)
+
+target_include_directories(${SHADER_GEN_PROTO_LIBRARY_NAME} PUBLIC
+    "${CMAKE_CURRENT_SOURCE_DIR}/" 
+    "${CMAKE_CURRENT_BINARY_DIR}/" # For the generated protobuf files
 )
 
 target_link_libraries(${SHADER_GEN_EXECUTABLE_NAME} PRIVATE 
     Qt${SHADER_GEN_QT_VERSION}::Widgets 
     Qt${SHADER_GEN_QT_VERSION}::OpenGLWidgets 
+    ${SHADER_GEN_PROTO_LIBRARY_NAME}
     protobuf::libprotobuf
 )
 
@@ -327,7 +338,6 @@ if(SHADER_GEN_BUILD_TESTS)
             ${SHADER_GEN_TESTS_MAIN_ENTRY} 
             ${SHADER_GEN_TESTS_CPP_FILES} 
             ${SHADER_GEN_CPP_FILES} 
-            ${SHADER_GEN_PROTO_GENERATED_SRCS} # Include the generated protobuf files
             ${SHADER_GEN_PROTO_GENERATED_TEST_SRCS} # Include the generated protobuf test files
         )
     else()
@@ -335,7 +345,6 @@ if(SHADER_GEN_BUILD_TESTS)
             ${SHADER_GEN_TESTS_MAIN_ENTRY} 
             ${SHADER_GEN_TESTS_CPP_FILES} 
             ${SHADER_GEN_CPP_FILES} 
-            ${SHADER_GEN_PROTO_GENERATED_SRCS} # Include the generated protobuf files
             ${SHADER_GEN_PROTO_GENERATED_TEST_SRCS} # Include the generated protobuf test files
         )
     endif()
@@ -359,6 +368,7 @@ if(SHADER_GEN_BUILD_TESTS)
         Qt${SHADER_GEN_QT_VERSION}::Widgets 
         Qt${SHADER_GEN_QT_VERSION}::OpenGLWidgets 
         Qt${SHADER_GEN_QT_VERSION}::Test
+        ${SHADER_GEN_PROTO_LIBRARY_NAME}
         protobuf::libprotobuf 
     )
 
