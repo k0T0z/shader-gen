@@ -266,6 +266,9 @@ void VisualShaderEditor::init() {
   add_output_node(); // Add the output node
   load_graph();      // Load the graph
   scene->blockSignals(false);
+
+  refresh_node_coordinates();  // Assign a tidy coordinate to every node
+
   scene->on_scene_update_requested();
 
   // Create the menu bar layer on top of the scene layer.
@@ -580,6 +583,22 @@ void VisualShaderEditor::load_graph() {
   }
 }
 
+void VisualShaderEditor::refresh_node_coordinates() {
+  CHECK_PARAM_NULLPTR(nodes_model, "Nodes model is null");
+  CHECK_PARAM_NULLPTR(connections_model, "Connections model is null");
+
+  const RawVisualShaderGraph graph{shadergen_gui_adapters::to_raw_graph(nodes_model, connections_model)};
+
+  const std::unordered_map<int, QPointF> coordinates{
+      shadergen_coordinates_generator::generate_coordinates(graph)};
+
+  for (const auto& [n_id, coordinate] : coordinates) {
+    scene->move_node(n_id, coordinate);
+  }
+
+  scene->on_scene_update_requested();
+}
+
 void VisualShaderEditor::create_node(const QPointF& coordinate) {
   QTreeWidgetItem* selected_item{create_node_dialog->get_selected_item()};
 
@@ -749,21 +768,7 @@ void VisualShaderEditor::on_stop_matching_timer_timeout() {
   if (start_matching_timer->isActive()) start_matching_timer->stop();
 }
 
-void VisualShaderEditor::on_refresh_coordinates_button_pressed() {
-  CHECK_PARAM_NULLPTR(nodes_model, "Nodes model is null");
-  CHECK_PARAM_NULLPTR(connections_model, "Connections model is null");
-
-  const RawVisualShaderGraph graph{shadergen_gui_adapters::to_raw_graph(nodes_model, connections_model)};
-
-  const std::unordered_map<int, QPointF> coordinates{
-      shadergen_coordinates_generator::generate_coordinates(graph)};
-
-  for (const auto& [n_id, coordinate] : coordinates) {
-    scene->move_node(n_id, coordinate);
-  }
-
-  scene->on_scene_update_requested();
-}
+void VisualShaderEditor::on_refresh_coordinates_button_pressed() { refresh_node_coordinates(); }
 
 std::vector<std::string> VisualShaderEditor::parse_node_category_path(const std::string& n_category_path) {
   std::vector<std::string> tokens;

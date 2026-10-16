@@ -241,6 +241,7 @@ class VisualShaderEditor : public QWidget {
 
   bool add_output_node();
   void load_graph();
+  void refresh_node_coordinates();
 
   void create_node(const QPointF& coordinate);
 
