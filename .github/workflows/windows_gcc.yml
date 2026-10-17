@@ -46,6 +46,7 @@ concurrency:
 
 env:
   QT_VERSION: "6.12.0"
+  ABSL_VERSION: "20260817.0"
   PROTOBUF_VERSION: "v36.2"
 
 jobs:
@@ -87,6 +88,24 @@ jobs:
       run: |
         bash ./CI/build_qt6_win64_gcc.sh Debug Dynamic "${{ github.workspace }}/qt6-lib" "${{ env.QT_VERSION }}"
 
+    - name: Cache Abseil
+      id: cache-absl
+      uses: actions/cache@v4
+      with:
+        path: ${{ github.workspace }}/absl-lib
+        key: absl-${{ env.ABSL_VERSION }}-${{ runner.os }}-${{ hashFiles('CI/build_absl_win64_gcc.sh') }}
+        restore-keys: |
+          absl-${{ env.ABSL_VERSION }}-${{ runner.os }}-
+          absl-${{ runner.os }}-
+
+    - name: Build Abseil
+      if: steps.cache-absl.outputs.cache-hit != 'true'
+      shell: msys2 {0}
+      run: |
+        mkdir -p "${{ github.workspace }}/absl-lib"
+        echo "Abseil: '${{ github.workspace }}/absl-lib'"
+        bash ./CI/build_absl_win64_gcc.sh Debug Dynamic "${{ github.workspace }}/absl-lib" "${{ env.ABSL_VERSION }}"
+
     - name: Cache Protobuf
       id: cache-protobuf
       uses: actions/cache@v4
@@ -103,11 +122,11 @@ jobs:
       run: |
         mkdir -p "${{ github.workspace }}/protobuf-lib"
         echo "Protobuf: '${{ github.workspace }}/protobuf-lib'"
-        bash ./CI/build_protobuf_win64_gcc.sh Debug Dynamic "${{ github.workspace }}/protobuf-lib" "${{ env.PROTOBUF_VERSION }}"
+        bash ./CI/build_protobuf_win64_gcc.sh Debug Dynamic "${{ github.workspace }}/protobuf-lib" "${{ env.PROTOBUF_VERSION }}" "${{ github.workspace }}/absl-lib"
 
     - name: Configure CMake
       shell: msys2 {0}
-      run: cmake -B build -G "Unix Makefiles" -DCMAKE_PREFIX_PATH="${{ github.workspace }}/qt6-lib/lib/cmake;${{ github.workspace }}/protobuf-lib/lib/cmake" -DCMAKE_MAKE_PROGRAM=mingw32-make -DSHADER_GEN_BUILD_TESTS=ON -DBUILD_SHARED_LIBS=ON
+      run: cmake -B build -G "Unix Makefiles" -DCMAKE_PREFIX_PATH="${{ github.workspace }}/qt6-lib/lib/cmake;${{ github.workspace }}/absl-lib/lib/cmake;${{ github.workspace }}/protobuf-lib/lib/cmake" -DCMAKE_MAKE_PROGRAM=mingw32-make -DSHADER_GEN_BUILD_TESTS=ON -DBUILD_SHARED_LIBS=ON
 
     - name: Build shader-gen
       shell: msys2 {0}
@@ -124,6 +143,7 @@ jobs:
       run: |
         echo "${{ github.workspace }}/build/bin" >> $GITHUB_PATH
         echo "${{ github.workspace }}/qt6-lib/bin" >> $GITHUB_PATH
+        echo "${{ github.workspace }}/absl-lib/bin" >> $GITHUB_PATH
         echo "${{ github.workspace }}/protobuf-lib/bin" >> $GITHUB_PATH
 
     - name: Check dependencies

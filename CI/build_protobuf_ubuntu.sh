@@ -27,7 +27,7 @@
 
 set -e
 
-# Validate input arguments: build_type, link_type, and optional version
+# Validate input arguments: build_type, link_type, and version
 if [ $# -ne 3 ]; then
     echo "Usage: $0 <build_type> <link_type> <version>"
     echo "Valid build types: Debug, Release, MinSizeRel, RelWithDebInfo"
@@ -96,16 +96,11 @@ cd build
 # Configure arguments
 configureArgs=(
     "-G" "Unix Makefiles"
-    "-D" "protobuf_FORCE_FETCH_DEPENDENCIES=ON"
+    "-D" "protobuf_LOCAL_DEPENDENCIES_ONLY=ON"
     "-D" "CMAKE_BUILD_TYPE='$build_type'"
     "-D" "CMAKE_CXX_STANDARD=17"
     "-D" "BUILD_SHARED_LIBS='$shared_libs'"
     "-D" "protobuf_BUILD_SHARED_LIBS='$shared_libs'"
-    # Abseil options https://github.com/abseil/abseil-cpp/blob/20250512.1/CMakeLists.txt
-    "-D" "ABSL_PROPAGATE_CXX_STD=ON"
-    "-D" "ABSL_BUILD_TESTING=OFF"
-    "-D" "ABSL_BUILD_TEST_HELPERS=OFF"
-    "-D" "ABSL_BUILD_MONOLITHIC_SHARED_LIBS=OFF"
 )
 
 echo "Running configure with arguments:"

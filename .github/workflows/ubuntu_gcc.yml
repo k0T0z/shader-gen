@@ -45,6 +45,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
+  ABSL_VERSION: "20260817.0"
   PROTOBUF_VERSION: "v36.2"
 
 jobs:
@@ -61,6 +62,14 @@ jobs:
       run: |
         sudo apt-get update
         sudo apt-get install -y g++ cmake qt6-base-dev
+
+    - name: Build Abseil
+      shell: bash
+      run: |
+        chmod +x ./CI/build_absl_ubuntu.sh
+        sudo bash ./CI/build_absl_ubuntu.sh Debug Dynamic "${{ env.ABSL_VERSION }}"
+
+        sudo ldconfig
 
     - name: Build Protobuf
       shell: bash

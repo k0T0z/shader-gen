@@ -27,12 +27,13 @@
 
 set -e
 
-# Check for the required arguments: BUILD_TYPE, LINK_TYPE, INSTALL_PREFIX, and optional VERSION
-if [ $# -ne 4 ]; then
-    echo "Usage: $0 <BUILD_TYPE> <LINK_TYPE> <INSTALL_PREFIX> <VERSION>"
+# Check for the required arguments: BUILD_TYPE, LINK_TYPE, INSTALL_PREFIX, VERSION, and ABSL_DIR
+if [ $# -ne 5 ]; then
+    echo "Usage: $0 <BUILD_TYPE> <LINK_TYPE> <INSTALL_PREFIX> <VERSION> <ABSL_DIR>"
     echo "Valid BUILD_TYPE values: Debug, Release, MinSizeRel, RelWithDebInfo"
     echo "Valid LINK_TYPE values: Dynamic, Static"
     echo "VERSION: Protobuf version/tag"
+    echo "ABSL_DIR: Path to the prebuilt Abseil installation prefix"
     exit 1
 fi
 
@@ -40,6 +41,7 @@ build_type=$1
 link_type=$2
 install_dir=$3
 version=$4
+absl_dir=$5
 
 # Validate build_type
 case "$build_type" in
@@ -104,18 +106,13 @@ cd build
 configureArgs=(
     "-G" "Unix Makefiles"
     "-D" "CMAKE_MAKE_PROGRAM=mingw32-make"
-    "-D" "protobuf_FORCE_FETCH_DEPENDENCIES=ON"
+    "-D" "protobuf_LOCAL_DEPENDENCIES_ONLY=ON"
+    "-D" "CMAKE_PREFIX_PATH='$absl_dir'"
     "-D" "CMAKE_BUILD_TYPE='$build_type'"
     "-D" "CMAKE_CXX_STANDARD=17"
     "-D" "BUILD_SHARED_LIBS='$shared_libs'"
     "-D" "protobuf_BUILD_SHARED_LIBS='$shared_libs'"
     "-D" "CMAKE_INSTALL_PREFIX='$install_dir'"
-    
-    # Abseil options https://github.com/abseil/abseil-cpp/blob/20250512.1/CMakeLists.txt
-    "-D" "ABSL_PROPAGATE_CXX_STD=ON"
-    "-D" "ABSL_BUILD_TESTING=OFF"
-    "-D" "ABSL_BUILD_TEST_HELPERS=OFF"
-    "-D" "ABSL_BUILD_MONOLITHIC_SHARED_LIBS=OFF"
 )
 
 echo "Running configure with arguments:"

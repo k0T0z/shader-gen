@@ -46,6 +46,7 @@ concurrency:
 
 env:
   QT_VERSION: "6.12.0"
+  ABSL_VERSION: "20260817.0"
   PROTOBUF_VERSION: "v36.2"
 
 jobs:
@@ -75,6 +76,26 @@ jobs:
         Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
         .\CI\build_qt6_win64.ps1 Debug Dynamic "${{ github.workspace }}\qt6-lib" "${{ env.QT_VERSION }}"
 
+    - name: Cache Abseil
+      id: cache-absl
+      uses: actions/cache@v4
+      with:
+        path: ${{ github.workspace }}\absl-lib
+        key: absl-${{ env.ABSL_VERSION }}-${{ runner.os }}-${{ hashFiles('CI\build_absl_win64.ps1', 'CI\setup_msvc_win64.ps1') }}
+        restore-keys: |
+          absl-${{ env.ABSL_VERSION }}-${{ runner.os }}-
+          absl-${{ runner.os }}-
+
+    - name: Build Abseil
+      if: steps.cache-absl.outputs.cache-hit != 'true'
+      shell: pwsh
+      run: |
+        Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+
+        New-Item -ItemType Directory -Path "${{ github.workspace }}\absl-lib" -Force
+        Write-Output "Abseil: '${{ github.workspace }}\absl-lib'"
+        .\CI\build_absl_win64.ps1 Debug Dynamic "${{ github.workspace }}\absl-lib" "${{ env.ABSL_VERSION }}"
+
     - name: Cache Protobuf
       id: cache-protobuf
       uses: actions/cache@v4
@@ -93,11 +114,11 @@ jobs:
 
         New-Item -ItemType Directory -Path "${{ github.workspace }}\protobuf-lib" -Force
         Write-Output "Protobuf: '${{ github.workspace }}\protobuf-lib'"
-        .\CI\build_protobuf_win64.ps1 Debug Dynamic "${{ github.workspace }}\protobuf-lib" "${{ env.PROTOBUF_VERSION }}"
+        .\CI\build_protobuf_win64.ps1 Debug Dynamic "${{ github.workspace }}\protobuf-lib" "${{ env.PROTOBUF_VERSION }}" "${{ github.workspace }}\absl-lib"
 
     - name: Configure CMake
       shell: pwsh
-      run: cmake -B build -G "Visual Studio 17 2022" -A x64 -DCMAKE_PREFIX_PATH="${{ github.workspace }}\qt6-lib\lib\cmake;${{ github.workspace }}\protobuf-lib\lib\cmake" -DSHADER_GEN_BUILD_TESTS=ON -DBUILD_SHARED_LIBS=ON
+      run: cmake -B build -G "Visual Studio 17 2022" -A x64 -DCMAKE_PREFIX_PATH="${{ github.workspace }}\qt6-lib\lib\cmake;${{ github.workspace }}\absl-lib\lib\cmake;${{ github.workspace }}\protobuf-lib\lib\cmake" -DSHADER_GEN_BUILD_TESTS=ON -DBUILD_SHARED_LIBS=ON
 
     - name: Build shader-gen
       shell: pwsh
@@ -108,6 +129,7 @@ jobs:
       run: |
         '${{ github.workspace }}\build\bin\Debug' | Out-File -FilePath $Env:GITHUB_PATH -Encoding UTF8 -Append
         '${{ github.workspace }}\qt6-lib\bin' | Out-File -FilePath $Env:GITHUB_PATH -Encoding UTF8 -Append
+        '${{ github.workspace }}\absl-lib\bin' | Out-File -FilePath $Env:GITHUB_PATH -Encoding UTF8 -Append
         '${{ github.workspace }}\protobuf-lib\bin' | Out-File -FilePath $Env:GITHUB_PATH -Encoding UTF8 -Append
 
     - name: Run tests

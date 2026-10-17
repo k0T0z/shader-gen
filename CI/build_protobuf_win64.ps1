@@ -38,7 +38,10 @@ param(
     [string]$install_dir,
 
     [Parameter(Mandatory = $true, Position = 3)]
-    [string]$version
+    [string]$version,
+
+    [Parameter(Mandatory = $true, Position = 4)]
+    [string]$absl_dir
 )
 
 $ErrorActionPreference = 'Stop'
@@ -69,11 +72,9 @@ Write-Host "Configuring Protobuf with prefix: $install_dir"
 switch ($link_type) {
     "Dynamic" {
         $shared_libs = "ON"
-        $static_libs = "OFF"
     }
     "Static"  {
         $shared_libs = "OFF"
-        $static_libs = "ON"
     }
     default   { throw "Invalid link_type '$link_type'. Expected 'Dynamic' or 'Static'." }
 }
@@ -81,19 +82,13 @@ switch ($link_type) {
 # Base configure args
 $configureArgs = @(
     "-G", "Visual Studio 17 2022", "-A", "x64",
-    "-D", "protobuf_FORCE_FETCH_DEPENDENCIES=ON",
+    "-D", "protobuf_LOCAL_DEPENDENCIES_ONLY=ON",
+    "-D", "CMAKE_PREFIX_PATH='$absl_dir'",
     "-D", "CMAKE_BUILD_TYPE='$build_type'",
     "-D", "CMAKE_CXX_STANDARD=17",
     "-D", "BUILD_SHARED_LIBS='$shared_libs'",
     "-D", "protobuf_BUILD_SHARED_LIBS='$shared_libs'",
     "-D", "CMAKE_INSTALL_PREFIX='$install_dir'"
-
-    # ABSL Options https://github.com/abseil/abseil-cpp/blob/20250512.1/CMakeLists.txt
-    "-D", "ABSL_PROPAGATE_CXX_STD=ON",
-    "-D", "ABSL_MSVC_STATIC_RUNTIME='$static_libs'",
-    "-D", "ABSL_BUILD_TESTING=OFF",
-    "-D", "ABSL_BUILD_TEST_HELPERS=OFF",
-    "-D", "ABSL_BUILD_MONOLITHIC_SHARED_LIBS=OFF"
 )
 
 # Build Protobuf
