@@ -115,7 +115,7 @@ configureArgs=(
     "-D" "ABSL_PROPAGATE_CXX_STD=ON"
     "-D" "ABSL_BUILD_TESTING=OFF"
     "-D" "ABSL_BUILD_TEST_HELPERS=OFF"
-    "-D" "ABSL_BUILD_MONOLITHIC_SHARED_LIBS='$shared_libs'"
+    "-D" "ABSL_BUILD_MONOLITHIC_SHARED_LIBS=OFF"
 )
 
 echo "Running configure with arguments:"
