@@ -124,10 +124,13 @@ jobs:
         echo "Protobuf: '${{ github.workspace }}/protobuf-lib'"
         bash ./CI/build_protobuf_win64_gcc.sh Debug Dynamic "${{ github.workspace }}/protobuf-lib" "${{ env.PROTOBUF_VERSION }}" "${{ github.workspace }}/absl-lib"
 
-    - name: Populate absl PATH as it is needed by protoc.exe in the build process
+    - name: Populate PATH # https://www.msys2.org/wiki/MSYS2-introduction/#path
       shell: msys2 {0}
       run: |
         echo "${{ github.workspace }}/absl-lib/bin" >> $GITHUB_PATH
+        echo "${{ github.workspace }}/protobuf-lib/bin" >> $GITHUB_PATH
+        echo "${{ github.workspace }}/qt6-lib/bin" >> $GITHUB_PATH
+        echo "${{ github.workspace }}/build/bin" >> $GITHUB_PATH
 
     - name: Configure CMake
       shell: msys2 {0}
@@ -142,13 +145,6 @@ jobs:
 
         echo "Dependencies for shader-gen-tests.exe"
         ldd build/shader-gen-tests
-
-    - name: Populate PATH # https://www.msys2.org/wiki/MSYS2-introduction/#path
-      shell: msys2 {0}
-      run: |
-        echo "${{ github.workspace }}/build/bin" >> $GITHUB_PATH
-        echo "${{ github.workspace }}/qt6-lib/bin" >> $GITHUB_PATH
-        echo "${{ github.workspace }}/protobuf-lib/bin" >> $GITHUB_PATH
 
     - name: Check dependencies
       shell: msys2 {0}

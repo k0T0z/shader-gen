@@ -116,10 +116,13 @@ jobs:
         Write-Output "Protobuf: '${{ github.workspace }}\protobuf-lib'"
         .\CI\build_protobuf_win64.ps1 Debug Dynamic "${{ github.workspace }}\protobuf-lib" "${{ env.PROTOBUF_VERSION }}" "${{ github.workspace }}\absl-lib"
 
-    - name: Populate absl PATH as it is needed by protoc.exe in the build process
+    - name: Populate PATH
       shell: pwsh
       run: |
         '${{ github.workspace }}\absl-lib\bin' | Out-File -FilePath $Env:GITHUB_PATH -Encoding UTF8 -Append
+        '${{ github.workspace }}\protobuf-lib\bin' | Out-File -FilePath $Env:GITHUB_PATH -Encoding UTF8 -Append
+        '${{ github.workspace }}\qt6-lib\bin' | Out-File -FilePath $Env:GITHUB_PATH -Encoding UTF8 -Append
+        '${{ github.workspace }}\build\bin\Debug' | Out-File -FilePath $Env:GITHUB_PATH -Encoding UTF8 -Append
 
     - name: Configure CMake
       shell: pwsh
@@ -128,13 +131,6 @@ jobs:
     - name: Build shader-gen
       shell: pwsh
       run: cmake --build build --config Debug --parallel $env:NUMBER_OF_PROCESSORS
-
-    - name: Populate PATH
-      shell: pwsh
-      run: |
-        '${{ github.workspace }}\build\bin\Debug' | Out-File -FilePath $Env:GITHUB_PATH -Encoding UTF8 -Append
-        '${{ github.workspace }}\qt6-lib\bin' | Out-File -FilePath $Env:GITHUB_PATH -Encoding UTF8 -Append
-        '${{ github.workspace }}\protobuf-lib\bin' | Out-File -FilePath $Env:GITHUB_PATH -Encoding UTF8 -Append
 
     - name: Run tests
       shell: pwsh
