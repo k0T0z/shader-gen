@@ -102,6 +102,8 @@ if (-Not (Test-Path "build")) {
 Write-Host "Current location: $(Get-Location)"
 Set-Location build
 
+Write-Host "Running CMake with arguments: $configureArgs"
+
 cmake .. @configureArgs
 
 # Build and install.
