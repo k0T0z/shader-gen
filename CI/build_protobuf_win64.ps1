@@ -67,8 +67,14 @@ Write-Host "Configuring Protobuf with prefix: $install_dir"
 
 # Determine the CMake flag for shared library builds based on link_type.
 switch ($link_type) {
-    "Dynamic" { $shared_libs = "ON" $static_libs = "OFF" }
-    "Static"  { $shared_libs = "OFF" $static_libs = "ON" }
+    "Dynamic" {
+        $shared_libs = "ON"
+        $static_libs = "OFF"
+    }
+    "Static"  {
+        $shared_libs = "OFF"
+        $static_libs = "ON"
+    }
     default   { throw "Invalid link_type '$link_type'. Expected 'Dynamic' or 'Static'." }
 }
 
