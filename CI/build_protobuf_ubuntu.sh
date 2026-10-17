@@ -101,6 +101,11 @@ configureArgs=(
     "-D" "CMAKE_CXX_STANDARD=17"
     "-D" "BUILD_SHARED_LIBS='$shared_libs'"
     "-D" "protobuf_BUILD_SHARED_LIBS='$shared_libs'"
+    # Abseil options https://github.com/abseil/abseil-cpp/blob/20250512.1/CMakeLists.txt
+    "-D" "ABSL_PROPAGATE_CXX_STD=ON"
+    "-D" "ABSL_BUILD_TESTING=OFF"
+    "-D" "ABSL_BUILD_TEST_HELPERS=OFF"
+    "-D" "ABSL_BUILD_MONOLITHIC_SHARED_LIBS='$shared_libs'"
 )
 
 echo "Running configure with arguments:"

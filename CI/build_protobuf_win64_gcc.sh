@@ -109,11 +109,13 @@ configureArgs=(
     "-D" "CMAKE_CXX_STANDARD=17"
     "-D" "BUILD_SHARED_LIBS='$shared_libs'"
     "-D" "protobuf_BUILD_SHARED_LIBS='$shared_libs'"
-    # Abseil only builds a single DLL for MSVC. On MinGW, without this flag every
-    # Abseil target becomes its own DLL with circular dependencies between them,
-    # which makes protoc fail to start with STATUS_DLL_INIT_FAILED (0xC0000142).
-    "-D" "ABSL_BUILD_MONOLITHIC_SHARED_LIBS='$shared_libs'"
     "-D" "CMAKE_INSTALL_PREFIX='$install_dir'"
+    
+    # Abseil options https://github.com/abseil/abseil-cpp/blob/20250512.1/CMakeLists.txt
+    "-D" "ABSL_PROPAGATE_CXX_STD=ON"
+    "-D" "ABSL_BUILD_TESTING=OFF"
+    "-D" "ABSL_BUILD_TEST_HELPERS=OFF"
+    "-D" "ABSL_BUILD_MONOLITHIC_SHARED_LIBS='$shared_libs'"
 )
 
 echo "Running configure with arguments:"
