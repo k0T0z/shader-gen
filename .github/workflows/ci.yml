@@ -49,6 +49,9 @@ jobs:
   build:
     name: ${{ matrix.name }}
     runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: ${{ matrix.shell }}
     concurrency:
       group: ci-${{ github.actor }}-${{ github.head_ref || github.run_number }}-${{ github.ref }}-${{ matrix.compiler }}
       cancel-in-progress: true
@@ -129,7 +132,6 @@ jobs:
 
       - name: Build Qt6
         if: matrix.compiler != 'ubuntu' && steps.cache-qt6.outputs.cache-hit != 'true'
-        shell: ${{ matrix.shell }}
         run: |
           ${{ matrix.qt_pre }}
           ${{ matrix.qt_invoke }} Debug Dynamic "${{ github.workspace }}/qt6-lib" "${{ env.QT_VERSION }}"
@@ -203,7 +205,6 @@ jobs:
 
       - name: Populate PATH
         if: matrix.compiler != 'ubuntu'
-        shell: ${{ matrix.shell }}
         run: |
           echo "${{ github.workspace }}/absl-lib/bin" >> ${{ matrix.path_var }}
           echo "${{ github.workspace }}/protobuf-lib/bin" >> ${{ matrix.path_var }}
@@ -211,22 +212,18 @@ jobs:
           echo "${{ github.workspace }}/${{ matrix.bin_dir }}" >> ${{ matrix.path_var }}
 
       - name: Configure CMake
-        shell: ${{ matrix.shell }}
         run: cmake -B build ${{ matrix.generator }} -DSHADER_GEN_BUILD_TESTS=ON -DBUILD_SHARED_LIBS=ON
 
       - name: Build shader-gen
-        shell: ${{ matrix.shell }}
         run: cmake --build build --config Debug --parallel ${{ matrix.parallel }}
 
       - name: Check dependencies
         if: matrix.compiler != 'msvc'
-        shell: ${{ matrix.shell }}
         run: |
           ldd build/shader-gen
           ldd build/shader-gen-tests
 
       - name: Run tests
-        shell: ${{ matrix.shell }}
         env:
           QT_QPA_PLATFORM: offscreen # Required for running UI tests without a display
         run: ctest --test-dir build --parallel ${{ matrix.parallel }} --output-on-failure --verbose -C Debug

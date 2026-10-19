@@ -39,6 +39,9 @@ jobs:
   release:
     name: ${{ matrix.name }}
     runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: ${{ matrix.shell }}
     concurrency:
       group: release-${{ github.actor }}-${{ github.head_ref || github.run_number }}-${{ github.ref }}-${{ matrix.compiler }}
       cancel-in-progress: true
@@ -99,7 +102,6 @@ jobs:
 
       - name: Build Qt6
         if: steps.cache-qt6.outputs.cache-hit != 'true'
-        shell: ${{ matrix.shell }}
         run: |
           ${{ matrix.qt_pre }}
           ${{ matrix.qt_invoke }} Release Static "${{ github.workspace }}/qt6-lib-static" "${{ env.QT_VERSION }}"
@@ -155,19 +157,15 @@ jobs:
           bash ./CI/build_protobuf_win64_gcc.sh Release Static "${{ github.workspace }}/protobuf-lib-static" "${{ env.PROTOBUF_VERSION }}" "${{ github.workspace }}/absl-lib-static"
 
       - name: Populate PATH for 'windeployqt'
-        shell: ${{ matrix.shell }}
         run: echo "${{ github.workspace }}/qt6-lib-static/bin" >> ${{ matrix.path_var }}
 
       - name: Configure CMake
-        shell: ${{ matrix.shell }}
         run: cmake -B build ${{ matrix.generator }} -DCMAKE_BUILD_TYPE=Release -DSHADER_GEN_LINK_STATIC=ON -DSHADER_GEN_BUILD_PORTABLE_RELEASE_PACKAGE=ON -DBUILD_SHARED_LIBS=OFF
 
       - name: Build shader-gen
-        shell: ${{ matrix.shell }}
         run: cmake --build build --config Release --parallel ${{ matrix.parallel }}
 
       - name: Create portable package
-        shell: ${{ matrix.shell }}
         working-directory: build
         run: cpack --config CPackConfig.cmake -G ZIP --verbose -C Release
 
