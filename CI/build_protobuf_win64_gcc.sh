@@ -27,6 +27,9 @@
 
 set -e
 
+# Source the shared CI helpers.
+. "$(dirname "$0")/common.sh"
+
 # Check for the required arguments: BUILD_TYPE, LINK_TYPE, INSTALL_PREFIX, VERSION, and ABSL_DIR
 if [ $# -ne 5 ]; then
     echo "Usage: $0 <BUILD_TYPE> <LINK_TYPE> <INSTALL_PREFIX> <VERSION> <ABSL_DIR>"
@@ -43,38 +46,10 @@ install_dir=$3
 version=$4
 absl_dir=$5
 
-# Validate build_type
-case "$build_type" in
-    Debug|Release|MinSizeRel|RelWithDebInfo) ;;
-    *) 
-        echo "Invalid build type: $build_type"
-        exit 1
-        ;;
-esac
-
-# Validate link_type
-case "$link_type" in
-    Dynamic|Static) ;;
-    *)
-        echo "Invalid link type: $link_type"
-        exit 1
-        ;;
-esac
-
-case "$link_type" in
-    Static)
-        shared_libs="OFF"
-        ;;
-    Dynamic)
-        shared_libs="ON"
-        ;;
-esac
-
-# Check if the install prefix directory exists; if not, create it
-if [ ! -d "$install_dir" ]; then
-    echo "Install prefix directory '$install_dir' does not exist. Creating it..."
-    mkdir -p "$install_dir"
-fi
+ci_validate_build_type "$build_type"
+ci_validate_link_type "$link_type"
+shared_libs="$(ci_shared_libs "$link_type")"
+ci_ensure_dir "$install_dir"
 
 PROTOBUF_LATEST_TAG="$version"
 PROTOBUF_LATEST_TAG_WITHOUT_V="${PROTOBUF_LATEST_TAG#v}"
@@ -83,24 +58,12 @@ PROTOBUF_LATEST_TAG_WITHOUT_V="${PROTOBUF_LATEST_TAG#v}"
 pbSrcCompressed="protobuf-$PROTOBUF_LATEST_TAG_WITHOUT_V.tar.gz"
 pbUrl="https://github.com/protocolbuffers/protobuf/releases/download/$PROTOBUF_LATEST_TAG/$pbSrcCompressed"
 
-# Download source
-echo "Downloading Protobuf source from $pbUrl..."
-curl -L -O "$pbUrl" || { echo "Download failed"; exit 1; }
-
-# Extract
-echo "Extracting Protobuf source..."
-tar -xf "$pbSrcCompressed"
-
-pbSrcDir="protobuf-$PROTOBUF_LATEST_TAG_WITHOUT_V"
+ci_download "$pbUrl" "Protobuf"
+ci_extract "$pbSrcCompressed" "Protobuf"
 
 # Build and install Protobuf
 echo "Installing Protobuf $PROTOBUF_LATEST_TAG with build type '$build_type' and link type '$link_type' (shared libs: $shared_libs)..."
-cd "$pbSrcDir"
-
-# Create & switch to the build directory.
-mkdir -p build
-echo "Current location: $(pwd)"
-cd build
+ci_enter_build_dir "protobuf-$PROTOBUF_LATEST_TAG_WITHOUT_V"
 
 # Configure arguments
 configureArgs=(
@@ -115,12 +78,11 @@ configureArgs=(
     "-D" "CMAKE_INSTALL_PREFIX='$install_dir'"
 )
 
-echo "Running configure with arguments:"
-printf '  %s\n' "${configureArgs[@]}"
+ci_print_configure_args "${configureArgs[@]}"
 
-cmake .. "${configureArgs[@]}" || { echo "Configuration failed"; exit 1; }
+ci_cmake_configure "${configureArgs[@]}"
 
-cmake --build . --config "$build_type"
-cmake --install . --parallel $(nproc) --config "$build_type"
+ci_cmake_build "$build_type"
+ci_cmake_install "$build_type"
 
-cd "$GITHUB_WORKSPACE"
+ci_back_to_workspace

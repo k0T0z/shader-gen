@@ -43,8 +43,12 @@ param(
     [string]$version
 )
 
-$Qt6Version = $version
 $ErrorActionPreference = "Stop"
+
+# Shared CI helpers.
+. "$PSScriptRoot\common.ps1"
+
+$Qt6Version = $version
 
 # derive major.minor from version
 $parts      = $Qt6Version.Split('.')
@@ -54,13 +58,8 @@ $majorMinor = "$($parts[0]).$($parts[1])"
 $qtSrcCompressed = "qt-everywhere-src-$Qt6Version.zip"
 $qtUrl    = "https://download.qt.io/official_releases/qt/$majorMinor/$Qt6Version/single/$qtSrcCompressed"
 
-# Download source
-Write-Host "Downloading Qt source from $qtUrl..."
-Invoke-WebRequest -Uri $qtUrl -OutFile $qtSrcCompressed -Verbose
-
-# Extract
-Write-Host "Extracting Qt source..."
-Expand-Archive -Path $qtSrcCompressed -DestinationPath $env:GITHUB_WORKSPACE
+Save-CiSource -Url $qtUrl -OutFile $qtSrcCompressed -Label "Qt"
+Expand-CiSource -Archive $qtSrcCompressed -Label "Qt"
 
 $qtSrcDir = Join-Path $env:GITHUB_WORKSPACE "qt-everywhere-src-$Qt6Version"
 
@@ -171,15 +170,7 @@ $configureArgs += "-D"
 $configureArgs += "QT_BUILD_TOOLS_BY_DEFAULT=ON"
 
 # Build Qt
-Set-Location $qtSrcDir
-
-# Create & switch to the build directory.
-if (-Not (Test-Path "build")) {
-    New-Item -ItemType Directory -Path build | Out-Null
-}
-
-Write-Host "Current location: $(Get-Location)"
-Set-Location build
+Enter-CiBuildDir -SrcDir $qtSrcDir
 
 # Run configure
 Write-Host "Running configure.bat with arguments:`n  $($configureArgs -join ' ')"
@@ -187,12 +178,11 @@ Write-Host "Running configure.bat with arguments:`n  $($configureArgs -join ' ')
 
 # Build & install with CMake
 Write-Host "Starting build..."
-cmake --build . --config $build_type
+Build-CiProject -BuildType $build_type
 
 Write-Host "Installing to $install_dir..."
-cmake --install . --parallel $env:NUMBER_OF_PROCESSORS --config $build_type
+Install-CiProject -BuildType $build_type
 
-# Return to the workspace root
-Set-Location $env:GITHUB_WORKSPACE
+Exit-CiBuildDir
 
 Write-Host "Qt build+install complete."

@@ -27,6 +27,9 @@
 
 set -e
 
+# Source the shared CI helpers.
+. "$(dirname "$0")/common.sh"
+
 # Validate input arguments: build_type, link_type, and version
 if [ $# -ne 3 ]; then
     echo "Usage: $0 <build_type> <link_type> <version>"
@@ -40,32 +43,9 @@ build_type=$1
 link_type=$2
 version=$3
 
-# Validate build_type
-case "$build_type" in
-    Debug|Release|MinSizeRel|RelWithDebInfo) ;;
-    *) 
-        echo "Invalid build type: $build_type"
-        exit 1
-        ;;
-esac
-
-# Validate link_type
-case "$link_type" in
-    Dynamic|Static) ;;
-    *)
-        echo "Invalid link type: $link_type"
-        exit 1
-        ;;
-esac
-
-case "$link_type" in
-    Static)
-        shared_libs="OFF"
-        ;;
-    Dynamic)
-        shared_libs="ON"
-        ;;
-esac
+ci_validate_build_type "$build_type"
+ci_validate_link_type "$link_type"
+shared_libs="$(ci_shared_libs "$link_type")"
 
 PROTOBUF_LATEST_TAG="$version"
 PROTOBUF_LATEST_TAG_WITHOUT_V="${PROTOBUF_LATEST_TAG#v}"
@@ -74,24 +54,12 @@ PROTOBUF_LATEST_TAG_WITHOUT_V="${PROTOBUF_LATEST_TAG#v}"
 pbSrcCompressed="protobuf-$PROTOBUF_LATEST_TAG_WITHOUT_V.tar.gz"
 pbUrl="https://github.com/protocolbuffers/protobuf/releases/download/$PROTOBUF_LATEST_TAG/$pbSrcCompressed"
 
-# Download source
-echo "Downloading Protobuf source from $pbUrl..."
-curl -L -O "$pbUrl" || { echo "Download failed"; exit 1; }
-
-# Extract
-echo "Extracting Protobuf source..."
-tar -xf "$pbSrcCompressed"
-
-pbSrcDir="protobuf-$PROTOBUF_LATEST_TAG_WITHOUT_V"
+ci_download "$pbUrl" "Protobuf"
+ci_extract "$pbSrcCompressed" "Protobuf"
 
 # Build and install Protobuf
 echo "Installing Protobuf $PROTOBUF_LATEST_TAG with build type '$build_type' and link type '$link_type'..."
-cd "$pbSrcDir"
-
-# Create & switch to the build directory.
-mkdir -p build
-echo "Current location: $(pwd)"
-cd build
+ci_enter_build_dir "protobuf-$PROTOBUF_LATEST_TAG_WITHOUT_V"
 
 # Configure arguments
 configureArgs=(
@@ -103,14 +71,10 @@ configureArgs=(
     "-D" "protobuf_BUILD_SHARED_LIBS='$shared_libs'"
 )
 
-echo "Running configure with arguments:"
-printf '  %s\n' "${configureArgs[@]}"
+ci_print_configure_args "${configureArgs[@]}"
 
-cmake .. "${configureArgs[@]}" || { echo "Configuration failed"; exit 1; }
+ci_cmake_configure "${configureArgs[@]}"
 
-make -j$(nproc)
+ci_make_build_install
 
-sudo make install
-
-# Return to the workspace directory
-cd "${GITHUB_WORKSPACE:-..}"
+ci_back_to_workspace

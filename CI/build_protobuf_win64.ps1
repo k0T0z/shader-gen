@@ -46,38 +46,28 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
+# Shared CI helpers.
+. "$PSScriptRoot\common.ps1"
+
 # Set up the MSVC 2022 x64 build environment.
 . "$PSScriptRoot\setup_msvc_win64.ps1"
 
 $PROTOBUF_LATEST_TAG = $version
-$PROTOBUF_LATEST_TAG_WITHOUT_V = $PROTOBUF_LATEST_TAG.Replace("v", "")
+$PROTOBUF_LATEST_TAG_WITHOUT_V = Get-CiVersionWithoutV -Version $PROTOBUF_LATEST_TAG
 
 # URLs and paths
 $pbSrcCompressed = "protobuf-$PROTOBUF_LATEST_TAG_WITHOUT_V.zip"
 $pbUrl    = "https://github.com/protocolbuffers/protobuf/releases/download/$PROTOBUF_LATEST_TAG/$pbSrcCompressed"
 
-# Download source
-Write-Host "Downloading Protobuf source from $pbUrl..."
-Invoke-WebRequest -Uri $pbUrl -OutFile $pbSrcCompressed -Verbose
-
-# Extract
-Write-Host "Extracting Protobuf source..."
-Expand-Archive -Path $pbSrcCompressed -DestinationPath $env:GITHUB_WORKSPACE
+Save-CiSource -Url $pbUrl -OutFile $pbSrcCompressed -Label "Protobuf"
+Expand-CiSource -Archive $pbSrcCompressed -Label "Protobuf"
 
 $pbSrcDir = Join-Path $env:GITHUB_WORKSPACE "protobuf-$PROTOBUF_LATEST_TAG_WITHOUT_V"
 
 Write-Host "Configuring Protobuf with prefix: $install_dir"
 
 # Determine the CMake flag for shared library builds based on link_type.
-switch ($link_type) {
-    "Dynamic" {
-        $shared_libs = "ON"
-    }
-    "Static"  {
-        $shared_libs = "OFF"
-    }
-    default   { throw "Invalid link_type '$link_type'. Expected 'Dynamic' or 'Static'." }
-}
+$shared_libs = Get-CiSharedLibs -LinkType $link_type
 
 # Base configure args
 $configureArgs = @(
@@ -92,15 +82,7 @@ $configureArgs = @(
 )
 
 # Build Protobuf
-Set-Location $pbSrcDir
-
-# Create & switch to the build directory.
-if (-Not (Test-Path "build")) {
-    New-Item -ItemType Directory -Path build | Out-Null
-}
-
-Write-Host "Current location: $(Get-Location)"
-Set-Location build
+Enter-CiBuildDir -SrcDir $pbSrcDir
 
 Write-Host "Running CMake with arguments: $configureArgs"
 
@@ -108,8 +90,7 @@ cmake .. @configureArgs
 
 # Build and install.
 # DON'T use parallel builds with Protobuf on Windows as it breaks the CI.
-cmake --build . --config $build_type
-cmake --install . --parallel $env:NUMBER_OF_PROCESSORS --config $build_type
+Build-CiProject -BuildType $build_type
+Install-CiProject -BuildType $build_type
 
-# Return to the original workspace (assumes GITHUB_WORKSPACE is set).
-Set-Location $env:GITHUB_WORKSPACE
+Exit-CiBuildDir

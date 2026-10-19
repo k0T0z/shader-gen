@@ -1,0 +1,232 @@
+#################################################################################
+#                                                                               #
+#  Copyright (C) 2026 Seif Kandil (k0T0z)                                       #
+#                                                                               #
+#  This file is a part of the ENIGMA Development Environment.                   #
+#                                                                               #
+#                                                                               #
+#  ENIGMA is free software: you can redistribute it and/or modify it under the  #
+#  terms of the GNU General Public License as published by the Free Software    #
+#  Foundation, version 3 of the license or any later version.                   #
+#                                                                               #
+#  This application and its source code is distributed AS-IS, WITHOUT ANY       #
+#  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS    #
+#  FOR A PARTICULAR PURPOSE. See the GNU General Public License for more        #
+#  details.                                                                     #
+#                                                                               #
+#  You should have recieved a copy of the GNU General Public License along      #
+#  with this code. If not, see <http://www.gnu.org/licenses/>                   #
+#                                                                               #
+#  ENIGMA is an environment designed to create games and other programs with a  #
+#  high-level, fully compilable language. Developers of ENIGMA or anything      #
+#  associated with ENIGMA are in no way responsible for its users or            #
+#  applications created by its users, or damages caused by the environment      #
+#  or programs made in the environment.                                         #
+#                                                                               #
+#################################################################################
+
+name: CI
+
+on:
+  push:
+    branches:
+      - master-qt6
+    paths-ignore:
+      - '*.md'
+  pull_request:
+    branches:
+      - master-qt6
+    paths-ignore:
+      - '*.md'
+  workflow_dispatch:
+
+env:
+  QT_VERSION: "6.12.0"
+  ABSL_VERSION: "20260817.0"
+  PROTOBUF_VERSION: "v36.2"
+
+jobs:
+  build:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    concurrency:
+      group: ci-${{ github.actor }}-${{ github.head_ref || github.run_number }}-${{ github.ref }}-${{ matrix.compiler }}
+      cancel-in-progress: true
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Windows MSVC
+            os: windows-2022
+            compiler: msvc
+            shell: pwsh
+            path_var: $env:GITHUB_PATH
+            bin_dir: build/bin/Debug
+            parallel: $env:NUMBER_OF_PROCESSORS
+            qt_pre: 'Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass'
+            qt_invoke: './CI/build_qt6_win64.ps1'
+            generator: '-G "Visual Studio 17 2022" -A x64 -DCMAKE_PREFIX_PATH="${{ github.workspace }}/qt6-lib/lib/cmake;${{ github.workspace }}/absl-lib/lib/cmake;${{ github.workspace }}/protobuf-lib/lib/cmake"'
+
+          - name: Windows GCC (MSYS2)
+            os: windows-2022
+            compiler: msys2
+            shell: msys2 {0}
+            path_var: $GITHUB_PATH
+            bin_dir: build/bin
+            parallel: '$(nproc)'
+            qt_pre: ''
+            qt_invoke: 'bash ./CI/build_qt6_win64_gcc.sh'
+            generator: '-G "Unix Makefiles" -DCMAKE_MAKE_PROGRAM=mingw32-make -DCMAKE_PREFIX_PATH="${{ github.workspace }}/qt6-lib/lib/cmake;${{ github.workspace }}/absl-lib/lib/cmake;${{ github.workspace }}/protobuf-lib/lib/cmake"'
+
+          - name: Ubuntu GCC
+            os: ubuntu-latest
+            compiler: ubuntu
+            shell: bash
+            path_var: $GITHUB_PATH
+            bin_dir: build/bin
+            parallel: '$(nproc)'
+            qt_pre: ''
+            qt_invoke: ''
+            generator: '-G "Unix Makefiles"'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup MSYS2
+        if: matrix.compiler == 'msys2'
+        uses: msys2/setup-msys2@v2
+        with:
+          update: true
+          install: >-
+            mingw-w64-x86_64-gcc
+            mingw-w64-x86_64-make
+            mingw-w64-x86_64-cmake
+            mingw-w64-x86_64-python
+            mingw-w64-x86_64-postgresql
+            git
+          path-type: inherit # https://github.com/msys2/setup-msys2/tree/main?tab=readme-ov-file#path-type
+
+      - name: Install dependencies (Ubuntu)
+        if: matrix.compiler == 'ubuntu'
+        shell: bash
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y g++ cmake qt6-base-dev
+
+      - name: Cache Qt6
+        if: matrix.compiler != 'ubuntu'
+        id: cache-qt6
+        uses: actions/cache@v4
+        with:
+          path: ${{ github.workspace }}/qt6-lib
+          key: qt6-${{ matrix.compiler }}-${{ env.QT_VERSION }}-${{ runner.os }}-${{ hashFiles('CI/**') }}
+          restore-keys: |
+            qt6-${{ matrix.compiler }}-${{ env.QT_VERSION }}-${{ runner.os }}-
+            qt6-${{ matrix.compiler }}-${{ runner.os }}-
+
+      - name: Build Qt6
+        if: matrix.compiler != 'ubuntu' && steps.cache-qt6.outputs.cache-hit != 'true'
+        shell: ${{ matrix.shell }}
+        run: |
+          ${{ matrix.qt_pre }}
+          ${{ matrix.qt_invoke }} Debug Dynamic "${{ github.workspace }}/qt6-lib" "${{ env.QT_VERSION }}"
+
+      - name: Cache Abseil
+        if: matrix.compiler != 'ubuntu'
+        id: cache-absl
+        uses: actions/cache@v4
+        with:
+          path: ${{ github.workspace }}/absl-lib
+          key: absl-${{ matrix.compiler }}-${{ env.ABSL_VERSION }}-${{ runner.os }}-${{ hashFiles('CI/**') }}
+          restore-keys: |
+            absl-${{ matrix.compiler }}-${{ env.ABSL_VERSION }}-${{ runner.os }}-
+            absl-${{ matrix.compiler }}-${{ runner.os }}-
+
+      - name: Build Abseil (MSVC)
+        if: matrix.compiler == 'msvc' && steps.cache-absl.outputs.cache-hit != 'true'
+        shell: pwsh
+        run: |
+          Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+          New-Item -ItemType Directory -Path "${{ github.workspace }}/absl-lib" -Force
+          .\CI\build_absl_win64.ps1 Debug Dynamic "${{ github.workspace }}/absl-lib" "${{ env.ABSL_VERSION }}"
+
+      - name: Build Abseil (MSYS2)
+        if: matrix.compiler == 'msys2' && steps.cache-absl.outputs.cache-hit != 'true'
+        shell: msys2 {0}
+        run: |
+          mkdir -p "${{ github.workspace }}/absl-lib"
+          bash ./CI/build_absl_win64_gcc.sh Debug Dynamic "${{ github.workspace }}/absl-lib" "${{ env.ABSL_VERSION }}"
+
+      - name: Build Abseil (Ubuntu)
+        if: matrix.compiler == 'ubuntu'
+        shell: bash
+        run: |
+          sudo bash ./CI/build_absl_ubuntu.sh Debug Dynamic "${{ env.ABSL_VERSION }}"
+          sudo ldconfig
+
+      - name: Cache Protobuf
+        if: matrix.compiler != 'ubuntu'
+        id: cache-protobuf
+        uses: actions/cache@v4
+        with:
+          path: ${{ github.workspace }}/protobuf-lib
+          key: protobuf-${{ matrix.compiler }}-${{ env.PROTOBUF_VERSION }}-${{ runner.os }}-${{ hashFiles('CI/**') }}
+          restore-keys: |
+            protobuf-${{ matrix.compiler }}-${{ env.PROTOBUF_VERSION }}-${{ runner.os }}-
+            protobuf-${{ matrix.compiler }}-${{ runner.os }}-
+
+      - name: Build Protobuf (MSVC)
+        if: matrix.compiler == 'msvc' && steps.cache-protobuf.outputs.cache-hit != 'true'
+        shell: pwsh
+        run: |
+          Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+          New-Item -ItemType Directory -Path "${{ github.workspace }}/protobuf-lib" -Force
+          .\CI\build_protobuf_win64.ps1 Debug Dynamic "${{ github.workspace }}/protobuf-lib" "${{ env.PROTOBUF_VERSION }}" "${{ github.workspace }}/absl-lib"
+
+      - name: Build Protobuf (MSYS2)
+        if: matrix.compiler == 'msys2' && steps.cache-protobuf.outputs.cache-hit != 'true'
+        shell: msys2 {0}
+        run: |
+          mkdir -p "${{ github.workspace }}/protobuf-lib"
+          bash ./CI/build_protobuf_win64_gcc.sh Debug Dynamic "${{ github.workspace }}/protobuf-lib" "${{ env.PROTOBUF_VERSION }}" "${{ github.workspace }}/absl-lib"
+
+      - name: Build Protobuf (Ubuntu)
+        if: matrix.compiler == 'ubuntu'
+        shell: bash
+        run: |
+          sudo bash ./CI/build_protobuf_ubuntu.sh Debug Dynamic "${{ env.PROTOBUF_VERSION }}"
+          sudo ldconfig # Fixes: error while loading shared libraries: libabsl_log_internal_globals.so.2401.0.0: cannot open shared object file
+          ldd /usr/local/bin/protoc | grep "not found" -B1 || true # show missing deps for that executable
+
+      - name: Populate PATH
+        if: matrix.compiler != 'ubuntu'
+        shell: ${{ matrix.shell }}
+        run: |
+          echo "${{ github.workspace }}/absl-lib/bin" >> ${{ matrix.path_var }}
+          echo "${{ github.workspace }}/protobuf-lib/bin" >> ${{ matrix.path_var }}
+          echo "${{ github.workspace }}/qt6-lib/bin" >> ${{ matrix.path_var }}
+          echo "${{ github.workspace }}/${{ matrix.bin_dir }}" >> ${{ matrix.path_var }}
+
+      - name: Configure CMake
+        shell: ${{ matrix.shell }}
+        run: cmake -B build ${{ matrix.generator }} -DSHADER_GEN_BUILD_TESTS=ON -DBUILD_SHARED_LIBS=ON
+
+      - name: Build shader-gen
+        shell: ${{ matrix.shell }}
+        run: cmake --build build --config Debug --parallel ${{ matrix.parallel }}
+
+      - name: Check dependencies
+        if: matrix.compiler != 'msvc'
+        shell: ${{ matrix.shell }}
+        run: |
+          ldd build/shader-gen
+          ldd build/shader-gen-tests
+
+      - name: Run tests
+        shell: ${{ matrix.shell }}
+        env:
+          QT_QPA_PLATFORM: offscreen # Required for running UI tests without a display
+        run: ctest --test-dir build --parallel ${{ matrix.parallel }} --output-on-failure --verbose -C Debug

@@ -27,6 +27,9 @@
 
 set -e
 
+# Source the shared CI helpers.
+. "$(dirname "$0")/common.sh"
+
 # Validate input arguments: build_type, link_type, and version
 if [ $# -ne 3 ]; then
     echo "Usage: $0 <build_type> <link_type> <version>"
@@ -40,32 +43,9 @@ build_type=$1
 link_type=$2
 version=$3
 
-# Validate build_type
-case "$build_type" in
-    Debug|Release|MinSizeRel|RelWithDebInfo) ;;
-    *) 
-        echo "Invalid build type: $build_type"
-        exit 1
-        ;;
-esac
-
-# Validate link_type
-case "$link_type" in
-    Dynamic|Static) ;;
-    *)
-        echo "Invalid link type: $link_type"
-        exit 1
-        ;;
-esac
-
-case "$link_type" in
-    Static)
-        shared_libs="OFF"
-        ;;
-    Dynamic)
-        shared_libs="ON"
-        ;;
-esac
+ci_validate_build_type "$build_type"
+ci_validate_link_type "$link_type"
+shared_libs="$(ci_shared_libs "$link_type")"
 
 ABSL_LATEST_TAG="$version"
 ABSL_LATEST_TAG_WITHOUT_V="${ABSL_LATEST_TAG#v}"
@@ -74,24 +54,12 @@ ABSL_LATEST_TAG_WITHOUT_V="${ABSL_LATEST_TAG#v}"
 abslSrcCompressed="abseil-cpp-$ABSL_LATEST_TAG_WITHOUT_V.tar.gz"
 abslUrl="https://github.com/abseil/abseil-cpp/releases/download/$ABSL_LATEST_TAG/$abslSrcCompressed"
 
-# Download source
-echo "Downloading Abseil source from $abslUrl..."
-curl -L -O "$abslUrl" || { echo "Download failed"; exit 1; }
-
-# Extract
-echo "Extracting Abseil source..."
-tar -xf "$abslSrcCompressed"
-
-abslSrcDir="abseil-cpp-$ABSL_LATEST_TAG_WITHOUT_V"
+ci_download "$abslUrl" "Abseil"
+ci_extract "$abslSrcCompressed" "Abseil"
 
 # Build and install Abseil
 echo "Installing Abseil $ABSL_LATEST_TAG with build type '$build_type' and link type '$link_type'..."
-cd "$abslSrcDir"
-
-# Create & switch to the build directory.
-mkdir -p build
-echo "Current location: $(pwd)"
-cd build
+ci_enter_build_dir "abseil-cpp-$ABSL_LATEST_TAG_WITHOUT_V"
 
 # Configure arguments
 configureArgs=(
@@ -108,14 +76,10 @@ configureArgs=(
     "-D" "ABSL_BUILD_MONOLITHIC_SHARED_LIBS='$shared_libs'"
 )
 
-echo "Running configure with arguments:"
-printf '  %s\n' "${configureArgs[@]}"
+ci_print_configure_args "${configureArgs[@]}"
 
-cmake .. "${configureArgs[@]}" || { echo "Configuration failed"; exit 1; }
+ci_cmake_configure "${configureArgs[@]}"
 
-make -j$(nproc)
+ci_make_build_install
 
-sudo make install
-
-# Return to the workspace directory
-cd "${GITHUB_WORKSPACE:-..}"
+ci_back_to_workspace

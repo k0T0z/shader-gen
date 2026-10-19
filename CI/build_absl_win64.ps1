@@ -43,40 +43,29 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
+# Shared CI helpers.
+. "$PSScriptRoot\common.ps1"
+
 # Set up the MSVC 2022 x64 build environment.
 . "$PSScriptRoot\setup_msvc_win64.ps1"
 
 $ABSL_LATEST_TAG = $version
-$ABSL_LATEST_TAG_WITHOUT_V = $ABSL_LATEST_TAG.Replace("v", "")
+$ABSL_LATEST_TAG_WITHOUT_V = Get-CiVersionWithoutV -Version $ABSL_LATEST_TAG
 
 # URLs and paths
 $abslSrcCompressed = "abseil-cpp-$ABSL_LATEST_TAG_WITHOUT_V.tar.gz"
 $abslUrl    = "https://github.com/abseil/abseil-cpp/releases/download/$ABSL_LATEST_TAG/$abslSrcCompressed"
 
-# Download source
-Write-Host "Downloading Abseil source from $abslUrl..."
-Invoke-WebRequest -Uri $abslUrl -OutFile $abslSrcCompressed -Verbose
-
-# Extract (Expand-Archive only handles .zip, so use the bundled tar.exe for .tar.gz).
-Write-Host "Extracting Abseil source..."
-tar -xzf $abslSrcCompressed -C $env:GITHUB_WORKSPACE
+Save-CiSource -Url $abslUrl -OutFile $abslSrcCompressed -Label "Abseil"
+Expand-CiSource -Archive $abslSrcCompressed -Label "Abseil"
 
 $abslSrcDir = Join-Path $env:GITHUB_WORKSPACE "abseil-cpp-$ABSL_LATEST_TAG_WITHOUT_V"
 
 Write-Host "Configuring Abseil with prefix: $install_dir"
 
 # Determine the CMake flag for shared library builds based on link_type.
-switch ($link_type) {
-    "Dynamic" {
-        $shared_libs = "ON"
-        $static_libs = "OFF"
-    }
-    "Static"  {
-        $shared_libs = "OFF"
-        $static_libs = "ON"
-    }
-    default   { throw "Invalid link_type '$link_type'. Expected 'Dynamic' or 'Static'." }
-}
+$shared_libs = Get-CiSharedLibs -LinkType $link_type
+if ($shared_libs -eq "ON") { $static_libs = "OFF" } else { $static_libs = "ON" }
 
 # Base configure args
 $configureArgs = @(
@@ -96,23 +85,14 @@ $configureArgs = @(
 )
 
 # Build Abseil
-Set-Location $abslSrcDir
-
-# Create & switch to the build directory.
-if (-Not (Test-Path "build")) {
-    New-Item -ItemType Directory -Path build | Out-Null
-}
-
-Write-Host "Current location: $(Get-Location)"
-Set-Location build
+Enter-CiBuildDir -SrcDir $abslSrcDir
 
 Write-Host "Running CMake with arguments: $configureArgs"
 
 cmake .. @configureArgs
 
 # Build and install.
-cmake --build . --config $build_type
-cmake --install . --parallel $env:NUMBER_OF_PROCESSORS --config $build_type
+Build-CiProject -BuildType $build_type
+Install-CiProject -BuildType $build_type
 
-# Return to the original workspace (assumes GITHUB_WORKSPACE is set).
-Set-Location $env:GITHUB_WORKSPACE
+Exit-CiBuildDir

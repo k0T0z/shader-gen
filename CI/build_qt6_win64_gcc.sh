@@ -27,6 +27,9 @@
 
 set -e
 
+# Source the shared CI helpers.
+. "$(dirname "$0")/common.sh"
+
 # Check for required arguments
 if [ $# -ne 4 ]; then
     echo "Usage: $0 <build_type> <link_type> <install_dir> <version>"
@@ -43,50 +46,23 @@ install_dir=$3
 Qt6Version=$4
 majorMinor=$(echo "$Qt6Version" | cut -d. -f1-2)
 
-# Validate build_type
-case "$build_type" in
-    Debug|Release|MinSizeRel|RelWithDebInfo) ;;
-    *) 
-        echo "Invalid build type: $build_type"
-        exit 1
-        ;;
-esac
-
-# Validate link_type
-case "$link_type" in
-    Dynamic|Static) ;;
-    *)
-        echo "Invalid link type: $link_type"
-        exit 1
-        ;;
-esac
-
-# Check if the install prefix directory exists; if not, create it
-if [ ! -d "$install_dir" ]; then
-    echo "Install prefix directory '$install_dir' does not exist. Creating it..."
-    mkdir -p "$install_dir"
-fi
+ci_validate_build_type "$build_type"
+ci_validate_link_type "$link_type"
+ci_ensure_dir "$install_dir"
 
 # URLs and paths
 qtSrcCompressed="qt-everywhere-src-$Qt6Version.tar.xz"
 qtUrl="https://download.qt.io/official_releases/qt/$majorMinor/$Qt6Version/single/$qtSrcCompressed"
 
-# Download source
-echo "Downloading Qt source from $qtUrl..."
-curl -L -O "$qtUrl" || { echo "Download failed"; exit 1; }
-
-# Extract
-echo "Extracting Qt source..."
-tar -xf "$qtSrcCompressed"
-
-qtSrcDir="qt-everywhere-src-$Qt6Version"
+ci_download "$qtUrl" "Qt"
+ci_extract "$qtSrcCompressed" "Qt"
 
 echo "Configuring Qt with prefix: $install_dir"
 
 # Verify required tools
-python --version || { echo "Python not found"; exit 1; }
-cmake --version || { echo "CMake not found"; exit 1; }
-gcc --version || { echo "MINGW gcc not found"; exit 1; }
+python --version || ci_die "Python not found"
+cmake --version || ci_die "CMake not found"
+gcc --version || ci_die "MINGW gcc not found"
 
 # Configure arguments
 configureArgs=(
@@ -133,24 +109,17 @@ configureArgs+=("-D" "QT_BUILD_TOOLS_BY_DEFAULT=ON")
 configureArgs+=("-D" "PostgreSQL_ROOT=/mingw64")
 
 # Build Qt
-cd "$qtSrcDir" || exit
+ci_enter_build_dir "qt-everywhere-src-$Qt6Version"
 
-# Create & switch to the build directory.
-mkdir -p build
-echo "Current location: $(pwd)"
-cd build || exit
+ci_print_configure_args "${configureArgs[@]}"
 
-echo "Running configure with arguments:"
-printf '  %s\n' "${configureArgs[@]}"
+../configure "${configureArgs[@]}" || ci_die "Configuration failed"
 
-../configure "${configureArgs[@]}" || { echo "Configuration failed"; exit 1; }
-
-# Build and install
 echo "Starting build..."
-cmake --build . --config "$build_type" || { echo "Build failed"; exit 1; }
+ci_cmake_build "$build_type" || ci_die "Build failed"
 
 echo "Installing to $install_dir..."
-cmake --install . --parallel $(nproc) --config "$build_type" || { echo "Installation failed"; exit 1; }
+ci_cmake_install "$build_type" || ci_die "Installation failed"
 
-cd ../..
+ci_back_to_workspace
 echo "Qt build+install complete."
