@@ -69,6 +69,10 @@ configureArgs=(
     "-D" "CMAKE_MAKE_PROGRAM=mingw32-make"
     "-D" "CMAKE_BUILD_TYPE='$build_type'"
     "-D" "CMAKE_CXX_STANDARD=17"
+    # PATCH: The monolithic DLL target does not carry the system libraries its objects
+    # need. These must go through CMAKE_CXX_STANDARD_LIBRARIES (placed after the
+    # objects) rather than CMAKE_SHARED_LINKER_FLAGS (placed before them).
+    "-D" "CMAKE_CXX_STANDARD_LIBRARIES='-ldbghelp -lbcrypt -ladvapi32'"
     "-D" "BUILD_SHARED_LIBS='$shared_libs'"
     "-D" "CMAKE_INSTALL_PREFIX='$install_dir'"
 
@@ -77,7 +81,7 @@ configureArgs=(
     "-D" "ABSL_PROPAGATE_CXX_STD=ON"
     "-D" "ABSL_BUILD_TESTING=OFF"
     "-D" "ABSL_BUILD_TEST_HELPERS=OFF"
-    "-D" "ABSL_BUILD_MONOLITHIC_SHARED_LIBS=OFF"
+    "-D" "ABSL_BUILD_MONOLITHIC_SHARED_LIBS='$shared_libs'"
 )
 
 ci_print_configure_args "${configureArgs[@]}"

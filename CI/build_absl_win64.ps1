@@ -81,7 +81,7 @@ $configureArgs = @(
     "-D", "ABSL_MSVC_STATIC_RUNTIME='$static_libs'",
     "-D", "ABSL_BUILD_TESTING=OFF",
     "-D", "ABSL_BUILD_TEST_HELPERS=OFF",
-    "-D", "ABSL_BUILD_MONOLITHIC_SHARED_LIBS=OFF"
+    "-D", "ABSL_BUILD_MONOLITHIC_SHARED_LIBS='$shared_libs'"
 )
 
 # Build Abseil
