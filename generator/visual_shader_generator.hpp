@@ -39,7 +39,6 @@
 #include "generator/visual_shader_node_generators.hpp"
 #include "generator/visual_shader_node_port_type_generator.hpp"
 #include "generator/utils/utils.hpp"
-#include "gui/controller/vs_proto_node.hpp"
 
 extern const std::string license_notices;
 
