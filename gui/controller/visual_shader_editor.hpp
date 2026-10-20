@@ -152,6 +152,7 @@ class VisualShaderEditor : public QWidget {
   void on_stop_matching_button_pressed();
   void on_start_matching_timer_timeout();
   void on_stop_matching_timer_timeout();
+  void on_refresh_coordinates_button_pressed();
 
  private:
   QHBoxLayout* layout;
@@ -240,6 +241,7 @@ class VisualShaderEditor : public QWidget {
 
   bool add_output_node();
   void load_graph();
+  void refresh_node_coordinates();
 
   void create_node(const QPointF& coordinate);
 

@@ -1,6 +1,6 @@
 /*********************************************************************************/
 /*                                                                               */
-/*  Copyright (C) 2024 Seif Kandil (k0T0z)                                       */
+/*  Copyright (C) 2026 Seif Kandil (k0T0z)                                       */
 /*                                                                               */
 /*  This file is a part of the ENIGMA Development Environment.                   */
 /*                                                                               */
@@ -25,4 +25,16 @@
 /*                                                                               */
 /*********************************************************************************/
 
-#include "core/graph_table_editor/graph_table_editor.hpp"
+#ifndef RAW_VISUAL_SHADER_GRAPH_ADAPTER_HPP
+#define RAW_VISUAL_SHADER_GRAPH_ADAPTER_HPP
+
+#include "generator/raw_visual_shader_graph.hpp"
+#include "gui/model/proto_model.hpp"
+
+namespace shadergen_gui_adapters {
+
+RawVisualShaderGraph to_raw_graph(const ProtoModel* nodes, const ProtoModel* connections) noexcept;
+
+}  // namespace shadergen_gui_adapters
+
+#endif  // RAW_VISUAL_SHADER_GRAPH_ADAPTER_HPP

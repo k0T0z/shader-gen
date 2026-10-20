@@ -37,9 +37,9 @@ RepeatedPrimitiveModel::RepeatedPrimitiveModel(Message* message_buffer, const Fi
       m_field_desc(field_desc) {}
 
 void RepeatedPrimitiveModel::build_sub_models() {
-  CHECK_CONDITION_TRUE(!m_field_desc->is_repeated(), "Field " + m_field_desc->full_name() + " is not repeated.");
+  CHECK_CONDITION_TRUE(!m_field_desc->is_repeated(), "Field " + std::string(m_field_desc->full_name()) + " is not repeated.");
   CHECK_CONDITION_TRUE(m_field_desc->message_type() != nullptr,
-                       "Field " + m_field_desc->full_name() + " is not a primitive field.");
+                       "Field " + std::string(m_field_desc->full_name()) + " is not a primitive field.");
 
   int size{rowCount()};
   for (int i{0}; i < size; i++) {
@@ -87,7 +87,7 @@ PrimitiveModel* RepeatedPrimitiveModel::get_sub_model(const int& index) const {
 
 const ProtoModel* RepeatedPrimitiveModel::get_sub_model(const FieldPath& path, const bool& for_set_data,
                                                         const bool& for_get_oneof) const {
-  CHECK_CONDITION_TRUE_NON_VOID(!path.is_valid(), nullptr, "Invalid path for " + m_field_desc->full_name());
+  CHECK_CONDITION_TRUE_NON_VOID(!path.is_valid(), nullptr, "Invalid path for " + std::string(m_field_desc->full_name()));
   SILENT_CHECK_CONDITION_TRUE_NON_VOID(path.is_empty(), this);
 
   int index{-1};

@@ -1,91 +1,95 @@
-#!/bin/bash
+#################################################################################
+#                                                                               #
+#  Copyright (C) 2026 Seif Kandil (k0T0z)                                       #
+#                                                                               #
+#  This file is a part of the ENIGMA Development Environment.                   #
+#                                                                               #
+#                                                                               #
+#  ENIGMA is free software: you can redistribute it and/or modify it under the  #
+#  terms of the GNU General Public License as published by the Free Software    #
+#  Foundation, version 3 of the license or any later version.                   #
+#                                                                               #
+#  This application and its source code is distributed AS-IS, WITHOUT ANY       #
+#  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS    #
+#  FOR A PARTICULAR PURPOSE. See the GNU General Public License for more        #
+#  details.                                                                     #
+#                                                                               #
+#  You should have recieved a copy of the GNU General Public License along      #
+#  with this code. If not, see <http://www.gnu.org/licenses/>                   #
+#                                                                               #
+#  ENIGMA is an environment designed to create games and other programs with a  #
+#  high-level, fully compilable language. Developers of ENIGMA or anything      #
+#  associated with ENIGMA are in no way responsible for its users or            #
+#  applications created by its users, or damages caused by the environment      #
+#  or programs made in the environment.                                         #
+#                                                                               #
+#################################################################################
+
 set -e
 
-# Check for the required arguments: BUILD_TYPE, LINK_TYPE, and INSTALL_PREFIX
-if [ "$#" -ne 3 ]; then
-    echo "Usage: $0 <BUILD_TYPE> <LINK_TYPE> <INSTALL_PREFIX>"
+# Source the shared CI helpers.
+. "$(dirname "$0")/common.sh"
+
+# Check for the required arguments: BUILD_TYPE, LINK_TYPE, INSTALL_PREFIX, VERSION, and ABSL_DIR
+if [ $# -ne 5 ]; then
+    echo "Usage: $0 <BUILD_TYPE> <LINK_TYPE> <INSTALL_PREFIX> <VERSION> <ABSL_DIR>"
     echo "Valid BUILD_TYPE values: Debug, Release, MinSizeRel, RelWithDebInfo"
     echo "Valid LINK_TYPE values: Dynamic, Static"
+    echo "VERSION: Protobuf version/tag"
+    echo "ABSL_DIR: Path to the prebuilt Abseil installation prefix"
     exit 1
 fi
 
 build_type=$1
 link_type=$2
 install_dir=$3
+version=$4
+absl_dir=$5
 
-# Validate build_type
-case "$build_type" in
-    Debug|Release|MinSizeRel|RelWithDebInfo) ;;
-    *) 
-        echo "Invalid build type: $build_type"
-        exit 1
-        ;;
-esac
+ci_validate_build_type "$build_type"
+ci_validate_link_type "$link_type"
+shared_libs="$(ci_shared_libs "$link_type")"
+ci_ensure_dir "$install_dir"
 
-# Validate link_type
-case "$link_type" in
-    Dynamic|Static) ;;
-    *)
-        echo "Invalid link type: $link_type"
-        exit 1
-        ;;
-esac
+PROTOBUF_LATEST_TAG="$version"
+PROTOBUF_LATEST_TAG_WITHOUT_V="${PROTOBUF_LATEST_TAG#v}"
 
-case "$link_type" in
-    Static)
-        shared_libs="OFF"
-        ;;
-    Dynamic)
-        shared_libs="ON"
-        ;;
-esac
+# URLs and paths
+pbSrcCompressed="protobuf-$PROTOBUF_LATEST_TAG_WITHOUT_V.tar.gz"
+pbUrl="https://github.com/protocolbuffers/protobuf/releases/download/$PROTOBUF_LATEST_TAG/$pbSrcCompressed"
 
-# Check if the install prefix directory exists; if not, create it
-if [ ! -d "$install_dir" ]; then
-    echo "Install prefix directory '$install_dir' does not exist. Creating it..."
-    mkdir -p "$install_dir"
-fi
-
-PROTOBUF_LATEST_TAG=v29.3
+ci_download "$pbUrl" "Protobuf"
+ci_extract "$pbSrcCompressed" "Protobuf"
 
 # Build and install Protobuf
 echo "Installing Protobuf $PROTOBUF_LATEST_TAG with build type '$build_type' and link type '$link_type' (shared libs: $shared_libs)..."
-git clone --depth 1 -b "$PROTOBUF_LATEST_TAG" https://github.com/protocolbuffers/protobuf.git
-cd protobuf
-
-git submodule update --init --recursive
-
-mkdir build && cd build
+ci_enter_build_dir "protobuf-$PROTOBUF_LATEST_TAG_WITHOUT_V"
 
 # Configure arguments
 configureArgs=(
     "-G" "Unix Makefiles"
     "-D" "CMAKE_MAKE_PROGRAM=mingw32-make"
-    "-D" "protobuf_BUILD_TESTS=OFF"
-    "-D" "protobuf_BUILD_CONFORMANCE=OFF"
-    "-D" "protobuf_BUILD_EXAMPLES=OFF"
-    "-D" "protobuf_ABSL_PROVIDER=module"
+    "-D" "protobuf_LOCAL_DEPENDENCIES_ONLY=ON"
+    "-D" "CMAKE_PREFIX_PATH='$absl_dir'"
     "-D" "CMAKE_BUILD_TYPE='$build_type'"
     "-D" "CMAKE_CXX_STANDARD=17"
+    # PATCH: GNU ld on MinGW resolves a weak symbol reference to the *section base*
+    # instead of the symbol offset. upb's generated minitables register
+    # themselves through a weak `__attribute__((constructor))` function
+    # (upb/port/def.inc, UPB_CONSTRUCTOR), so without one section per function
+    # the .ctors entry points at whatever function happens to start the .text
+    # section and protoc.exe crashes in __do_global_ctors before main().
+    "-D" "CMAKE_C_FLAGS=-ffunction-sections"
     "-D" "BUILD_SHARED_LIBS='$shared_libs'"
     "-D" "protobuf_BUILD_SHARED_LIBS='$shared_libs'"
     "-D" "CMAKE_INSTALL_PREFIX='$install_dir'"
-
-    "-D" "ABSL_PROPAGATE_CXX_STD=ON"
-    "-D" "BUILD_TESTING=OFF"
-    "-D" "ABSL_BUILD_TESTING=OFF"
-    "-D" "ABSL_USE_GOOGLETEST_HEAD=OFF"
-    "-D" "ABSL_ENABLE_INSTALL=ON"
-    "-D" "ABSL_BUILD_MONOLITHIC_SHARED_LIBS='$shared_libs'"
-    "-D" "CMAKE_MODULE_LINKER_FLAGS='-Wl,--no-undefined'"
 )
 
-echo "Running configure with arguments:"
-printf '  %s\n' "${configureArgs[@]}"
+ci_print_configure_args "${configureArgs[@]}"
 
-cmake .. "${configureArgs[@]}" || { echo "Configuration failed"; exit 1; }
+ci_cmake_configure "${configureArgs[@]}"
 
-cmake --build . --config "$build_type"
-cmake --install . --parallel $(nproc) --config "$build_type"
+ci_cmake_build "$build_type"
+ci_cmake_install "$build_type"
 
-cd "$GITHUB_WORKSPACE"
+ci_back_to_workspace

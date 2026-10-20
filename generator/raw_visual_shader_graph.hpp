@@ -1,6 +1,6 @@
 /*********************************************************************************/
 /*                                                                               */
-/*  Copyright (C) 2024 Seif Kandil (k0T0z)                                       */
+/*  Copyright (C) 2026 Seif Kandil (k0T0z)                                       */
 /*                                                                               */
 /*  This file is a part of the ENIGMA Development Environment.                   */
 /*                                                                               */
@@ -25,29 +25,15 @@
 /*                                                                               */
 /*********************************************************************************/
 
-#ifndef GRAPH_TABLE_EDITOR_HPP
-#define GRAPH_TABLE_EDITOR_HPP
+#ifndef RAW_VISUAL_SHADER_GRAPH_HPP
+#define RAW_VISUAL_SHADER_GRAPH_HPP
 
+#include <string>
 #include <vector>
-#include <unordered_map>
-#include <variant>
 
-struct GraphTableNode {
-    int n_id;
-    int field_number;
-    std::unordered_map<int, std::variant<int, float, double>> params;
+struct RawVisualShaderGraph {
+  std::vector<std::string> headers;
+  std::vector<std::vector<std::string>> adj_matrix;
 };
 
-struct GraphTableConnection {
-    int c_id;
-    int from_p_index;
-    int to_p_index;
-    bool is_valid; // Can this connection be connected and the graph stay valid?
-};
-
-struct GraphTable {
-    std::vector<GraphTableNode> nodes;
-    std::vector<std::vector<GraphTableConnection>> connections;
-};
-
-#endif // GRAPH_TABLE_EDITOR_HPP
+#endif  // RAW_VISUAL_SHADER_GRAPH_HPP

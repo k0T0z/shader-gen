@@ -79,7 +79,7 @@ bool PrimitiveModel::set_data(const QVariant& value) {
 const ProtoModel* PrimitiveModel::get_sub_model([[maybe_unused]] const FieldPath& path, const bool& for_set_data,
                                                 const bool& for_get_oneof) const {
   const Descriptor* desc{m_message_buffer->GetDescriptor()};
-  CHECK_CONDITION_TRUE_NON_VOID(!path.is_valid(), nullptr, "Invalid path for " + desc->full_name());
+  CHECK_CONDITION_TRUE_NON_VOID(!path.is_valid(), nullptr, "Invalid path for " + std::string(desc->full_name()));
   CHECK_CONDITION_TRUE_NON_VOID(!path.is_empty(), nullptr, "Trying to get sub-model of a primitive model.");
   return this;
 }
@@ -337,5 +337,5 @@ QVariant PrimitiveModel::headerData(int section, [[maybe_unused]] Qt::Orientatio
   const FieldDescriptor* field_desc{get_column_descriptor(section)};
   CHECK_PARAM_NULLPTR_NON_VOID(field_desc, QVariant(), "Field is null.");
 
-  return QString::fromStdString(field_desc->full_name());
+  return QString::fromStdString(std::string(field_desc->full_name()));
 }

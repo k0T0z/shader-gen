@@ -27,9 +27,6 @@
 
 #include "generator/visual_shader_node_port_type_generator.hpp"
 
-#include "gui/controller/vs_proto_node.hpp"
-#include "gui/model/utils/utils.hpp"
-
 #include <iomanip>
 #include <sstream>
 

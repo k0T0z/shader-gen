@@ -1,6 +1,6 @@
 /*********************************************************************************/
 /*                                                                               */
-/*  Copyright (C) 2024 Seif Kandil (k0T0z)                                       */
+/*  Copyright (C) 2026 Seif Kandil (k0T0z)                                       */
 /*                                                                               */
 /*  This file is a part of the ENIGMA Development Environment.                   */
 /*                                                                               */
@@ -30,75 +30,31 @@
 
 #include <string>
 #include <vector>
-#include "gui/model/proto_model.hpp"
-
-#include "generator/visual_shader_node_generators.hpp"
-#include "generator/visual_shader_node_port_type_generator.hpp"
 #include <map>
 #include <unordered_map>
+#include <memory>
+#include <utility>
+
+#include "generator/raw_visual_shader_graph.hpp"
+#include "generator/visual_shader_node_generators.hpp"
+#include "generator/visual_shader_node_port_type_generator.hpp"
 #include "generator/utils/utils.hpp"
-#include "gui/controller/vs_proto_node.hpp"
 
 extern const std::string license_notices;
 
 namespace shadergen_visual_shader_generator {
-/**
-  * @brief This union is a 64-bit integer that can be treated as
-  *        two 32-bit integers. The first 32 bits (first fragment) 
-  *        are for the node id and the second 32 bits (second fragment) 
-  *        are for the port id.
-  */
-union ConnectionKey {
-  struct FragmentedKey {
-    uint64_t node : 32;
-    uint64_t port : 32;
-  } f_key;
-  uint64_t key;
-  ConnectionKey() : key(0) {}
-  bool operator<(const ConnectionKey& key) const { return this->key < key.key; }
-};
+
+using ConnectionKey = std::pair<int, int>;
 
 struct Connection {
   ConnectionKey from;
   ConnectionKey to;
 };
 
-std::unordered_map<int, std::shared_ptr<IVisualShaderProtoNode>> to_proto_nodes(const ProtoModel* nodes) noexcept;
-std::unordered_map<int, std::shared_ptr<IVisualShaderProtoNode>> to_proto_nodes(const std::string& encoded_graph) noexcept;
+bool generate_shader(const RawVisualShaderGraph& graph, std::string& code_buffer) noexcept;
 
-std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>> to_generators(const ProtoModel* nodes) noexcept;
-std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>> to_generators(const std::string& encoded_graph) noexcept;
-
-std::unordered_map<int, std::shared_ptr<VisualShaderNodePortTypeGenerator>> to_port_type_generators(const ProtoModel* nodes) noexcept;
-std::unordered_map<int, std::shared_ptr<VisualShaderNodePortTypeGenerator>> to_port_type_generators(const std::string& encoded_graph) noexcept;
-
-std::pair<std::map<ConnectionKey, std::shared_ptr<Connection>>, std::map<ConnectionKey, std::shared_ptr<Connection>>> to_input_output_connections_by_key(const ProtoModel* connections) noexcept;
-std::pair<std::map<ConnectionKey, std::shared_ptr<Connection>>, std::map<ConnectionKey, std::shared_ptr<Connection>>> to_input_output_connections_by_key(const std::string& encoded_graph) noexcept;
-
-/**
- * @brief This function generates the shader code from the visual shader graph.
- * 
- * @note @c compile_graph is another good name for this function.
- * 
- * @param proto_nodes 
- * @param generators 
- * @param input_output_connections_by_key 
- * @param code_buffer 
- * @return true 
- * @return false 
- */
-bool generate_shader(
-  const std::unordered_map<int, std::shared_ptr<IVisualShaderProtoNode>>& proto_nodes, 
-  const std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>>& generators, 
-  const std::unordered_map<int, std::shared_ptr<VisualShaderNodePortTypeGenerator>>& port_type_generators,
-  const std::pair<std::map<ConnectionKey, std::shared_ptr<Connection>>, std::map<ConnectionKey, std::shared_ptr<Connection>>>& input_output_connections_by_key, 
-  std::string& code_buffer) noexcept;
-
-std::string generate_preview_shader(const std::unordered_map<int, std::shared_ptr<IVisualShaderProtoNode>>& proto_nodes, 
-  const std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>>& generators, 
-  const std::unordered_map<int, std::shared_ptr<VisualShaderNodePortTypeGenerator>>& port_type_generators,
-  const std::pair<std::map<ConnectionKey, std::shared_ptr<Connection>>, std::map<ConnectionKey, std::shared_ptr<Connection>>>& input_output_connections_by_key, 
-  const int& node_id, const int& port) noexcept;
+std::string generate_preview_shader(const RawVisualShaderGraph& graph,
+                                     const int& node_id, const int& port) noexcept;
 }  // namespace shadergen_visual_shader_generator
 
 #endif  // ENIGMA_VISUAL_SHADER_GENERATOR_HPP

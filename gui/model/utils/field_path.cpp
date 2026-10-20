@@ -53,7 +53,7 @@ bool FieldPath::is_valid_path() const {
         const google::protobuf::FieldDescriptor* field{current_buffer_descriptor->FindFieldByNumber(fn)};
         CHECK_PARAM_NULLPTR_NON_VOID(
             field, false,
-            "Field " + std::to_string(fn) + " not found in descriptor " + current_buffer_descriptor->full_name());
+            "Field " + std::to_string(fn) + " not found in descriptor " + std::string(current_buffer_descriptor->full_name()));
         current_buffer_descriptor = field->message_type();
         if (field->is_repeated())
           repeated_field = field;
@@ -64,7 +64,7 @@ bool FieldPath::is_valid_path() const {
       case PATH_COMPONENT_VARIANT_REPEATED_AT_INDEX: {
         CHECK_PARAM_NULLPTR_NON_VOID(repeated_field, false, "No repeated field to access.");
         CHECK_CONDITION_TRUE_NON_VOID(!repeated_field->is_repeated(), false,
-                                      "Field " + repeated_field->full_name() + " is not repeated.");
+                                      "Field " + std::string(repeated_field->full_name()) + " is not repeated.");
         current_buffer_descriptor = repeated_field->message_type();
         repeated_field = nullptr;
         break;

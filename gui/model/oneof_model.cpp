@@ -130,7 +130,7 @@ const ProtoModel* OneofModel::get_sub_model(const FieldPath& path, const bool& f
                                             const bool& for_get_oneof) const {
   SILENT_CHECK_PARAM_NULLPTR_NON_VOID(m_message_buffer, nullptr);
   const Descriptor* desc{m_message_buffer->GetDescriptor()};
-  CHECK_CONDITION_TRUE_NON_VOID(!path.is_valid(), nullptr, "Invalid path for " + desc->full_name());
+  CHECK_CONDITION_TRUE_NON_VOID(!path.is_valid(), nullptr, "Invalid path for " + std::string(desc->full_name()));
   SILENT_CHECK_CONDITION_TRUE_NON_VOID(for_get_oneof, this);
 
   int fn{-1};
@@ -166,7 +166,7 @@ int OneofModel::get_oneof_value_field_number() const {
 const FieldDescriptor* OneofModel::get_column_descriptor(const int& column) const {
   VALIDATE_INDEX_NON_VOID(column, columnCount(), nullptr,
                           "Requesting descriptor of invalid column (field index) " + std::to_string(column) +
-                              " of MessageModel " + m_oneof_desc->full_name());
+                              " of MessageModel " + std::string(m_oneof_desc->full_name()));
   return m_oneof_desc->field(column);
 }
 
@@ -245,7 +245,7 @@ QVariant OneofModel::headerData(int section, [[maybe_unused]] Qt::Orientation or
   const FieldDescriptor* field_desc{m_oneof_desc->field(section)};
   CHECK_PARAM_NULLPTR_NON_VOID(field_desc, QVariant(), "Field is null.");
 
-  return QString::fromStdString(field_desc->full_name());
+  return QString::fromStdString(std::string(field_desc->full_name()));
 }
 
 bool OneofModel::set_oneof(const int& field_number) {

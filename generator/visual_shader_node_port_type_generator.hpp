@@ -33,7 +33,7 @@
 #include <memory>
 
 #include "gui/model/schema/visual_shader_nodes.pb.h"
-#include "gui/controller/vs_proto_node.hpp"
+#include "generator/proto_node.hpp"
 
 using namespace gui::model::schema;
 
