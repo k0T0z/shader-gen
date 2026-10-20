@@ -40,6 +40,7 @@
 #include <string>
 
 #include "error_macros.hpp"
+#include "generator/graph_string_utils.hpp"
 #include "gui/model/repeated_message_model.hpp"
 #include "gui/controller/vs_proto_node.hpp"
 #include "gui/model/oneof_model.hpp"
@@ -88,23 +89,21 @@ inline static std::vector<int> get_node_type_population() {
     return node_type_population;
 }
 
-inline static std::vector<std::string> split_string(const std::string& str, const char& delimiter) {
-    std::vector<std::string> tokens;
-    std::string token;
-    std::istringstream token_stream(str);
-    while (std::getline(token_stream, token, delimiter)) tokens.push_back(token);
-    return tokens;
-}
-
-inline static std::string join_string(const std::vector<std::string>& tokens, const char& delimiter) {
-    CHECK_CONDITION_TRUE_NON_VOID(tokens.empty(), "", "Tokens is empty.");
-    SILENT_CHECK_CONDITION_TRUE_NON_VOID(tokens.size() == 1, tokens.at(0));
-
-    std::ostringstream joined;
-    joined << tokens.at(0);
-    for (std::size_t i = 1; i < tokens.size(); ++i) joined << delimiter << tokens.at(i);
-    return joined.str();
-}
+// The graph string helpers live in `generator/graph_string_utils.hpp` so that the generator can be
+// built without any GUI/Qt dependency. Re-export them here to keep the existing API unchanged.
+using shadergen_graph_string_utils::split_string;
+using shadergen_graph_string_utils::join_string;
+using shadergen_graph_string_utils::get_entity_type;
+using shadergen_graph_string_utils::get_node_entity_id;
+using shadergen_graph_string_utils::get_node_entity_oneof_value_field_number;
+using shadergen_graph_string_utils::get_node_entity_parameters;
+using shadergen_graph_string_utils::get_node_entity_parameter_field_number;
+using shadergen_graph_string_utils::get_node_entity_parameter_value;
+using shadergen_graph_string_utils::get_connection_entity_id;
+using shadergen_graph_string_utils::get_connection_entity_from_node_id;
+using shadergen_graph_string_utils::get_connection_entity_from_port_index;
+using shadergen_graph_string_utils::get_connection_entity_to_node_id;
+using shadergen_graph_string_utils::get_connection_entity_to_port_index;
 
 inline static std::string encode_graph(const ProtoModel* nodes, const ProtoModel* connections) {
     std::vector<std::string> encoded_graph;
@@ -190,52 +189,6 @@ inline static std::string encode_graph(const ProtoModel* nodes, const ProtoModel
     }
 
     return join_string(encoded_graph, ',');
-}
-
-inline static std::string get_entity_type(const std::vector<std::string>& node_tokens) {
-    return node_tokens.at(0);
-}
-
-inline static std::string get_node_entity_id(const std::vector<std::string>& node_tokens) {
-    return node_tokens.at(1);
-}
-
-inline static std::string get_node_entity_oneof_value_field_number(const std::vector<std::string>& node_tokens) {
-    return node_tokens.at(2);
-}
-
-inline static std::vector<std::string> get_node_entity_parameters(const std::vector<std::string>& node_tokens) {
-    std::vector<std::string> parameters;
-    parameters.insert(parameters.end(), node_tokens.begin() + 3, node_tokens.end());
-    return parameters;
-}
-
-inline static std::string get_node_entity_parameter_field_number(const std::vector<std::string>& parameter_tokens) {
-    return parameter_tokens.at(0);
-}
-
-inline static std::string get_node_entity_parameter_value(const std::vector<std::string>& parameter_tokens) {
-    return parameter_tokens.at(1);
-}
-
-inline static std::string get_connection_entity_id(const std::vector<std::string>& connection_tokens) {
-    return connection_tokens.at(1);
-}
-
-inline static std::string get_connection_entity_from_node_id(const std::vector<std::string>& connection_tokens) {
-    return connection_tokens.at(2);
-}
-
-inline static std::string get_connection_entity_from_port_index(const std::vector<std::string>& connection_tokens) {
-    return connection_tokens.at(3);
-}
-
-inline static std::string get_connection_entity_to_node_id(const std::vector<std::string>& connection_tokens) {
-    return connection_tokens.at(4);
-}
-
-inline static std::string get_connection_entity_to_port_index(const std::vector<std::string>& connection_tokens) {
-    return connection_tokens.at(5);
 }
 
 inline static std::pair<std::vector<std::string>, std::vector<std::string>> filter_entities_into_tokens(const std::string& encoded_graph) {

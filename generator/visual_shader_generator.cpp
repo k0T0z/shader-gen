@@ -33,8 +33,9 @@
 #include <sstream>
 
 #include "error_macros.hpp"
+#include "generator/graph_string_utils.hpp"
+#include "generator/port_type_generator_factory.hpp"
 #include "generator/vs_node_noise_generators.hpp"
-#include "gui/model/utils/utils.hpp"
 
 using EnumDescriptor = google::protobuf::EnumDescriptor;
 
@@ -63,14 +64,6 @@ namespace shadergen_visual_shader_generator {
 
 namespace {
 
-inline static std::vector<std::string> split_string_local(const std::string& str, const char& delimiter) {
-  std::vector<std::string> tokens;
-  std::string token;
-  std::istringstream token_stream(str);
-  while (std::getline(token_stream, token, delimiter)) tokens.push_back(token);
-  return tokens;
-}
-
 inline static int get_header_node_id(const std::vector<std::string>& tokens) {
   return std::stoi(tokens.at(1));
 }
@@ -97,7 +90,7 @@ static std::unordered_map<int, int> build_node_id_to_index(const RawVisualShader
   std::unordered_map<int, int> node_id_to_index;
   for (size_t i = 0; i < graph.headers.size(); ++i) {
     const auto& header = graph.headers[i];
-    const auto tokens = split_string_local(header, ';');
+    const auto tokens = shadergen_graph_string_utils::split_string(header, ';');
     const int entity_type = std::stoi(tokens.at(0));
     if (entity_type != 0) continue;
     const int n_id = get_header_node_id(tokens);
@@ -110,7 +103,7 @@ static std::unordered_map<int, std::shared_ptr<IVisualShaderProtoNode>> raw_to_p
   std::unordered_map<int, std::shared_ptr<IVisualShaderProtoNode>> proto_nodes;
 
   for (const auto& header : graph.headers) {
-    const auto tokens = split_string_local(header, ';');
+    const auto tokens = shadergen_graph_string_utils::split_string(header, ';');
     const int entity_type = std::stoi(tokens.at(0));
     CONTINUE_IF_TRUE(entity_type != 0, "Entity type is not a node.");
     const int n_id = get_header_node_id(tokens);
@@ -129,7 +122,7 @@ static std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>> raw_t
   std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>> generators;
 
   for (const auto& header : graph.headers) {
-    const auto tokens = split_string_local(header, ';');
+    const auto tokens = shadergen_graph_string_utils::split_string(header, ';');
     const int entity_type = std::stoi(tokens.at(0));
     CONTINUE_IF_TRUE(entity_type != 0, "Entity type is not a node.");
     const int n_id = get_header_node_id(tokens);
@@ -141,7 +134,7 @@ static std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>> raw_t
 
     switch (oneof_value_field_number) {
       case VisualShader::VisualShaderNode::kInputFieldNumber: {
-        const auto parameter_tokens = split_string_local(parameters.at(0), '=');
+        const auto parameter_tokens = shadergen_graph_string_utils::split_string(parameters.at(0), '=');
         const int field_number = get_param_field_number(parameter_tokens);
         CONTINUE_IF_TRUE(field_number != VisualShaderNodeInput::kTypeFieldNumber, "Wrong field number.");
         const VisualShaderNodeInput::VisualShaderNodeInputType input_type{std::stoi(get_param_value(parameter_tokens))};
@@ -154,7 +147,7 @@ static std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>> raw_t
         break;
       }
       case VisualShader::VisualShaderNode::kFloatConstantFieldNumber: {
-          const auto parameter_tokens = split_string_local(parameters.at(0), '=');
+          const auto parameter_tokens = shadergen_graph_string_utils::split_string(parameters.at(0), '=');
           const int field_number = get_param_field_number(parameter_tokens);
           CONTINUE_IF_TRUE(field_number != VisualShaderNodeFloatConstant::kValueFieldNumber, "Wrong field number.");
           const float value{std::stof(get_param_value(parameter_tokens))};
@@ -163,7 +156,7 @@ static std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>> raw_t
           break;
       }
       case VisualShader::VisualShaderNode::kIntConstantFieldNumber: {
-          const auto parameter_tokens = split_string_local(parameters.at(0), '=');
+          const auto parameter_tokens = shadergen_graph_string_utils::split_string(parameters.at(0), '=');
           const int field_number = get_param_field_number(parameter_tokens);
           CONTINUE_IF_TRUE(field_number != VisualShaderNodeIntConstant::kValueFieldNumber, "Wrong field number.");
           const int value{std::stoi(get_param_value(parameter_tokens))};
@@ -172,7 +165,7 @@ static std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>> raw_t
           break;
       }
       case VisualShader::VisualShaderNode::kUintConstantFieldNumber: {
-          const auto parameter_tokens = split_string_local(parameters.at(0), '=');
+          const auto parameter_tokens = shadergen_graph_string_utils::split_string(parameters.at(0), '=');
           const int field_number = get_param_field_number(parameter_tokens);
           CONTINUE_IF_TRUE(field_number != VisualShaderNodeUIntConstant::kValueFieldNumber, "Wrong field number.");
           const unsigned int value{std::stoul(get_param_value(parameter_tokens))};
@@ -181,7 +174,7 @@ static std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>> raw_t
           break;
       }
       case VisualShader::VisualShaderNode::kBooleanConstantFieldNumber: {
-          const auto parameter_tokens = split_string_local(parameters.at(0), '=');
+          const auto parameter_tokens = shadergen_graph_string_utils::split_string(parameters.at(0), '=');
           const int field_number = get_param_field_number(parameter_tokens);
           CONTINUE_IF_TRUE(field_number != VisualShaderNodeBooleanConstant::kValueFieldNumber, "Wrong field number.");
           const bool value{(bool)std::stoi(get_param_value(parameter_tokens))};
@@ -190,22 +183,22 @@ static std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>> raw_t
           break;
       }
       case VisualShader::VisualShaderNode::kColorConstantFieldNumber: {
-          const auto parameter_tokens = split_string_local(parameters.at(0), '=');
+          const auto parameter_tokens = shadergen_graph_string_utils::split_string(parameters.at(0), '=');
           const int field_number = get_param_field_number(parameter_tokens);
           CONTINUE_IF_TRUE(field_number != VisualShaderNodeColorConstant::kRFieldNumber, "Wrong field number.");
           const float r{std::stof(get_param_value(parameter_tokens))};
 
-          const auto parameter_tokens1 = split_string_local(parameters.at(1), '=');
+          const auto parameter_tokens1 = shadergen_graph_string_utils::split_string(parameters.at(1), '=');
           const int field_number1 = get_param_field_number(parameter_tokens1);
           CONTINUE_IF_TRUE(field_number1 != VisualShaderNodeColorConstant::kGFieldNumber, "Wrong field number.");
           const float g{std::stof(get_param_value(parameter_tokens1))};
 
-          const auto parameter_tokens2 = split_string_local(parameters.at(2), '=');
+          const auto parameter_tokens2 = shadergen_graph_string_utils::split_string(parameters.at(2), '=');
           const int field_number2 = get_param_field_number(parameter_tokens2);
           CONTINUE_IF_TRUE(field_number2 != VisualShaderNodeColorConstant::kBFieldNumber, "Wrong field number.");
           const float b{std::stof(get_param_value(parameter_tokens2))};
 
-          const auto parameter_tokens3 = split_string_local(parameters.at(3), '=');
+          const auto parameter_tokens3 = shadergen_graph_string_utils::split_string(parameters.at(3), '=');
           const int field_number3 = get_param_field_number(parameter_tokens3);
           CONTINUE_IF_TRUE(field_number3 != VisualShaderNodeColorConstant::kAFieldNumber, "Wrong field number.");
           const float a{std::stof(get_param_value(parameter_tokens3))};
@@ -214,12 +207,12 @@ static std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>> raw_t
           break;
       }
       case VisualShader::VisualShaderNode::kVec2ConstantFieldNumber: {
-          const auto parameter_tokens = split_string_local(parameters.at(0), '=');
+          const auto parameter_tokens = shadergen_graph_string_utils::split_string(parameters.at(0), '=');
           const int field_number = get_param_field_number(parameter_tokens);
           CONTINUE_IF_TRUE(field_number != VisualShaderNodeVec2Constant::kXFieldNumber, "Wrong field number.");
           const float x{std::stof(get_param_value(parameter_tokens))};
 
-          const auto parameter_tokens1 = split_string_local(parameters.at(1), '=');
+          const auto parameter_tokens1 = shadergen_graph_string_utils::split_string(parameters.at(1), '=');
           const int field_number1 = get_param_field_number(parameter_tokens1);
           CONTINUE_IF_TRUE(field_number1 != VisualShaderNodeVec2Constant::kYFieldNumber, "Wrong field number.");
           const float y{std::stof(get_param_value(parameter_tokens1))};
@@ -228,17 +221,17 @@ static std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>> raw_t
           break;
       }
       case VisualShader::VisualShaderNode::kVec3ConstantFieldNumber: {
-          const auto parameter_tokens = split_string_local(parameters.at(0), '=');
+          const auto parameter_tokens = shadergen_graph_string_utils::split_string(parameters.at(0), '=');
           const int field_number = get_param_field_number(parameter_tokens);
           CONTINUE_IF_TRUE(field_number != VisualShaderNodeVec3Constant::kXFieldNumber, "Wrong field number.");
           const float x{std::stof(get_param_value(parameter_tokens))};
 
-          const auto parameter_tokens1 = split_string_local(parameters.at(1), '=');
+          const auto parameter_tokens1 = shadergen_graph_string_utils::split_string(parameters.at(1), '=');
           const int field_number1 = get_param_field_number(parameter_tokens1);
           CONTINUE_IF_TRUE(field_number1 != VisualShaderNodeVec3Constant::kYFieldNumber, "Wrong field number.");
           const float y{std::stof(get_param_value(parameter_tokens1))};
 
-          const auto parameter_tokens2 = split_string_local(parameters.at(2), '=');
+          const auto parameter_tokens2 = shadergen_graph_string_utils::split_string(parameters.at(2), '=');
           const int field_number2 = get_param_field_number(parameter_tokens2);
           CONTINUE_IF_TRUE(field_number2 != VisualShaderNodeVec3Constant::kZFieldNumber, "Wrong field number.");
           const float z{std::stof(get_param_value(parameter_tokens2))};
@@ -247,22 +240,22 @@ static std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>> raw_t
           break;
       }
       case VisualShader::VisualShaderNode::kVec4ConstantFieldNumber: {
-          const auto parameter_tokens = split_string_local(parameters.at(0), '=');
+          const auto parameter_tokens = shadergen_graph_string_utils::split_string(parameters.at(0), '=');
           const int field_number = get_param_field_number(parameter_tokens);
           CONTINUE_IF_TRUE(field_number != VisualShaderNodeVec4Constant::kXFieldNumber, "Wrong field number.");
           const float x{std::stof(get_param_value(parameter_tokens))};
 
-          const auto parameter_tokens1 = split_string_local(parameters.at(1), '=');
+          const auto parameter_tokens1 = shadergen_graph_string_utils::split_string(parameters.at(1), '=');
           const int field_number1 = get_param_field_number(parameter_tokens1);
           CONTINUE_IF_TRUE(field_number1 != VisualShaderNodeVec4Constant::kYFieldNumber, "Wrong field number.");
           const float y{std::stof(get_param_value(parameter_tokens1))};
 
-          const auto parameter_tokens2 = split_string_local(parameters.at(2), '=');
+          const auto parameter_tokens2 = shadergen_graph_string_utils::split_string(parameters.at(2), '=');
           const int field_number2 = get_param_field_number(parameter_tokens2);
           CONTINUE_IF_TRUE(field_number2 != VisualShaderNodeVec4Constant::kZFieldNumber, "Wrong field number.");
           const float z{std::stof(get_param_value(parameter_tokens2))};
 
-          const auto parameter_tokens3 = split_string_local(parameters.at(3), '=');
+          const auto parameter_tokens3 = shadergen_graph_string_utils::split_string(parameters.at(3), '=');
           const int field_number3 = get_param_field_number(parameter_tokens3);
           CONTINUE_IF_TRUE(field_number3 != VisualShaderNodeVec4Constant::kWFieldNumber, "Wrong field number.");
           const float w{std::stof(get_param_value(parameter_tokens3))};
@@ -271,7 +264,7 @@ static std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>> raw_t
           break;
       }
       case VisualShader::VisualShaderNode::kFloatOpFieldNumber: {
-          const auto parameter_tokens = split_string_local(parameters.at(0), '=');
+          const auto parameter_tokens = shadergen_graph_string_utils::split_string(parameters.at(0), '=');
           const int field_number = get_param_field_number(parameter_tokens);
           CONTINUE_IF_TRUE(field_number != VisualShaderNodeFloatOp::kOpTypeFieldNumber, "Wrong field number.");
           const VisualShaderNodeFloatOp::VisualShaderNodeFloatOpType op_type{std::stoi(get_param_value(parameter_tokens))};
@@ -280,7 +273,7 @@ static std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>> raw_t
           break;
       }
       case VisualShader::VisualShaderNode::kIntOpFieldNumber: {
-          const auto parameter_tokens = split_string_local(parameters.at(0), '=');
+          const auto parameter_tokens = shadergen_graph_string_utils::split_string(parameters.at(0), '=');
           const int field_number = get_param_field_number(parameter_tokens);
           CONTINUE_IF_TRUE(field_number != VisualShaderNodeIntOp::kOpTypeFieldNumber, "Wrong field number.");
           const VisualShaderNodeIntOp::VisualShaderNodeIntOpType op_type{std::stoi(get_param_value(parameter_tokens))};
@@ -289,7 +282,7 @@ static std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>> raw_t
           break;
       }
       case VisualShader::VisualShaderNode::kUintOpFieldNumber: {
-          const auto parameter_tokens = split_string_local(parameters.at(0), '=');
+          const auto parameter_tokens = shadergen_graph_string_utils::split_string(parameters.at(0), '=');
           const int field_number = get_param_field_number(parameter_tokens);
           CONTINUE_IF_TRUE(field_number != VisualShaderNodeUIntOp::kOpTypeFieldNumber, "Wrong field number.");
           const VisualShaderNodeUIntOp::VisualShaderNodeUIntOpType op_type{std::stoi(get_param_value(parameter_tokens))};
@@ -298,12 +291,12 @@ static std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>> raw_t
           break;
       }
       case VisualShader::VisualShaderNode::kVectorOpFieldNumber: {
-          const auto parameter_tokens = split_string_local(parameters.at(0), '=');
+          const auto parameter_tokens = shadergen_graph_string_utils::split_string(parameters.at(0), '=');
           const int field_number = get_param_field_number(parameter_tokens);
           CONTINUE_IF_TRUE(field_number != VisualShaderNodeVectorOp::kVecTypeFieldNumber, "Wrong field number.");
           const VisualShaderNodeVectorType type{std::stoi(get_param_value(parameter_tokens))};
 
-          const auto parameter_tokens1 = split_string_local(parameters.at(1), '=');
+          const auto parameter_tokens1 = shadergen_graph_string_utils::split_string(parameters.at(1), '=');
           const int field_number1 = get_param_field_number(parameter_tokens1);
           CONTINUE_IF_TRUE(field_number1 != VisualShaderNodeVectorOp::kOpTypeFieldNumber, "Wrong field number.");
           const VisualShaderNodeVectorOp::VisualShaderNodeVectorOpType op_type{std::stoi(get_param_value(parameter_tokens1))};
@@ -312,7 +305,7 @@ static std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>> raw_t
           break;
       }
       case VisualShader::VisualShaderNode::kFloatFuncFieldNumber: {
-          const auto parameter_tokens = split_string_local(parameters.at(0), '=');
+          const auto parameter_tokens = shadergen_graph_string_utils::split_string(parameters.at(0), '=');
           const int field_number = get_param_field_number(parameter_tokens);
           CONTINUE_IF_TRUE(field_number != VisualShaderNodeFloatFunc::kFuncTypeFieldNumber, "Wrong field number.");
           const VisualShaderNodeFloatFunc::VisualShaderNodeFloatFuncType func_type{std::stoi(get_param_value(parameter_tokens))};
@@ -321,7 +314,7 @@ static std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>> raw_t
           break;
       }
       case VisualShader::VisualShaderNode::kIntFuncFieldNumber: {
-          const auto parameter_tokens = split_string_local(parameters.at(0), '=');
+          const auto parameter_tokens = shadergen_graph_string_utils::split_string(parameters.at(0), '=');
           const int field_number = get_param_field_number(parameter_tokens);
           CONTINUE_IF_TRUE(field_number != VisualShaderNodeIntFunc::kFuncTypeFieldNumber, "Wrong field number.");
           const VisualShaderNodeIntFunc::VisualShaderNodeIntFuncType func_type{std::stoi(get_param_value(parameter_tokens))};
@@ -330,7 +323,7 @@ static std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>> raw_t
           break;
       }
       case VisualShader::VisualShaderNode::kUintFuncFieldNumber: {
-          const auto parameter_tokens = split_string_local(parameters.at(0), '=');
+          const auto parameter_tokens = shadergen_graph_string_utils::split_string(parameters.at(0), '=');
           const int field_number = get_param_field_number(parameter_tokens);
           CONTINUE_IF_TRUE(field_number != VisualShaderNodeUIntFunc::kFuncTypeFieldNumber, "Wrong field number.");
           const VisualShaderNodeUIntFunc::VisualShaderNodeUIntFuncType func_type{std::stoi(get_param_value(parameter_tokens))};
@@ -339,12 +332,12 @@ static std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>> raw_t
           break;
       }
       case VisualShader::VisualShaderNode::kVectorFuncFieldNumber: {
-          const auto parameter_tokens = split_string_local(parameters.at(0), '=');
+          const auto parameter_tokens = shadergen_graph_string_utils::split_string(parameters.at(0), '=');
           const int field_number = get_param_field_number(parameter_tokens);
           CONTINUE_IF_TRUE(field_number != VisualShaderNodeVectorFunc::kVecTypeFieldNumber, "Wrong field number.");
           const VisualShaderNodeVectorType type{std::stoi(get_param_value(parameter_tokens))};
 
-          const auto parameter_tokens1 = split_string_local(parameters.at(1), '=');
+          const auto parameter_tokens1 = shadergen_graph_string_utils::split_string(parameters.at(1), '=');
           const int field_number1 = get_param_field_number(parameter_tokens1);
           CONTINUE_IF_TRUE(field_number1 != VisualShaderNodeVectorFunc::kFuncTypeFieldNumber, "Wrong field number.");
           const VisualShaderNodeVectorFunc::VisualShaderNodeVectorFuncType func_type{std::stoi(get_param_value(parameter_tokens1))};
@@ -353,7 +346,7 @@ static std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>> raw_t
           break;
       }
       case VisualShader::VisualShaderNode::kValueNoiseFieldNumber: {
-          const auto parameter_tokens = split_string_local(parameters.at(0), '=');
+          const auto parameter_tokens = shadergen_graph_string_utils::split_string(parameters.at(0), '=');
           const int field_number = get_param_field_number(parameter_tokens);
           CONTINUE_IF_TRUE(field_number != VisualShaderNodeValueNoise::kScaleFieldNumber, "Wrong field number.");
           const float scale{std::stof(get_param_value(parameter_tokens))};
@@ -362,7 +355,7 @@ static std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>> raw_t
           break;
       }
       case VisualShader::VisualShaderNode::kPerlinNoiseFieldNumber: {
-          const auto parameter_tokens = split_string_local(parameters.at(0), '=');
+          const auto parameter_tokens = shadergen_graph_string_utils::split_string(parameters.at(0), '=');
           const int field_number = get_param_field_number(parameter_tokens);
           CONTINUE_IF_TRUE(field_number != VisualShaderNodePerlinNoise::kScaleFieldNumber, "Wrong field number.");
           const float scale{std::stof(get_param_value(parameter_tokens))};
@@ -371,12 +364,12 @@ static std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>> raw_t
           break;
       }
       case VisualShader::VisualShaderNode::kVoronoiNoiseFieldNumber: {
-          const auto parameter_tokens = split_string_local(parameters.at(0), '=');
+          const auto parameter_tokens = shadergen_graph_string_utils::split_string(parameters.at(0), '=');
           const int field_number = get_param_field_number(parameter_tokens);
           CONTINUE_IF_TRUE(field_number != VisualShaderNodeVoronoiNoise::kCellDensityFieldNumber, "Wrong field number.");
           const float cell_density{std::stof(get_param_value(parameter_tokens))};
 
-          const auto parameter_tokens1 = split_string_local(parameters.at(1), '=');
+          const auto parameter_tokens1 = shadergen_graph_string_utils::split_string(parameters.at(1), '=');
           const int field_number1 = get_param_field_number(parameter_tokens1);
           CONTINUE_IF_TRUE(field_number1 != VisualShaderNodeVoronoiNoise::kAngleOffsetFieldNumber, "Wrong field number.");
           const float angle_offset{std::stof(get_param_value(parameter_tokens1))};
@@ -429,7 +422,7 @@ static std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>> raw_t
           break;
       }
       case VisualShader::VisualShaderNode::kSwitchNodeFieldNumber: {
-          const auto parameter_tokens = split_string_local(parameters.at(0), '=');
+          const auto parameter_tokens = shadergen_graph_string_utils::split_string(parameters.at(0), '=');
           const int field_number = get_param_field_number(parameter_tokens);
           CONTINUE_IF_TRUE(field_number != VisualShaderNodeSwitch::kTypeFieldNumber, "Wrong field number.");
           const VisualShaderNodeSwitch::VisualShaderNodeSwitchType type{std::stoi(get_param_value(parameter_tokens))};
@@ -438,7 +431,7 @@ static std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>> raw_t
           break;
       }
       case VisualShader::VisualShaderNode::kIsFieldNumber: {
-          const auto parameter_tokens = split_string_local(parameters.at(0), '=');
+          const auto parameter_tokens = shadergen_graph_string_utils::split_string(parameters.at(0), '=');
           const int field_number = get_param_field_number(parameter_tokens);
           CONTINUE_IF_TRUE(field_number != VisualShaderNodeIs::kFuncFieldNumber, "Wrong field number.");
           const VisualShaderNodeIs::VisualShaderNodeIsFunction func{std::stoi(get_param_value(parameter_tokens))};
@@ -447,17 +440,17 @@ static std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>> raw_t
           break;
       }
       case VisualShader::VisualShaderNode::kCompareFieldNumber: {
-          const auto parameter_tokens = split_string_local(parameters.at(0), '=');
+          const auto parameter_tokens = shadergen_graph_string_utils::split_string(parameters.at(0), '=');
           const int field_number = get_param_field_number(parameter_tokens);
           CONTINUE_IF_TRUE(field_number != VisualShaderNodeCompare::kTypeFieldNumber, "Wrong field number.");
           const VisualShaderNodeCompare::VisualShaderNodeCompareType type{std::stoi(get_param_value(parameter_tokens))};
 
-          const auto parameter_tokens1 = split_string_local(parameters.at(1), '=');
+          const auto parameter_tokens1 = shadergen_graph_string_utils::split_string(parameters.at(1), '=');
           const int field_number1 = get_param_field_number(parameter_tokens1);
           CONTINUE_IF_TRUE(field_number1 != VisualShaderNodeCompare::kFuncFieldNumber, "Wrong field number.");
           const VisualShaderNodeCompare::VisualShaderNodeCompareFunction func{std::stoi(get_param_value(parameter_tokens1))};
 
-          const auto parameter_tokens2 = split_string_local(parameters.at(2), '=');
+          const auto parameter_tokens2 = shadergen_graph_string_utils::split_string(parameters.at(2), '=');
           const int field_number2 = get_param_field_number(parameter_tokens2);
           CONTINUE_IF_TRUE(field_number2 != VisualShaderNodeCompare::kCondFieldNumber, "Wrong field number.");
           const VisualShaderNodeCompare::VisualShaderNodeCompareCondition cond{std::stoi(get_param_value(parameter_tokens2))};
@@ -478,8 +471,8 @@ static std::unordered_map<int, std::shared_ptr<VisualShaderNodePortTypeGenerator
   std::unordered_map<int, std::shared_ptr<VisualShaderNodePortTypeGenerator>> port_type_generators;
 
   for (const auto& header : graph.headers) {
-    port_type_generators[get_header_node_id(split_string_local(header, ';'))] = shadergen_utils::get_port_type_generator(header);
-    CHECK_PARAM_NULLPTR_NON_VOID(port_type_generators[get_header_node_id(split_string_local(header, ';'))], port_type_generators, "Proto node is nullptr.");
+    port_type_generators[get_header_node_id(shadergen_graph_string_utils::split_string(header, ';'))] = shadergen_utils::get_port_type_generator(header);
+    CHECK_PARAM_NULLPTR_NON_VOID(port_type_generators[get_header_node_id(shadergen_graph_string_utils::split_string(header, ';'))], port_type_generators, "Proto node is nullptr.");
   }
 
   return port_type_generators;
@@ -493,22 +486,22 @@ static std::pair<std::map<ConnectionKey, std::shared_ptr<Connection>>, std::map<
 
   const size_t N = graph.headers.size();
   for (size_t i = 0; i < N; ++i) {
-    const auto i_tokens = split_string_local(graph.headers[i], ';');
+    const auto i_tokens = shadergen_graph_string_utils::split_string(graph.headers[i], ';');
     if (std::stoi(i_tokens.at(0)) != 0) continue;
     const int from_node_id = get_header_node_id(i_tokens);
 
     for (size_t j = 0; j < N; ++j) {
       if (i == j) continue;
-      const auto j_tokens = split_string_local(graph.headers[j], ';');
+      const auto j_tokens = shadergen_graph_string_utils::split_string(graph.headers[j], ';');
       if (std::stoi(j_tokens.at(0)) != 0) continue;
       const int to_node_id = get_header_node_id(j_tokens);
 
       const std::string& cell = graph.adj_matrix[i][j];
       if (cell.empty()) continue;
 
-      const auto connection_groups = split_string_local(cell, ';');
+      const auto connection_groups = shadergen_graph_string_utils::split_string(cell, ';');
       for (const auto& group : connection_groups) {
-        const auto ports = split_string_local(group, ',');
+        const auto ports = shadergen_graph_string_utils::split_string(group, ',');
         if (ports.size() < 2) continue;
 
         std::shared_ptr<Connection> c = std::make_shared<Connection>();
