@@ -65,7 +65,6 @@ Write-Host "Configuring Abseil with prefix: $install_dir"
 
 # Determine the CMake flag for shared library builds based on link_type.
 $shared_libs = Get-CiSharedLibs -LinkType $link_type
-if ($shared_libs -eq "ON") { $static_libs = "OFF" } else { $static_libs = "ON" }
 
 # Base configure args
 $configureArgs = @(
@@ -78,11 +77,17 @@ $configureArgs = @(
     "-D", "BUILD_TESTING=OFF",
     "-D", "ABSL_ENABLE_INSTALL=ON",
     "-D", "ABSL_PROPAGATE_CXX_STD=ON",
-    "-D", "ABSL_MSVC_STATIC_RUNTIME='$static_libs'",
     "-D", "ABSL_BUILD_TESTING=OFF",
     "-D", "ABSL_BUILD_TEST_HELPERS=OFF",
     "-D", "ABSL_BUILD_MONOLITHIC_SHARED_LIBS='$shared_libs'"
 )
+
+# Add function section flags for shared library builds.
+if ($shared_libs -eq "ON") {
+    $configureArgs += "-D", "ABSL_MSVC_STATIC_RUNTIME=OFF"
+} else {
+    $configureArgs += "-D", "ABSL_MSVC_STATIC_RUNTIME=ON"
+}
 
 # Build Abseil
 Enter-CiBuildDir -SrcDir $abslSrcDir
