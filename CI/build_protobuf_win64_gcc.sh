@@ -73,17 +73,22 @@ configureArgs=(
     "-D" "CMAKE_PREFIX_PATH='$absl_dir'"
     "-D" "CMAKE_BUILD_TYPE='$build_type'"
     "-D" "CMAKE_CXX_STANDARD=17"
-    # PATCH: GNU ld on MinGW resolves a weak symbol reference to the *section base*
-    # instead of the symbol offset. upb's generated minitables register
-    # themselves through a weak `__attribute__((constructor))` function
-    # (upb/port/def.inc, UPB_CONSTRUCTOR), so without one section per function
-    # the .ctors entry points at whatever function happens to start the .text
-    # section and protoc.exe crashes in __do_global_ctors before main().
-    "-D" "CMAKE_C_FLAGS=-ffunction-sections"
     "-D" "BUILD_SHARED_LIBS='$shared_libs'"
     "-D" "protobuf_BUILD_SHARED_LIBS='$shared_libs'"
     "-D" "CMAKE_INSTALL_PREFIX='$install_dir'"
 )
+
+# PATCH (Dynamic builds only): GNU ld on MinGW resolves a weak symbol reference to the
+# *section base* instead of the symbol offset. upb's generated minitables register
+# themselves through a weak `__attribute__((constructor))` function
+# (upb/port/def.inc, UPB_CONSTRUCTOR), so without one section per function
+# the .ctors entry points at whatever function happens to start the .text
+# section and protoc.exe crashes in __do_global_ctors before main().
+# Static builds do not exhibit the crash, so the patch is only applied when
+# shared libraries are requested.
+if [ "$shared_libs" = "ON" ]; then
+    configureArgs+=("-D" "CMAKE_C_FLAGS=-ffunction-sections")
+fi
 
 ci_print_configure_args "${configureArgs[@]}"
 
