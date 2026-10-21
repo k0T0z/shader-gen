@@ -152,7 +152,7 @@ class VisualShaderEditor : public QWidget {
   void on_stop_matching_button_pressed();
   void on_start_matching_timer_timeout();
   void on_stop_matching_timer_timeout();
-  void on_refresh_coordinates_button_pressed();
+  void on_to_csv_button_pressed();
 
  private:
   QHBoxLayout* layout;
@@ -181,7 +181,6 @@ class VisualShaderEditor : public QWidget {
   QPushButton* load_image_button;
   QPushButton* match_image_button;
 
-  QPushButton* refresh_coordinates_button;
   QPushButton* to_csv_button;
 
   QAction* create_node_action;
