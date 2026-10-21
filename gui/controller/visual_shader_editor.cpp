@@ -27,6 +27,11 @@
 
 #include "gui/controller/visual_shader_editor.hpp"
 
+#include <QClipboard>
+#include <QFile>
+#include <QFileDialog>
+#include <QGuiApplication>
+
 #include <sstream>
 #include <unordered_map>
 #include "error_macros.hpp"
@@ -104,6 +109,51 @@ inline static RawVisualShaderGraph decode_encoded_graph_to_raw(const std::string
     return graph;
 }
 
+inline static std::string escape_csv_cell(const std::string& value) {
+    const bool needs_quotes{value.find_first_of(",\"\n\r") != std::string::npos};
+    if (!needs_quotes) return value;
+
+    std::string escaped;
+    escaped.reserve(value.size() + 2);
+    escaped.push_back('"');
+
+    for (const char ch : value) {
+        if (ch == '"') escaped += "\"\"";
+        else escaped.push_back(ch);
+    }
+
+    escaped.push_back('"');
+    return escaped;
+}
+
+inline static std::string raw_graph_to_csv(const RawVisualShaderGraph& graph) {
+    if (graph.headers.empty()) return "";
+
+    std::ostringstream oss;
+    oss << ',';
+    for (std::size_t column = 0; column < graph.headers.size(); ++column) {
+        if (column != 0) oss << ',';
+        oss << escape_csv_cell(graph.headers[column]);
+    }
+    oss << '\n';
+
+    for (std::size_t row = 0; row < graph.headers.size(); ++row) {
+        oss << escape_csv_cell(graph.headers[row]);
+
+        const std::vector<std::string> row_values{
+            row < graph.adj_matrix.size() ? graph.adj_matrix[row] : std::vector<std::string>{}};
+
+        for (std::size_t column = 0; column < graph.headers.size(); ++column) {
+            oss << ',';
+            if (column < row_values.size()) oss << escape_csv_cell(row_values[column]);
+        }
+
+        if (row + 1 < graph.headers.size()) oss << '\n';
+    }
+
+    return oss.str();
+}
+
 }  // namespace
 
 using VisualShader = gui::model::schema::VisualShader;
@@ -154,7 +204,6 @@ VisualShaderEditor::VisualShaderEditor(MessageModel* model, QWidget* parent)
       parameters_editor(nullptr),
       start_matching_button(nullptr),
       stop_matching_button(nullptr),
-      refresh_coordinates_button(nullptr),
       to_csv_button(nullptr),
       matching_type_combo_box(nullptr),
       start_matching_timer(nullptr),
@@ -374,13 +423,12 @@ void VisualShaderEditor::init() {
   matching_type_combo_box->setCurrentIndex(0);
   menu_bar->addWidget(matching_type_combo_box);
 
-  refresh_coordinates_button = new QPushButton("Refresh Coordinates", scene_layer);
-  refresh_coordinates_button->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
-  refresh_coordinates_button->setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
-  refresh_coordinates_button->setToolTip("Recompute the position of every node using the Reingold-Tilford tree layout");
-  menu_bar->addWidget(refresh_coordinates_button);
-  QObject::connect(refresh_coordinates_button, &QPushButton::pressed, this,
-                   &VisualShaderEditor::on_refresh_coordinates_button_pressed);
+  to_csv_button = new QPushButton("Raw Graph CSV", scene_layer);
+  to_csv_button->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
+  to_csv_button->setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
+  to_csv_button->setToolTip("Preview the RawVisualShaderGraph as CSV, then copy it or save it as a text file");
+  menu_bar->addWidget(to_csv_button);
+  QObject::connect(to_csv_button, &QPushButton::pressed, this, &VisualShaderEditor::on_to_csv_button_pressed);
 
   start_matching_timer = new QTimer(this);
   stop_matching_timer = new QTimer(this);
@@ -768,7 +816,71 @@ void VisualShaderEditor::on_stop_matching_timer_timeout() {
   if (start_matching_timer->isActive()) start_matching_timer->stop();
 }
 
-void VisualShaderEditor::on_refresh_coordinates_button_pressed() { refresh_node_coordinates(); }
+void VisualShaderEditor::on_to_csv_button_pressed() {
+  const RawVisualShaderGraph graph{shadergen_gui_adapters::to_raw_graph(nodes_model, connections_model)};
+  const QString csv_text{QString::fromStdString(raw_graph_to_csv(graph))};
+
+  QDialog csv_dialog(this);
+  csv_dialog.setWindowTitle("RawVisualShaderGraph CSV");
+  csv_dialog.setContentsMargins(0, 0, 0, 0);
+  csv_dialog.setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
+  csv_dialog.resize(720, 420);
+
+  QVBoxLayout* csv_dialog_layout = new QVBoxLayout(&csv_dialog);
+  csv_dialog_layout->setContentsMargins(8, 8, 8, 8);
+  csv_dialog_layout->setSpacing(6);
+
+  QPlainTextEdit* csv_previewer = new QPlainTextEdit(&csv_dialog);
+  csv_previewer->setPlainText(csv_text);
+  csv_previewer->setReadOnly(true);
+  csv_previewer->setLineWrapMode(QPlainTextEdit::NoWrap);
+  csv_previewer->setWordWrapMode(QTextOption::NoWrap);
+  csv_previewer->setMinimumSize(640, 320);
+
+  QFont mono_font("Courier New");
+  mono_font.setStyleHint(QFont::Monospace);
+  csv_previewer->setFont(mono_font);
+
+  QHBoxLayout* csv_button_layout = new QHBoxLayout();
+  csv_button_layout->setContentsMargins(0, 0, 0, 0);
+
+  QPushButton* copy_button = new QPushButton("Copy CSV", &csv_dialog);
+  QPushButton* save_button = new QPushButton("Save as TXT", &csv_dialog);
+  QPushButton* close_button = new QPushButton("Close", &csv_dialog);
+
+  QObject::connect(copy_button, &QPushButton::pressed, [csv_text]() {
+    QClipboard* clipboard{QGuiApplication::clipboard()};
+    if (clipboard != nullptr) clipboard->setText(csv_text);
+  });
+
+  QObject::connect(save_button, &QPushButton::pressed, this, [this, csv_text]() {
+    const QString file_name{QFileDialog::getSaveFileName(
+        this, "Save RawVisualShaderGraph CSV", "raw_visual_shader_graph.txt",
+        "Text Files (*.txt);;All Files (*)")};
+    if (file_name.isEmpty()) return;
+
+    QFile file(file_name);
+    if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+      ERROR_PRINT("Failed to open file for writing: " + file_name.toStdString());
+      return;
+    }
+
+    file.write(csv_text.toUtf8());
+    file.close();
+  });
+
+  QObject::connect(close_button, &QPushButton::pressed, &csv_dialog, &QDialog::accept);
+
+  csv_button_layout->addWidget(copy_button);
+  csv_button_layout->addWidget(save_button);
+  csv_button_layout->addStretch();
+  csv_button_layout->addWidget(close_button);
+
+  csv_dialog_layout->addWidget(csv_previewer);
+  csv_dialog_layout->addLayout(csv_button_layout);
+
+  csv_dialog.exec();
+}
 
 std::vector<std::string> VisualShaderEditor::parse_node_category_path(const std::string& n_category_path) {
   std::vector<std::string> tokens;
@@ -3547,4 +3659,3 @@ VisualShaderNodeFieldSpinBox::VisualShaderNodeFieldSpinBox(const QVariant& initi
 void VisualShaderNodeFieldSpinBox::on_value_changed(const int& value) {
   Q_EMIT node_update_requested(n_id, field_number, value);
 }
-
