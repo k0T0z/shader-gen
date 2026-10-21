@@ -47,7 +47,6 @@ jobs:
       cancel-in-progress: true
     strategy:
       fail-fast: false
-      max-parallel: 1 # Both targets publish assets to the same release tag; serialize to avoid a create-release race
       matrix:
         include:
           - name: Windows MSVC (static)
@@ -60,36 +59,12 @@ jobs:
             qt_invoke: './CI/build_qt6_win64.ps1'
             generator: '-G "Visual Studio 17 2022" -A x64'
 
-          - name: Windows GCC (MSYS2, static)
-            os: windows-2022
-            compiler: msys2
-            shell: msys2 {0}
-            path_var: $GITHUB_PATH
-            parallel: '$(nproc)'
-            qt_pre: ''
-            qt_invoke: 'bash ./CI/build_qt6_win64_gcc.sh'
-            generator: '-G "Unix Makefiles" -DCMAKE_MAKE_PROGRAM=mingw32-make'
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           ref: 'master-qt6'
           submodules: recursive
-
-      - name: Setup MSYS2
-        if: matrix.compiler == 'msys2'
-        uses: msys2/setup-msys2@v2
-        with:
-          update: true
-          install: >-
-            mingw-w64-x86_64-gcc
-            mingw-w64-x86_64-make
-            mingw-w64-x86_64-cmake
-            mingw-w64-x86_64-python
-            mingw-w64-x86_64-postgresql
-            git
-          path-type: inherit # https://github.com/msys2/setup-msys2/tree/main?tab=readme-ov-file#path-type
 
       - name: Cache Qt6
         id: cache-qt6
@@ -118,19 +93,12 @@ jobs:
             absl-static-${{ matrix.compiler }}-${{ runner.os }}-
 
       - name: Build Abseil (MSVC)
-        if: matrix.compiler == 'msvc' && steps.cache-absl.outputs.cache-hit != 'true'
+        if: steps.cache-absl.outputs.cache-hit != 'true'
         shell: pwsh
         run: |
           Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
           New-Item -ItemType Directory -Path "${{ github.workspace }}/absl-lib-static" -Force
           .\CI\build_absl_win64.ps1 Release Static "${{ github.workspace }}/absl-lib-static" "${{ env.ABSL_VERSION }}"
-
-      - name: Build Abseil (MSYS2)
-        if: matrix.compiler == 'msys2' && steps.cache-absl.outputs.cache-hit != 'true'
-        shell: msys2 {0}
-        run: |
-          mkdir -p "${{ github.workspace }}/absl-lib-static"
-          bash ./CI/build_absl_win64_gcc.sh Release Static "${{ github.workspace }}/absl-lib-static" "${{ env.ABSL_VERSION }}"
 
       - name: Cache Protobuf
         id: cache-protobuf
@@ -143,19 +111,12 @@ jobs:
             protobuf-static-${{ matrix.compiler }}-${{ runner.os }}-
 
       - name: Build Protobuf (MSVC)
-        if: matrix.compiler == 'msvc' && steps.cache-protobuf.outputs.cache-hit != 'true'
+        if: steps.cache-protobuf.outputs.cache-hit != 'true'
         shell: pwsh
         run: |
           Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
           New-Item -ItemType Directory -Path "${{ github.workspace }}/protobuf-lib-static" -Force
           .\CI\build_protobuf_win64.ps1 Release Static "${{ github.workspace }}/protobuf-lib-static" "${{ env.PROTOBUF_VERSION }}" "${{ github.workspace }}/absl-lib-static"
-
-      - name: Build Protobuf (MSYS2)
-        if: matrix.compiler == 'msys2' && steps.cache-protobuf.outputs.cache-hit != 'true'
-        shell: msys2 {0}
-        run: |
-          mkdir -p "${{ github.workspace }}/protobuf-lib-static"
-          bash ./CI/build_protobuf_win64_gcc.sh Release Static "${{ github.workspace }}/protobuf-lib-static" "${{ env.PROTOBUF_VERSION }}" "${{ github.workspace }}/absl-lib-static"
 
       - name: Populate PATH for 'windeployqt'
         run: echo "${{ github.workspace }}/qt6-lib-static/bin" >> ${{ matrix.path_var }}
@@ -168,7 +129,7 @@ jobs:
 
       - name: Create portable package
         working-directory: build
-        run: cpack --config CPackConfig.cmake -G ZIP --verbose -C Release
+        run: cpack --config CPackConfig.cmake -C Release --verbose
 
       - name: Upload Release
         uses: softprops/action-gh-release@v2
