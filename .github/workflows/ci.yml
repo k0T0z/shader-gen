@@ -68,7 +68,7 @@ jobs:
             parallel: $env:NUMBER_OF_PROCESSORS
             qt_pre: 'Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass'
             qt_invoke: './CI/build_qt6_win64.ps1'
-            generator: '-G "Visual Studio 17 2022" -A x64 -DCMAKE_PREFIX_PATH="${{ github.workspace }}/qt6-lib/lib/cmake;${{ github.workspace }}/absl-lib/lib/cmake;${{ github.workspace }}/protobuf-lib/lib/cmake"'
+            generator: '-G "Visual Studio 17 2022" -A x64'
 
           - name: Windows GCC (MSYS2)
             os: windows-2022
@@ -79,7 +79,7 @@ jobs:
             parallel: '$(nproc)'
             qt_pre: ''
             qt_invoke: 'bash ./CI/build_qt6_win64_gcc.sh'
-            generator: '-G "Unix Makefiles" -DCMAKE_MAKE_PROGRAM=mingw32-make -DCMAKE_PREFIX_PATH="${{ github.workspace }}/qt6-lib/lib/cmake;${{ github.workspace }}/absl-lib/lib/cmake;${{ github.workspace }}/protobuf-lib/lib/cmake"'
+            generator: '-G "Unix Makefiles" -DCMAKE_MAKE_PROGRAM=mingw32-make'
 
           - name: Ubuntu GCC
             os: ubuntu-latest
@@ -212,7 +212,7 @@ jobs:
           echo "${{ github.workspace }}/${{ matrix.bin_dir }}" >> ${{ matrix.path_var }}
 
       - name: Configure CMake
-        run: cmake -B build ${{ matrix.generator }} -DSHADER_GEN_BUILD_TESTS=ON -DBUILD_SHARED_LIBS=ON
+        run: cmake -B build ${{ matrix.generator }} -DCMAKE_PREFIX_PATH="${{ github.workspace }}/qt6-lib;${{ github.workspace }}/absl-lib;${{ github.workspace }}/protobuf-lib" -DSHADER_GEN_BUILD_TESTS=ON -DBUILD_SHARED_LIBS=ON
 
       - name: Build shader-gen
         run: cmake --build build --config Debug --parallel ${{ matrix.parallel }}
