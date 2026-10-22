@@ -35,7 +35,6 @@
 #include <memory>
 #include <utility>
 
-#include "generator/raw_visual_shader_graph.hpp"
 #include "generator/visual_shader_node_generators.hpp"
 #include "generator/visual_shader_node_port_type_generator.hpp"
 #include "generator/utils/utils.hpp"
@@ -51,10 +50,16 @@ struct Connection {
   ConnectionKey to;
 };
 
-bool generate_shader(const RawVisualShaderGraph& graph, std::string& code_buffer) noexcept;
+/**
+ * @brief Generates the GLSL code for the given raw graph string.
+ *
+ * The graph is a comma separated list of entities where every entity is semicolon separated:
+ *   - Nodes:       "0;<node_id>;<oneof_value_field_number>;<field_number>=<value>;..."
+ *   - Connections: "1;<connection_id>;<from_node_id>;<from_port_index>;<to_node_id>;<to_port_index>"
+ */
+bool generate_shader(const std::string& graph, std::string& code_buffer) noexcept;
 
-std::string generate_preview_shader(const RawVisualShaderGraph& graph,
-                                     const int& node_id, const int& port) noexcept;
+std::string generate_preview_shader(const std::string& graph, const int& node_id, const int& port) noexcept;
 }  // namespace shadergen_visual_shader_generator
 
 #endif  // ENIGMA_VISUAL_SHADER_GENERATOR_HPP

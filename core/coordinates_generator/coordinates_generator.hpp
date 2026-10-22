@@ -33,9 +33,8 @@
 
 #include <QPointF>
 
+#include <string>
 #include <unordered_map>
-
-#include "generator/raw_visual_shader_graph.hpp"
 
 namespace shadergen_coordinates_generator {
 
@@ -47,6 +46,11 @@ inline constexpr double DEFAULT_SIBLING_SPACING = 200.0;  // Minimum distance be
  * @brief Assigns a coordinate to every node of the given raw graph using the
  *        Reingold-Tilford algorithm.
  *
+ * The graph is a comma separated list of entities where every entity is
+ * semicolon separated:
+ *   - Nodes:       "0;<node_id>;<oneof_value_field_number>;<field_number>=<value>;..."
+ *   - Connections: "1;<connection_id>;<from_node_id>;<from_port_index>;<to_node_id>;<to_port_index>"
+ *
  * The graph is reduced to a rooted spanning tree oriented towards the shader
  * output: a node's children are the nodes that feed it and the nodes without an
  * outgoing edge (e.g. the output node) are used as roots, so the drawing reads
@@ -57,13 +61,13 @@ inline constexpr double DEFAULT_SIBLING_SPACING = 200.0;  // Minimum distance be
  * drawing is a tidy, non-overlapping tree. Independent trees (disconnected
  * components) are stacked vertically.
  *
- * @param graph           The raw visual shader graph to lay out.
+ * @param graph           The raw visual shader graph string to lay out.
  * @param level_spacing   Horizontal distance between two consecutive levels.
  * @param sibling_spacing Minimum vertical distance between sibling subtrees.
  *
  * @return A map from node id to its assigned coordinate.
  */
-std::unordered_map<int, QPointF> generate_coordinates(const RawVisualShaderGraph& graph,
+std::unordered_map<int, QPointF> generate_coordinates(const std::string& graph,
                                                       double level_spacing = DEFAULT_LEVEL_SPACING,
                                                       double sibling_spacing = DEFAULT_SIBLING_SPACING);
 

@@ -39,34 +39,26 @@ TEST(VisualShaderGeneratorTest, TestGenerateShader) {
 
   int output_node_id{0}, time_node_id{1}, sin_node_id{2}, div_node_id{3}, uv_node_id{4}, value_noise_node_id{5}, sub_node_id{6}, round_node_id{7};
 
-  RawVisualShaderGraph graph;
-  graph.headers.resize(8);
-  graph.headers[0] = "0;0;3";                                    // Output (oneof=3): id=0, no params
-  graph.headers[1] = "0;1;2;1=2";                                // Input (oneof=2): id=1, type=2 (TIME)
-  graph.headers[2] = "0;2;16;1=1";                               // FloatFunc (oneof=16): id=2, func_type=1 (SIN)
-  graph.headers[3] = "0;3;12;1=4";                               // FloatOp (oneof=12): id=3, op_type=4 (DIV)
-  graph.headers[4] = "0;4;2;1=1";                                // Input (oneof=2): id=4, type=1 (UV)
-  graph.headers[5] = "0;5;20;1=100.000000";                      // ValueNoise (oneof=20): id=5, scale=100.0
-  graph.headers[6] = "0;6;12;1=2";                               // FloatOp (oneof=12): id=6, op_type=2 (SUB)
-  graph.headers[7] = "0;7;16;1=16";                              // FloatFunc (oneof=16): id=7, func_type=16 (ROUND)
-
-  const std::size_t N{8};
-  graph.adj_matrix.assign(N, std::vector<std::string>(N, ""));
-
-  // c1: time(1) output 0 -> sin(2) input 0  =>  [1][2] = "0,0"
-  graph.adj_matrix[1][2] = "0,0";
-  // c2: sin(2) output 0 -> div(3) input 0  =>  [2][3] = "0,0"
-  graph.adj_matrix[2][3] = "0,0";
-  // c3: div(3) output 0 -> sub(6) input 1  =>  [3][6] = "0,1"
-  graph.adj_matrix[3][6] = "0,1";
-  // c4: uv(4) output 0 -> value_noise(5) input 0  =>  [4][5] = "0,0"
-  graph.adj_matrix[4][5] = "0,0";
-  // c5: value_noise(5) output 0 -> sub(6) input 0  =>  [5][6] = "0,0"
-  graph.adj_matrix[5][6] = "0,0";
-  // c6: sub(6) output 0 -> round(7) input 0  =>  [6][7] = "0,0"
-  graph.adj_matrix[6][7] = "0,0";
-  // c7: round(7) output 0 -> output(0) input 0  =>  [7][0] = "0,0"
-  graph.adj_matrix[7][0] = "0,0";
+  // Raw graph string: comma separated entities, semicolon separated tokens.
+  // Nodes:       "0;<node_id>;<oneof_value_field_number>;<field_number>=<value>;..."
+  // Connections: "1;<connection_id>;<from_node_id>;<from_port_index>;<to_node_id>;<to_port_index>"
+  const std::string graph{
+      "0;0;3,"                // Output (oneof=3): id=0, no params
+      "0;1;2;1=2,"            // Input (oneof=2): id=1, type=2 (TIME)
+      "0;2;16;1=1,"           // FloatFunc (oneof=16): id=2, func_type=1 (SIN)
+      "0;3;12;1=4,"           // FloatOp (oneof=12): id=3, op_type=4 (DIV)
+      "0;4;2;1=1,"            // Input (oneof=2): id=4, type=1 (UV)
+      "0;5;20;1=100.000000,"  // ValueNoise (oneof=20): id=5, scale=100.0
+      "0;6;12;1=2,"           // FloatOp (oneof=12): id=6, op_type=2 (SUB)
+      "0;7;16;1=16,"          // FloatFunc (oneof=16): id=7, func_type=16 (ROUND)
+      "1;0;1;0;2;0,"          // c1: time(1) output 0 -> sin(2) input 0
+      "1;1;2;0;3;0,"          // c2: sin(2) output 0 -> div(3) input 0
+      "1;2;3;0;6;1,"          // c3: div(3) output 0 -> sub(6) input 1
+      "1;3;4;0;5;0,"          // c4: uv(4) output 0 -> value_noise(5) input 0
+      "1;4;5;0;6;0,"          // c5: value_noise(5) output 0 -> sub(6) input 0
+      "1;5;6;0;7;0,"          // c6: sub(6) output 0 -> round(7) input 0
+      "1;6;7;0;0;0"           // c7: round(7) output 0 -> output(0) input 0
+  };
 
   auto start_time {std::chrono::high_resolution_clock::now()};
 

@@ -37,6 +37,8 @@
 #include "generator/port_type_generator_factory.hpp"
 #include "generator/vs_node_noise_generators.hpp"
 
+using namespace shadergen_graph_string_utils;
+
 using EnumDescriptor = google::protobuf::EnumDescriptor;
 
 const std::string license_notices = 
@@ -64,53 +66,34 @@ namespace shadergen_visual_shader_generator {
 
 namespace {
 
-inline static int get_header_node_id(const std::vector<std::string>& tokens) {
-  return std::stoi(tokens.at(1));
-}
+/**
+ * @brief Returns the entities of the raw graph string whose leading type token equals @p entity_type.
+ *
+ * The graph string is a comma separated list of entities where every entity is semicolon separated.
+ */
+static std::vector<std::string> get_entities_of_type(const std::string& graph, const int& entity_type) {
+  std::vector<std::string> entities;
 
-inline static int get_header_oneof_value_field_number(const std::vector<std::string>& tokens) {
-  return std::stoi(tokens.at(2));
-}
-
-inline static std::vector<std::string> get_header_parameters(const std::vector<std::string>& tokens) {
-  std::vector<std::string> parameters;
-  parameters.insert(parameters.end(), tokens.begin() + 3, tokens.end());
-  return parameters;
-}
-
-inline static int get_param_field_number(const std::vector<std::string>& param_tokens) {
-  return std::stoi(param_tokens.at(0));
-}
-
-inline static std::string get_param_value(const std::vector<std::string>& param_tokens) {
-  return param_tokens.at(1);
-}
-
-static std::unordered_map<int, int> build_node_id_to_index(const RawVisualShaderGraph& graph) {
-  std::unordered_map<int, int> node_id_to_index;
-  for (size_t i = 0; i < graph.headers.size(); ++i) {
-    const auto& header = graph.headers[i];
-    const auto tokens = shadergen_graph_string_utils::split_string(header, ';');
-    const int entity_type = std::stoi(tokens.at(0));
-    if (entity_type != 0) continue;
-    const int n_id = get_header_node_id(tokens);
-    node_id_to_index[n_id] = static_cast<int>(i);
+  for (const std::string& entity : split_string(graph, ',')) {
+    if (entity.empty()) continue;
+    const std::vector<std::string> tokens{split_string(entity, ';')};
+    if (tokens.empty()) continue;
+    if (std::stoi(get_entity_type(tokens)) == entity_type) entities.push_back(entity);
   }
-  return node_id_to_index;
+
+  return entities;
 }
 
-static std::unordered_map<int, std::shared_ptr<IVisualShaderProtoNode>> raw_to_proto_nodes(const RawVisualShaderGraph& graph) noexcept {
+static std::unordered_map<int, std::shared_ptr<IVisualShaderProtoNode>> raw_to_proto_nodes(const std::string& graph) noexcept {
   std::unordered_map<int, std::shared_ptr<IVisualShaderProtoNode>> proto_nodes;
 
-  for (const auto& header : graph.headers) {
-    const auto tokens = shadergen_graph_string_utils::split_string(header, ';');
-    const int entity_type = std::stoi(tokens.at(0));
-    CONTINUE_IF_TRUE(entity_type != 0, "Entity type is not a node.");
-    const int n_id = get_header_node_id(tokens);
+  for (const std::string& header : get_entities_of_type(graph, 0)) {
+    const auto tokens = split_string(header, ';');
+    const int n_id = std::stoi(get_node_entity_id(tokens));
     if (proto_nodes.find(n_id) != proto_nodes.end()) {
       FAIL_AND_RETURN_NON_VOID(proto_nodes, "Node id already exists.");
     }
-    const int oneof_value_field_number = get_header_oneof_value_field_number(tokens);
+    const int oneof_value_field_number = std::stoi(get_node_entity_oneof_value_field_number(tokens));
     proto_nodes[n_id] = shadergen_utils::get_proto_node_by_oneof_value_field_number(oneof_value_field_number);
     CHECK_PARAM_NULLPTR_NON_VOID(proto_nodes[n_id], proto_nodes, "Proto node is nullptr.");
   }
@@ -118,26 +101,26 @@ static std::unordered_map<int, std::shared_ptr<IVisualShaderProtoNode>> raw_to_p
   return proto_nodes;
 }
 
-static std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>> raw_to_generators(const RawVisualShaderGraph& graph) noexcept {
+static std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>> raw_to_generators(const std::string& graph) noexcept {
   std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>> generators;
 
-  for (const auto& header : graph.headers) {
-    const auto tokens = shadergen_graph_string_utils::split_string(header, ';');
-    const int entity_type = std::stoi(tokens.at(0));
-    CONTINUE_IF_TRUE(entity_type != 0, "Entity type is not a node.");
-    const int n_id = get_header_node_id(tokens);
+  std::vector<std::string> node_entities = get_entities_of_type(graph, 0);
+
+  for (const std::string& node_entity : node_entities) {
+    const auto tokens = split_string(node_entity, ';');
+    const int n_id = std::stoi(get_node_entity_id(tokens));
     if (generators.find(n_id) != generators.end()) {
       FAIL_AND_RETURN_NON_VOID(generators, "Node ID already exists in the generators map.");
     }
-    const int oneof_value_field_number = get_header_oneof_value_field_number(tokens);
-    const auto parameters = get_header_parameters(tokens);
+    const int oneof_value_field_number = std::stoi(get_node_entity_oneof_value_field_number(tokens));
+    const auto parameters = get_node_entity_parameters(tokens);
 
     switch (oneof_value_field_number) {
       case VisualShader::VisualShaderNode::kInputFieldNumber: {
-        const auto parameter_tokens = shadergen_graph_string_utils::split_string(parameters.at(0), '=');
-        const int field_number = get_param_field_number(parameter_tokens);
+        const auto parameter_tokens = split_string(parameters.at(0), '=');
+        const int field_number = std::stoi(get_node_entity_parameter_field_number(parameter_tokens));
         CONTINUE_IF_TRUE(field_number != VisualShaderNodeInput::kTypeFieldNumber, "Wrong field number.");
-        const VisualShaderNodeInput::VisualShaderNodeInputType input_type{std::stoi(get_param_value(parameter_tokens))};
+        const VisualShaderNodeInput::VisualShaderNodeInputType input_type{std::stoi(get_node_entity_parameter_value(parameter_tokens))};
 
         generators[n_id] = std::make_shared<VisualShaderNodeGeneratorInput>(input_type);
         break;
@@ -147,232 +130,232 @@ static std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>> raw_t
         break;
       }
       case VisualShader::VisualShaderNode::kFloatConstantFieldNumber: {
-          const auto parameter_tokens = shadergen_graph_string_utils::split_string(parameters.at(0), '=');
-          const int field_number = get_param_field_number(parameter_tokens);
+          const auto parameter_tokens = split_string(parameters.at(0), '=');
+          const int field_number = std::stoi(get_node_entity_parameter_field_number(parameter_tokens));
           CONTINUE_IF_TRUE(field_number != VisualShaderNodeFloatConstant::kValueFieldNumber, "Wrong field number.");
-          const float value{std::stof(get_param_value(parameter_tokens))};
+          const float value{std::stof(get_node_entity_parameter_value(parameter_tokens))};
 
           generators[n_id] = std::make_shared<VisualShaderNodeGeneratorFloatConstant>(value);
           break;
       }
       case VisualShader::VisualShaderNode::kIntConstantFieldNumber: {
-          const auto parameter_tokens = shadergen_graph_string_utils::split_string(parameters.at(0), '=');
-          const int field_number = get_param_field_number(parameter_tokens);
+          const auto parameter_tokens = split_string(parameters.at(0), '=');
+          const int field_number = std::stoi(get_node_entity_parameter_field_number(parameter_tokens));
           CONTINUE_IF_TRUE(field_number != VisualShaderNodeIntConstant::kValueFieldNumber, "Wrong field number.");
-          const int value{std::stoi(get_param_value(parameter_tokens))};
+          const int value{std::stoi(get_node_entity_parameter_value(parameter_tokens))};
 
           generators[n_id] = std::make_shared<VisualShaderNodeGeneratorIntConstant>(value);
           break;
       }
       case VisualShader::VisualShaderNode::kUintConstantFieldNumber: {
-          const auto parameter_tokens = shadergen_graph_string_utils::split_string(parameters.at(0), '=');
-          const int field_number = get_param_field_number(parameter_tokens);
+          const auto parameter_tokens = split_string(parameters.at(0), '=');
+          const int field_number = std::stoi(get_node_entity_parameter_field_number(parameter_tokens));
           CONTINUE_IF_TRUE(field_number != VisualShaderNodeUIntConstant::kValueFieldNumber, "Wrong field number.");
-          const unsigned int value{std::stoul(get_param_value(parameter_tokens))};
+          const unsigned int value{std::stoul(get_node_entity_parameter_value(parameter_tokens))};
 
           generators[n_id] = std::make_shared<VisualShaderNodeGeneratorUIntConstant>(value);
           break;
       }
       case VisualShader::VisualShaderNode::kBooleanConstantFieldNumber: {
-          const auto parameter_tokens = shadergen_graph_string_utils::split_string(parameters.at(0), '=');
-          const int field_number = get_param_field_number(parameter_tokens);
+          const auto parameter_tokens = split_string(parameters.at(0), '=');
+          const int field_number = std::stoi(get_node_entity_parameter_field_number(parameter_tokens));
           CONTINUE_IF_TRUE(field_number != VisualShaderNodeBooleanConstant::kValueFieldNumber, "Wrong field number.");
-          const bool value{(bool)std::stoi(get_param_value(parameter_tokens))};
+          const bool value{(bool)std::stoi(get_node_entity_parameter_value(parameter_tokens))};
 
           generators[n_id] = std::make_shared<VisualShaderNodeGeneratorBoolConstant>(value);
           break;
       }
       case VisualShader::VisualShaderNode::kColorConstantFieldNumber: {
-          const auto parameter_tokens = shadergen_graph_string_utils::split_string(parameters.at(0), '=');
-          const int field_number = get_param_field_number(parameter_tokens);
+          const auto parameter_tokens = split_string(parameters.at(0), '=');
+          const int field_number = std::stoi(get_node_entity_parameter_field_number(parameter_tokens));
           CONTINUE_IF_TRUE(field_number != VisualShaderNodeColorConstant::kRFieldNumber, "Wrong field number.");
-          const float r{std::stof(get_param_value(parameter_tokens))};
+          const float r{std::stof(get_node_entity_parameter_value(parameter_tokens))};
 
-          const auto parameter_tokens1 = shadergen_graph_string_utils::split_string(parameters.at(1), '=');
-          const int field_number1 = get_param_field_number(parameter_tokens1);
+          const auto parameter_tokens1 = split_string(parameters.at(1), '=');
+          const int field_number1 = std::stoi(get_node_entity_parameter_field_number(parameter_tokens1));
           CONTINUE_IF_TRUE(field_number1 != VisualShaderNodeColorConstant::kGFieldNumber, "Wrong field number.");
-          const float g{std::stof(get_param_value(parameter_tokens1))};
+          const float g{std::stof(get_node_entity_parameter_value(parameter_tokens1))};
 
-          const auto parameter_tokens2 = shadergen_graph_string_utils::split_string(parameters.at(2), '=');
-          const int field_number2 = get_param_field_number(parameter_tokens2);
+          const auto parameter_tokens2 = split_string(parameters.at(2), '=');
+          const int field_number2 = std::stoi(get_node_entity_parameter_field_number(parameter_tokens2));
           CONTINUE_IF_TRUE(field_number2 != VisualShaderNodeColorConstant::kBFieldNumber, "Wrong field number.");
-          const float b{std::stof(get_param_value(parameter_tokens2))};
+          const float b{std::stof(get_node_entity_parameter_value(parameter_tokens2))};
 
-          const auto parameter_tokens3 = shadergen_graph_string_utils::split_string(parameters.at(3), '=');
-          const int field_number3 = get_param_field_number(parameter_tokens3);
+          const auto parameter_tokens3 = split_string(parameters.at(3), '=');
+          const int field_number3 = std::stoi(get_node_entity_parameter_field_number(parameter_tokens3));
           CONTINUE_IF_TRUE(field_number3 != VisualShaderNodeColorConstant::kAFieldNumber, "Wrong field number.");
-          const float a{std::stof(get_param_value(parameter_tokens3))};
+          const float a{std::stof(get_node_entity_parameter_value(parameter_tokens3))};
 
           generators[n_id] = std::make_shared<VisualShaderNodeGeneratorColorConstant>(r, g, b, a);
           break;
       }
       case VisualShader::VisualShaderNode::kVec2ConstantFieldNumber: {
-          const auto parameter_tokens = shadergen_graph_string_utils::split_string(parameters.at(0), '=');
-          const int field_number = get_param_field_number(parameter_tokens);
+          const auto parameter_tokens = split_string(parameters.at(0), '=');
+          const int field_number = std::stoi(get_node_entity_parameter_field_number(parameter_tokens));
           CONTINUE_IF_TRUE(field_number != VisualShaderNodeVec2Constant::kXFieldNumber, "Wrong field number.");
-          const float x{std::stof(get_param_value(parameter_tokens))};
+          const float x{std::stof(get_node_entity_parameter_value(parameter_tokens))};
 
-          const auto parameter_tokens1 = shadergen_graph_string_utils::split_string(parameters.at(1), '=');
-          const int field_number1 = get_param_field_number(parameter_tokens1);
+          const auto parameter_tokens1 = split_string(parameters.at(1), '=');
+          const int field_number1 = std::stoi(get_node_entity_parameter_field_number(parameter_tokens1));
           CONTINUE_IF_TRUE(field_number1 != VisualShaderNodeVec2Constant::kYFieldNumber, "Wrong field number.");
-          const float y{std::stof(get_param_value(parameter_tokens1))};
+          const float y{std::stof(get_node_entity_parameter_value(parameter_tokens1))};
 
           generators[n_id] = std::make_shared<VisualShaderNodeGeneratorVec2Constant>(x, y);
           break;
       }
       case VisualShader::VisualShaderNode::kVec3ConstantFieldNumber: {
-          const auto parameter_tokens = shadergen_graph_string_utils::split_string(parameters.at(0), '=');
-          const int field_number = get_param_field_number(parameter_tokens);
+          const auto parameter_tokens = split_string(parameters.at(0), '=');
+          const int field_number = std::stoi(get_node_entity_parameter_field_number(parameter_tokens));
           CONTINUE_IF_TRUE(field_number != VisualShaderNodeVec3Constant::kXFieldNumber, "Wrong field number.");
-          const float x{std::stof(get_param_value(parameter_tokens))};
+          const float x{std::stof(get_node_entity_parameter_value(parameter_tokens))};
 
-          const auto parameter_tokens1 = shadergen_graph_string_utils::split_string(parameters.at(1), '=');
-          const int field_number1 = get_param_field_number(parameter_tokens1);
+          const auto parameter_tokens1 = split_string(parameters.at(1), '=');
+          const int field_number1 = std::stoi(get_node_entity_parameter_field_number(parameter_tokens1));
           CONTINUE_IF_TRUE(field_number1 != VisualShaderNodeVec3Constant::kYFieldNumber, "Wrong field number.");
-          const float y{std::stof(get_param_value(parameter_tokens1))};
+          const float y{std::stof(get_node_entity_parameter_value(parameter_tokens1))};
 
-          const auto parameter_tokens2 = shadergen_graph_string_utils::split_string(parameters.at(2), '=');
-          const int field_number2 = get_param_field_number(parameter_tokens2);
+          const auto parameter_tokens2 = split_string(parameters.at(2), '=');
+          const int field_number2 = std::stoi(get_node_entity_parameter_field_number(parameter_tokens2));
           CONTINUE_IF_TRUE(field_number2 != VisualShaderNodeVec3Constant::kZFieldNumber, "Wrong field number.");
-          const float z{std::stof(get_param_value(parameter_tokens2))};
+          const float z{std::stof(get_node_entity_parameter_value(parameter_tokens2))};
 
           generators[n_id] = std::make_shared<VisualShaderNodeGeneratorVec3Constant>(x, y, z);
           break;
       }
       case VisualShader::VisualShaderNode::kVec4ConstantFieldNumber: {
-          const auto parameter_tokens = shadergen_graph_string_utils::split_string(parameters.at(0), '=');
-          const int field_number = get_param_field_number(parameter_tokens);
+          const auto parameter_tokens = split_string(parameters.at(0), '=');
+          const int field_number = std::stoi(get_node_entity_parameter_field_number(parameter_tokens));
           CONTINUE_IF_TRUE(field_number != VisualShaderNodeVec4Constant::kXFieldNumber, "Wrong field number.");
-          const float x{std::stof(get_param_value(parameter_tokens))};
+          const float x{std::stof(get_node_entity_parameter_value(parameter_tokens))};
 
-          const auto parameter_tokens1 = shadergen_graph_string_utils::split_string(parameters.at(1), '=');
-          const int field_number1 = get_param_field_number(parameter_tokens1);
+          const auto parameter_tokens1 = split_string(parameters.at(1), '=');
+          const int field_number1 = std::stoi(get_node_entity_parameter_field_number(parameter_tokens1));
           CONTINUE_IF_TRUE(field_number1 != VisualShaderNodeVec4Constant::kYFieldNumber, "Wrong field number.");
-          const float y{std::stof(get_param_value(parameter_tokens1))};
+          const float y{std::stof(get_node_entity_parameter_value(parameter_tokens1))};
 
-          const auto parameter_tokens2 = shadergen_graph_string_utils::split_string(parameters.at(2), '=');
-          const int field_number2 = get_param_field_number(parameter_tokens2);
+          const auto parameter_tokens2 = split_string(parameters.at(2), '=');
+          const int field_number2 = std::stoi(get_node_entity_parameter_field_number(parameter_tokens2));
           CONTINUE_IF_TRUE(field_number2 != VisualShaderNodeVec4Constant::kZFieldNumber, "Wrong field number.");
-          const float z{std::stof(get_param_value(parameter_tokens2))};
+          const float z{std::stof(get_node_entity_parameter_value(parameter_tokens2))};
 
-          const auto parameter_tokens3 = shadergen_graph_string_utils::split_string(parameters.at(3), '=');
-          const int field_number3 = get_param_field_number(parameter_tokens3);
+          const auto parameter_tokens3 = split_string(parameters.at(3), '=');
+          const int field_number3 = std::stoi(get_node_entity_parameter_field_number(parameter_tokens3));
           CONTINUE_IF_TRUE(field_number3 != VisualShaderNodeVec4Constant::kWFieldNumber, "Wrong field number.");
-          const float w{std::stof(get_param_value(parameter_tokens3))};
+          const float w{std::stof(get_node_entity_parameter_value(parameter_tokens3))};
 
           generators[n_id] = std::make_shared<VisualShaderNodeGeneratorVec4Constant>(x, y, z, w);
           break;
       }
       case VisualShader::VisualShaderNode::kFloatOpFieldNumber: {
-          const auto parameter_tokens = shadergen_graph_string_utils::split_string(parameters.at(0), '=');
-          const int field_number = get_param_field_number(parameter_tokens);
+          const auto parameter_tokens = split_string(parameters.at(0), '=');
+          const int field_number = std::stoi(get_node_entity_parameter_field_number(parameter_tokens));
           CONTINUE_IF_TRUE(field_number != VisualShaderNodeFloatOp::kOpTypeFieldNumber, "Wrong field number.");
-          const VisualShaderNodeFloatOp::VisualShaderNodeFloatOpType op_type{std::stoi(get_param_value(parameter_tokens))};
+          const VisualShaderNodeFloatOp::VisualShaderNodeFloatOpType op_type{std::stoi(get_node_entity_parameter_value(parameter_tokens))};
 
           generators[n_id] = std::make_shared<VisualShaderNodeGeneratorFloatOp>(op_type);
           break;
       }
       case VisualShader::VisualShaderNode::kIntOpFieldNumber: {
-          const auto parameter_tokens = shadergen_graph_string_utils::split_string(parameters.at(0), '=');
-          const int field_number = get_param_field_number(parameter_tokens);
+          const auto parameter_tokens = split_string(parameters.at(0), '=');
+          const int field_number = std::stoi(get_node_entity_parameter_field_number(parameter_tokens));
           CONTINUE_IF_TRUE(field_number != VisualShaderNodeIntOp::kOpTypeFieldNumber, "Wrong field number.");
-          const VisualShaderNodeIntOp::VisualShaderNodeIntOpType op_type{std::stoi(get_param_value(parameter_tokens))};
+          const VisualShaderNodeIntOp::VisualShaderNodeIntOpType op_type{std::stoi(get_node_entity_parameter_value(parameter_tokens))};
 
           generators[n_id] = std::make_shared<VisualShaderNodeGeneratorIntOp>(op_type);
           break;
       }
       case VisualShader::VisualShaderNode::kUintOpFieldNumber: {
-          const auto parameter_tokens = shadergen_graph_string_utils::split_string(parameters.at(0), '=');
-          const int field_number = get_param_field_number(parameter_tokens);
+          const auto parameter_tokens = split_string(parameters.at(0), '=');
+          const int field_number = std::stoi(get_node_entity_parameter_field_number(parameter_tokens));
           CONTINUE_IF_TRUE(field_number != VisualShaderNodeUIntOp::kOpTypeFieldNumber, "Wrong field number.");
-          const VisualShaderNodeUIntOp::VisualShaderNodeUIntOpType op_type{std::stoi(get_param_value(parameter_tokens))};
+          const VisualShaderNodeUIntOp::VisualShaderNodeUIntOpType op_type{std::stoi(get_node_entity_parameter_value(parameter_tokens))};
 
           generators[n_id] = std::make_shared<VisualShaderNodeGeneratorUIntOp>(op_type);
           break;
       }
       case VisualShader::VisualShaderNode::kVectorOpFieldNumber: {
-          const auto parameter_tokens = shadergen_graph_string_utils::split_string(parameters.at(0), '=');
-          const int field_number = get_param_field_number(parameter_tokens);
+          const auto parameter_tokens = split_string(parameters.at(0), '=');
+          const int field_number = std::stoi(get_node_entity_parameter_field_number(parameter_tokens));
           CONTINUE_IF_TRUE(field_number != VisualShaderNodeVectorOp::kVecTypeFieldNumber, "Wrong field number.");
-          const VisualShaderNodeVectorType type{std::stoi(get_param_value(parameter_tokens))};
+          const VisualShaderNodeVectorType type{std::stoi(get_node_entity_parameter_value(parameter_tokens))};
 
-          const auto parameter_tokens1 = shadergen_graph_string_utils::split_string(parameters.at(1), '=');
-          const int field_number1 = get_param_field_number(parameter_tokens1);
+          const auto parameter_tokens1 = split_string(parameters.at(1), '=');
+          const int field_number1 = std::stoi(get_node_entity_parameter_field_number(parameter_tokens1));
           CONTINUE_IF_TRUE(field_number1 != VisualShaderNodeVectorOp::kOpTypeFieldNumber, "Wrong field number.");
-          const VisualShaderNodeVectorOp::VisualShaderNodeVectorOpType op_type{std::stoi(get_param_value(parameter_tokens1))};
+          const VisualShaderNodeVectorOp::VisualShaderNodeVectorOpType op_type{std::stoi(get_node_entity_parameter_value(parameter_tokens1))};
 
           generators[n_id] = std::make_shared<VisualShaderNodeGeneratorVectorOp>(type, op_type);
           break;
       }
       case VisualShader::VisualShaderNode::kFloatFuncFieldNumber: {
-          const auto parameter_tokens = shadergen_graph_string_utils::split_string(parameters.at(0), '=');
-          const int field_number = get_param_field_number(parameter_tokens);
+          const auto parameter_tokens = split_string(parameters.at(0), '=');
+          const int field_number = std::stoi(get_node_entity_parameter_field_number(parameter_tokens));
           CONTINUE_IF_TRUE(field_number != VisualShaderNodeFloatFunc::kFuncTypeFieldNumber, "Wrong field number.");
-          const VisualShaderNodeFloatFunc::VisualShaderNodeFloatFuncType func_type{std::stoi(get_param_value(parameter_tokens))};
+          const VisualShaderNodeFloatFunc::VisualShaderNodeFloatFuncType func_type{std::stoi(get_node_entity_parameter_value(parameter_tokens))};
 
           generators[n_id] = std::make_shared<VisualShaderNodeGeneratorFloatFunc>(func_type);
           break;
       }
       case VisualShader::VisualShaderNode::kIntFuncFieldNumber: {
-          const auto parameter_tokens = shadergen_graph_string_utils::split_string(parameters.at(0), '=');
-          const int field_number = get_param_field_number(parameter_tokens);
+          const auto parameter_tokens = split_string(parameters.at(0), '=');
+          const int field_number = std::stoi(get_node_entity_parameter_field_number(parameter_tokens));
           CONTINUE_IF_TRUE(field_number != VisualShaderNodeIntFunc::kFuncTypeFieldNumber, "Wrong field number.");
-          const VisualShaderNodeIntFunc::VisualShaderNodeIntFuncType func_type{std::stoi(get_param_value(parameter_tokens))};
+          const VisualShaderNodeIntFunc::VisualShaderNodeIntFuncType func_type{std::stoi(get_node_entity_parameter_value(parameter_tokens))};
 
           generators[n_id] = std::make_shared<VisualShaderNodeGeneratorIntFunc>(func_type);
           break;
       }
       case VisualShader::VisualShaderNode::kUintFuncFieldNumber: {
-          const auto parameter_tokens = shadergen_graph_string_utils::split_string(parameters.at(0), '=');
-          const int field_number = get_param_field_number(parameter_tokens);
+          const auto parameter_tokens = split_string(parameters.at(0), '=');
+          const int field_number = std::stoi(get_node_entity_parameter_field_number(parameter_tokens));
           CONTINUE_IF_TRUE(field_number != VisualShaderNodeUIntFunc::kFuncTypeFieldNumber, "Wrong field number.");
-          const VisualShaderNodeUIntFunc::VisualShaderNodeUIntFuncType func_type{std::stoi(get_param_value(parameter_tokens))};
+          const VisualShaderNodeUIntFunc::VisualShaderNodeUIntFuncType func_type{std::stoi(get_node_entity_parameter_value(parameter_tokens))};
 
           generators[n_id] = std::make_shared<VisualShaderNodeGeneratorUIntFunc>(func_type);
           break;
       }
       case VisualShader::VisualShaderNode::kVectorFuncFieldNumber: {
-          const auto parameter_tokens = shadergen_graph_string_utils::split_string(parameters.at(0), '=');
-          const int field_number = get_param_field_number(parameter_tokens);
+          const auto parameter_tokens = split_string(parameters.at(0), '=');
+          const int field_number = std::stoi(get_node_entity_parameter_field_number(parameter_tokens));
           CONTINUE_IF_TRUE(field_number != VisualShaderNodeVectorFunc::kVecTypeFieldNumber, "Wrong field number.");
-          const VisualShaderNodeVectorType type{std::stoi(get_param_value(parameter_tokens))};
+          const VisualShaderNodeVectorType type{std::stoi(get_node_entity_parameter_value(parameter_tokens))};
 
-          const auto parameter_tokens1 = shadergen_graph_string_utils::split_string(parameters.at(1), '=');
-          const int field_number1 = get_param_field_number(parameter_tokens1);
+          const auto parameter_tokens1 = split_string(parameters.at(1), '=');
+          const int field_number1 = std::stoi(get_node_entity_parameter_field_number(parameter_tokens1));
           CONTINUE_IF_TRUE(field_number1 != VisualShaderNodeVectorFunc::kFuncTypeFieldNumber, "Wrong field number.");
-          const VisualShaderNodeVectorFunc::VisualShaderNodeVectorFuncType func_type{std::stoi(get_param_value(parameter_tokens1))};
+          const VisualShaderNodeVectorFunc::VisualShaderNodeVectorFuncType func_type{std::stoi(get_node_entity_parameter_value(parameter_tokens1))};
 
           generators[n_id] = std::make_shared<VisualShaderNodeGeneratorVectorFunc>(type, func_type);
           break;
       }
       case VisualShader::VisualShaderNode::kValueNoiseFieldNumber: {
-          const auto parameter_tokens = shadergen_graph_string_utils::split_string(parameters.at(0), '=');
-          const int field_number = get_param_field_number(parameter_tokens);
+          const auto parameter_tokens = split_string(parameters.at(0), '=');
+          const int field_number = std::stoi(get_node_entity_parameter_field_number(parameter_tokens));
           CONTINUE_IF_TRUE(field_number != VisualShaderNodeValueNoise::kScaleFieldNumber, "Wrong field number.");
-          const float scale{std::stof(get_param_value(parameter_tokens))};
+          const float scale{std::stof(get_node_entity_parameter_value(parameter_tokens))};
 
           generators[n_id] = std::make_shared<VisualShaderNodeGeneratorValueNoise>(scale);
           break;
       }
       case VisualShader::VisualShaderNode::kPerlinNoiseFieldNumber: {
-          const auto parameter_tokens = shadergen_graph_string_utils::split_string(parameters.at(0), '=');
-          const int field_number = get_param_field_number(parameter_tokens);
+          const auto parameter_tokens = split_string(parameters.at(0), '=');
+          const int field_number = std::stoi(get_node_entity_parameter_field_number(parameter_tokens));
           CONTINUE_IF_TRUE(field_number != VisualShaderNodePerlinNoise::kScaleFieldNumber, "Wrong field number.");
-          const float scale{std::stof(get_param_value(parameter_tokens))};
+          const float scale{std::stof(get_node_entity_parameter_value(parameter_tokens))};
 
           generators[n_id] = std::make_shared<VisualShaderNodeGeneratorPerlinNoise>(scale);
           break;
       }
       case VisualShader::VisualShaderNode::kVoronoiNoiseFieldNumber: {
-          const auto parameter_tokens = shadergen_graph_string_utils::split_string(parameters.at(0), '=');
-          const int field_number = get_param_field_number(parameter_tokens);
+          const auto parameter_tokens = split_string(parameters.at(0), '=');
+          const int field_number = std::stoi(get_node_entity_parameter_field_number(parameter_tokens));
           CONTINUE_IF_TRUE(field_number != VisualShaderNodeVoronoiNoise::kCellDensityFieldNumber, "Wrong field number.");
-          const float cell_density{std::stof(get_param_value(parameter_tokens))};
+          const float cell_density{std::stof(get_node_entity_parameter_value(parameter_tokens))};
 
-          const auto parameter_tokens1 = shadergen_graph_string_utils::split_string(parameters.at(1), '=');
-          const int field_number1 = get_param_field_number(parameter_tokens1);
+          const auto parameter_tokens1 = split_string(parameters.at(1), '=');
+          const int field_number1 = std::stoi(get_node_entity_parameter_field_number(parameter_tokens1));
           CONTINUE_IF_TRUE(field_number1 != VisualShaderNodeVoronoiNoise::kAngleOffsetFieldNumber, "Wrong field number.");
-          const float angle_offset{std::stof(get_param_value(parameter_tokens1))};
+          const float angle_offset{std::stof(get_node_entity_parameter_value(parameter_tokens1))};
 
           generators[n_id] = std::make_shared<VisualShaderNodeGeneratorVoronoiNoise>(angle_offset, cell_density);
           break;
@@ -422,38 +405,38 @@ static std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>> raw_t
           break;
       }
       case VisualShader::VisualShaderNode::kSwitchNodeFieldNumber: {
-          const auto parameter_tokens = shadergen_graph_string_utils::split_string(parameters.at(0), '=');
-          const int field_number = get_param_field_number(parameter_tokens);
+          const auto parameter_tokens = split_string(parameters.at(0), '=');
+          const int field_number = std::stoi(get_node_entity_parameter_field_number(parameter_tokens));
           CONTINUE_IF_TRUE(field_number != VisualShaderNodeSwitch::kTypeFieldNumber, "Wrong field number.");
-          const VisualShaderNodeSwitch::VisualShaderNodeSwitchType type{std::stoi(get_param_value(parameter_tokens))};
+          const VisualShaderNodeSwitch::VisualShaderNodeSwitchType type{std::stoi(get_node_entity_parameter_value(parameter_tokens))};
 
           generators[n_id] = std::make_shared<VisualShaderNodeGeneratorSwitch>(type);
           break;
       }
       case VisualShader::VisualShaderNode::kIsFieldNumber: {
-          const auto parameter_tokens = shadergen_graph_string_utils::split_string(parameters.at(0), '=');
-          const int field_number = get_param_field_number(parameter_tokens);
+          const auto parameter_tokens = split_string(parameters.at(0), '=');
+          const int field_number = std::stoi(get_node_entity_parameter_field_number(parameter_tokens));
           CONTINUE_IF_TRUE(field_number != VisualShaderNodeIs::kFuncFieldNumber, "Wrong field number.");
-          const VisualShaderNodeIs::VisualShaderNodeIsFunction func{std::stoi(get_param_value(parameter_tokens))};
+          const VisualShaderNodeIs::VisualShaderNodeIsFunction func{std::stoi(get_node_entity_parameter_value(parameter_tokens))};
 
           generators[n_id] = std::make_shared<VisualShaderNodeGeneratorIs>(func);
           break;
       }
       case VisualShader::VisualShaderNode::kCompareFieldNumber: {
-          const auto parameter_tokens = shadergen_graph_string_utils::split_string(parameters.at(0), '=');
-          const int field_number = get_param_field_number(parameter_tokens);
+          const auto parameter_tokens = split_string(parameters.at(0), '=');
+          const int field_number = std::stoi(get_node_entity_parameter_field_number(parameter_tokens));
           CONTINUE_IF_TRUE(field_number != VisualShaderNodeCompare::kTypeFieldNumber, "Wrong field number.");
-          const VisualShaderNodeCompare::VisualShaderNodeCompareType type{std::stoi(get_param_value(parameter_tokens))};
+          const VisualShaderNodeCompare::VisualShaderNodeCompareType type{std::stoi(get_node_entity_parameter_value(parameter_tokens))};
 
-          const auto parameter_tokens1 = shadergen_graph_string_utils::split_string(parameters.at(1), '=');
-          const int field_number1 = get_param_field_number(parameter_tokens1);
+          const auto parameter_tokens1 = split_string(parameters.at(1), '=');
+          const int field_number1 = std::stoi(get_node_entity_parameter_field_number(parameter_tokens1));
           CONTINUE_IF_TRUE(field_number1 != VisualShaderNodeCompare::kFuncFieldNumber, "Wrong field number.");
-          const VisualShaderNodeCompare::VisualShaderNodeCompareFunction func{std::stoi(get_param_value(parameter_tokens1))};
+          const VisualShaderNodeCompare::VisualShaderNodeCompareFunction func{std::stoi(get_node_entity_parameter_value(parameter_tokens1))};
 
-          const auto parameter_tokens2 = shadergen_graph_string_utils::split_string(parameters.at(2), '=');
-          const int field_number2 = get_param_field_number(parameter_tokens2);
+          const auto parameter_tokens2 = split_string(parameters.at(2), '=');
+          const int field_number2 = std::stoi(get_node_entity_parameter_field_number(parameter_tokens2));
           CONTINUE_IF_TRUE(field_number2 != VisualShaderNodeCompare::kCondFieldNumber, "Wrong field number.");
-          const VisualShaderNodeCompare::VisualShaderNodeCompareCondition cond{std::stoi(get_param_value(parameter_tokens2))};
+          const VisualShaderNodeCompare::VisualShaderNodeCompareCondition cond{std::stoi(get_node_entity_parameter_value(parameter_tokens2))};
 
           generators[n_id] = std::make_shared<VisualShaderNodeGeneratorCompare>(type, func, cond);
           break;
@@ -467,51 +450,43 @@ static std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>> raw_t
   return generators;
 }
 
-static std::unordered_map<int, std::shared_ptr<VisualShaderNodePortTypeGenerator>> raw_to_port_type_generators(const RawVisualShaderGraph& graph) noexcept {
+static std::unordered_map<int, std::shared_ptr<VisualShaderNodePortTypeGenerator>> raw_to_port_type_generators(const std::string& graph) noexcept {
   std::unordered_map<int, std::shared_ptr<VisualShaderNodePortTypeGenerator>> port_type_generators;
 
-  for (const auto& header : graph.headers) {
-    port_type_generators[get_header_node_id(shadergen_graph_string_utils::split_string(header, ';'))] = shadergen_utils::get_port_type_generator(header);
-    CHECK_PARAM_NULLPTR_NON_VOID(port_type_generators[get_header_node_id(shadergen_graph_string_utils::split_string(header, ';'))], port_type_generators, "Proto node is nullptr.");
+  std::vector<std::string> node_entities = get_entities_of_type(graph, 0);
+
+  for (const std::string& node_entity : node_entities) {
+    const std::vector<std::string> tokens{split_string(node_entity, ';')};
+    const int n_id{std::stoi(get_node_entity_id(tokens))};
+
+    port_type_generators[n_id] = shadergen_utils::get_port_type_generator(node_entity);
+    CHECK_PARAM_NULLPTR_NON_VOID(port_type_generators[n_id], port_type_generators, "Proto node is nullptr.");
   }
 
   return port_type_generators;
 }
 
-static std::pair<std::map<ConnectionKey, std::shared_ptr<Connection>>, std::map<ConnectionKey, std::shared_ptr<Connection>>> raw_to_connections(const RawVisualShaderGraph& graph) noexcept {
+static std::pair<std::map<ConnectionKey, std::shared_ptr<Connection>>, std::map<ConnectionKey, std::shared_ptr<Connection>>> raw_to_connections(const std::string& graph) noexcept {
   std::map<ConnectionKey, std::shared_ptr<Connection>> input_connections;
   std::map<ConnectionKey, std::shared_ptr<Connection>> output_connections;
 
-  const auto node_id_to_index = build_node_id_to_index(graph);
+  std::vector<std::string> connection_entities = get_entities_of_type(graph, 1);
 
-  const size_t N = graph.headers.size();
-  for (size_t i = 0; i < N; ++i) {
-    const auto i_tokens = shadergen_graph_string_utils::split_string(graph.headers[i], ';');
-    if (std::stoi(i_tokens.at(0)) != 0) continue;
-    const int from_node_id = get_header_node_id(i_tokens);
+  for (const std::string& connection_entity : connection_entities) {
+    const auto tokens = split_string(connection_entity, ';');
+    if (tokens.size() < 6) continue;
 
-    for (size_t j = 0; j < N; ++j) {
-      if (i == j) continue;
-      const auto j_tokens = shadergen_graph_string_utils::split_string(graph.headers[j], ';');
-      if (std::stoi(j_tokens.at(0)) != 0) continue;
-      const int to_node_id = get_header_node_id(j_tokens);
+    const int from_node_id{std::stoi(get_connection_entity_from_node_id(tokens))};
+    const int from_port{std::stoi(get_connection_entity_from_port_index(tokens))};
+    const int to_node_id{std::stoi(get_connection_entity_to_node_id(tokens))};
+    const int to_port{std::stoi(get_connection_entity_to_port_index(tokens))};
 
-      const std::string& cell = graph.adj_matrix[i][j];
-      if (cell.empty()) continue;
+    std::shared_ptr<Connection> c = std::make_shared<Connection>();
+    c->from = {from_node_id, from_port};
+    c->to = {to_node_id, to_port};
 
-      const auto connection_groups = shadergen_graph_string_utils::split_string(cell, ';');
-      for (const auto& group : connection_groups) {
-        const auto ports = shadergen_graph_string_utils::split_string(group, ',');
-        if (ports.size() < 2) continue;
-
-        std::shared_ptr<Connection> c = std::make_shared<Connection>();
-        c->from = {from_node_id, std::stoi(ports.at(0))};
-        c->to = {to_node_id, std::stoi(ports.at(1))};
-
-        output_connections[c->from] = c;
-        input_connections[c->to] = c;
-      }
-    }
+    output_connections[c->from] = c;
+    input_connections[c->to] = c;
   }
 
   return std::make_pair(input_connections, output_connections);
@@ -530,7 +505,7 @@ static inline bool generate_shader_for_each_node(std::string& global_code, std::
                                                  std::unordered_set<int>& processed,
                                                  std::unordered_set<std::string>& global_processed) noexcept;
 
-bool generate_shader(const RawVisualShaderGraph& graph, std::string& code_buffer) noexcept {
+bool generate_shader(const std::string& graph, std::string& code_buffer) noexcept {
   static const std::string func_name{"main"};
 
   const auto proto_nodes = raw_to_proto_nodes(graph);
@@ -575,7 +550,7 @@ bool generate_shader(const RawVisualShaderGraph& graph, std::string& code_buffer
   return true;
 }
 
-std::string generate_preview_shader(const RawVisualShaderGraph& graph,
+std::string generate_preview_shader(const std::string& graph,
                                     const int& node_id, const int& port) noexcept { 
   static const std::string preview_func_name{"main"};
   static const std::string output_var{"FragColor"};

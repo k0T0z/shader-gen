@@ -41,120 +41,9 @@
 #include "gui/controller/utils/utils.hpp"
 
 #include "generator/visual_shader_generator.hpp"
-#include "gui/adapters/raw_visual_shader_graph_adapter.hpp"
 #include "core/coordinates_generator/coordinates_generator.hpp"
 #include "ai-agent/utils/utils.hpp"
 #include "ai-agent/ai_agent.hpp"
-
-namespace {
-
-inline static RawVisualShaderGraph decode_encoded_graph_to_raw(const std::string& encoded_graph) noexcept {
-    RawVisualShaderGraph graph;
-
-    std::vector<std::string> node_entities;
-    std::vector<std::string> conn_entities;
-    node_entities.reserve(8);
-    conn_entities.reserve(8);
-
-    const std::vector<std::string> entities{ai_agent_utils::split_string(encoded_graph, ',')};
-    for (const std::string& entity : entities) {
-        const std::vector<std::string> tok{ai_agent_utils::split_string(entity, ';')};
-        if (tok.empty()) continue;
-        const int entity_type = std::stoi(tok.at(0));
-        if (entity_type == 0) node_entities.push_back(entity);
-        else if (entity_type == 1) conn_entities.push_back(entity);
-    }
-
-    graph.headers = node_entities;
-
-    std::unordered_map<int, int> node_id_to_index;
-    node_id_to_index.reserve(node_entities.size());
-    for (std::size_t i = 0; i < node_entities.size(); ++i) {
-        const std::vector<std::string> tok{ai_agent_utils::split_string(node_entities[i], ';')};
-        if (tok.size() < 3) continue;
-        const int n_id = std::stoi(tok.at(1));
-        node_id_to_index[n_id] = static_cast<int>(i);
-    }
-
-    const std::size_t N{graph.headers.size()};
-    graph.adj_matrix.assign(N, std::vector<std::string>(N, ""));
-
-    for (const std::string& conn_entity : conn_entities) {
-        const std::vector<std::string> tok{ai_agent_utils::split_string(conn_entity, ';')};
-        if (tok.size() < 6) continue;
-        const int from_node_id{std::stoi(tok.at(2))};
-        const int from_port{std::stoi(tok.at(3))};
-        const int to_node_id{std::stoi(tok.at(4))};
-        const int to_port{std::stoi(tok.at(5))};
-
-        const auto from_it{node_id_to_index.find(from_node_id)};
-        const auto to_it{node_id_to_index.find(to_node_id)};
-        if (from_it == node_id_to_index.end() || to_it == node_id_to_index.end()) continue;
-
-        const std::size_t i{static_cast<std::size_t>(from_it->second)};
-        const std::size_t j{static_cast<std::size_t>(to_it->second)};
-
-        std::ostringstream oss;
-        oss << from_port << ',' << to_port;
-        const std::string fragment{oss.str()};
-
-        std::string& cell{graph.adj_matrix[i][j]};
-        if (cell.empty()) {
-            cell = fragment;
-        } else {
-            cell = cell + ';' + fragment;
-        }
-    }
-
-    return graph;
-}
-
-inline static std::string escape_csv_cell(const std::string& value) {
-    const bool needs_quotes{value.find_first_of(",\"\n\r") != std::string::npos};
-    if (!needs_quotes) return value;
-
-    std::string escaped;
-    escaped.reserve(value.size() + 2);
-    escaped.push_back('"');
-
-    for (const char ch : value) {
-        if (ch == '"') escaped += "\"\"";
-        else escaped.push_back(ch);
-    }
-
-    escaped.push_back('"');
-    return escaped;
-}
-
-inline static std::string raw_graph_to_csv(const RawVisualShaderGraph& graph) {
-    if (graph.headers.empty()) return "";
-
-    std::ostringstream oss;
-    oss << ',';
-    for (std::size_t column = 0; column < graph.headers.size(); ++column) {
-        if (column != 0) oss << ',';
-        oss << escape_csv_cell(graph.headers[column]);
-    }
-    oss << '\n';
-
-    for (std::size_t row = 0; row < graph.headers.size(); ++row) {
-        oss << escape_csv_cell(graph.headers[row]);
-
-        const std::vector<std::string> row_values{
-            row < graph.adj_matrix.size() ? graph.adj_matrix[row] : std::vector<std::string>{}};
-
-        for (std::size_t column = 0; column < graph.headers.size(); ++column) {
-            oss << ',';
-            if (column < row_values.size()) oss << escape_csv_cell(row_values[column]);
-        }
-
-        if (row + 1 < graph.headers.size()) oss << '\n';
-    }
-
-    return oss.str();
-}
-
-}  // namespace
 
 using VisualShader = gui::model::schema::VisualShader;
 
@@ -426,7 +315,7 @@ void VisualShaderEditor::init() {
   to_csv_button = new QPushButton("Raw Graph CSV", scene_layer);
   to_csv_button->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
   to_csv_button->setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
-  to_csv_button->setToolTip("Preview the RawVisualShaderGraph as CSV, then copy it or save it as a text file");
+  to_csv_button->setToolTip("Preview the raw graph as CSV, then copy it or save it as a text file");
   menu_bar->addWidget(to_csv_button);
   QObject::connect(to_csv_button, &QPushButton::pressed, this, &VisualShaderEditor::on_to_csv_button_pressed);
 
@@ -635,7 +524,7 @@ void VisualShaderEditor::refresh_node_coordinates() {
   CHECK_PARAM_NULLPTR(nodes_model, "Nodes model is null");
   CHECK_PARAM_NULLPTR(connections_model, "Connections model is null");
 
-  const RawVisualShaderGraph graph{shadergen_gui_adapters::to_raw_graph(nodes_model, connections_model)};
+  const std::string graph{ai_agent_utils::encode_graph(nodes_model, connections_model)};
 
   const std::unordered_map<int, QPointF> coordinates{
       shadergen_coordinates_generator::generate_coordinates(graph)};
@@ -692,7 +581,7 @@ void VisualShaderEditor::on_create_node_button_pressed() {
 void VisualShaderEditor::on_preview_shader_button_pressed() {
   std::string code;
 
-  const RawVisualShaderGraph graph{shadergen_gui_adapters::to_raw_graph(nodes_model, connections_model)};
+  const std::string graph{ai_agent_utils::encode_graph(nodes_model, connections_model)};
   bool result{shadergen_visual_shader_generator::generate_shader(graph, code)};
   CHECK_CONDITION_TRUE(!result, "Failed to generate shader code");
 
@@ -730,7 +619,7 @@ void VisualShaderEditor::on_match_image_button_pressed() {
 
   std::string code;
       
-  const RawVisualShaderGraph graph{shadergen_gui_adapters::to_raw_graph(nodes_model, connections_model)};
+  const std::string graph{ai_agent_utils::encode_graph(nodes_model, connections_model)};
   bool result{shadergen_visual_shader_generator::generate_shader(graph, code)};
   CHECK_CONDITION_TRUE(!result, "Failed to generate shader code");
 
@@ -796,8 +685,7 @@ void VisualShaderEditor::on_start_matching_timer_timeout() {
 
   std::string code;
       
-  const RawVisualShaderGraph graph{decode_encoded_graph_to_raw(best_individual.first)};
-  bool result{shadergen_visual_shader_generator::generate_shader(graph, code)};
+  bool result{shadergen_visual_shader_generator::generate_shader(best_individual.first, code)};
   CHECK_CONDITION_TRUE(!result, "Failed to generate shader code");
 
   ai_agent_monitor->update_current_output(code);
@@ -817,11 +705,11 @@ void VisualShaderEditor::on_stop_matching_timer_timeout() {
 }
 
 void VisualShaderEditor::on_to_csv_button_pressed() {
-  const RawVisualShaderGraph graph{shadergen_gui_adapters::to_raw_graph(nodes_model, connections_model)};
-  const QString csv_text{QString::fromStdString(raw_graph_to_csv(graph))};
+  const std::string graph{ai_agent_utils::encode_graph(nodes_model, connections_model)};
+  const QString csv_text{QString::fromStdString(graph)};
 
   QDialog csv_dialog(this);
-  csv_dialog.setWindowTitle("RawVisualShaderGraph CSV");
+  csv_dialog.setWindowTitle("Raw Graph CSV");
   csv_dialog.setContentsMargins(0, 0, 0, 0);
   csv_dialog.setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
   csv_dialog.resize(720, 420);
@@ -855,7 +743,7 @@ void VisualShaderEditor::on_to_csv_button_pressed() {
 
   QObject::connect(save_button, &QPushButton::pressed, this, [this, csv_text]() {
     const QString file_name{QFileDialog::getSaveFileName(
-        this, "Save RawVisualShaderGraph CSV", "raw_visual_shader_graph.txt",
+        this, "Save Raw Graph CSV", "raw_visual_shader_graph.txt",
         "Text Files (*.txt);;All Files (*)")};
     if (file_name.isEmpty()) return;
 
@@ -1629,7 +1517,7 @@ void VisualShaderGraphicsScene::on_update_renderer_widgets_requested() {
     }
 
     spw->set_code(shadergen_visual_shader_generator::generate_preview_shader(
-        shadergen_gui_adapters::to_raw_graph(nodes_model, connections_model),
+        ai_agent_utils::encode_graph(nodes_model, connections_model),
         n_id, 0));  // 0 is the output port index
   }
 

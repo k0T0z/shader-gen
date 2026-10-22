@@ -28,11 +28,14 @@
 #include "core/coordinates_generator/coordinates_generator.hpp"
 
 #include <algorithm>
-#include <sstream>
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
+
+#include "generator/graph_string_utils.hpp"
+
+using namespace shadergen_graph_string_utils;
 
 namespace shadergen_coordinates_generator {
 
@@ -52,33 +55,35 @@ struct SpanningTree {
   std::vector<int> roots;
 };
 
-inline static std::vector<std::string> split_string(const std::string& str, const char& delimiter) {
-  std::vector<std::string> tokens;
-  std::string token;
-  std::istringstream token_stream(str);
-  while (std::getline(token_stream, token, delimiter)) tokens.push_back(token);
-  return tokens;
-}
-
 /**
  * @brief Reduces the raw graph to the rooted spanning tree the layout is
  *        computed on.
  *
- * The node id is the second token of every header, which is formatted as
- * "0;<node_id>;<oneof_value_field_number>;<field_number>=<value>;...". The
- * directed edges are recovered from the adjacency matrix, whose rows are the
- * "from" nodes and whose columns are the "to" nodes.
+ * Every node entity is formatted as
+ * "0;<node_id>;<oneof_value_field_number>;<field_number>=<value>;...", so the
+ * node id is its second token. The directed edges are recovered from the
+ * connection entities, which are formatted as
+ * "1;<connection_id>;<from_node_id>;<from_port_index>;<to_node_id>;<to_port_index>".
  */
-SpanningTree build_spanning_tree(const RawVisualShaderGraph& graph) {
+SpanningTree build_spanning_tree(const std::string& graph) {
   SpanningTree tree;
 
-  const std::size_t node_count{graph.headers.size()};
+  std::vector<std::string> node_entities;
+  std::vector<std::string> connection_entities;
+  for (const std::string& entity : split_string(graph, ',')) {
+    if (entity.empty()) continue;
+    const std::vector<std::string> tokens{split_string(entity, ';')};
+    if (tokens.empty()) continue;
+    const int entity_type{std::stoi(get_entity_type(tokens))};
+    if (entity_type == 0) node_entities.push_back(entity);
+    else if (entity_type == 1) connection_entities.push_back(entity);
+  }
 
   std::vector<int> node_ids;
-  node_ids.reserve(node_count);
-  for (const std::string& header : graph.headers) {
-    const std::vector<std::string> tokens{split_string(header, ';')};
-    node_ids.push_back(tokens.size() >= 2 ? std::stoi(tokens.at(1)) : -1);
+  node_ids.reserve(node_entities.size());
+  for (const std::string& node_entity : node_entities) {
+    const std::vector<std::string> tokens{split_string(node_entity, ';')};
+    node_ids.push_back(std::stoi(get_node_entity_id(tokens)));
     tree.children[node_ids.back()];  // Make sure every node has an entry.
   }
 
@@ -87,20 +92,17 @@ SpanningTree build_spanning_tree(const RawVisualShaderGraph& graph) {
   // are the roots of the tree.
   std::unordered_set<int> has_outgoing_edge;
   std::unordered_map<int, std::vector<int>> feeders;  // to -> list of from.
-  for (std::size_t i{0}; i < node_count; ++i) {
-    const std::vector<std::string>& row{graph.adj_matrix.at(i)};
-    for (std::size_t j{0}; j < row.size(); ++j) {
-      if (row.at(j).empty()) continue;
+  for (const std::string& connection_entity : connection_entities) {
+    const std::vector<std::string> tokens{split_string(connection_entity, ';')};
 
-      const int from{node_ids.at(i)};
-      const int to{node_ids.at(j)};
+    const int from{std::stoi(get_connection_entity_from_node_id(tokens))};
+    const int to{std::stoi(get_connection_entity_to_node_id(tokens))};
 
-      has_outgoing_edge.insert(from);
-      feeders[to].push_back(from);
-    }
+    has_outgoing_edge.insert(from);
+    feeders[to].push_back(from);
   }
 
-  tree.roots.reserve(node_count);
+  tree.roots.reserve(node_ids.size());
   for (const int& n_id : node_ids) {
     if (has_outgoing_edge.find(n_id) == has_outgoing_edge.end()) tree.roots.push_back(n_id);
   }
@@ -112,7 +114,7 @@ SpanningTree build_spanning_tree(const RawVisualShaderGraph& graph) {
   // Reduce the graph to a spanning tree: each node is attached to the first
   // parent that reaches it.
   std::unordered_set<int> visited;
-  visited.reserve(node_count);
+  visited.reserve(node_ids.size());
   for (const int& root_id : tree.roots) visited.insert(root_id);
 
   std::vector<int> stack{tree.roots};
@@ -303,7 +305,7 @@ void second_walk(LayoutNode* v, const double& m, const int& depth) {
 
 }  // namespace
 
-std::unordered_map<int, QPointF> generate_coordinates(const RawVisualShaderGraph& graph,
+std::unordered_map<int, QPointF> generate_coordinates(const std::string& graph,
                                                       const double level_spacing,
                                                       const double sibling_spacing) {
   const SpanningTree tree{build_spanning_tree(graph)};

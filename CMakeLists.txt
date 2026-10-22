@@ -168,7 +168,6 @@ set(SHADER_GEN_HPP_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/gui/model/utils/utils.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/gui/controller/utils/utils.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/gui/controller/shader_sampler.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/gui/adapters/raw_visual_shader_graph_adapter.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/coordinates_generator/coordinates_generator.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/error_macros.hpp
 )
@@ -195,7 +194,6 @@ set(SHADER_GEN_CPP_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/gui/controller/shader_sampler.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/gui/controller/fitness_plotter.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/gui/model/utils/field_path.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/gui/adapters/raw_visual_shader_graph_adapter.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/coordinates_generator/coordinates_generator.cpp
 )
 
