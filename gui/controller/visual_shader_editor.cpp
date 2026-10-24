@@ -527,7 +527,7 @@ void VisualShaderEditor::refresh_node_coordinates() {
   CHECK_PARAM_NULLPTR(nodes_model, "Nodes model is null");
   CHECK_PARAM_NULLPTR(connections_model, "Connections model is null");
 
-  const std::string graph{ai_agent_utils::encode_graph(nodes_model, connections_model)};
+  const std::string graph{controller_utils::encode_graph(nodes_model, connections_model)};
 
   const std::unordered_map<int, QPointF> coordinates{
       shadergen_coordinates_generator::generate_coordinates(graph)};
@@ -584,7 +584,7 @@ void VisualShaderEditor::on_create_node_button_pressed() {
 void VisualShaderEditor::on_preview_shader_button_pressed() {
   std::string code;
 
-  const std::string graph{ai_agent_utils::encode_graph(nodes_model, connections_model)};
+  const std::string graph{controller_utils::encode_graph(nodes_model, connections_model)};
   bool result{shadergen_visual_shader_generator::generate_shader(graph, code)};
   CHECK_CONDITION_TRUE(!result, "Failed to generate shader code");
 
@@ -622,7 +622,7 @@ void VisualShaderEditor::on_match_image_button_pressed() {
 
   std::string code;
       
-  const std::string graph{ai_agent_utils::encode_graph(nodes_model, connections_model)};
+  const std::string graph{controller_utils::encode_graph(nodes_model, connections_model)};
   bool result{shadergen_visual_shader_generator::generate_shader(graph, code)};
   CHECK_CONDITION_TRUE(!result, "Failed to generate shader code");
 
@@ -652,7 +652,7 @@ void VisualShaderEditor::on_start_matching_button_pressed() {
   ai_agent_worker->set_matching_type(matching_type);
   ai_agent_worker->set_target_image(ai_agent_monitor->get_target_image());
 
-  shared_memory->set_encoded_graph(ai_agent_utils::encode_graph(nodes_model, connections_model));
+  shared_memory->set_encoded_graph(controller_utils::encode_graph(nodes_model, connections_model));
   
   ai_agent_worker->start_matching();
 
@@ -708,7 +708,7 @@ void VisualShaderEditor::on_stop_matching_timer_timeout() {
 }
 
 void VisualShaderEditor::on_to_csv_button_pressed() {
-  const std::string graph{ai_agent_utils::encode_graph(nodes_model, connections_model)};
+  const std::string graph{controller_utils::encode_graph(nodes_model, connections_model)};
   const QString csv_text{QString::fromStdString(graph)};
 
   QDialog csv_dialog(this);
@@ -1553,7 +1553,7 @@ void VisualShaderGraphicsScene::on_update_renderer_widgets_requested() {
     }
 
     spw->set_code(shadergen_visual_shader_generator::generate_preview_shader(
-        ai_agent_utils::encode_graph(nodes_model, connections_model),
+        controller_utils::encode_graph(nodes_model, connections_model),
         n_id, 0));  // 0 is the output port index
   }
 
