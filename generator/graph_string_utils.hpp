@@ -78,12 +78,28 @@ inline static std::vector<std::string> get_node_entity_parameters(const std::vec
     return parameters;
 }
 
+/**
+ * @brief Get the field number of a `field_number=value` parameter pair.
+ *
+ * @note External graph strings (e.g. the AI agent or hand written CSV files) may omit a token
+ *       completely. Such malformed parameters resolve to @c "-1" which never matches a valid
+ *       field number, so the caller can skip the node instead of throwing.
+ */
 inline static std::string get_node_entity_parameter_field_number(const std::vector<std::string>& parameter_tokens) {
-    return parameter_tokens.at(0);
+  SILENT_CHECK_CONDITION_TRUE_NON_VOID(parameter_tokens.empty() || parameter_tokens.at(0).empty(), "-1");
+  return parameter_tokens.at(0);
 }
 
+/**
+ * @brief Get the value of a `field_number=value` parameter pair.
+ *
+ * @note External graph strings (e.g. the AI agent or hand written CSV files) may omit the value
+ *       (e.g. `2=`), in which case @c std::getline drops the trailing empty token. Such malformed
+ *       parameters resolve to the Protobuf default value, which is always @c "0".
+ */
 inline static std::string get_node_entity_parameter_value(const std::vector<std::string>& parameter_tokens) {
-    return parameter_tokens.at(1);
+  SILENT_CHECK_CONDITION_TRUE_NON_VOID(parameter_tokens.size() < 2 || parameter_tokens.at(1).empty(), "0");
+  return parameter_tokens.at(1);
 }
 
 inline static std::string get_connection_entity_id(const std::vector<std::string>& connection_tokens) {

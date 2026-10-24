@@ -29,6 +29,7 @@
 #define MODEL_UTILS_HPP
 
 #include <google/protobuf/descriptor.h>
+#include <QString>
 #include "error_macros.hpp"
 #include "gui/model/schema/visual_shader_nodes.pb.h"
 #include "generator/proto_node_factory.hpp"
@@ -58,6 +59,46 @@ inline static bool is_inside_real_oneof(const google::protobuf::FieldDescriptor*
 
   SILENT_CHECK_PARAM_NULLPTR_NON_VOID(field, false);
   return field->real_containing_oneof() != nullptr;
+}
+
+/**
+ * @brief Get the Protobuf default value of a field as a @c QVariant.
+ *
+ * @note A node can hold optional fields that were never set, which the models report as an
+ *       invalid @c QVariant. Writing this default back to such fields keeps the model free of
+ *       invalid data (e.g. the graph encoder would otherwise emit a malformed `field_number=`
+ *       parameter).
+ *
+ * @param field_desc
+ * @return QVariant The default value of the field, or an invalid @c QVariant for message fields.
+ */
+inline static QVariant get_proto_field_default_value(const google::protobuf::FieldDescriptor* field_desc) noexcept {
+  CHECK_PARAM_NULLPTR_NON_VOID(field_desc, QVariant(), "Field descriptor is null.");
+
+  switch (field_desc->cpp_type()) {
+    case google::protobuf::FieldDescriptor::CPPTYPE_INT32:
+      return field_desc->default_value_int32();
+    case google::protobuf::FieldDescriptor::CPPTYPE_INT64:
+      return QVariant::fromValue(static_cast<qlonglong>(field_desc->default_value_int64()));
+    case google::protobuf::FieldDescriptor::CPPTYPE_UINT32:
+      return field_desc->default_value_uint32();
+    case google::protobuf::FieldDescriptor::CPPTYPE_UINT64:
+      return QVariant::fromValue(static_cast<qulonglong>(field_desc->default_value_uint64()));
+    case google::protobuf::FieldDescriptor::CPPTYPE_FLOAT:
+      return field_desc->default_value_float();
+    case google::protobuf::FieldDescriptor::CPPTYPE_DOUBLE:
+      return field_desc->default_value_double();
+    case google::protobuf::FieldDescriptor::CPPTYPE_BOOL:
+      return field_desc->default_value_bool();
+    case google::protobuf::FieldDescriptor::CPPTYPE_ENUM:
+      return field_desc->default_value_enum()->number();
+    case google::protobuf::FieldDescriptor::CPPTYPE_STRING:
+      return QString::fromStdString(std::string(field_desc->default_value_string()));
+    default:
+      break;
+  }
+
+  return QVariant();
 }
 
 inline static bool is_valid_enum_index(const google::protobuf::EnumDescriptor* enum_descriptor,

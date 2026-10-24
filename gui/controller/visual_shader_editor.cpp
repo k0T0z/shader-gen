@@ -502,6 +502,9 @@ void VisualShaderEditor::load_graph() {
     proto_node = shadergen_utils::get_proto_node_by_oneof_value_field_number(oneof_value_field_number);
     CHECK_PARAM_NULLPTR(proto_node, "Proto node is nullptr.");
 
+    CONTINUE_IF_TRUE(!scene->write_default_values_to_node(n_id),
+                     "Failed to write the default values of node " + std::to_string(n_id));
+
     const bool result{scene->add_node_to_scene(n_id, proto_node, {0, 0})};
     CONTINUE_IF_TRUE(!result, "Failed to add node to scene");
   }
@@ -1006,6 +1009,39 @@ bool VisualShaderGraphicsScene::add_node_to_model(const int& n_id, const std::sh
 
   const int oneof_value_field_number = proto_node->get_oneof_value_field_number();
   CHECK_CONDITION_TRUE_NON_VOID(!oneof->set_oneof(oneof_value_field_number), false, "Failed to set oneof");
+
+  return write_default_values_to_node(n_id);
+}
+
+bool VisualShaderGraphicsScene::write_default_values_to_node(const int& n_id) {
+  const int row_entry{find_node_entry(n_id)};
+  CHECK_CONDITION_TRUE_NON_VOID(row_entry == -1, false, "Failed to find node entry");
+
+  const int oneof_value_field_number{get_node_type_field_number(row_entry)};
+  CHECK_CONDITION_TRUE_NON_VOID(oneof_value_field_number == -1, false, "Failed to get oneof value field number");
+
+  const google::protobuf::FieldDescriptor* oneof_field_descriptor{
+      VisualShader::VisualShaderNode::descriptor()->FindFieldByNumber(oneof_value_field_number)};
+  CHECK_PARAM_NULLPTR_NON_VOID(oneof_field_descriptor, false, "Failed to get the node type field descriptor");
+
+  const google::protobuf::Descriptor* node_type_descriptor{oneof_field_descriptor->message_type()};
+  CHECK_PARAM_NULLPTR_NON_VOID(node_type_descriptor, false, "Failed to get the node type descriptor");
+
+  const int field_count{node_type_descriptor->field_count()};
+
+  for (int i{0}; i < field_count; ++i) {
+    const google::protobuf::FieldDescriptor* field_descriptor{node_type_descriptor->field(i)};
+    const int field_number{field_descriptor->number()};
+
+    // Skip the fields that are already set (e.g. nodes loaded from model.json)
+    SILENT_CONTINUE_IF_TRUE(get_node_field_value(n_id, field_number).isValid());
+
+    const QVariant default_value{shadergen_utils::get_proto_field_default_value(field_descriptor)};
+    SILENT_CONTINUE_IF_TRUE(!default_value.isValid());
+
+    CONTINUE_IF_TRUE(!update_node_field_in_model(n_id, field_number, default_value),
+                     "Failed to write the default value of field " + std::to_string(field_number));
+  }
 
   return true;
 }

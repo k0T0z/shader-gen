@@ -437,6 +437,18 @@ class VisualShaderGraphicsScene : public QGraphicsScene {
   QVariant get_node_value(const int& n_id, const int& field_number, const int& row_entry = -1) const;
   QVariant get_node_field_value(const int& n_id, const int& field_number, const int& row_entry = -1) const;
 
+  /**
+   * @brief Write the Protobuf default value of every field of a node that is still not set.
+   *
+   * @note Nodes created from the UI or loaded from @c model.json can hold unset optional fields
+   *       which the models report as an invalid @c QVariant. This is used when a node is created
+   *       and when a graph is loaded to repair such nodes.
+   *
+   * @param n_id
+   * @return bool
+   */
+  bool write_default_values_to_node(const int& n_id);
+
   bool delete_node_from_model(const int& n_id);
   bool delete_node_from_scene(const int& n_id, const int& in_port_count, const int& out_port_count);
   bool delete_node(const int& n_id, const int& in_port_count, const int& out_port_count);

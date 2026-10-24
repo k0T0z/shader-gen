@@ -255,3 +255,20 @@ TEST(VisualShaderGeneratorTest, TestGenerateShader) {
 
   ASSERT_EQ(generated_code, expected_code);
 }
+
+// Regression test: an unset optional Protobuf field is encoded as "2=" (a parameter with no value)
+// and split_string drops the trailing empty token, which used to make the generator throw
+// std::out_of_range while parsing the node parameters (and abort the application).
+TEST(VisualShaderGeneratorTest, TestParameterWithoutValueFallsBackToDefault) {
+  const std::string graph{
+      "0;0;3,"          // Output (oneof=3): id=0, no params
+      "0;1;2;1=1,"      // Input (oneof=2): id=1, type=1 (UV)
+      "0;2;19;1=1;2=,"  // VectorFunc (oneof=19): id=2, vec_type=1 (2D), func_type is unset
+      "1;0;1;0;2;0,"    // c1: uv(1) output 0 -> vector_func(2) input 0
+      "1;1;2;0;0;0"     // c2: vector_func(2) output 0 -> output(0) input 0
+  };
+
+  std::string generated_code;
+  ASSERT_NO_THROW(generated_code = shadergen_visual_shader_generator::generate_preview_shader(graph, 2, 0));
+  ASSERT_FALSE(generated_code.empty());
+}
