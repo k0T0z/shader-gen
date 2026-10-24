@@ -137,11 +137,24 @@ jobs:
         working-directory: build
         run: cpack --config CPackConfig.cmake -C Release --verbose
 
+      - name: Resolve project version
+        id: version
+        shell: pwsh
+        run: |
+          $version = (Get-Content build/shader-gen-version.txt -Raw).Trim()
+          if ([string]::IsNullOrWhiteSpace($version)) {
+            throw "Failed to read project version from build/shader-gen-version.txt"
+          }
+          Add-Content -Path $env:GITHUB_OUTPUT -Value "version=$version"
+
       - name: Upload Release
         uses: softprops/action-gh-release@v2
         with:
           files: build/*.zip
-          tag_name: latest-qt6
+          name: Shader Gen v${{ steps.version.outputs.version }}
+          tag_name: v${{ steps.version.outputs.version }}
+          target_commitish: ${{ github.event.workflow_run.head_sha || github.sha }}
           generate_release_notes: true
+          make_latest: "true"
           draft: false
           token: ${{ secrets.SHADER_GEN_RELEASES_TOKEN }}

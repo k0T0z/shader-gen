@@ -45,7 +45,7 @@ set(CMAKE_RELWITHDEBINFO_POSTFIX "rd")
 
 set(ENIGMA_ORG_NAME "ENIGMA Development Environment")
 set(SHADER_GEN_PROJECT_NAME "Shader Gen")
-set(SHADER_GEN_PROJECT_VERSION "2.0.0")
+set(SHADER_GEN_PROJECT_VERSION "2.1.0")
 set(SHADER_GEN_PROJECT_DESCRIPTION "Shader Gen is a tool to generate shaders using machine learning.")
 set(SHADER_GEN_EXECUTABLE_NAME "shader-gen")
 set(SHADER_GEN_PROTO_LIBRARY_NAME "${SHADER_GEN_EXECUTABLE_NAME}-proto")
@@ -61,6 +61,9 @@ if (WIN32)
 endif()
 
 project(${SHADER_GEN_EXECUTABLE_NAME} VERSION ${SHADER_GEN_PROJECT_VERSION} LANGUAGES CXX)
+
+# Expose the project version to external tooling (e.g. CI release tagging).
+file(WRITE "${CMAKE_BINARY_DIR}/shader-gen-version.txt" "${SHADER_GEN_PROJECT_VERSION}\n")
 
 if (MSVC)
     string(APPEND CMAKE_CXX_FLAGS " /W4")
@@ -450,7 +453,8 @@ if (MSVC AND SHADER_GEN_BUILD_PORTABLE_RELEASE_PACKAGE)
     set(CPACK_PACKAGE_VERSION           "${SHADER_GEN_PROJECT_VERSION}")
     set(CPACK_PACKAGE_INSTALL_DIRECTORY "Shader Gen")
     set(CPACK_RESOURCE_FILE_LICENSE     "${SHADER_GEN_ROOTDIR}/LICENSE")
-    
+    set(CPACK_PACKAGE_FILE_NAME         "shader-gen-${SHADER_GEN_PROJECT_VERSION}-win64")
+
     set(CPACK_GENERATOR "ZIP")
     set(CPACK_ARCHIVE_COMPONENT_INSTALL OFF)
     set(CPACK_COMPONENTS_ALL            runtime)
