@@ -29,6 +29,11 @@ name: Release
 
 on:
   workflow_dispatch:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+    branches:
+      - master-qt6
 
 env:
   QT_VERSION: "6.12.0"
@@ -38,6 +43,7 @@ env:
 jobs:
   release:
     name: ${{ matrix.name }}
+    if: ${{ github.event_name == 'workflow_dispatch' || (github.event.workflow_run.event == 'push' && github.event.workflow_run.conclusion == 'success') }}
     runs-on: ${{ matrix.os }}
     defaults:
       run:
@@ -63,7 +69,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          ref: 'master-qt6'
+          ref: ${{ github.event.workflow_run.head_sha || 'master-qt6' }}
           submodules: recursive
 
       - name: Cache Qt6
