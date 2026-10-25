@@ -323,7 +323,7 @@ inline static std::pair<ContinuousRangeVariant, ContinuousRangeVariant> get_rang
                 case VisualShaderNodeColorConstant::kGFieldNumber:
                 case VisualShaderNodeColorConstant::kBFieldNumber:
                 case VisualShaderNodeColorConstant::kAFieldNumber: {
-                    return std::make_pair(0.0f, 1.0f);
+                    return std::make_pair(0, 255);
                 }
                 default: 
                     break;
