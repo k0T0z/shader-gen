@@ -418,9 +418,9 @@ inline static std::vector<int> get_range_for_discrete_field(const int& node_type
         case VisualShader::VisualShaderNode::kInputFieldNumber: {
             switch (field_number) {
                 case VisualShaderNodeInput::kTypeFieldNumber: {
+                    // No time input as the GA will match an image
                     return {
-                            VisualShaderNodeInput::INPUT_TYPE_UV, 
-                            VisualShaderNodeInput::INPUT_TYPE_TIME
+                            VisualShaderNodeInput::INPUT_TYPE_UV
                         };
                     }
                 default: 
