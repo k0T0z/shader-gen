@@ -145,6 +145,27 @@ inline static std::shared_ptr<IVisualShaderProtoNode> get_proto_node_by_oneof_va
     case VisualShader::VisualShaderNode::kCompareFieldNumber: {
       return std::make_shared<VisualShaderProtoNode<VisualShaderNodeCompare>>();
     }
+    case VisualShader::VisualShaderNode::kColorCorrectFieldNumber: {
+      return std::make_shared<VisualShaderProtoNode<VisualShaderNodeColorCorrect>>();
+    }
+    case VisualShader::VisualShaderNode::kMath1FieldNumber: {
+      return std::make_shared<VisualShaderProtoNode<VisualShaderNodeMath1>>();
+    }
+    case VisualShader::VisualShaderNode::kModulusFieldNumber: {
+      return std::make_shared<VisualShaderProtoNode<VisualShaderNodeModulus>>();
+    }
+    case VisualShader::VisualShaderNode::kCombineFieldNumber: {
+      return std::make_shared<VisualShaderProtoNode<VisualShaderNodeCombine>>();
+    }
+    case VisualShader::VisualShaderNode::kMaskFieldNumber: {
+      return std::make_shared<VisualShaderProtoNode<VisualShaderNodeMask>>();
+    }
+    case VisualShader::VisualShaderNode::kBlendFieldNumber: {
+      return std::make_shared<VisualShaderProtoNode<VisualShaderNodeBlend>>();
+    }
+    case VisualShader::VisualShaderNode::kColorizeFieldNumber: {
+      return std::make_shared<VisualShaderProtoNode<VisualShaderNodeColorize>>();
+    }
     default:
       WARN_PRINT("Unsupported node type: " + std::to_string(oneof_value_field_number));
       break;

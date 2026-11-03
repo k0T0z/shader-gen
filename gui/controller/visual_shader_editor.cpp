@@ -424,6 +424,14 @@ void VisualShaderEditor::init() {
   t_nodes.emplace_back(std::make_shared<VisualShaderProtoNode<VisualShaderNodeIs>>());
   t_nodes.emplace_back(std::make_shared<VisualShaderProtoNode<VisualShaderNodeCompare>>());
 
+  t_nodes.emplace_back(std::make_shared<VisualShaderProtoNode<VisualShaderNodeColorCorrect>>());
+  t_nodes.emplace_back(std::make_shared<VisualShaderProtoNode<VisualShaderNodeMath1>>());
+  t_nodes.emplace_back(std::make_shared<VisualShaderProtoNode<VisualShaderNodeModulus>>());
+  t_nodes.emplace_back(std::make_shared<VisualShaderProtoNode<VisualShaderNodeCombine>>());
+  t_nodes.emplace_back(std::make_shared<VisualShaderProtoNode<VisualShaderNodeMask>>());
+  t_nodes.emplace_back(std::make_shared<VisualShaderProtoNode<VisualShaderNodeBlend>>());
+  t_nodes.emplace_back(std::make_shared<VisualShaderProtoNode<VisualShaderNodeColorize>>());
+
   for (const std::shared_ptr<IVisualShaderProtoNode>& node : t_nodes) {
     create_node_dialog_nodes_tree_items.emplace_back(
         CreateNodeDialogNodesTreeItem(node->get_caption(), node->get_category_path(), node->get_description(), node));
@@ -1033,6 +1041,10 @@ bool VisualShaderGraphicsScene::write_default_values_to_node(const int& n_id) {
     const google::protobuf::FieldDescriptor* field_descriptor{node_type_descriptor->field(i)};
     const int field_number{field_descriptor->number()};
 
+    // Repeated message fields (e.g. a color gradient) have no single default value to write.
+    SILENT_CONTINUE_IF_TRUE(field_descriptor->is_repeated() &&
+                            field_descriptor->cpp_type() == google::protobuf::FieldDescriptor::CPPTYPE_MESSAGE);
+
     // Skip the fields that are already set (e.g. nodes loaded from model.json)
     SILENT_CONTINUE_IF_TRUE(get_node_field_value(n_id, field_number).isValid());
 
@@ -1274,6 +1286,49 @@ bool VisualShaderGraphicsScene::add_node_to_scene(const int& n_id, const std::sh
       }
       case VisualShader::VisualShaderNode::kVectorDistanceFieldNumber: {
         REGISTER_NODE_FIELD_COMBO_BOX(VisualShaderNodeVectorDistance::kVecTypeFieldNumber);
+        break;
+      }
+      case VisualShader::VisualShaderNode::kColorCorrectFieldNumber: {
+        REGISTER_NODE_FIELD_LINE_EDIT_FLOAT(VisualShaderNodeColorCorrect::kBrightnessFieldNumber, "Brightness");
+        REGISTER_NODE_FIELD_LINE_EDIT_FLOAT(VisualShaderNodeColorCorrect::kContrastFieldNumber, "Contrast");
+        REGISTER_NODE_FIELD_LINE_EDIT_FLOAT(VisualShaderNodeColorCorrect::kGammaFieldNumber, "Gamma");
+        REGISTER_NODE_FIELD_LINE_EDIT_FLOAT(VisualShaderNodeColorCorrect::kDesaturateFieldNumber, "Desaturate");
+        break;
+      }
+      case VisualShader::VisualShaderNode::kMath1FieldNumber: {
+        REGISTER_NODE_FIELD_COMBO_BOX(VisualShaderNodeMath1::kFunctionFieldNumber);
+        REGISTER_NODE_FIELD_LINE_EDIT_FLOAT(VisualShaderNodeMath1::kAFieldNumber, "A");
+        REGISTER_NODE_FIELD_CHECK_BOX(VisualShaderNodeMath1::kOnRFieldNumber);
+        REGISTER_NODE_FIELD_CHECK_BOX(VisualShaderNodeMath1::kOnGFieldNumber);
+        REGISTER_NODE_FIELD_CHECK_BOX(VisualShaderNodeMath1::kOnBFieldNumber);
+        REGISTER_NODE_FIELD_CHECK_BOX(VisualShaderNodeMath1::kOnAFieldNumber);
+        break;
+      }
+      case VisualShader::VisualShaderNode::kModulusFieldNumber: {
+        REGISTER_NODE_FIELD_LINE_EDIT_FLOAT(VisualShaderNodeModulus::kModulusFieldNumber, "Modulus");
+        REGISTER_NODE_FIELD_LINE_EDIT_INT(VisualShaderNodeModulus::kXBiasFieldNumber, "X Bias");
+        REGISTER_NODE_FIELD_CHECK_BOX(VisualShaderNodeModulus::kNormalizeFieldNumber);
+        break;
+      }
+      case VisualShader::VisualShaderNode::kCombineFieldNumber: {
+        REGISTER_NODE_FIELD_COMBO_BOX(VisualShaderNodeCombine::kInput1FieldNumber);
+        REGISTER_NODE_FIELD_COMBO_BOX(VisualShaderNodeCombine::kInput2FieldNumber);
+        REGISTER_NODE_FIELD_COMBO_BOX(VisualShaderNodeCombine::kInput3FieldNumber);
+        REGISTER_NODE_FIELD_COMBO_BOX(VisualShaderNodeCombine::kInput4FieldNumber);
+        break;
+      }
+      case VisualShader::VisualShaderNode::kMaskFieldNumber: {
+        REGISTER_NODE_FIELD_CHECK_BOX(VisualShaderNodeMask::kInvertFieldNumber);
+        break;
+      }
+      case VisualShader::VisualShaderNode::kBlendFieldNumber: {
+        REGISTER_NODE_FIELD_COMBO_BOX(VisualShaderNodeBlend::kLayerFuncFieldNumber);
+        REGISTER_NODE_FIELD_LINE_EDIT_FLOAT(VisualShaderNodeBlend::kOpacityFieldNumber, "Opacity");
+        REGISTER_NODE_FIELD_CHECK_BOX(VisualShaderNodeBlend::kInvAlphaFieldNumber);
+        break;
+      }
+      case VisualShader::VisualShaderNode::kColorizeFieldNumber: {
+        REGISTER_NODE_FIELD_GRADIENT(VisualShaderNodeColorize::kGradientFieldNumber, "position:r:g:b:a|...");
         break;
       }
       case VisualShader::VisualShaderNode::kDotProductFieldNumber:
@@ -1519,6 +1574,9 @@ bool VisualShaderGraphicsScene::update_node_field_in_scene(const int& n_id, cons
     spin_box->set_value(value.toInt());
     QObject::connect(spin_box, &VisualShaderNodeFieldSpinBox::node_update_requested, this,
                      &VisualShaderGraphicsScene::update_node_field_in_model);
+  } else if (auto line_edit_gradient{dynamic_cast<VisualShaderNodeFieldLineEditGradient*>(widget)}) {
+    // The gradient widget writes to the model itself, so it only needs to re-sync its text.
+    line_edit_gradient->refresh_from_model();
   } else {
     FAIL_AND_RETURN_NON_VOID(false, "Unknown widget type");
   }
@@ -3582,4 +3640,34 @@ VisualShaderNodeFieldSpinBox::VisualShaderNodeFieldSpinBox(const QVariant& initi
 
 void VisualShaderNodeFieldSpinBox::on_value_changed(const int& value) {
   Q_EMIT node_update_requested(n_id, field_number, value);
+}
+
+VisualShaderNodeFieldLineEditGradient::VisualShaderNodeFieldLineEditGradient(RepeatedMessageModel* gradient_model,
+                                                                             QWidget* parent)
+    : QLineEdit(parent), m_gradient_model(gradient_model) {
+  setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
+  setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
+
+  refresh_from_model();
+
+  QObject::connect(this, &QLineEdit::editingFinished, this, &VisualShaderNodeFieldLineEditGradient::on_editing_finished);
+}
+
+void VisualShaderNodeFieldLineEditGradient::refresh_from_model() {
+  SILENT_CHECK_PARAM_NULLPTR(m_gradient_model);
+
+  setText(QString::fromStdString(controller_utils::encode_repeated_message_field(m_gradient_model)));
+}
+
+void VisualShaderNodeFieldLineEditGradient::on_editing_finished() {
+  SILENT_CHECK_PARAM_NULLPTR(m_gradient_model);
+
+  const bool result{controller_utils::decode_repeated_message_field(m_gradient_model, text().toStdString())};
+
+  // Normalize what the user typed, no matter whether the token was accepted or not.
+  refresh_from_model();
+
+  SILENT_CHECK_CONDITION_TRUE(!result);
+
+  Q_EMIT gradient_updated();
 }

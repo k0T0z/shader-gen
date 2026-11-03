@@ -1248,6 +1248,30 @@ private:
   int field_number;
 };
 
+/**
+    @brief A text field that edits a repeated message field (e.g. a color gradient) as a single
+           compact string. The string is parsed on commit and the underlying rows are rewritten in
+           place. Each row is encoded as @c position:r:g:b:a and rows are joined with @c | .
+*/
+class VisualShaderNodeFieldLineEditGradient : public QLineEdit {
+  Q_OBJECT
+
+ public:
+  explicit VisualShaderNodeFieldLineEditGradient(RepeatedMessageModel* gradient_model, QWidget* parent = nullptr);
+  ~VisualShaderNodeFieldLineEditGradient() = default;
+
+  void refresh_from_model();
+
+ Q_SIGNALS:
+  void gradient_updated();
+
+ private Q_SLOTS:
+  void on_editing_finished();
+
+ private:
+  RepeatedMessageModel* m_gradient_model;
+};
+
 #define REGISTER_NODE_FIELD_COMBO_BOX(field_number) \
   if (true) { \
     QVariant initial_value{visual_shader_model->data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), \
@@ -1350,6 +1374,24 @@ private:
     embed_widget_layout->addWidget(node_field_widget); \
     QObject::connect(node_field_widget, QOverload<int>::of(&QSpinBox::valueChanged), this, &VisualShaderGraphicsScene::on_update_renderer_widgets_requested); \
     QObject::connect(node_field_widget, &VisualShaderNodeFieldSpinBox::node_update_requested, this, &VisualShaderGraphicsScene::update_node_field_in_model); \
+    node_field_widgets[n_id][field_number] = node_field_widget; \
+  } else                                                                                                        \
+    ((void)0)
+
+#define REGISTER_NODE_FIELD_GRADIENT(field_number, placeholder) \
+  if (true) { \
+    const ProtoModel* node_field_model = visual_shader_model->get_sub_model(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), \
+      FieldPath::RepeatedAt(row_entry), \
+      FieldPath::FieldNumber(node_type_field_number), \
+      FieldPath::FieldNumber(field_number))); \
+    RepeatedMessageModel* gradient_model = dynamic_cast<RepeatedMessageModel*>(const_cast<ProtoModel*>(node_field_model)); \
+    CHECK_PARAM_NULLPTR_NON_VOID(gradient_model, false, "Gradient field model is not a RepeatedMessageModel."); \
+    VisualShaderNodeFieldLineEditGradient* node_field_widget = new VisualShaderNodeFieldLineEditGradient(gradient_model, embed_widget); \
+    node_field_widget->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Fixed); \
+    node_field_widget->setContentsMargins(0, 0, 0, 0);  \
+    embed_widget_layout->addWidget(node_field_widget); \
+    node_field_widget->setPlaceholderText(placeholder); \
+    QObject::connect(node_field_widget, &VisualShaderNodeFieldLineEditGradient::gradient_updated, this, &VisualShaderGraphicsScene::on_update_renderer_widgets_requested); \
     node_field_widgets[n_id][field_number] = node_field_widget; \
   } else                                                                                                        \
     ((void)0)

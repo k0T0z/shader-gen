@@ -92,6 +92,17 @@ message VisualShader {
             VisualShaderNodeSwitch switch_node = 34;
             VisualShaderNodeIs is = 35;
             VisualShaderNodeCompare compare = 36;
+
+            /*************************************/
+            /* SPECIAL                           */
+            /*************************************/
+            VisualShaderNodeColorCorrect color_correct = 37;
+            VisualShaderNodeMath1 math_1 = 38;
+            VisualShaderNodeModulus modulus = 39;
+            VisualShaderNodeCombine combine = 40;
+            VisualShaderNodeMask mask = 41;
+            VisualShaderNodeBlend blend = 42;
+            VisualShaderNodeColorize colorize = 43;
         }
     }
     

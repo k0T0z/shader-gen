@@ -181,6 +181,13 @@ class VisualShaderProtoNode : public IVisualShaderProtoNode {
     else if constexpr (std::is_same_v<Proto, VisualShaderNodeSwitch>) return VisualShader::VisualShaderNode::kSwitchNodeFieldNumber;
     else if constexpr (std::is_same_v<Proto, VisualShaderNodeIs>) return VisualShader::VisualShaderNode::kIsFieldNumber;
     else if constexpr (std::is_same_v<Proto, VisualShaderNodeCompare>) return VisualShader::VisualShaderNode::kCompareFieldNumber;
+    else if constexpr (std::is_same_v<Proto, VisualShaderNodeColorCorrect>) return VisualShader::VisualShaderNode::kColorCorrectFieldNumber;
+    else if constexpr (std::is_same_v<Proto, VisualShaderNodeMath1>) return VisualShader::VisualShaderNode::kMath1FieldNumber;
+    else if constexpr (std::is_same_v<Proto, VisualShaderNodeModulus>) return VisualShader::VisualShaderNode::kModulusFieldNumber;
+    else if constexpr (std::is_same_v<Proto, VisualShaderNodeCombine>) return VisualShader::VisualShaderNode::kCombineFieldNumber;
+    else if constexpr (std::is_same_v<Proto, VisualShaderNodeMask>) return VisualShader::VisualShaderNode::kMaskFieldNumber;
+    else if constexpr (std::is_same_v<Proto, VisualShaderNodeBlend>) return VisualShader::VisualShaderNode::kBlendFieldNumber;
+    else if constexpr (std::is_same_v<Proto, VisualShaderNodeColorize>) return VisualShader::VisualShaderNode::kColorizeFieldNumber;
     else {
       static_assert(false, "Unsupported proto type!");
       return -1;

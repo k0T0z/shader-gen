@@ -867,4 +867,177 @@ message VisualShaderNodeCompare {
     optional VisualShaderNodeCompareCondition cond = 3;
 }
 
+/*************************************/
+/* SPECIAL                           */
+/*************************************/
+
+message ColorGradientStop {
+    optional float position = 1;
+    optional float r = 2;
+    optional float g = 3;
+    optional float b = 4;
+    optional float a = 5;
+}
+
+message VisualShaderNodeColorize {
+    option (node_caption) = "Colorize";
+    option (node_input_port_count) = 1;
+    option (node_input_port_caption) = "Color";
+
+    option (node_output_port_count) = 1;
+    option (node_output_port_caption) = "";
+
+    option (node_category_path) = "Special/Color";
+
+    option (node_description) = "Maps a grayscale input to a color by sampling a color gradient at the input's "
+     "luminance g = (r + g + b) / 3. Below the first stop the first color is used, above the last stop the "
+     "last color is used, in between the two neighboring colors are linearly interpolated.";
+
+    repeated ColorGradientStop gradient = 1;
+}
+
+message VisualShaderNodeColorCorrect {
+    option (node_caption) = "ColorCorrect";
+    option (node_input_port_count) = 1;
+    option (node_input_port_caption) = "Color";
+
+    option (node_output_port_count) = 1;
+    option (node_output_port_caption) = "";
+
+    option (node_category_path) = "Special/Color";
+
+    option (node_description) = "Changes the brightness/contrast of the input by computing O = ((I - 0.5) * contrast + brightness) + 0.5. "
+     "The result is clamped to [0,1]. Next desaturate is applied in HSV space. Finally gamma is applied as O = (O)^(1/gamma).";
+
+    optional float brightness = 1;
+    optional float contrast = 2;
+    optional float gamma = 3;
+    optional float desaturate = 4;
+}
+
+message VisualShaderNodeMath1 {
+    option (node_caption) = "Math1";
+    option (node_input_port_count) = 1;
+    option (node_input_port_caption) = "Color";
+
+    option (node_output_port_count) = 1;
+    option (node_output_port_caption) = "";
+
+    option (node_category_path) = "Special/Math";
+
+    option (node_description) = "Computes one of the functions I + a, I * a, a - I or I ^ a on a single input. "
+     "Each of the R, G, B and A channels can be transformed independently.";
+
+    enum VisualShaderNodeMath1Function {
+        FUNC_ADD = 0 [(value_caption) = "I + a"];
+        FUNC_MUL = 1 [(value_caption) = "I * a"];
+        FUNC_SUB = 2 [(value_caption) = "a - I"];
+        FUNC_POW = 3 [(value_caption) = "I ^ a"];
+    };
+
+    optional float a = 1;
+    optional VisualShaderNodeMath1Function function = 2;
+    optional bool on_r = 3;
+    optional bool on_g = 4;
+    optional bool on_b = 5;
+    optional bool on_a = 6;
+}
+
+message VisualShaderNodeModulus {
+    option (node_caption) = "Modulus";
+    option (node_input_port_count) = 2;
+    option (node_input_port_caption) = "Color";
+    option (node_input_port_caption) = "uv";
+
+    option (node_output_port_count) = 1;
+    option (node_output_port_caption) = "";
+
+    option (node_category_path) = "Special/Math";
+
+    option (node_description) = "Computes (I + u*m*xBias) % m per RGB channel and clamps the result to [0,1]. "
+     "The horizontal coordinate u is taken from the uv input. Optionally normalizes by multiplying with 1/m.";
+
+    optional float modulus = 1;
+    optional bool normalize = 2;
+    optional int32 x_bias = 3;
+}
+
+message VisualShaderNodeCombine {
+    option (node_caption) = "Combine";
+    option (node_input_port_count) = 4;
+    option (node_input_port_caption) = "Input 1";
+    option (node_input_port_caption) = "Input 2";
+    option (node_input_port_caption) = "Input 3";
+    option (node_input_port_caption) = "Input 4";
+
+    option (node_output_port_count) = 1;
+    option (node_output_port_caption) = "";
+
+    option (node_category_path) = "Special/Combine";
+
+    option (node_description) = "Combines 4 inputs into a single RGBA image, selecting for every output channel "
+     "(R, G, B, A) which channel of the matching input to use.";
+
+    enum VisualShaderNodeCombineChannel {
+        CHANNEL_R = 0 [(value_caption) = "R"];
+        CHANNEL_G = 1 [(value_caption) = "G"];
+        CHANNEL_B = 2 [(value_caption) = "B"];
+        CHANNEL_A = 3 [(value_caption) = "A"];
+    };
+
+    optional VisualShaderNodeCombineChannel input_1 = 1;
+    optional VisualShaderNodeCombineChannel input_2 = 2;
+    optional VisualShaderNodeCombineChannel input_3 = 3;
+    optional VisualShaderNodeCombineChannel input_4 = 4;
+}
+
+message VisualShaderNodeMask {
+    option (node_caption) = "Mask";
+    option (node_input_port_count) = 3;
+    option (node_input_port_caption) = "Input 1";
+    option (node_input_port_caption) = "Input 2";
+    option (node_input_port_caption) = "Mask";
+
+    option (node_output_port_count) = 1;
+    option (node_output_port_caption) = "";
+
+    option (node_category_path) = "Special/Combine";
+
+    option (node_description) = "Blends two images based on the grayscale weight w = (mask.r + mask.g + mask.b) / 3 "
+     "by computing output = (1 - w) * Input 1 + w * Input 2. When Invert is set w becomes 1 - w.";
+
+    optional bool invert = 1;
+}
+
+message VisualShaderNodeBlend {
+    option (node_caption) = "Blend";
+    option (node_input_port_count) = 2;
+    option (node_input_port_caption) = "Input 1";
+    option (node_input_port_caption) = "Input 2";
+
+    option (node_output_port_count) = 1;
+    option (node_output_port_caption) = "";
+
+    option (node_category_path) = "Special/Combine";
+
+    option (node_description) = "Blends Input 2 over Input 1 using a layer function. The alpha of Input 2 "
+     "(optionally inverted) scaled by Opacity is used as the blend weight. The output alpha is taken from Input 1.";
+
+    enum VisualShaderNodeBlendFunction {
+        BLEND_NORMAL = 0 [(value_caption) = "Normal"];
+        BLEND_MULTIPLY = 1 [(value_caption) = "Multiply"];
+        BLEND_DIVIDE = 2 [(value_caption) = "Divide"];
+        BLEND_SCREEN = 3 [(value_caption) = "Screen"];
+        BLEND_OVERLAY = 4 [(value_caption) = "Overlay"];
+        BLEND_DODGE = 5 [(value_caption) = "Dodge"];
+        BLEND_BURN = 6 [(value_caption) = "Burn"];
+        BLEND_DIFFERENCE = 7 [(value_caption) = "Difference"];
+        BLEND_ADDITION = 8 [(value_caption) = "Addition"];
+        BLEND_SUBTRACT = 9 [(value_caption) = "Subtract"];
+    };
+
+    optional VisualShaderNodeBlendFunction layer_func = 1;
+    optional float opacity = 2;
+    optional bool inv_alpha = 3;
+}
 

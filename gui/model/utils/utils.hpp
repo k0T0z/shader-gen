@@ -354,6 +354,27 @@ inline static std::shared_ptr<VisualShaderNodePortTypeGenerator> get_port_type_g
         const VisualShaderNodeCompare::VisualShaderNodeCompareType type {compare_type_model->data().toInt()};
         return std::make_shared<VisualShaderNodePortTypeGeneratorCompare>(proto_node, type);
     }
+    case VisualShader::VisualShaderNode::kColorCorrectFieldNumber: {
+        return std::make_shared<VisualShaderNodePortTypeGeneratorColorCorrect>(proto_node);
+    }
+    case VisualShader::VisualShaderNode::kMath1FieldNumber: {
+        return std::make_shared<VisualShaderNodePortTypeGeneratorMath1>(proto_node);
+    }
+    case VisualShader::VisualShaderNode::kModulusFieldNumber: {
+        return std::make_shared<VisualShaderNodePortTypeGeneratorModulus>(proto_node);
+    }
+    case VisualShader::VisualShaderNode::kCombineFieldNumber: {
+        return std::make_shared<VisualShaderNodePortTypeGeneratorCombine>(proto_node);
+    }
+    case VisualShader::VisualShaderNode::kMaskFieldNumber: {
+        return std::make_shared<VisualShaderNodePortTypeGeneratorMask>(proto_node);
+    }
+    case VisualShader::VisualShaderNode::kBlendFieldNumber: {
+        return std::make_shared<VisualShaderNodePortTypeGeneratorBlend>(proto_node);
+    }
+    case VisualShader::VisualShaderNode::kColorizeFieldNumber: {
+        return std::make_shared<VisualShaderNodePortTypeGeneratorColorize>(proto_node);
+    }
     default:
       WARN_PRINT("Unsupported node type: " + std::to_string(oneof_value_field_number));
       break;
