@@ -1047,10 +1047,6 @@ bool VisualShaderGraphicsScene::write_default_values_to_node(const int& n_id) {
     const google::protobuf::FieldDescriptor* field_descriptor{node_type_descriptor->field(i)};
     const int field_number{field_descriptor->number()};
 
-    // Repeated message fields (e.g. a color gradient) have no single default value to write.
-    SILENT_CONTINUE_IF_TRUE(field_descriptor->is_repeated() &&
-                            field_descriptor->cpp_type() == google::protobuf::FieldDescriptor::CPPTYPE_MESSAGE);
-
     // Skip the fields that are already set (e.g. nodes loaded from model.json)
     SILENT_CONTINUE_IF_TRUE(get_node_field_value(n_id, field_number).isValid());
 

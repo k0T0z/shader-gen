@@ -30,6 +30,8 @@
 
 #include <google/protobuf/descriptor.h>
 #include <QString>
+#include <string>
+#include <unordered_map>
 #include "error_macros.hpp"
 #include "gui/model/schema/visual_shader_nodes.pb.h"
 #include "generator/proto_node_factory.hpp"
@@ -62,6 +64,107 @@ inline static bool is_inside_real_oneof(const google::protobuf::FieldDescriptor*
 }
 
 /**
+ * @brief Get the node field defaults that the Protobuf schema cannot express.
+ *
+ * @note proto3 fields always default to zero/empty and this project intentionally keeps the schema
+ *       free of custom default options. The table below restores the defaults of the original node
+ *       implementations (keyed by the node type and the field number, i.e. the stable field identity
+ *       that survives a rename) so that a freshly added node starts in the same state as the node it
+ *       was ported from.
+ *
+ * @param field_desc
+ * @return QVariant The overridden default value, or an invalid @c QVariant when the field keeps its
+ *         Protobuf default.
+ */
+inline static QVariant get_proto_field_default_value_override(const google::protobuf::FieldDescriptor* field_desc) noexcept {
+  CHECK_PARAM_NULLPTR_NON_VOID(field_desc, QVariant(), "Field descriptor is null.");
+
+  const google::protobuf::Descriptor* node_type{field_desc->containing_type()};
+  CHECK_PARAM_NULLPTR_NON_VOID(node_type, QVariant(), "Field containing type is null.");
+
+  static const std::unordered_map<std::string, std::unordered_map<int, QVariant>> overrides{
+      // ColorCorrect
+      {std::string(VisualShaderNodeColorCorrect::descriptor()->full_name()),
+       {
+           {VisualShaderNodeColorCorrect::kContrastFieldNumber, 1.0f},
+           {VisualShaderNodeColorCorrect::kGammaFieldNumber, 1.0f},
+       }},
+      // Math1
+      {std::string(VisualShaderNodeMath1::descriptor()->full_name()),
+       {
+           {VisualShaderNodeMath1::kOnRFieldNumber, true},
+           {VisualShaderNodeMath1::kOnGFieldNumber, true},
+           {VisualShaderNodeMath1::kOnBFieldNumber, true},
+       }},
+      // Modulus
+      {std::string(VisualShaderNodeModulus::descriptor()->full_name()),
+       {
+           {VisualShaderNodeModulus::kModulusFieldNumber, 0.5f},
+           {VisualShaderNodeModulus::kNormalizeFieldNumber, true},
+       }},
+      // Combine
+      {std::string(VisualShaderNodeCombine::descriptor()->full_name()),
+       {
+           {VisualShaderNodeCombine::kInput1FieldNumber, 0},
+           {VisualShaderNodeCombine::kInput2FieldNumber, 1},
+           {VisualShaderNodeCombine::kInput3FieldNumber, 2},
+           {VisualShaderNodeCombine::kInput4FieldNumber, 3},
+       }},
+      // Blend
+      {std::string(VisualShaderNodeBlend::descriptor()->full_name()),
+       {
+           {VisualShaderNodeBlend::kOpacityFieldNumber, 1.0f},
+       }},
+      // Gradient
+      {std::string(VisualShaderNodeGradient::descriptor()->full_name()),
+       {
+           {VisualShaderNodeGradient::kGradientTypeFieldNumber, 0},
+       }},
+      // Checker
+      {std::string(VisualShaderNodeChecker::descriptor()->full_name()),
+       {
+           {VisualShaderNodeChecker::kScaleXFieldNumber, 1.0f},
+           {VisualShaderNodeChecker::kScaleYFieldNumber, 1.0f},
+       }},
+      // Brick
+      {std::string(VisualShaderNodeBrick::descriptor()->full_name()),
+       {
+           {VisualShaderNodeBrick::kNumXFieldNumber, 4},
+           {VisualShaderNodeBrick::kNumYFieldNumber, 6},
+           {VisualShaderNodeBrick::kShiftFieldNumber, 0.5f},
+           {VisualShaderNodeBrick::kRandShiftFieldNumber, 0.1f},
+           {VisualShaderNodeBrick::kGapXFieldNumber, 0.03f},
+           {VisualShaderNodeBrick::kGapYFieldNumber, 0.03f},
+           {VisualShaderNodeBrick::kSmoothFieldNumber, 0.05f},
+       }},
+      // Tile
+      {std::string(VisualShaderNodeTile::descriptor()->full_name()),
+       {
+           {VisualShaderNodeTile::kBorderXFieldNumber, 0.1f},
+           {VisualShaderNodeTile::kBorderYFieldNumber, 0.1f},
+       }},
+      // Function
+      {std::string(VisualShaderNodeFunction::descriptor()->full_name()),
+       {
+           {VisualShaderNodeFunction::kFunctionUFieldNumber, 0},
+           {VisualShaderNodeFunction::kFunctionVFieldNumber, 0},
+           {VisualShaderNodeFunction::kCombinerFieldNumber, 0},
+           {VisualShaderNodeFunction::kScaleXFieldNumber, 1.0f},
+           {VisualShaderNodeFunction::kScaleYFieldNumber, 1.0f},
+       }},
+  };
+
+  const std::unordered_map<std::string, std::unordered_map<int, QVariant>>::const_iterator node_it{
+      overrides.find(std::string(node_type->full_name()))};
+  SILENT_CHECK_CONDITION_TRUE_NON_VOID(node_it == overrides.end(), QVariant());
+
+  const std::unordered_map<int, QVariant>::const_iterator field_it{node_it->second.find(field_desc->number())};
+  SILENT_CHECK_CONDITION_TRUE_NON_VOID(field_it == node_it->second.end(), QVariant());
+
+  return field_it->second;
+}
+
+/**
  * @brief Get the Protobuf default value of a field as a @c QVariant.
  *
  * @note A node can hold optional fields that were never set, which the models report as an
@@ -74,6 +177,9 @@ inline static bool is_inside_real_oneof(const google::protobuf::FieldDescriptor*
  */
 inline static QVariant get_proto_field_default_value(const google::protobuf::FieldDescriptor* field_desc) noexcept {
   CHECK_PARAM_NULLPTR_NON_VOID(field_desc, QVariant(), "Field descriptor is null.");
+
+  const QVariant overridden_default_value{get_proto_field_default_value_override(field_desc)};
+  SILENT_CHECK_CONDITION_TRUE_NON_VOID(overridden_default_value.isValid(), overridden_default_value);
 
   switch (field_desc->cpp_type()) {
     case google::protobuf::FieldDescriptor::CPPTYPE_INT32:
