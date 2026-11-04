@@ -72,6 +72,17 @@ class RepeatedMessageModel : public MessageModel {
   int append_row() override;
   bool remove_row(const int& row) override;
 
+  /**
+   * @brief Reorder the rows so that they are sorted (ascending, stable) by the value of a column.
+   *
+   * @note Used to keep a list such as a color gradient's stops ordered by their @c position. The
+   *       underlying messages and the cached row models are swapped in place so both stay in sync.
+   *
+   * @param field_number The field number of the column to sort by.
+   * @return bool
+   */
+  bool sort_rows_by_field(const int& field_number);
+
   int field_to_column(const int& fn) const;
 
   Message* get_message_buffer() const { return m_message_buffer; }

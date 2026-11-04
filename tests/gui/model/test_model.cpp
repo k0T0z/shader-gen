@@ -446,6 +446,46 @@ TEST(MessageModelTest, TestAddRemoveRow) {
   delete model;  // For the AddressSanitizer to not complain about memory leaks
 }
 
+TEST(MessageModelTest, TestSortRowsByField) {
+  OrganizationTestSchema org;
+
+  ProtoModel* model = new MessageModel(&org);
+  model->build_sub_models();
+
+  RepeatedMessageModel* employees{dynamic_cast<RepeatedMessageModel*>(const_cast<ProtoModel*>(
+      model->get_sub_model(FieldPath::Of<OrganizationTestSchema>(
+          FieldPath::FieldNumber(OrganizationTestSchema::kEmployeesFieldNumber)))))};
+  ASSERT_TRUE(employees);
+
+  // Insert three employees whose ids are out of order.
+  const int ids[3]{30, 10, 20};
+  for (int row{0}; row < 3; ++row) {
+    ASSERT_EQ(employees->append_row(), row);
+    ASSERT_TRUE(model->set_data(
+        FieldPath::Of<OrganizationTestSchema>(
+            FieldPath::FieldNumber(OrganizationTestSchema::kEmployeesFieldNumber), FieldPath::RepeatedAt(row),
+            FieldPath::FieldNumber(Person::kIdFieldNumber)),
+        ids[row]));
+  }
+
+  ASSERT_TRUE(employees->sort_rows_by_field(Person::kIdFieldNumber));
+
+  // The rows must now be ordered (ascending) by id and the cached row models must follow the swap.
+  const int expected_ids[3]{10, 20, 30};
+  for (int row{0}; row < 3; ++row) {
+    ASSERT_EQ(org.employees(row).id(), expected_ids[row]);
+
+    MessageModel* row_model{employees->get_sub_model(row)};
+    ASSERT_TRUE(row_model);
+    const ProtoModel* id_model{
+        row_model->get_sub_model(FieldPath::Of<Person>(FieldPath::FieldNumber(Person::kIdFieldNumber)))};
+    ASSERT_TRUE(id_model);
+    ASSERT_EQ(id_model->data().toInt(), expected_ids[row]);
+  }
+
+  delete model;  // For the AddressSanitizer to not complain about memory leaks
+}
+
 TEST(MessageModelTest, TestOneofModel) {
   OrganizationTestSchema org;
 

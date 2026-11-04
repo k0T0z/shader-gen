@@ -198,6 +198,37 @@ bool RepeatedMessageModel::remove_row(const int& row) {
   return true;
 }
 
+bool RepeatedMessageModel::sort_rows_by_field(const int& field_number) {
+  const int rows{rowCount()};
+  SILENT_CHECK_CONDITION_TRUE_NON_VOID(rows < 2, true);
+
+  const Reflection* refl{m_message_buffer->GetReflection()};
+
+  const auto row_value = [this, &field_number](const int& row) -> float {
+    const MessageModel* row_model{get_sub_model(row)};
+    CHECK_PARAM_NULLPTR_NON_VOID(row_model, 0.0f, "Row model is null.");
+
+    const ProtoModel* value_model{row_model->get_sub_model(field_number)};
+    CHECK_PARAM_NULLPTR_NON_VOID(value_model, 0.0f, "Field not found.");
+
+    return value_model->data().toFloat();
+  };
+
+  // Stable insertion sort: bubble a row down while it is strictly smaller than its predecessor.
+  for (int i{1}; i < rows; ++i) {
+    for (int j{i}; j > 0; --j) {
+      if (row_value(j - 1) <= row_value(j)) break;
+
+      refl->SwapElements(m_message_buffer, m_field_desc, j - 1, j);
+      std::swap(m_sub_models.at(j - 1), m_sub_models.at(j));
+      m_sub_models.at(j - 1)->set_index_in_parent(j - 1);
+      m_sub_models.at(j)->set_index_in_parent(j);
+    }
+  }
+
+  return true;
+}
+
 int RepeatedMessageModel::field_to_column(const int& fn) const {
   const Descriptor* desc{m_message_buffer->GetDescriptor()};
 

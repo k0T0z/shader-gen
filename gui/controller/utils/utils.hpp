@@ -47,98 +47,6 @@ namespace controller_utils {
 using VisualShader = gui::model::schema::VisualShader;
 
 /**
- * @brief Encode a repeated message field (e.g. a color gradient) into a single packed token.
- *
- * @note The graph string cannot represent repeated message fields directly, so each row is
- *       flattened into colon separated values and rows are joined with a pipe. This keeps the
- *       token free of the `;`, `,` and `=` separators used by the graph string format.
- */
-inline static std::string encode_repeated_message_field(const RepeatedMessageModel* repeated_field_model) {
-    std::vector<std::string> entries;
-    entries.reserve(repeated_field_model->rowCount());
-
-    for (int r{0}; r < repeated_field_model->rowCount(); ++r) {
-        const MessageModel* row_model{repeated_field_model->get_sub_model(r)};
-        CHECK_PARAM_NULLPTR_NON_VOID(row_model, "", "Repeated field row model is nullptr.");
-
-        std::vector<std::string> values;
-        values.reserve(row_model->columnCount());
-
-        for (int c{0}; c < row_model->columnCount(); ++c) {
-            const ProtoModel* column_model{row_model->get_sub_model_by_index(c)};
-            CHECK_PARAM_NULLPTR_NON_VOID(column_model, "", "Repeated field column model is nullptr.");
-
-            const FieldDescriptor* column_descriptor{row_model->get_column_descriptor(c)};
-            CHECK_PARAM_NULLPTR_NON_VOID(column_descriptor, "", "Repeated field column descriptor is nullptr.");
-
-            QVariant column_value{column_model->data()};
-            if (!column_value.isValid()) {
-                column_value = shadergen_utils::get_proto_field_default_value(column_descriptor);
-            }
-
-            values.push_back(column_value.toString().toStdString());
-        }
-
-        entries.push_back(shadergen_graph_string_utils::join_string(values, ':'));
-    }
-
-    return shadergen_graph_string_utils::join_string(entries, '|');
-}
-
-/**
- * @brief Decode a packed token produced by @c encode_repeated_message_field back into model rows.
- *
- * @note The existing rows are replaced by the decoded ones. A malformed token leaves the model
- *       untouched. Missing columns fall back to their Protobuf default value.
- */
-inline static bool decode_repeated_message_field(RepeatedMessageModel* repeated_field_model,
-                                                 const std::string& packed) {
-    CHECK_PARAM_NULLPTR_NON_VOID(repeated_field_model, false, "Repeated field model is nullptr.");
-
-    std::vector<std::vector<std::string>> parsed_rows;
-
-    if (!packed.empty()) {
-        for (const std::string& entry : shadergen_graph_string_utils::split_string(packed, '|')) {
-            parsed_rows.push_back(shadergen_graph_string_utils::split_string(entry, ':'));
-        }
-    }
-
-    while (repeated_field_model->rowCount() > 0) {
-        const int last_row{repeated_field_model->rowCount() - 1};
-
-        if (!repeated_field_model->remove_row(last_row)) {
-            FAIL_AND_RETURN_NON_VOID(false, "Failed to remove repeated field row " + std::to_string(last_row) + ".");
-        }
-    }
-
-    for (const std::vector<std::string>& values : parsed_rows) {
-        const int row{repeated_field_model->append_row()};
-        CHECK_CONDITION_TRUE_NON_VOID(row < 0, false, "Failed to append a repeated field row.");
-
-        MessageModel* row_model{repeated_field_model->get_sub_model(row)};
-        CHECK_PARAM_NULLPTR_NON_VOID(row_model, false, "Repeated field row model is nullptr.");
-
-        for (int c{0}; c < row_model->columnCount(); ++c) {
-            const FieldDescriptor* column_descriptor{row_model->get_column_descriptor(c)};
-            CHECK_PARAM_NULLPTR_NON_VOID(column_descriptor, false, "Repeated field column descriptor is nullptr.");
-
-            QVariant column_value{shadergen_utils::get_proto_field_default_value(column_descriptor)};
-
-            if (static_cast<size_t>(c) < values.size() && !values.at(c).empty()) {
-                column_value = QString::fromStdString(values.at(c));
-            }
-
-            if (!repeated_field_model->setData(repeated_field_model->index(row, c), column_value)) {
-                FAIL_AND_RETURN_NON_VOID(false, "Failed to set repeated field row " + std::to_string(row) +
-                                                    " column " + std::to_string(c) + ".");
-            }
-        }
-    }
-
-    return true;
-}
-
-/**
  * @brief Encode a Qt-backed visual shader model into the semicolon/comma delimited graph string.
  *
  * @note This is the GUI/Qt counterpart of the (Qt-free) utilities in @c ai-agent/utils/utils.hpp. It
@@ -201,8 +109,30 @@ inline static std::string encode_graph(const ProtoModel* nodes, const ProtoModel
                 const RepeatedMessageModel* repeated_field_model{dynamic_cast<const RepeatedMessageModel*>(field_model)};
                 CHECK_PARAM_NULLPTR_NON_VOID(repeated_field_model, "", "Repeated field model is nullptr.");
 
-                parameters.push_back(shadergen_graph_string_utils::join_string(
-                    {std::to_string(field_number), encode_repeated_message_field(repeated_field_model)}, '='));
+                // A repeated field is a set of parameters keyed by "<row>:<column field number>" so that
+                // every value inside a repeated field behaves like an ordinary node parameter.
+                for (int row{0}; row < repeated_field_model->rowCount(); ++row) {
+                    const MessageModel* row_model{repeated_field_model->get_sub_model(row)};
+                    CHECK_PARAM_NULLPTR_NON_VOID(row_model, "", "Repeated field row model is nullptr.");
+
+                    for (int column{0}; column < row_model->columnCount(); ++column) {
+                        const ProtoModel* column_model{row_model->get_sub_model_by_index(column)};
+                        CHECK_PARAM_NULLPTR_NON_VOID(column_model, "", "Repeated field column model is nullptr.");
+
+                        const FieldDescriptor* column_descriptor{row_model->get_column_descriptor(column)};
+                        CHECK_PARAM_NULLPTR_NON_VOID(column_descriptor, "", "Repeated field column descriptor is nullptr.");
+
+                        QVariant column_value{column_model->data()};
+                        if (!column_value.isValid()) {
+                            column_value = shadergen_utils::get_proto_field_default_value(column_descriptor);
+                        }
+
+                        const std::string key{std::to_string(row) + ':' + std::to_string(column_descriptor->number())};
+                        parameters.push_back(shadergen_graph_string_utils::join_string(
+                            {key, column_value.toString().toStdString()}, '='));
+                    }
+                }
+
                 continue;
             }
 

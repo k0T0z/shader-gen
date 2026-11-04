@@ -1330,18 +1330,18 @@ bool VisualShaderGraphicsScene::add_node_to_scene(const int& n_id, const std::sh
         break;
       }
       case VisualShader::VisualShaderNode::kColorizeFieldNumber: {
-        REGISTER_NODE_FIELD_GRADIENT(VisualShaderNodeColorize::kGradientFieldNumber, "position:r:g:b:a|...");
+        REGISTER_NODE_FIELD_REPEATED_MESSAGE(VisualShaderNodeColorize::kGradientFieldNumber, ColorGradientStop::kPositionFieldNumber);
         break;
       }
       case VisualShader::VisualShaderNode::kGradientFieldNumber: {
         REGISTER_NODE_FIELD_COMBO_BOX(VisualShaderNodeGradient::kGradientTypeFieldNumber);
-        REGISTER_NODE_FIELD_GRADIENT(VisualShaderNodeGradient::kGradientFieldNumber, "position:r:g:b:a|...");
+        REGISTER_NODE_FIELD_REPEATED_MESSAGE(VisualShaderNodeGradient::kGradientFieldNumber, ColorGradientStop::kPositionFieldNumber);
         break;
       }
       case VisualShader::VisualShaderNode::kCheckerFieldNumber: {
         REGISTER_NODE_FIELD_LINE_EDIT_FLOAT(VisualShaderNodeChecker::kScaleXFieldNumber, "Scale X");
         REGISTER_NODE_FIELD_LINE_EDIT_FLOAT(VisualShaderNodeChecker::kScaleYFieldNumber, "Scale Y");
-        REGISTER_NODE_FIELD_GRADIENT(VisualShaderNodeChecker::kGradientFieldNumber, "position:r:g:b:a|...");
+        REGISTER_NODE_FIELD_REPEATED_MESSAGE(VisualShaderNodeChecker::kGradientFieldNumber, ColorGradientStop::kPositionFieldNumber);
         break;
       }
       case VisualShader::VisualShaderNode::kBrickFieldNumber: {
@@ -1353,14 +1353,14 @@ bool VisualShaderGraphicsScene::add_node_to_scene(const int& n_id, const std::sh
         REGISTER_NODE_FIELD_LINE_EDIT_FLOAT(VisualShaderNodeBrick::kGapYFieldNumber, "Gap Y");
         REGISTER_NODE_FIELD_LINE_EDIT_FLOAT(VisualShaderNodeBrick::kSmoothFieldNumber, "Smooth");
         REGISTER_NODE_FIELD_CHECK_BOX(VisualShaderNodeBrick::kRandColorFieldNumber);
-        REGISTER_NODE_FIELD_GRADIENT(VisualShaderNodeBrick::kGradientFieldNumber, "position:r:g:b:a|...");
+        REGISTER_NODE_FIELD_REPEATED_MESSAGE(VisualShaderNodeBrick::kGradientFieldNumber, ColorGradientStop::kPositionFieldNumber);
         break;
       }
       case VisualShader::VisualShaderNode::kTileFieldNumber: {
         REGISTER_NODE_FIELD_LINE_EDIT_FLOAT(VisualShaderNodeTile::kBorderXFieldNumber, "Border X");
         REGISTER_NODE_FIELD_LINE_EDIT_FLOAT(VisualShaderNodeTile::kBorderYFieldNumber, "Border Y");
         REGISTER_NODE_FIELD_LINE_EDIT_FLOAT(VisualShaderNodeTile::kSmoothFieldNumber, "Smooth");
-        REGISTER_NODE_FIELD_GRADIENT(VisualShaderNodeTile::kGradientFieldNumber, "position:r:g:b:a|...");
+        REGISTER_NODE_FIELD_REPEATED_MESSAGE(VisualShaderNodeTile::kGradientFieldNumber, ColorGradientStop::kPositionFieldNumber);
         break;
       }
       case VisualShader::VisualShaderNode::kFunctionFieldNumber: {
@@ -1369,7 +1369,7 @@ bool VisualShaderGraphicsScene::add_node_to_scene(const int& n_id, const std::sh
         REGISTER_NODE_FIELD_COMBO_BOX(VisualShaderNodeFunction::kCombinerFieldNumber);
         REGISTER_NODE_FIELD_LINE_EDIT_FLOAT(VisualShaderNodeFunction::kScaleXFieldNumber, "Scale X");
         REGISTER_NODE_FIELD_LINE_EDIT_FLOAT(VisualShaderNodeFunction::kScaleYFieldNumber, "Scale Y");
-        REGISTER_NODE_FIELD_GRADIENT(VisualShaderNodeFunction::kGradientFieldNumber, "position:r:g:b:a|...");
+        REGISTER_NODE_FIELD_REPEATED_MESSAGE(VisualShaderNodeFunction::kGradientFieldNumber, ColorGradientStop::kPositionFieldNumber);
         break;
       }
       case VisualShader::VisualShaderNode::kDotProductFieldNumber:
@@ -1552,6 +1552,85 @@ bool VisualShaderGraphicsScene::update_node_field_in_model(const int& n_id, cons
   return true;
 }
 
+bool VisualShaderGraphicsScene::update_node_repeated_field_in_model(const int& n_id, const int& field_number,
+                                                                    const int& row, const int& sub_field_number,
+                                                                    const QVariant& value) {
+  const int row_entry{find_node_entry(n_id)};
+  CHECK_CONDITION_TRUE_NON_VOID(row_entry == -1, false, "Failed to find node entry");
+
+  const int oneof_value_field_number{get_node_type_field_number(row_entry)};
+  CHECK_CONDITION_TRUE_NON_VOID(oneof_value_field_number == -1, false, "Failed to get oneof value field number");
+
+  const bool result{visual_shader_model->set_data(
+      FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry),
+                                  FieldPath::FieldNumber(oneof_value_field_number), FieldPath::FieldNumber(field_number),
+                                  FieldPath::RepeatedAt(row), FieldPath::FieldNumber(sub_field_number)),
+      value)};
+  CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to update repeated node field in model");
+
+  return true;
+}
+
+RepeatedMessageModel* VisualShaderGraphicsScene::get_node_repeated_field_model(const int& n_id,
+                                                                               const int& field_number) const {
+  const int row_entry{find_node_entry(n_id)};
+  CHECK_CONDITION_TRUE_NON_VOID(row_entry == -1, nullptr, "Failed to find node entry");
+
+  const int oneof_value_field_number{get_node_type_field_number(row_entry)};
+  CHECK_CONDITION_TRUE_NON_VOID(oneof_value_field_number == -1, nullptr, "Failed to get oneof value field number");
+
+  const ProtoModel* field_model{visual_shader_model->get_sub_model(
+      FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry),
+                                  FieldPath::FieldNumber(oneof_value_field_number), FieldPath::FieldNumber(field_number)))};
+  CHECK_PARAM_NULLPTR_NON_VOID(field_model, nullptr, "Repeated field model is nullptr.");
+
+  return dynamic_cast<RepeatedMessageModel*>(const_cast<ProtoModel*>(field_model));
+}
+
+void VisualShaderGraphicsScene::refresh_node_repeated_field_widget(const int& n_id, const int& field_number) {
+  auto it{node_field_widgets.find(n_id)};
+  SILENT_CHECK_CONDITION_TRUE(it == node_field_widgets.end());
+
+  auto it2{it->second.find(field_number)};
+  SILENT_CHECK_CONDITION_TRUE(it2 == it->second.end());
+
+  if (auto repeated_message{dynamic_cast<VisualShaderNodeFieldRepeatedMessage*>(it2->second)}) {
+    repeated_message->refresh_from_model();
+  }
+
+  on_update_renderer_widgets_requested();
+}
+
+void VisualShaderGraphicsScene::on_node_repeated_field_row_add_requested(const int& n_id, const int& field_number) {
+  RepeatedMessageModel* repeated_field_model{get_node_repeated_field_model(n_id, field_number)};
+  CHECK_PARAM_NULLPTR(repeated_field_model, "Repeated field model is not a RepeatedMessageModel.");
+
+  CHECK_CONDITION_TRUE(repeated_field_model->append_row() < 0, "Failed to append a row to a repeated field.");
+
+  refresh_node_repeated_field_widget(n_id, field_number);
+}
+
+void VisualShaderGraphicsScene::on_node_repeated_field_row_remove_requested(const int& n_id, const int& field_number,
+                                                                           const int& row) {
+  RepeatedMessageModel* repeated_field_model{get_node_repeated_field_model(n_id, field_number)};
+  CHECK_PARAM_NULLPTR(repeated_field_model, "Repeated field model is not a RepeatedMessageModel.");
+
+  CHECK_CONDITION_TRUE(!repeated_field_model->remove_row(row), "Failed to remove a row from a repeated field.");
+
+  refresh_node_repeated_field_widget(n_id, field_number);
+}
+
+void VisualShaderGraphicsScene::on_node_repeated_field_sort_requested(const int& n_id, const int& field_number,
+                                                                     const int& sort_field_number) {
+  RepeatedMessageModel* repeated_field_model{get_node_repeated_field_model(n_id, field_number)};
+  CHECK_PARAM_NULLPTR(repeated_field_model, "Repeated field model is not a RepeatedMessageModel.");
+
+  CHECK_CONDITION_TRUE(!repeated_field_model->sort_rows_by_field(sort_field_number),
+                       "Failed to sort the rows of a repeated field.");
+
+  refresh_node_repeated_field_widget(n_id, field_number);
+}
+
 bool VisualShaderGraphicsScene::update_node_in_scene(const int& n_id, const int& field_number, const QVariant& value) {
   VisualShaderNodeGraphicsObject* n_o{this->get_node_graphics_object(n_id)};
   CHECK_PARAM_NULLPTR_NON_VOID(n_o, false, "Node graphics object is null");
@@ -1615,9 +1694,9 @@ bool VisualShaderGraphicsScene::update_node_field_in_scene(const int& n_id, cons
     spin_box->set_value(value.toInt());
     QObject::connect(spin_box, &VisualShaderNodeFieldSpinBox::node_update_requested, this,
                      &VisualShaderGraphicsScene::update_node_field_in_model);
-  } else if (auto line_edit_gradient{dynamic_cast<VisualShaderNodeFieldLineEditGradient*>(widget)}) {
-    // The gradient widget writes to the model itself, so it only needs to re-sync its text.
-    line_edit_gradient->refresh_from_model();
+  } else if (auto repeated_message{dynamic_cast<VisualShaderNodeFieldRepeatedMessage*>(widget)}) {
+    // A repeated field has no single value to assign, so the widget only needs to re-sync its rows.
+    repeated_message->refresh_from_model();
   } else {
     FAIL_AND_RETURN_NON_VOID(false, "Unknown widget type");
   }
@@ -3683,32 +3762,174 @@ void VisualShaderNodeFieldSpinBox::on_value_changed(const int& value) {
   Q_EMIT node_update_requested(n_id, field_number, value);
 }
 
-VisualShaderNodeFieldLineEditGradient::VisualShaderNodeFieldLineEditGradient(RepeatedMessageModel* gradient_model,
-                                                                             QWidget* parent)
-    : QLineEdit(parent), m_gradient_model(gradient_model) {
+VisualShaderNodeFieldRepeatedMessage::VisualShaderNodeFieldRepeatedMessage(RepeatedMessageModel* repeated_model,
+                                                                          const int& sort_field_number, const int& n_id,
+                                                                          const int& field_number, QWidget* parent)
+    : QWidget(parent),
+      m_repeated_model(repeated_model),
+      m_sort_field_number(sort_field_number),
+      m_n_id(n_id),
+      m_field_number(field_number),
+      m_rows_layout(nullptr) {
   setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
   setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
 
-  refresh_from_model();
+  QVBoxLayout* outer_layout{new QVBoxLayout(this)};
+  outer_layout->setContentsMargins(0, 0, 0, 0);
 
-  QObject::connect(this, &QLineEdit::editingFinished, this, &VisualShaderNodeFieldLineEditGradient::on_editing_finished);
+  // The rows are kept in their own layout so that they can be rebuilt without touching the button.
+  m_rows_layout = new QVBoxLayout();
+  m_rows_layout->setContentsMargins(0, 0, 0, 0);
+  outer_layout->addLayout(m_rows_layout);
+
+  QPushButton* add_row_button{new QPushButton("Add", this)};
+  add_row_button->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Fixed);
+  add_row_button->setContentsMargins(0, 0, 0, 0);
+  add_row_button->setToolTip("Append a row to this list");
+  QObject::connect(add_row_button, &QPushButton::pressed, this, [this]() {
+    Q_EMIT node_repeated_field_row_add_requested(m_n_id, m_field_number);
+  });
+  outer_layout->addWidget(add_row_button);
+
+  refresh_from_model();
 }
 
-void VisualShaderNodeFieldLineEditGradient::refresh_from_model() {
-  SILENT_CHECK_PARAM_NULLPTR(m_gradient_model);
-
-  setText(QString::fromStdString(controller_utils::encode_repeated_message_field(m_gradient_model)));
+void VisualShaderNodeFieldRepeatedMessage::clear_rows() {
+  while (QLayoutItem* item{m_rows_layout->takeAt(0)}) {
+    if (QWidget* widget{item->widget()}) {
+      // The widgets are hidden immediately and destroyed on the next event loop iteration so that
+      // this can safely run from a signal handler of one of them.
+      widget->hide();
+      widget->deleteLater();
+    }
+    delete item;
+  }
 }
 
-void VisualShaderNodeFieldLineEditGradient::on_editing_finished() {
-  SILENT_CHECK_PARAM_NULLPTR(m_gradient_model);
+void VisualShaderNodeFieldRepeatedMessage::build_row(const int& row) {
+  SILENT_CHECK_PARAM_NULLPTR(m_repeated_model);
 
-  const bool result{controller_utils::decode_repeated_message_field(m_gradient_model, text().toStdString())};
+  MessageModel* row_model{m_repeated_model->get_sub_model(row)};
+  SILENT_CHECK_PARAM_NULLPTR(row_model);
 
-  // Normalize what the user typed, no matter whether the token was accepted or not.
-  refresh_from_model();
+  QWidget* row_widget{new QWidget(this)};
+  QHBoxLayout* row_layout{new QHBoxLayout(row_widget)};
+  row_layout->setContentsMargins(0, 0, 0, 0);
 
-  SILENT_CHECK_CONDITION_TRUE(!result);
+  for (int column{0}; column < row_model->columnCount(); ++column) {
+    const FieldDescriptor* column_descriptor{row_model->get_column_descriptor(column)};
+    SILENT_CHECK_PARAM_NULLPTR(column_descriptor);
 
-  Q_EMIT gradient_updated();
+    const ProtoModel* column_model{row_model->get_sub_model_by_index(column)};
+    SILENT_CHECK_PARAM_NULLPTR(column_model);
+
+    const int sub_field_number{column_descriptor->number()};
+    const QVariant column_value{column_model->data()};
+
+    switch (column_descriptor->cpp_type()) {
+      case FieldDescriptor::CPPTYPE_FLOAT:
+      case FieldDescriptor::CPPTYPE_DOUBLE: {
+        QLineEdit* line_edit{new QLineEdit(QString::number(column_value.toFloat()), row_widget)};
+        line_edit->setMaximumWidth(64);
+        line_edit->setToolTip(QString::fromStdString(std::string(column_descriptor->name())));
+        QObject::connect(line_edit, &QLineEdit::textChanged, this,
+                         [this, row, sub_field_number](const QString& text) {
+                           bool ok{false};
+                           const float value{text.toFloat(&ok)};
+                           SILENT_CHECK_CONDITION_TRUE(!ok);
+                           Q_EMIT node_repeated_field_update_requested(m_n_id, m_field_number, row, sub_field_number, value);
+                         });
+
+        if (sub_field_number == m_sort_field_number) {
+          // The rows are reordered once the user is done editing the sort key.
+          QObject::connect(line_edit, &QLineEdit::editingFinished, this, [this]() {
+            Q_EMIT node_repeated_field_sort_requested(m_n_id, m_field_number, m_sort_field_number);
+          });
+        }
+
+        row_layout->addWidget(line_edit);
+        break;
+      }
+      case FieldDescriptor::CPPTYPE_INT32: {
+        QLineEdit* line_edit{new QLineEdit(QString::number(column_value.toInt()), row_widget)};
+        line_edit->setMaximumWidth(64);
+        line_edit->setToolTip(QString::fromStdString(std::string(column_descriptor->name())));
+        QObject::connect(line_edit, &QLineEdit::textChanged, this,
+                         [this, row, sub_field_number](const QString& text) {
+                           bool ok{false};
+                           const int value{text.toInt(&ok)};
+                           SILENT_CHECK_CONDITION_TRUE(!ok);
+                           Q_EMIT node_repeated_field_update_requested(m_n_id, m_field_number, row, sub_field_number, value);
+                         });
+        row_layout->addWidget(line_edit);
+        break;
+      }
+      case FieldDescriptor::CPPTYPE_UINT32: {
+        QLineEdit* line_edit{new QLineEdit(QString::number(column_value.toUInt()), row_widget)};
+        line_edit->setMaximumWidth(64);
+        line_edit->setToolTip(QString::fromStdString(std::string(column_descriptor->name())));
+        QObject::connect(line_edit, &QLineEdit::textChanged, this,
+                         [this, row, sub_field_number](const QString& text) {
+                           bool ok{false};
+                           const unsigned int value{text.toUInt(&ok)};
+                           SILENT_CHECK_CONDITION_TRUE(!ok);
+                           Q_EMIT node_repeated_field_update_requested(m_n_id, m_field_number, row, sub_field_number, value);
+                         });
+        row_layout->addWidget(line_edit);
+        break;
+      }
+      case FieldDescriptor::CPPTYPE_BOOL: {
+        QCheckBox* check_box{new QCheckBox(row_widget)};
+        check_box->setChecked(column_value.toBool());
+        check_box->setToolTip(QString::fromStdString(std::string(column_descriptor->name())));
+        QObject::connect(check_box, &QCheckBox::stateChanged, this, [this, row, sub_field_number](const int& state) {
+          Q_EMIT node_repeated_field_update_requested(m_n_id, m_field_number, row, sub_field_number,
+                                                      static_cast<bool>(state));
+        });
+        row_layout->addWidget(check_box);
+        break;
+      }
+      case FieldDescriptor::CPPTYPE_ENUM: {
+        const EnumDescriptor* enum_descriptor{column_descriptor->enum_type()};
+        SILENT_CHECK_PARAM_NULLPTR(enum_descriptor);
+
+        QComboBox* combo_box{new QComboBox(row_widget)};
+        for (int i{0}; i < enum_descriptor->value_count(); ++i) {
+          const int enum_value{shadergen_utils::get_enum_value_by_enum_index(enum_descriptor, i)};
+          combo_box->addItem(QString::fromStdString(
+              shadergen_utils::get_enum_value_caption_by_value(enum_descriptor, enum_value)));
+        }
+        combo_box->setCurrentIndex(column_value.toInt());
+        combo_box->setToolTip(QString::fromStdString(std::string(column_descriptor->name())));
+        QObject::connect(combo_box, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
+                         [this, row, sub_field_number](const int& index) {
+                           Q_EMIT node_repeated_field_update_requested(m_n_id, m_field_number, row, sub_field_number, index);
+                         });
+        row_layout->addWidget(combo_box);
+        break;
+      }
+      default:
+        WARN_PRINT("Unsupported repeated field column type: " + std::string(column_descriptor->name()));
+        break;
+    }
+  }
+
+  QPushButton* remove_row_button{new QPushButton("-", row_widget)};
+  remove_row_button->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+  remove_row_button->setContentsMargins(0, 0, 0, 0);
+  remove_row_button->setToolTip("Remove this row");
+  QObject::connect(remove_row_button, &QPushButton::pressed, this, [this, row]() {
+    Q_EMIT node_repeated_field_row_remove_requested(m_n_id, m_field_number, row);
+  });
+  row_layout->addWidget(remove_row_button);
+
+  m_rows_layout->addWidget(row_widget);
+}
+
+void VisualShaderNodeFieldRepeatedMessage::refresh_from_model() {
+  SILENT_CHECK_PARAM_NULLPTR(m_repeated_model);
+
+  clear_rows();
+
+  for (int row{0}; row < m_repeated_model->rowCount(); ++row) build_row(row);
 }
