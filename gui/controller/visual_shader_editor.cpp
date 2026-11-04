@@ -432,6 +432,12 @@ void VisualShaderEditor::init() {
   t_nodes.emplace_back(std::make_shared<VisualShaderProtoNode<VisualShaderNodeBlend>>());
   t_nodes.emplace_back(std::make_shared<VisualShaderProtoNode<VisualShaderNodeColorize>>());
 
+  t_nodes.emplace_back(std::make_shared<VisualShaderProtoNode<VisualShaderNodeGradient>>());
+  t_nodes.emplace_back(std::make_shared<VisualShaderProtoNode<VisualShaderNodeChecker>>());
+  t_nodes.emplace_back(std::make_shared<VisualShaderProtoNode<VisualShaderNodeBrick>>());
+  t_nodes.emplace_back(std::make_shared<VisualShaderProtoNode<VisualShaderNodeTile>>());
+  t_nodes.emplace_back(std::make_shared<VisualShaderProtoNode<VisualShaderNodeFunction>>());
+
   for (const std::shared_ptr<IVisualShaderProtoNode>& node : t_nodes) {
     create_node_dialog_nodes_tree_items.emplace_back(
         CreateNodeDialogNodesTreeItem(node->get_caption(), node->get_category_path(), node->get_description(), node));
@@ -1329,6 +1335,45 @@ bool VisualShaderGraphicsScene::add_node_to_scene(const int& n_id, const std::sh
       }
       case VisualShader::VisualShaderNode::kColorizeFieldNumber: {
         REGISTER_NODE_FIELD_GRADIENT(VisualShaderNodeColorize::kGradientFieldNumber, "position:r:g:b:a|...");
+        break;
+      }
+      case VisualShader::VisualShaderNode::kGradientFieldNumber: {
+        REGISTER_NODE_FIELD_COMBO_BOX(VisualShaderNodeGradient::kGradientTypeFieldNumber);
+        REGISTER_NODE_FIELD_GRADIENT(VisualShaderNodeGradient::kGradientFieldNumber, "position:r:g:b:a|...");
+        break;
+      }
+      case VisualShader::VisualShaderNode::kCheckerFieldNumber: {
+        REGISTER_NODE_FIELD_LINE_EDIT_FLOAT(VisualShaderNodeChecker::kScaleXFieldNumber, "Scale X");
+        REGISTER_NODE_FIELD_LINE_EDIT_FLOAT(VisualShaderNodeChecker::kScaleYFieldNumber, "Scale Y");
+        REGISTER_NODE_FIELD_GRADIENT(VisualShaderNodeChecker::kGradientFieldNumber, "position:r:g:b:a|...");
+        break;
+      }
+      case VisualShader::VisualShaderNode::kBrickFieldNumber: {
+        REGISTER_NODE_FIELD_LINE_EDIT_INT(VisualShaderNodeBrick::kNumXFieldNumber, "Num X");
+        REGISTER_NODE_FIELD_LINE_EDIT_INT(VisualShaderNodeBrick::kNumYFieldNumber, "Num Y");
+        REGISTER_NODE_FIELD_LINE_EDIT_FLOAT(VisualShaderNodeBrick::kShiftFieldNumber, "Shift");
+        REGISTER_NODE_FIELD_LINE_EDIT_FLOAT(VisualShaderNodeBrick::kRandShiftFieldNumber, "Rand Shift");
+        REGISTER_NODE_FIELD_LINE_EDIT_FLOAT(VisualShaderNodeBrick::kGapXFieldNumber, "Gap X");
+        REGISTER_NODE_FIELD_LINE_EDIT_FLOAT(VisualShaderNodeBrick::kGapYFieldNumber, "Gap Y");
+        REGISTER_NODE_FIELD_LINE_EDIT_FLOAT(VisualShaderNodeBrick::kSmoothFieldNumber, "Smooth");
+        REGISTER_NODE_FIELD_CHECK_BOX(VisualShaderNodeBrick::kRandColorFieldNumber);
+        REGISTER_NODE_FIELD_GRADIENT(VisualShaderNodeBrick::kGradientFieldNumber, "position:r:g:b:a|...");
+        break;
+      }
+      case VisualShader::VisualShaderNode::kTileFieldNumber: {
+        REGISTER_NODE_FIELD_LINE_EDIT_FLOAT(VisualShaderNodeTile::kBorderXFieldNumber, "Border X");
+        REGISTER_NODE_FIELD_LINE_EDIT_FLOAT(VisualShaderNodeTile::kBorderYFieldNumber, "Border Y");
+        REGISTER_NODE_FIELD_LINE_EDIT_FLOAT(VisualShaderNodeTile::kSmoothFieldNumber, "Smooth");
+        REGISTER_NODE_FIELD_GRADIENT(VisualShaderNodeTile::kGradientFieldNumber, "position:r:g:b:a|...");
+        break;
+      }
+      case VisualShader::VisualShaderNode::kFunctionFieldNumber: {
+        REGISTER_NODE_FIELD_COMBO_BOX(VisualShaderNodeFunction::kFunctionUFieldNumber);
+        REGISTER_NODE_FIELD_COMBO_BOX(VisualShaderNodeFunction::kFunctionVFieldNumber);
+        REGISTER_NODE_FIELD_COMBO_BOX(VisualShaderNodeFunction::kCombinerFieldNumber);
+        REGISTER_NODE_FIELD_LINE_EDIT_FLOAT(VisualShaderNodeFunction::kScaleXFieldNumber, "Scale X");
+        REGISTER_NODE_FIELD_LINE_EDIT_FLOAT(VisualShaderNodeFunction::kScaleYFieldNumber, "Scale Y");
+        REGISTER_NODE_FIELD_GRADIENT(VisualShaderNodeFunction::kGradientFieldNumber, "position:r:g:b:a|...");
         break;
       }
       case VisualShader::VisualShaderNode::kDotProductFieldNumber:

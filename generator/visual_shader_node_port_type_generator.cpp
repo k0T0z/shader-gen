@@ -960,3 +960,113 @@ VisualShaderNodePortType VisualShaderNodePortTypeGeneratorColorize::get_output_p
     }
     return VisualShaderNodePortType::PORT_TYPE_UNSPECIFIED;
 }
+
+VisualShaderNodePortType VisualShaderNodePortTypeGeneratorGradient::get_input_port_type(const int& port_index) const {
+    VALIDATE_INDEX_NON_VOID(port_index, proto_node->get_input_port_count(), VisualShaderNodePortType::PORT_TYPE_UNSPECIFIED, "Gradient port index out of range.");
+    switch (port_index) {
+    case 0:
+        return VisualShaderNodePortType::PORT_TYPE_VECTOR_2D;
+    default:
+        break;
+    }
+    return VisualShaderNodePortType::PORT_TYPE_UNSPECIFIED;
+}
+
+VisualShaderNodePortType VisualShaderNodePortTypeGeneratorGradient::get_output_port_type(const int& port_index) const {
+    VALIDATE_INDEX_NON_VOID(port_index, proto_node->get_output_port_count(), VisualShaderNodePortType::PORT_TYPE_UNSPECIFIED, "Gradient port index out of range.");
+    switch (port_index) {
+    case 0:
+        return VisualShaderNodePortType::PORT_TYPE_VECTOR_4D;
+    default:
+        break;
+    }
+    return VisualShaderNodePortType::PORT_TYPE_UNSPECIFIED;
+}
+
+VisualShaderNodePortType VisualShaderNodePortTypeGeneratorChecker::get_input_port_type(const int& port_index) const {
+    VALIDATE_INDEX_NON_VOID(port_index, proto_node->get_input_port_count(), VisualShaderNodePortType::PORT_TYPE_UNSPECIFIED, "Checker port index out of range.");
+    switch (port_index) {
+    case 0:
+        return VisualShaderNodePortType::PORT_TYPE_VECTOR_2D;
+    default:
+        break;
+    }
+    return VisualShaderNodePortType::PORT_TYPE_UNSPECIFIED;
+}
+
+VisualShaderNodePortType VisualShaderNodePortTypeGeneratorChecker::get_output_port_type(const int& port_index) const {
+    VALIDATE_INDEX_NON_VOID(port_index, proto_node->get_output_port_count(), VisualShaderNodePortType::PORT_TYPE_UNSPECIFIED, "Checker port index out of range.");
+    switch (port_index) {
+    case 0:
+        return VisualShaderNodePortType::PORT_TYPE_VECTOR_4D;
+    default:
+        break;
+    }
+    return VisualShaderNodePortType::PORT_TYPE_UNSPECIFIED;
+}
+
+VisualShaderNodePortType VisualShaderNodePortTypeGeneratorBrick::get_input_port_type(const int& port_index) const {
+    VALIDATE_INDEX_NON_VOID(port_index, proto_node->get_input_port_count(), VisualShaderNodePortType::PORT_TYPE_UNSPECIFIED, "Brick port index out of range.");
+    switch (port_index) {
+    case 0:
+        return VisualShaderNodePortType::PORT_TYPE_VECTOR_2D;
+    default:
+        break;
+    }
+    return VisualShaderNodePortType::PORT_TYPE_UNSPECIFIED;
+}
+
+VisualShaderNodePortType VisualShaderNodePortTypeGeneratorBrick::get_output_port_type(const int& port_index) const {
+    VALIDATE_INDEX_NON_VOID(port_index, proto_node->get_output_port_count(), VisualShaderNodePortType::PORT_TYPE_UNSPECIFIED, "Brick port index out of range.");
+    switch (port_index) {
+    case 0:
+        return VisualShaderNodePortType::PORT_TYPE_VECTOR_4D;
+    default:
+        break;
+    }
+    return VisualShaderNodePortType::PORT_TYPE_UNSPECIFIED;
+}
+
+VisualShaderNodePortType VisualShaderNodePortTypeGeneratorTile::get_input_port_type(const int& port_index) const {
+    VALIDATE_INDEX_NON_VOID(port_index, proto_node->get_input_port_count(), VisualShaderNodePortType::PORT_TYPE_UNSPECIFIED, "Tile port index out of range.");
+    switch (port_index) {
+    case 0:
+        return VisualShaderNodePortType::PORT_TYPE_VECTOR_2D;
+    default:
+        break;
+    }
+    return VisualShaderNodePortType::PORT_TYPE_UNSPECIFIED;
+}
+
+VisualShaderNodePortType VisualShaderNodePortTypeGeneratorTile::get_output_port_type(const int& port_index) const {
+    VALIDATE_INDEX_NON_VOID(port_index, proto_node->get_output_port_count(), VisualShaderNodePortType::PORT_TYPE_UNSPECIFIED, "Tile port index out of range.");
+    switch (port_index) {
+    case 0:
+        return VisualShaderNodePortType::PORT_TYPE_VECTOR_4D;
+    default:
+        break;
+    }
+    return VisualShaderNodePortType::PORT_TYPE_UNSPECIFIED;
+}
+
+VisualShaderNodePortType VisualShaderNodePortTypeGeneratorFunction::get_input_port_type(const int& port_index) const {
+    VALIDATE_INDEX_NON_VOID(port_index, proto_node->get_input_port_count(), VisualShaderNodePortType::PORT_TYPE_UNSPECIFIED, "Function port index out of range.");
+    switch (port_index) {
+    case 0:
+        return VisualShaderNodePortType::PORT_TYPE_VECTOR_2D;
+    default:
+        break;
+    }
+    return VisualShaderNodePortType::PORT_TYPE_UNSPECIFIED;
+}
+
+VisualShaderNodePortType VisualShaderNodePortTypeGeneratorFunction::get_output_port_type(const int& port_index) const {
+    VALIDATE_INDEX_NON_VOID(port_index, proto_node->get_output_port_count(), VisualShaderNodePortType::PORT_TYPE_UNSPECIFIED, "Function port index out of range.");
+    switch (port_index) {
+    case 0:
+        return VisualShaderNodePortType::PORT_TYPE_VECTOR_4D;
+    default:
+        break;
+    }
+    return VisualShaderNodePortType::PORT_TYPE_UNSPECIFIED;
+}

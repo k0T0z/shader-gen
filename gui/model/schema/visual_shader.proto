@@ -103,6 +103,15 @@ message VisualShader {
             VisualShaderNodeMask mask = 41;
             VisualShaderNodeBlend blend = 42;
             VisualShaderNodeColorize colorize = 43;
+
+            /*************************************/
+            /* PATTERNS                          */
+            /*************************************/
+            VisualShaderNodeGradient gradient = 44;
+            VisualShaderNodeChecker checker = 45;
+            VisualShaderNodeBrick brick = 46;
+            VisualShaderNodeTile tile = 47;
+            VisualShaderNodeFunction function = 48;
         }
     }
     

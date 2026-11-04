@@ -28,6 +28,7 @@
 #include <gtest/gtest.h>
 
 #include "generator/vs_node_noise_generators.hpp"
+#include "generator/vs_node_pattern_generators.hpp"
 #include "generator/visual_shader_node_generators.hpp"
 
 TEST(VisualShaderNodeGeneratorTest, TestVisualShaderNodeGeneratorValueNoiseGenerateCode) {
@@ -548,5 +549,202 @@ TEST(VisualShaderNodeGeneratorTest, TestVisualShaderNodeGeneratorColorizeGenerat
       "\t\t}\n"
       "\t}\n"
       "\tb = colorize_out_n0;\n"};
+  ASSERT_EQ(code, expected_code);
+}
+
+TEST(VisualShaderNodeGeneratorTest, TestVisualShaderNodeGeneratorGradientGenerateCodeLinearDefaultGradient) {
+  VisualShaderNodeGeneratorGradient gradient_generator{VisualShaderNodeGradient::GRADIENT_LINEAR,
+                                                       std::vector<VisualShaderColorGradientStop>{}};
+  std::vector<std::string> input_vars = {"a"};
+  std::vector<std::string> output_vars = {"b"};
+  std::string code{gradient_generator.generate_code(0, input_vars, output_vars)};
+  std::string expected_code{
+      "\t// Gradient\n"
+      "\tvec2 pattern_uv_n0 = fract(a);\n"
+      "\tfloat pattern_pos_n0 = 0.0;\n"
+      "\tif (pattern_uv_n0.y <= 0.5) {\n"
+      "\t\tpattern_pos_n0 = pattern_uv_n0.y * 2.0;\n"
+      "\t} else {\n"
+      "\t\tpattern_pos_n0 = (1.0 - pattern_uv_n0.y) * 2.0;\n"
+      "\t}\n"
+      "\tvec4 pattern_out_n0 = vec4(0.000000, 0.000000, 0.000000, 1.000000);\n"
+      "\tif (pattern_pos_n0 >= 1.000000) {\n"
+      "\t\tpattern_out_n0 = vec4(1.000000, 1.000000, 1.000000, 1.000000);\n"
+      "\t} else if (pattern_pos_n0 > 0.000000) {\n"
+      "\t\tif (pattern_pos_n0 < 1.000000) {\n"
+      "\t\t\tfloat pattern_n0_interp_0 = (pattern_pos_n0 - 0.000000) / 1.000000;\n"
+      "\t\t\tpattern_out_n0 = mix(vec4(0.000000, 0.000000, 0.000000, 1.000000), vec4(1.000000, 1.000000, "
+      "1.000000, 1.000000), pattern_n0_interp_0);\n"
+      "\t\t}\n"
+      "\t}\n"
+      "\tb = pattern_out_n0;\n"};
+  ASSERT_EQ(code, expected_code);
+}
+
+TEST(VisualShaderNodeGeneratorTest, TestVisualShaderNodeGeneratorGradientGenerateCodeSquareCustomGradient) {
+  VisualShaderNodeGeneratorGradient gradient_generator{
+      VisualShaderNodeGradient::GRADIENT_SQUARE,
+      std::vector<VisualShaderColorGradientStop>{{0.0f, 1.0f, 0.0f, 0.0f, 1.0f}, {1.0f, 0.0f, 0.0f, 1.0f, 1.0f}}};
+  std::vector<std::string> input_vars = {"a"};
+  std::vector<std::string> output_vars = {"b"};
+  std::string code{gradient_generator.generate_code(0, input_vars, output_vars)};
+  std::string expected_code{
+      "\t// Gradient\n"
+      "\tvec2 pattern_uv_n0 = fract(a);\n"
+      "\tfloat pattern_pos_n0 = 0.0;\n"
+      "\tpattern_pos_n0 = 1.0 - 2.0 * max(abs(0.5 - pattern_uv_n0.x), abs(0.5 - pattern_uv_n0.y));\n"
+      "\tvec4 pattern_out_n0 = vec4(1.000000, 0.000000, 0.000000, 1.000000);\n"
+      "\tif (pattern_pos_n0 >= 1.000000) {\n"
+      "\t\tpattern_out_n0 = vec4(0.000000, 0.000000, 1.000000, 1.000000);\n"
+      "\t} else if (pattern_pos_n0 > 0.000000) {\n"
+      "\t\tif (pattern_pos_n0 < 1.000000) {\n"
+      "\t\t\tfloat pattern_n0_interp_0 = (pattern_pos_n0 - 0.000000) / 1.000000;\n"
+      "\t\t\tpattern_out_n0 = mix(vec4(1.000000, 0.000000, 0.000000, 1.000000), vec4(0.000000, 0.000000, "
+      "1.000000, 1.000000), pattern_n0_interp_0);\n"
+      "\t\t}\n"
+      "\t}\n"
+      "\tb = pattern_out_n0;\n"};
+  ASSERT_EQ(code, expected_code);
+}
+
+TEST(VisualShaderNodeGeneratorTest, TestVisualShaderNodeGeneratorCheckerGenerateCode) {
+  VisualShaderNodeGeneratorChecker checker_generator{4.0f, 3.0f, std::vector<VisualShaderColorGradientStop>{}};
+  std::vector<std::string> input_vars = {"a"};
+  std::vector<std::string> output_vars = {"b"};
+  std::string code{checker_generator.generate_code(0, input_vars, output_vars)};
+  std::string expected_code{
+      "\t// Checker\n"
+      "\tvec2 pattern_uv_n0 = fract(a);\n"
+      "\tint pattern_checker_n0 = (int(floor(pattern_uv_n0.x * 4.000000 * 2.0)) + int(floor(pattern_uv_n0.y * "
+      "3.000000 * 2.0))) & 1;\n"
+      "\tfloat pattern_pos_n0 = pattern_checker_n0 == 0 ? 1.0 : 0.0;\n"
+      "\tvec4 pattern_out_n0 = vec4(0.000000, 0.000000, 0.000000, 1.000000);\n"
+      "\tif (pattern_pos_n0 >= 1.000000) {\n"
+      "\t\tpattern_out_n0 = vec4(1.000000, 1.000000, 1.000000, 1.000000);\n"
+      "\t} else if (pattern_pos_n0 > 0.000000) {\n"
+      "\t\tif (pattern_pos_n0 < 1.000000) {\n"
+      "\t\t\tfloat pattern_n0_interp_0 = (pattern_pos_n0 - 0.000000) / 1.000000;\n"
+      "\t\t\tpattern_out_n0 = mix(vec4(0.000000, 0.000000, 0.000000, 1.000000), vec4(1.000000, 1.000000, "
+      "1.000000, 1.000000), pattern_n0_interp_0);\n"
+      "\t\t}\n"
+      "\t}\n"
+      "\tb = pattern_out_n0;\n"};
+  ASSERT_EQ(code, expected_code);
+}
+
+TEST(VisualShaderNodeGeneratorTest, TestVisualShaderNodeGeneratorTileGenerateCode) {
+  VisualShaderNodeGeneratorTile tile_generator{0.1f, 0.2f, 0.05f, std::vector<VisualShaderColorGradientStop>{}};
+  std::vector<std::string> input_vars = {"a"};
+  std::vector<std::string> output_vars = {"b"};
+  std::string code{tile_generator.generate_code(0, input_vars, output_vars)};
+  std::string expected_code{
+      "\t// Tile\n"
+      "\tvec2 pattern_uv_n0 = fract(a);\n"
+      "\tfloat pattern_pos_n0 = 0.0;\n"
+      "\tif (pattern_uv_n0.x < 0.100000 || pattern_uv_n0.x > 0.900000 || pattern_uv_n0.y < 0.200000 || "
+      "pattern_uv_n0.y > 0.800000) {\n"
+      "\t\tpattern_pos_n0 = 0.0;\n"
+      "\t} else {\n"
+      "\t\tfloat pattern_dist_u_n0 = min(pattern_uv_n0.x - 0.100000, 1.0 - pattern_uv_n0.x - 0.100000);\n"
+      "\t\tfloat pattern_dist_v_n0 = min(pattern_uv_n0.y - 0.200000, 1.0 - pattern_uv_n0.y - 0.200000);\n"
+      "\t\tfloat pattern_dist_n0 = min(pattern_dist_u_n0, pattern_dist_v_n0);\n"
+      "\t\tif (pattern_dist_n0 < 0.050000) {\n"
+      "\t\t\tpattern_pos_n0 = pattern_dist_n0 / 0.050000;\n"
+      "\t\t} else {\n"
+      "\t\t\tpattern_pos_n0 = 1.0;\n"
+      "\t\t}\n"
+      "\t}\n"
+      "\tvec4 pattern_out_n0 = vec4(0.000000, 0.000000, 0.000000, 1.000000);\n"
+      "\tif (pattern_pos_n0 >= 1.000000) {\n"
+      "\t\tpattern_out_n0 = vec4(1.000000, 1.000000, 1.000000, 1.000000);\n"
+      "\t} else if (pattern_pos_n0 > 0.000000) {\n"
+      "\t\tif (pattern_pos_n0 < 1.000000) {\n"
+      "\t\t\tfloat pattern_n0_interp_0 = (pattern_pos_n0 - 0.000000) / 1.000000;\n"
+      "\t\t\tpattern_out_n0 = mix(vec4(0.000000, 0.000000, 0.000000, 1.000000), vec4(1.000000, 1.000000, "
+      "1.000000, 1.000000), pattern_n0_interp_0);\n"
+      "\t\t}\n"
+      "\t}\n"
+      "\tb = pattern_out_n0;\n"};
+  ASSERT_EQ(code, expected_code);
+}
+
+TEST(VisualShaderNodeGeneratorTest, TestVisualShaderNodeGeneratorFunctionGenerateCodeSinMultiply) {
+  VisualShaderNodeGeneratorFunction function_generator{
+      VisualShaderNodeFunction::FUNC_SIN, VisualShaderNodeFunction::FUNC_SIN,
+      VisualShaderNodeFunction::COMBINE_MULTIPLY, 1.0f, 1.0f, std::vector<VisualShaderColorGradientStop>{}};
+  std::vector<std::string> input_vars = {"a"};
+  std::vector<std::string> output_vars = {"b"};
+  std::string code{function_generator.generate_code(0, input_vars, output_vars)};
+  std::string expected_code{
+      "\t// Function\n"
+      "\tvec2 pattern_uv_n0 = fract(a);\n"
+      "\tfloat pattern_su_n0 = cos(3.141592653589793 * 2.0 * 1.000000 * (pattern_uv_n0.x + 0.5)) * 0.5 + 0.5;\n"
+      "\tfloat pattern_sv_n0 = cos(3.141592653589793 * 2.0 * 1.000000 * (pattern_uv_n0.y + 0.5)) * 0.5 + 0.5;\n"
+      "\tfloat pattern_val_n0 = pattern_su_n0 * pattern_sv_n0;\n"
+      "\tvec4 pattern_out_n0 = vec4(0.000000, 0.000000, 0.000000, 1.000000);\n"
+      "\tif (pattern_val_n0 >= 1.000000) {\n"
+      "\t\tpattern_out_n0 = vec4(1.000000, 1.000000, 1.000000, 1.000000);\n"
+      "\t} else if (pattern_val_n0 > 0.000000) {\n"
+      "\t\tif (pattern_val_n0 < 1.000000) {\n"
+      "\t\t\tfloat pattern_n0_interp_0 = (pattern_val_n0 - 0.000000) / 1.000000;\n"
+      "\t\t\tpattern_out_n0 = mix(vec4(0.000000, 0.000000, 0.000000, 1.000000), vec4(1.000000, 1.000000, "
+      "1.000000, 1.000000), pattern_n0_interp_0);\n"
+      "\t\t}\n"
+      "\t}\n"
+      "\tb = pattern_out_n0;\n"};
+  ASSERT_EQ(code, expected_code);
+}
+
+TEST(VisualShaderNodeGeneratorTest, TestVisualShaderNodeGeneratorBrickGenerateCode) {
+  VisualShaderNodeGeneratorBrick brick_generator{2, 1, 0.5f, 0.25f, 0.1f, 0.2f, 0.1f, true,
+                                                std::vector<VisualShaderColorGradientStop>{}};
+  std::vector<std::string> input_vars = {"a"};
+  std::vector<std::string> output_vars = {"b"};
+  std::string code{brick_generator.generate_code(0, input_vars, output_vars)};
+  std::string expected_code{
+      "\t// Brick\n"
+      "\tconst float pattern_colors_n0[2] = float[2](0.821355, 0.377933);\n"
+      "\tconst float pattern_shifts_n0[1] = float[1](0.033939);\n"
+      "\tvec2 pattern_uv_n0 = fract(a);\n"
+      "\tfloat pattern_norm_x_n0 = 2.000000;\n"
+      "\tfloat pattern_norm_y_n0 = 1.000000;\n"
+      "\tfloat pattern_uu_n0 = pattern_uv_n0.x * pattern_norm_x_n0;\n"
+      "\tfloat pattern_vv_n0 = pattern_uv_n0.y * pattern_norm_y_n0;\n"
+      "\tfloat pattern_y_n0 = pattern_vv_n0 - floor(pattern_vv_n0);\n"
+      "\tif (pattern_vv_n0 >= pattern_norm_y_n0) pattern_vv_n0 -= pattern_norm_y_n0;\n"
+      "\tif (pattern_uu_n0 >= pattern_norm_x_n0) pattern_uu_n0 -= pattern_norm_x_n0;\n"
+      "\tint pattern_by_n0 = int(floor(pattern_vv_n0));\n"
+      "\tif (pattern_vv_n0 * 0.5 - floor(pattern_vv_n0 * 0.5) >= 0.5) pattern_uu_n0 += 0.500000;\n"
+      "\tpattern_uu_n0 += pattern_shifts_n0[pattern_by_n0] * 0.250000;\n"
+      "\tif (pattern_uu_n0 >= pattern_norm_x_n0) pattern_uu_n0 -= pattern_norm_x_n0;\n"
+      "\tint pattern_bx_n0 = int(floor(pattern_uu_n0));\n"
+      "\tfloat pattern_x_n0 = pattern_uu_n0 - floor(pattern_uu_n0);\n"
+      "\tfloat pattern_val_n0 = 1.0;\n"
+      "\tpattern_val_n0 = pattern_colors_n0[pattern_bx_n0 + pattern_by_n0 * 2];\n"
+      "\tbool pattern_inside_n0 = true;\n"
+      "\tpattern_inside_n0 = pattern_inside_n0 && (pattern_x_n0 > 0.100000 * pattern_norm_x_n0);\n"
+      "\tpattern_inside_n0 = pattern_inside_n0 && (pattern_y_n0 > 0.200000 * pattern_norm_y_n0);\n"
+      "\tif (pattern_inside_n0) {\n"
+      "\t\tfloat pattern_dist_n0 = min(min(pattern_x_n0 - 0.100000 * pattern_norm_x_n0, 1.0 - pattern_x_n0) / "
+      "pattern_norm_x_n0, min(pattern_y_n0 - 0.200000 * pattern_norm_y_n0, 1.0 - pattern_y_n0) / "
+      "pattern_norm_y_n0);\n"
+      "\t\tpattern_dist_n0 *= min(pattern_norm_x_n0, pattern_norm_y_n0);\n"
+      "\t\tif (pattern_dist_n0 < 0.100000) {\n"
+      "\t\t\tpattern_val_n0 = pattern_val_n0 * pattern_dist_n0 / 0.100000;\n"
+      "\t\t}\n"
+      "\t} else {\n"
+      "\t\tpattern_val_n0 = 0.0;\n"
+      "\t}\n"
+      "\tvec4 pattern_out_n0 = vec4(0.000000, 0.000000, 0.000000, 1.000000);\n"
+      "\tif (pattern_val_n0 >= 1.000000) {\n"
+      "\t\tpattern_out_n0 = vec4(1.000000, 1.000000, 1.000000, 1.000000);\n"
+      "\t} else if (pattern_val_n0 > 0.000000) {\n"
+      "\t\tif (pattern_val_n0 < 1.000000) {\n"
+      "\t\t\tfloat pattern_n0_interp_0 = (pattern_val_n0 - 0.000000) / 1.000000;\n"
+      "\t\t\tpattern_out_n0 = mix(vec4(0.000000, 0.000000, 0.000000, 1.000000), vec4(1.000000, 1.000000, "
+      "1.000000, 1.000000), pattern_n0_interp_0);\n"
+      "\t\t}\n"
+      "\t}\n"
+      "\tb = pattern_out_n0;\n"};
   ASSERT_EQ(code, expected_code);
 }

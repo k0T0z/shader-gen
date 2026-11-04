@@ -375,6 +375,21 @@ inline static std::shared_ptr<VisualShaderNodePortTypeGenerator> get_port_type_g
     case VisualShader::VisualShaderNode::kColorizeFieldNumber: {
         return std::make_shared<VisualShaderNodePortTypeGeneratorColorize>(proto_node);
     }
+    case VisualShader::VisualShaderNode::kGradientFieldNumber: {
+        return std::make_shared<VisualShaderNodePortTypeGeneratorGradient>(proto_node);
+    }
+    case VisualShader::VisualShaderNode::kCheckerFieldNumber: {
+        return std::make_shared<VisualShaderNodePortTypeGeneratorChecker>(proto_node);
+    }
+    case VisualShader::VisualShaderNode::kBrickFieldNumber: {
+        return std::make_shared<VisualShaderNodePortTypeGeneratorBrick>(proto_node);
+    }
+    case VisualShader::VisualShaderNode::kTileFieldNumber: {
+        return std::make_shared<VisualShaderNodePortTypeGeneratorTile>(proto_node);
+    }
+    case VisualShader::VisualShaderNode::kFunctionFieldNumber: {
+        return std::make_shared<VisualShaderNodePortTypeGeneratorFunction>(proto_node);
+    }
     default:
       WARN_PRINT("Unsupported node type: " + std::to_string(oneof_value_field_number));
       break;

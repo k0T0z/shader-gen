@@ -166,6 +166,21 @@ inline static std::shared_ptr<IVisualShaderProtoNode> get_proto_node_by_oneof_va
     case VisualShader::VisualShaderNode::kColorizeFieldNumber: {
       return std::make_shared<VisualShaderProtoNode<VisualShaderNodeColorize>>();
     }
+    case VisualShader::VisualShaderNode::kGradientFieldNumber: {
+      return std::make_shared<VisualShaderProtoNode<VisualShaderNodeGradient>>();
+    }
+    case VisualShader::VisualShaderNode::kCheckerFieldNumber: {
+      return std::make_shared<VisualShaderProtoNode<VisualShaderNodeChecker>>();
+    }
+    case VisualShader::VisualShaderNode::kBrickFieldNumber: {
+      return std::make_shared<VisualShaderProtoNode<VisualShaderNodeBrick>>();
+    }
+    case VisualShader::VisualShaderNode::kTileFieldNumber: {
+      return std::make_shared<VisualShaderProtoNode<VisualShaderNodeTile>>();
+    }
+    case VisualShader::VisualShaderNode::kFunctionFieldNumber: {
+      return std::make_shared<VisualShaderProtoNode<VisualShaderNodeFunction>>();
+    }
     default:
       WARN_PRINT("Unsupported node type: " + std::to_string(oneof_value_field_number));
       break;

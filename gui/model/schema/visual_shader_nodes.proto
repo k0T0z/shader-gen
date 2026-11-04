@@ -1041,3 +1041,125 @@ message VisualShaderNodeBlend {
     optional bool inv_alpha = 3;
 }
 
+/*************************************/
+/* PATTERNS                          */
+/*************************************/
+
+message VisualShaderNodeGradient {
+    option (node_caption) = "Gradient";
+    option (node_input_port_count) = 1;
+    option (node_input_port_caption) = "uv";
+
+    option (node_output_port_count) = 1;
+    option (node_output_port_caption) = "";
+
+    option (node_category_path) = "Special/Patterns";
+
+    option (node_description) = "Generates a linear, radial or square gradient sampled from a color ramp. "
+     "Linear is chosen this way to be tileable.";
+
+    enum VisualShaderNodeGradientType {
+        GRADIENT_LINEAR = 0 [(value_caption) = "Linear"];
+        GRADIENT_RADIAL = 1 [(value_caption) = "Radial"];
+        GRADIENT_SQUARE = 2 [(value_caption) = "Square"];
+    };
+
+    optional VisualShaderNodeGradientType gradient_type = 1;
+    repeated ColorGradientStop gradient = 2;
+}
+
+message VisualShaderNodeChecker {
+    option (node_caption) = "Checker";
+    option (node_input_port_count) = 1;
+    option (node_input_port_caption) = "uv";
+
+    option (node_output_port_count) = 1;
+    option (node_output_port_caption) = "";
+
+    option (node_category_path) = "Special/Patterns";
+
+    option (node_description) = "A checkerboard pattern. The two colors are taken from the color ramp at "
+     "position 1 (white squares) and position 0 (black squares).";
+
+    optional float scale_x = 1;
+    optional float scale_y = 2;
+    repeated ColorGradientStop gradient = 3;
+}
+
+message VisualShaderNodeBrick {
+    option (node_caption) = "Brick";
+    option (node_input_port_count) = 1;
+    option (node_input_port_caption) = "uv";
+
+    option (node_output_port_count) = 1;
+    option (node_output_port_caption) = "";
+
+    option (node_category_path) = "Special/Patterns";
+
+    option (node_description) = "A brick wall pattern. Every row can be shifted and each brick can use a "
+     "deterministic pseudo-random color. The gaps between the bricks are optionally smoothed.";
+
+    optional int32 num_x = 1;
+    optional int32 num_y = 2;
+    optional float shift = 3;
+    optional float rand_shift = 4;
+    optional float gap_x = 5;
+    optional float gap_y = 6;
+    optional float smooth = 7;
+    optional bool rand_color = 8;
+    repeated ColorGradientStop gradient = 9;
+}
+
+message VisualShaderNodeTile {
+    option (node_caption) = "Tile";
+    option (node_input_port_count) = 1;
+    option (node_input_port_caption) = "uv";
+
+    option (node_output_port_count) = 1;
+    option (node_output_port_caption) = "";
+
+    option (node_category_path) = "Special/Patterns";
+
+    option (node_description) = "A simple square tile with an optional smooth border.";
+
+    optional float border_x = 1;
+    optional float border_y = 2;
+    optional float smooth = 3;
+    repeated ColorGradientStop gradient = 4;
+}
+
+message VisualShaderNodeFunction {
+    option (node_caption) = "Function";
+    option (node_input_port_count) = 1;
+    option (node_input_port_caption) = "uv";
+
+    option (node_output_port_count) = 1;
+    option (node_output_port_caption) = "";
+
+    option (node_category_path) = "Special/Patterns";
+
+    option (node_description) = "Combines two simple functions (Sin, Saw or Square) evaluated on the u and v "
+     "coordinates with a binary operator.";
+
+    enum VisualShaderNodeFunctionFn {
+        FUNC_SIN = 0 [(value_caption) = "Sin"];
+        FUNC_SAW = 1 [(value_caption) = "Saw"];
+        FUNC_SQUARE = 2 [(value_caption) = "Square"];
+    };
+
+    enum VisualShaderNodeFunctionCombiner {
+        COMBINE_MULTIPLY = 0 [(value_caption) = "Multiply"];
+        COMBINE_ADD = 1 [(value_caption) = "Add"];
+        COMBINE_MAX = 2 [(value_caption) = "Max"];
+        COMBINE_MIN = 3 [(value_caption) = "Min"];
+        COMBINE_POW = 4 [(value_caption) = "Pow"];
+    };
+
+    optional VisualShaderNodeFunctionFn function_u = 1;
+    optional VisualShaderNodeFunctionFn function_v = 2;
+    optional VisualShaderNodeFunctionCombiner combiner = 3;
+    optional float scale_x = 4;
+    optional float scale_y = 5;
+    repeated ColorGradientStop gradient = 6;
+}
+

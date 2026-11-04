@@ -188,6 +188,11 @@ class VisualShaderProtoNode : public IVisualShaderProtoNode {
     else if constexpr (std::is_same_v<Proto, VisualShaderNodeMask>) return VisualShader::VisualShaderNode::kMaskFieldNumber;
     else if constexpr (std::is_same_v<Proto, VisualShaderNodeBlend>) return VisualShader::VisualShaderNode::kBlendFieldNumber;
     else if constexpr (std::is_same_v<Proto, VisualShaderNodeColorize>) return VisualShader::VisualShaderNode::kColorizeFieldNumber;
+    else if constexpr (std::is_same_v<Proto, VisualShaderNodeGradient>) return VisualShader::VisualShaderNode::kGradientFieldNumber;
+    else if constexpr (std::is_same_v<Proto, VisualShaderNodeChecker>) return VisualShader::VisualShaderNode::kCheckerFieldNumber;
+    else if constexpr (std::is_same_v<Proto, VisualShaderNodeBrick>) return VisualShader::VisualShaderNode::kBrickFieldNumber;
+    else if constexpr (std::is_same_v<Proto, VisualShaderNodeTile>) return VisualShader::VisualShaderNode::kTileFieldNumber;
+    else if constexpr (std::is_same_v<Proto, VisualShaderNodeFunction>) return VisualShader::VisualShaderNode::kFunctionFieldNumber;
     else {
       static_assert(false, "Unsupported proto type!");
       return -1;

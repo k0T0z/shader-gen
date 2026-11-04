@@ -529,4 +529,64 @@ class VisualShaderNodePortTypeGeneratorColorize : public VisualShaderNodePortTyp
   const std::shared_ptr<IVisualShaderProtoNode> proto_node;
 };
 
+class VisualShaderNodePortTypeGeneratorGradient : public VisualShaderNodePortTypeGenerator {
+ public:
+  VisualShaderNodePortTypeGeneratorGradient(const std::shared_ptr<IVisualShaderProtoNode> proto_node)
+      : VisualShaderNodePortTypeGenerator(), proto_node(proto_node) {}
+
+  virtual VisualShaderNodePortType get_input_port_type(const int& port_index) const override;
+  virtual VisualShaderNodePortType get_output_port_type(const int& port_index) const override;
+
+ private:
+  const std::shared_ptr<IVisualShaderProtoNode> proto_node;
+};
+
+class VisualShaderNodePortTypeGeneratorChecker : public VisualShaderNodePortTypeGenerator {
+ public:
+  VisualShaderNodePortTypeGeneratorChecker(const std::shared_ptr<IVisualShaderProtoNode> proto_node)
+      : VisualShaderNodePortTypeGenerator(), proto_node(proto_node) {}
+
+  virtual VisualShaderNodePortType get_input_port_type(const int& port_index) const override;
+  virtual VisualShaderNodePortType get_output_port_type(const int& port_index) const override;
+
+ private:
+  const std::shared_ptr<IVisualShaderProtoNode> proto_node;
+};
+
+class VisualShaderNodePortTypeGeneratorBrick : public VisualShaderNodePortTypeGenerator {
+ public:
+  VisualShaderNodePortTypeGeneratorBrick(const std::shared_ptr<IVisualShaderProtoNode> proto_node)
+      : VisualShaderNodePortTypeGenerator(), proto_node(proto_node) {}
+
+  virtual VisualShaderNodePortType get_input_port_type(const int& port_index) const override;
+  virtual VisualShaderNodePortType get_output_port_type(const int& port_index) const override;
+
+ private:
+  const std::shared_ptr<IVisualShaderProtoNode> proto_node;
+};
+
+class VisualShaderNodePortTypeGeneratorTile : public VisualShaderNodePortTypeGenerator {
+ public:
+  VisualShaderNodePortTypeGeneratorTile(const std::shared_ptr<IVisualShaderProtoNode> proto_node)
+      : VisualShaderNodePortTypeGenerator(), proto_node(proto_node) {}
+
+  virtual VisualShaderNodePortType get_input_port_type(const int& port_index) const override;
+  virtual VisualShaderNodePortType get_output_port_type(const int& port_index) const override;
+
+ private:
+  const std::shared_ptr<IVisualShaderProtoNode> proto_node;
+};
+
+class VisualShaderNodePortTypeGeneratorFunction : public VisualShaderNodePortTypeGenerator {
+ public:
+  VisualShaderNodePortTypeGeneratorFunction(const std::shared_ptr<IVisualShaderProtoNode> proto_node)
+      : VisualShaderNodePortTypeGenerator(), proto_node(proto_node) {}
+
+  virtual VisualShaderNodePortType get_input_port_type(const int& port_index) const override;
+  virtual VisualShaderNodePortType get_output_port_type(const int& port_index) const override;
+
+ private:
+  const std::shared_ptr<IVisualShaderProtoNode> proto_node;
+};
+
 #endif  // ENIGMA_VISUAL_SHADER_NODE_PORT_TYPE_GENERATOR_HPP
