@@ -44,6 +44,9 @@ private slots:
     void my_first_test();
     void my_second_test();
 
+    void repro_create_input_select_uv();
+    void repro_add_gradient_stop_in_brick();
+
 private:
     VisualShaderEditor* editor;
 

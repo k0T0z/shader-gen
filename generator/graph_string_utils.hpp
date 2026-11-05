@@ -28,6 +28,8 @@
 #ifndef SHADERGEN_GRAPH_STRING_UTILS_HPP
 #define SHADERGEN_GRAPH_STRING_UTILS_HPP
 
+#include <algorithm>
+#include <cctype>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -100,6 +102,21 @@ inline static std::string get_node_entity_parameter_field_number(const std::vect
 inline static std::string get_node_entity_parameter_value(const std::vector<std::string>& parameter_tokens) {
   SILENT_CHECK_CONDITION_TRUE_NON_VOID(parameter_tokens.size() < 2 || parameter_tokens.at(1).empty(), "0");
   return parameter_tokens.at(1);
+}
+
+/**
+ * @brief Get the value of a `field_number=value` parameter pair as a @c bool.
+ *
+ * @note The encoded graph format is numeric (`"0"` / `"1"`), but the GUI encoder serializes
+ *       Protobuf bool fields through @c QVariant::toString(), which yields `"true"` / `"false"`.
+ *       Both spellings are accepted (case-insensitively) so that callers never feed a bool
+ *       parameter to @c std::stoi, which would throw on `"true"` / `"false"`.
+ */
+inline static bool get_node_entity_parameter_value_as_bool(const std::vector<std::string>& parameter_tokens) {
+  std::string value{get_node_entity_parameter_value(parameter_tokens)};
+  std::transform(value.begin(), value.end(), value.begin(),
+                 [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+  return value == "1" || value == "true";
 }
 
 inline static std::string get_connection_entity_id(const std::vector<std::string>& connection_tokens) {
