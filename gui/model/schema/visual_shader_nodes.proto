@@ -563,10 +563,20 @@ message VisualShaderNodePerlinNoise {
 
     option (node_category_path) = "Noise";
 
-    option (node_description) = "Generates a gradient, or Perlin, noise based on input 'UV'. The scale of the generated noise is controlled by "
-     "input 'Scale'.";
+    option (node_description) = "An implementation of Improved Perlin Noise (Ken Perlin, 2002). Octaves from 'Start Band' "
+     "to 'End Band' are summed, each octave doubling the frequency and scaling the amplitude by 'Persistence'. 'Scale X' "
+     "and 'Scale Y' control the base frequency per axis, 'Value Scale' the overall contrast and 'Periodic' makes the noise "
+     "tileable. A 'Seed' of -1 uses Ken Perlin's reference permutation. The result is mapped through a color ramp.";
 
-    optional float scale = 1;
+    optional float scale_x = 1;
+    optional float scale_y = 2;
+    optional float value_scale = 3;
+    optional float persistence = 4;
+    optional int32 start_band = 5;
+    optional int32 end_band = 6;
+    optional int32 seed = 7;
+    optional bool periodic = 8;
+    repeated ColorGradientStop gradient = 9;
 }
 
 message VisualShaderNodeVoronoiNoise {
@@ -1267,4 +1277,17 @@ message VisualShaderNodeNormalMap {
 
     optional float strength = 1;
 }
+
+// TODO(future): The following NeoTextureEdit nodes are intentionally NOT ported yet, because they
+// require capabilities the current procedural value-graph generator does not support:
+//
+//   * Bitmap    - needs an image texture (sampler2D) sampled at UV; no texture support exists.
+//   * Blur      - multi-tap sampling of the input at many offset UVs (Monte Carlo / Halton).
+//   * Transform - re-samples the input at matrix-transformed UVs (3x3 homogeneous transform).
+//   * Warp      - re-samples the input at displacement-offset UVs (input derivative * strength).
+//
+// The generator evaluates each node at a single UV and passes upstream results downstream as
+// already-computed values, so a node cannot re-evaluate an upstream node at a different UV.
+// NTE implements the above by calling Channel.valueRGBA(u, v) at arbitrary coordinates.
+// Unblocking requires extending the generator (UV-parameterized upstream calls and/or texture inputs).
 

@@ -177,6 +177,18 @@ inline static QVariant get_proto_field_default_value_override(const google::prot
        {
            {VisualShaderNodeNormalMap::kStrengthFieldNumber, 1.0f},
        }},
+      // PerlinNoise
+      {std::string(VisualShaderNodePerlinNoise::descriptor()->full_name()),
+       {
+           {VisualShaderNodePerlinNoise::kScaleXFieldNumber, 1.0f},
+           {VisualShaderNodePerlinNoise::kScaleYFieldNumber, 1.0f},
+           {VisualShaderNodePerlinNoise::kValueScaleFieldNumber, 1.0f},
+           {VisualShaderNodePerlinNoise::kPersistenceFieldNumber, 0.5f},
+           {VisualShaderNodePerlinNoise::kStartBandFieldNumber, 1},
+           {VisualShaderNodePerlinNoise::kEndBandFieldNumber, 8},
+           {VisualShaderNodePerlinNoise::kSeedFieldNumber, -1},
+           {VisualShaderNodePerlinNoise::kPeriodicFieldNumber, true},
+       }},
   };
 
   const std::unordered_map<std::string, std::unordered_map<int, QVariant>>::const_iterator node_it{

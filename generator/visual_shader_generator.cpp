@@ -381,12 +381,51 @@ static std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>> raw_t
           break;
       }
       case VisualShader::VisualShaderNode::kPerlinNoiseFieldNumber: {
+          CONTINUE_IF_TRUE(parameters.size() < 8, "Missing parameters.");
+
           const auto parameter_tokens = split_string(parameters.at(0), '=');
           const int field_number = std::stoi(get_node_entity_parameter_field_number(parameter_tokens));
-          CONTINUE_IF_TRUE(field_number != VisualShaderNodePerlinNoise::kScaleFieldNumber, "Wrong field number.");
-          const float scale{std::stof(get_node_entity_parameter_value(parameter_tokens))};
+          CONTINUE_IF_TRUE(field_number != VisualShaderNodePerlinNoise::kScaleXFieldNumber, "Wrong field number.");
+          const float scale_x{std::stof(get_node_entity_parameter_value(parameter_tokens))};
 
-          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorPerlinNoise>(scale);
+          const auto parameter_tokens1 = split_string(parameters.at(1), '=');
+          const int field_number1 = std::stoi(get_node_entity_parameter_field_number(parameter_tokens1));
+          CONTINUE_IF_TRUE(field_number1 != VisualShaderNodePerlinNoise::kScaleYFieldNumber, "Wrong field number.");
+          const float scale_y{std::stof(get_node_entity_parameter_value(parameter_tokens1))};
+
+          const auto parameter_tokens2 = split_string(parameters.at(2), '=');
+          const int field_number2 = std::stoi(get_node_entity_parameter_field_number(parameter_tokens2));
+          CONTINUE_IF_TRUE(field_number2 != VisualShaderNodePerlinNoise::kValueScaleFieldNumber, "Wrong field number.");
+          const float value_scale{std::stof(get_node_entity_parameter_value(parameter_tokens2))};
+
+          const auto parameter_tokens3 = split_string(parameters.at(3), '=');
+          const int field_number3 = std::stoi(get_node_entity_parameter_field_number(parameter_tokens3));
+          CONTINUE_IF_TRUE(field_number3 != VisualShaderNodePerlinNoise::kPersistenceFieldNumber, "Wrong field number.");
+          const float persistence{std::stof(get_node_entity_parameter_value(parameter_tokens3))};
+
+          const auto parameter_tokens4 = split_string(parameters.at(4), '=');
+          const int field_number4 = std::stoi(get_node_entity_parameter_field_number(parameter_tokens4));
+          CONTINUE_IF_TRUE(field_number4 != VisualShaderNodePerlinNoise::kStartBandFieldNumber, "Wrong field number.");
+          const int start_band{std::stoi(get_node_entity_parameter_value(parameter_tokens4))};
+
+          const auto parameter_tokens5 = split_string(parameters.at(5), '=');
+          const int field_number5 = std::stoi(get_node_entity_parameter_field_number(parameter_tokens5));
+          CONTINUE_IF_TRUE(field_number5 != VisualShaderNodePerlinNoise::kEndBandFieldNumber, "Wrong field number.");
+          const int end_band{std::stoi(get_node_entity_parameter_value(parameter_tokens5))};
+
+          const auto parameter_tokens6 = split_string(parameters.at(6), '=');
+          const int field_number6 = std::stoi(get_node_entity_parameter_field_number(parameter_tokens6));
+          CONTINUE_IF_TRUE(field_number6 != VisualShaderNodePerlinNoise::kSeedFieldNumber, "Wrong field number.");
+          const int seed{std::stoi(get_node_entity_parameter_value(parameter_tokens6))};
+
+          const auto parameter_tokens7 = split_string(parameters.at(7), '=');
+          const int field_number7 = std::stoi(get_node_entity_parameter_field_number(parameter_tokens7));
+          CONTINUE_IF_TRUE(field_number7 != VisualShaderNodePerlinNoise::kPeriodicFieldNumber, "Wrong field number.");
+          const bool periodic{get_node_entity_parameter_value_as_bool(parameter_tokens7)};
+
+          const std::vector<VisualShaderColorGradientStop> gradient{parse_color_gradient(parameters)};
+
+          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorPerlinNoise>(scale_x, scale_y, value_scale, persistence, start_band, end_band, seed, periodic, gradient);
           break;
       }
       case VisualShader::VisualShaderNode::kVoronoiNoiseFieldNumber: {

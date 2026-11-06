@@ -394,8 +394,22 @@ inline static std::pair<ContinuousRangeVariant, ContinuousRangeVariant> get_rang
         }
         case VisualShader::VisualShaderNode::kPerlinNoiseFieldNumber: {
             switch (field_number) {
-                case VisualShaderNodePerlinNoise::kScaleFieldNumber: {
-                    return std::make_pair(0.0f, 100.0f);
+                case VisualShaderNodePerlinNoise::kScaleXFieldNumber:
+                case VisualShaderNodePerlinNoise::kScaleYFieldNumber: {
+                    return std::make_pair(1.0f, 64.0f);
+                }
+                case VisualShaderNodePerlinNoise::kValueScaleFieldNumber: {
+                    return std::make_pair(0.0f, 10.0f);
+                }
+                case VisualShaderNodePerlinNoise::kPersistenceFieldNumber: {
+                    return std::make_pair(0.0f, 1.0f);
+                }
+                case VisualShaderNodePerlinNoise::kStartBandFieldNumber:
+                case VisualShaderNodePerlinNoise::kEndBandFieldNumber: {
+                    return std::make_pair(1, 16);
+                }
+                case VisualShaderNodePerlinNoise::kSeedFieldNumber: {
+                    return std::make_pair(-1, 100);
                 }
                 default: 
                     break;

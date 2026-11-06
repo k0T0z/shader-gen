@@ -1260,7 +1260,15 @@ bool VisualShaderGraphicsScene::add_node_to_scene(const int& n_id, const std::sh
         break;
       }
       case VisualShader::VisualShaderNode::kPerlinNoiseFieldNumber: {
-        REGISTER_NODE_FIELD_LINE_EDIT_FLOAT(VisualShaderNodePerlinNoise::kScaleFieldNumber, "Scale");
+        REGISTER_NODE_FIELD_LINE_EDIT_FLOAT(VisualShaderNodePerlinNoise::kScaleXFieldNumber, "Scale X");
+        REGISTER_NODE_FIELD_LINE_EDIT_FLOAT(VisualShaderNodePerlinNoise::kScaleYFieldNumber, "Scale Y");
+        REGISTER_NODE_FIELD_LINE_EDIT_FLOAT(VisualShaderNodePerlinNoise::kValueScaleFieldNumber, "Value Scale");
+        REGISTER_NODE_FIELD_LINE_EDIT_FLOAT(VisualShaderNodePerlinNoise::kPersistenceFieldNumber, "Persistence");
+        REGISTER_NODE_FIELD_LINE_EDIT_INT(VisualShaderNodePerlinNoise::kStartBandFieldNumber, "Start Band");
+        REGISTER_NODE_FIELD_LINE_EDIT_INT(VisualShaderNodePerlinNoise::kEndBandFieldNumber, "End Band");
+        REGISTER_NODE_FIELD_LINE_EDIT_INT(VisualShaderNodePerlinNoise::kSeedFieldNumber, "Seed");
+        REGISTER_NODE_FIELD_CHECK_BOX(VisualShaderNodePerlinNoise::kPeriodicFieldNumber);
+        REGISTER_NODE_FIELD_REPEATED_MESSAGE(VisualShaderNodePerlinNoise::kGradientFieldNumber, ColorGradientStop::kPositionFieldNumber);
         break;
       }
       case VisualShader::VisualShaderNode::kVoronoiNoiseFieldNumber: {
