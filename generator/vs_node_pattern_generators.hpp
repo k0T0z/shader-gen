@@ -162,4 +162,45 @@ class VisualShaderNodeGeneratorFunction : public VisualShaderNodeGenerator {
   const std::vector<VisualShaderColorGradientStop> gradient;
 };
 
+/*************************************/
+/* Cellular                          */
+/*************************************/
+
+class VisualShaderNodeGeneratorCellular : public VisualShaderNodeGenerator {
+ public:
+  VisualShaderNodeGeneratorCellular(
+      const VisualShaderNodeCellular::VisualShaderNodeCellularCellType& cell_type,
+      const VisualShaderNodeCellular::VisualShaderNodeCellularDistance& distance,
+      const VisualShaderNodeCellular::VisualShaderNodeCellularPointGen& point_gen, const int& seed,
+      const float& intensity, const float& jitter, const int& num_points, const bool& rand_color,
+      const bool& periodic, const std::vector<VisualShaderColorGradientStop>& gradient)
+      : VisualShaderNodeGenerator(),
+        cell_type(cell_type),
+        distance(distance),
+        point_gen(point_gen),
+        seed(seed),
+        intensity(intensity),
+        jitter(jitter),
+        num_points(num_points),
+        rand_color(rand_color),
+        periodic(periodic),
+        gradient(gradient) {}
+
+  virtual std::string generate_code([[maybe_unused]] const int& id,
+                                    [[maybe_unused]] const std::vector<std::string>& input_vars,
+                                    [[maybe_unused]] const std::vector<std::string>& output_vars) const override;
+
+ private:
+  const VisualShaderNodeCellular::VisualShaderNodeCellularCellType cell_type;
+  const VisualShaderNodeCellular::VisualShaderNodeCellularDistance distance;
+  const VisualShaderNodeCellular::VisualShaderNodeCellularPointGen point_gen;
+  const int seed;
+  const float intensity;
+  const float jitter;
+  const int num_points;
+  const bool rand_color;
+  const bool periodic;
+  const std::vector<VisualShaderColorGradientStop> gradient;
+};
+
 #endif  // ENIGMA_VISUAL_SHADER_NODE_PATTERN_GENERATORS_HPP

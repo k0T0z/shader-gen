@@ -181,6 +181,18 @@ inline static std::shared_ptr<IVisualShaderProtoNode> get_proto_node_by_oneof_va
     case VisualShader::VisualShaderNode::kFunctionFieldNumber: {
       return std::make_shared<VisualShaderProtoNode<VisualShaderNodeFunction>>();
     }
+    case VisualShader::VisualShaderNode::kCellularFieldNumber: {
+      return std::make_shared<VisualShaderProtoNode<VisualShaderNodeCellular>>();
+    }
+    case VisualShader::VisualShaderNode::kIlluminateFieldNumber: {
+      return std::make_shared<VisualShaderProtoNode<VisualShaderNodeIlluminate>>();
+    }
+    case VisualShader::VisualShaderNode::kEmbossFieldNumber: {
+      return std::make_shared<VisualShaderProtoNode<VisualShaderNodeEmboss>>();
+    }
+    case VisualShader::VisualShaderNode::kNormalMapFieldNumber: {
+      return std::make_shared<VisualShaderProtoNode<VisualShaderNodeNormalMap>>();
+    }
     default:
       WARN_PRINT("Unsupported node type: " + std::to_string(oneof_value_field_number));
       break;

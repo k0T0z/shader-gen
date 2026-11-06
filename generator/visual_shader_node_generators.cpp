@@ -27,6 +27,7 @@
 
 #include "generator/visual_shader_node_generators.hpp"
 
+#include <cmath>
 #include <iomanip>
 #include <sstream>
 
@@ -1523,5 +1524,117 @@ std::string VisualShaderNodeGeneratorCompare::generate_code(
     default:
       break;
   }
+  return code;
+}
+
+/*************************************/
+/* Illuminate / Emboss / NormalMap   */
+/*************************************/
+
+std::string VisualShaderNodeGeneratorIlluminate::generate_code(
+    [[maybe_unused]] const int& id, [[maybe_unused]] const std::vector<std::string>& input_vars,
+    [[maybe_unused]] const std::vector<std::string>& output_vars) const {
+  const auto to_glsl_float = [](const float& value) -> std::string {
+    std::ostringstream oss;
+    oss << std::fixed << std::setprecision(6) << value;
+    return oss.str();
+  };
+
+  const std::string id_str{std::to_string(id)};
+  const std::string buffer{"illuminate_out_n" + id_str};
+  const std::string normal_var{"illuminate_normal_n" + id_str};
+  const std::string light_var{"illuminate_light_n" + id_str};
+  const std::string reflect_var{"illuminate_reflect_n" + id_str};
+
+  constexpr float PI{3.14159265358979323846f};
+  const float theta_rad{theta * (PI / 180.0f)};
+  const float phi_rad{phi * (PI / 180.0f)};
+
+  // Mirrors @c Vector3.setDir(theta, phi).
+  const float light_x{std::cos(phi_rad) * std::sin(theta_rad)};
+  const float light_y{std::sin(phi_rad) * std::sin(theta_rad)};
+  const float light_z{std::cos(theta_rad)};
+
+  std::string code;
+  code += std::string("\t") + "// Illuminate" + std::string("\n");
+  code += std::string("\t") + "vec4 " + buffer + " = " + input_vars.at(0) + ";" + std::string("\n");
+  code += std::string("\t") + "vec3 " + normal_var + " = (" + input_vars.at(1) + ".xyz - 0.5) * 2.0;" + std::string("\n");
+  code += std::string("\t") + "vec3 " + light_var + " = vec3(" + to_glsl_float(light_x) + ", " +
+          to_glsl_float(light_y) + ", " + to_glsl_float(light_z) + ");" + std::string("\n");
+  code += std::string("\t") + "vec3 " + reflect_var + " = normalize(vec3(0.0, 0.0, -1.0) - 2.0 * dot(vec3(0.0, 0.0, "
+          "-1.0), " + normal_var + ") * " + normal_var + ");" + std::string("\n");
+  code += std::string("\t") + "float illuminate_ar_n" + id_str + " = max(dot(" + reflect_var + ", " + light_var +
+          "), 0.0);" + std::string("\n");
+  code += std::string("\t") + "illuminate_ar_n" + id_str + " = pow(illuminate_ar_n" + id_str + ", " +
+          to_glsl_float(shininess) + ");" + std::string("\n");
+  code += std::string("\t") + buffer + " += vec4(illuminate_ar_n" + id_str + ");" + std::string("\n");
+  code += std::string("\t") + buffer + " = clamp(" + buffer + ", 0.0, 1.0);" + std::string("\n");
+  code += std::string("\t") + output_vars.at(0) + " = " + buffer + ";" + std::string("\n");
+
+  return code;
+}
+
+std::string VisualShaderNodeGeneratorEmboss::generate_code(
+    [[maybe_unused]] const int& id, [[maybe_unused]] const std::vector<std::string>& input_vars,
+    [[maybe_unused]] const std::vector<std::string>& output_vars) const {
+  const auto to_glsl_float = [](const float& value) -> std::string {
+    std::ostringstream oss;
+    oss << std::fixed << std::setprecision(6) << value;
+    return oss.str();
+  };
+
+  const std::string id_str{std::to_string(id)};
+  const std::string buffer{"emboss_out_n" + id_str};
+  const std::string height_var{"emboss_height_n" + id_str};
+
+  constexpr float PI{3.14159265358979323846f};
+  const float angle_rad{angle * (PI / 180.0f)};
+  const float dir_x{std::cos(angle_rad)};
+  const float dir_y{std::sin(angle_rad)};
+
+  // The source evaluates the grayscale derivative of the height input; the generated shader approximates
+  // it with the screen space derivatives dFdx/dFdy.
+  const float add_scale_x{dir_x * strength};
+  const float add_scale_y{dir_y * strength};
+
+  std::string code;
+  code += std::string("\t") + "// Emboss" + std::string("\n");
+  code += std::string("\t") + "float " + height_var + " = " + input_vars.at(1) + ";" + std::string("\n");
+  code += std::string("\t") + "vec4 " + buffer + " = " + input_vars.at(0) + ";" + std::string("\n");
+  code += std::string("\t") + "float emboss_add_n" + id_str + " = dFdx(" + height_var + ") * " +
+          to_glsl_float(add_scale_x) + " + dFdy(" + height_var + ") * " + to_glsl_float(add_scale_y) + ";" +
+          std::string("\n");
+  code += std::string("\t") + buffer + ".x = clamp(" + buffer + ".x + emboss_add_n" + id_str + ", 0.0, 1.0);" +
+          std::string("\n");
+  code += std::string("\t") + buffer + ".y = clamp(" + buffer + ".y + emboss_add_n" + id_str + ", 0.0, 1.0);" +
+          std::string("\n");
+  code += std::string("\t") + buffer + ".z = clamp(" + buffer + ".z + emboss_add_n" + id_str + ", 0.0, 1.0);" +
+          std::string("\n");
+  code += std::string("\t") + output_vars.at(0) + " = " + buffer + ";" + std::string("\n");
+
+  return code;
+}
+
+std::string VisualShaderNodeGeneratorNormalMap::generate_code(
+    [[maybe_unused]] const int& id, [[maybe_unused]] const std::vector<std::string>& input_vars,
+    [[maybe_unused]] const std::vector<std::string>& output_vars) const {
+  const auto to_glsl_float = [](const float& value) -> std::string {
+    std::ostringstream oss;
+    oss << std::fixed << std::setprecision(6) << value;
+    return oss.str();
+  };
+
+  const std::string id_str{std::to_string(id)};
+  const std::string height_var{"normal_map_height_n" + id_str};
+
+  std::string code;
+  code += std::string("\t") + "// NormalMap" + std::string("\n");
+  code += std::string("\t") + "float " + height_var + " = " + input_vars.at(0) + ";" + std::string("\n");
+  code += std::string("\t") + "vec3 normal_map_n" + id_str + " = normalize(vec3(dFdx(" + height_var + ") * " +
+          to_glsl_float(strength) + ", dFdy(" + height_var + ") * " + to_glsl_float(strength) + ", 1.0));" +
+          std::string("\n");
+  code += std::string("\t") + output_vars.at(0) + " = vec4(normal_map_n" + id_str + " * 0.5 + 0.5, 1.0);" +
+          std::string("\n");
+
   return code;
 }

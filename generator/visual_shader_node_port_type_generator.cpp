@@ -1070,3 +1070,94 @@ VisualShaderNodePortType VisualShaderNodePortTypeGeneratorFunction::get_output_p
     }
     return VisualShaderNodePortType::PORT_TYPE_UNSPECIFIED;
 }
+
+VisualShaderNodePortType VisualShaderNodePortTypeGeneratorCellular::get_input_port_type(const int& port_index) const {
+    VALIDATE_INDEX_NON_VOID(port_index, proto_node->get_input_port_count(), VisualShaderNodePortType::PORT_TYPE_UNSPECIFIED, "Cellular port index out of range.");
+    switch (port_index) {
+    case 0:
+        return VisualShaderNodePortType::PORT_TYPE_VECTOR_2D;
+    default:
+        break;
+    }
+    return VisualShaderNodePortType::PORT_TYPE_UNSPECIFIED;
+}
+
+VisualShaderNodePortType VisualShaderNodePortTypeGeneratorCellular::get_output_port_type(const int& port_index) const {
+    VALIDATE_INDEX_NON_VOID(port_index, proto_node->get_output_port_count(), VisualShaderNodePortType::PORT_TYPE_UNSPECIFIED, "Cellular port index out of range.");
+    switch (port_index) {
+    case 0:
+        return VisualShaderNodePortType::PORT_TYPE_VECTOR_4D;
+    default:
+        break;
+    }
+    return VisualShaderNodePortType::PORT_TYPE_UNSPECIFIED;
+}
+
+VisualShaderNodePortType VisualShaderNodePortTypeGeneratorIlluminate::get_input_port_type(const int& port_index) const {
+    VALIDATE_INDEX_NON_VOID(port_index, proto_node->get_input_port_count(), VisualShaderNodePortType::PORT_TYPE_UNSPECIFIED, "Illuminate port index out of range.");
+    switch (port_index) {
+    case 0:
+    case 1:
+        return VisualShaderNodePortType::PORT_TYPE_VECTOR_4D;
+    default:
+        break;
+    }
+    return VisualShaderNodePortType::PORT_TYPE_UNSPECIFIED;
+}
+
+VisualShaderNodePortType VisualShaderNodePortTypeGeneratorIlluminate::get_output_port_type(const int& port_index) const {
+    VALIDATE_INDEX_NON_VOID(port_index, proto_node->get_output_port_count(), VisualShaderNodePortType::PORT_TYPE_UNSPECIFIED, "Illuminate port index out of range.");
+    switch (port_index) {
+    case 0:
+        return VisualShaderNodePortType::PORT_TYPE_VECTOR_4D;
+    default:
+        break;
+    }
+    return VisualShaderNodePortType::PORT_TYPE_UNSPECIFIED;
+}
+
+VisualShaderNodePortType VisualShaderNodePortTypeGeneratorEmboss::get_input_port_type(const int& port_index) const {
+    VALIDATE_INDEX_NON_VOID(port_index, proto_node->get_input_port_count(), VisualShaderNodePortType::PORT_TYPE_UNSPECIFIED, "Emboss port index out of range.");
+    switch (port_index) {
+    case 0:
+        return VisualShaderNodePortType::PORT_TYPE_VECTOR_4D;
+    case 1:
+        return VisualShaderNodePortType::PORT_TYPE_SCALAR;
+    default:
+        break;
+    }
+    return VisualShaderNodePortType::PORT_TYPE_UNSPECIFIED;
+}
+
+VisualShaderNodePortType VisualShaderNodePortTypeGeneratorEmboss::get_output_port_type(const int& port_index) const {
+    VALIDATE_INDEX_NON_VOID(port_index, proto_node->get_output_port_count(), VisualShaderNodePortType::PORT_TYPE_UNSPECIFIED, "Emboss port index out of range.");
+    switch (port_index) {
+    case 0:
+        return VisualShaderNodePortType::PORT_TYPE_VECTOR_4D;
+    default:
+        break;
+    }
+    return VisualShaderNodePortType::PORT_TYPE_UNSPECIFIED;
+}
+
+VisualShaderNodePortType VisualShaderNodePortTypeGeneratorNormalMap::get_input_port_type(const int& port_index) const {
+    VALIDATE_INDEX_NON_VOID(port_index, proto_node->get_input_port_count(), VisualShaderNodePortType::PORT_TYPE_UNSPECIFIED, "NormalMap port index out of range.");
+    switch (port_index) {
+    case 0:
+        return VisualShaderNodePortType::PORT_TYPE_SCALAR;
+    default:
+        break;
+    }
+    return VisualShaderNodePortType::PORT_TYPE_UNSPECIFIED;
+}
+
+VisualShaderNodePortType VisualShaderNodePortTypeGeneratorNormalMap::get_output_port_type(const int& port_index) const {
+    VALIDATE_INDEX_NON_VOID(port_index, proto_node->get_output_port_count(), VisualShaderNodePortType::PORT_TYPE_UNSPECIFIED, "NormalMap port index out of range.");
+    switch (port_index) {
+    case 0:
+        return VisualShaderNodePortType::PORT_TYPE_VECTOR_4D;
+    default:
+        break;
+    }
+    return VisualShaderNodePortType::PORT_TYPE_UNSPECIFIED;
+}

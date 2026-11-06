@@ -98,6 +98,10 @@ inline static std::vector<int> get_node_type_population() {
     node_type_population.emplace_back(VisualShader::VisualShaderNode::kBrickFieldNumber);
     node_type_population.emplace_back(VisualShader::VisualShaderNode::kTileFieldNumber);
     node_type_population.emplace_back(VisualShader::VisualShaderNode::kFunctionFieldNumber);
+    node_type_population.emplace_back(VisualShader::VisualShaderNode::kCellularFieldNumber);
+    node_type_population.emplace_back(VisualShader::VisualShaderNode::kIlluminateFieldNumber);
+    node_type_population.emplace_back(VisualShader::VisualShaderNode::kEmbossFieldNumber);
+    node_type_population.emplace_back(VisualShader::VisualShaderNode::kNormalMapFieldNumber);
 
     return node_type_population;
 }
@@ -503,6 +507,64 @@ inline static std::pair<ContinuousRangeVariant, ContinuousRangeVariant> get_rang
             switch (field_number) {
                 case VisualShaderNodeFunction::kScaleXFieldNumber:
                 case VisualShaderNodeFunction::kScaleYFieldNumber: {
+                    return std::make_pair(0.0f, 100.0f);
+                }
+                default:
+                    break;
+            }
+            break;
+        }
+        case VisualShader::VisualShaderNode::kCellularFieldNumber: {
+            switch (field_number) {
+                case VisualShaderNodeCellular::kSeedFieldNumber: {
+                    return std::make_pair(0, 100);
+                }
+                case VisualShaderNodeCellular::kIntensityFieldNumber: {
+                    return std::make_pair(0.0f, 10.0f);
+                }
+                case VisualShaderNodeCellular::kJitterFieldNumber: {
+                    return std::make_pair(0.0f, 1.0f);
+                }
+                case VisualShaderNodeCellular::kNumPointsFieldNumber: {
+                    return std::make_pair(1, 64);
+                }
+                default:
+                    break;
+            }
+            break;
+        }
+        case VisualShader::VisualShaderNode::kIlluminateFieldNumber: {
+            switch (field_number) {
+                case VisualShaderNodeIlluminate::kThetaFieldNumber: {
+                    return std::make_pair(0.0f, 90.0f);
+                }
+                case VisualShaderNodeIlluminate::kPhiFieldNumber: {
+                    return std::make_pair(0.0f, 360.0f);
+                }
+                case VisualShaderNodeIlluminate::kShininessFieldNumber: {
+                    return std::make_pair(1.0f, 2000.0f);
+                }
+                default:
+                    break;
+            }
+            break;
+        }
+        case VisualShader::VisualShaderNode::kEmbossFieldNumber: {
+            switch (field_number) {
+                case VisualShaderNodeEmboss::kStrengthFieldNumber: {
+                    return std::make_pair(0.0f, 100.0f);
+                }
+                case VisualShaderNodeEmboss::kAngleFieldNumber: {
+                    return std::make_pair(0.0f, 360.0f);
+                }
+                default:
+                    break;
+            }
+            break;
+        }
+        case VisualShader::VisualShaderNode::kNormalMapFieldNumber: {
+            switch (field_number) {
+                case VisualShaderNodeNormalMap::kStrengthFieldNumber: {
                     return std::make_pair(0.0f, 100.0f);
                 }
                 default:
@@ -964,6 +1026,42 @@ inline static std::vector<int> get_range_for_discrete_field(const int& node_type
                         };
                     }
                 default: 
+                    break;
+            }
+            break;
+        }
+        case VisualShader::VisualShaderNode::kCellularFieldNumber: {
+            switch (field_number) {
+                case VisualShaderNodeCellular::kCellTypeFieldNumber: {
+                    return {
+                            VisualShaderNodeCellular::CELL_F1,
+                            VisualShaderNodeCellular::CELL_F2,
+                            VisualShaderNodeCellular::CELL_F3,
+                            VisualShaderNodeCellular::CELL_CONSTANT,
+                            VisualShaderNodeCellular::CELL_F2_MINUS_F1
+                        };
+                    }
+                case VisualShaderNodeCellular::kDistanceFieldNumber: {
+                    return {
+                            VisualShaderNodeCellular::DIST_EUCLID,
+                            VisualShaderNodeCellular::DIST_MANHATTAN,
+                            VisualShaderNodeCellular::DIST_MAX,
+                            VisualShaderNodeCellular::DIST_MINKOWSKI
+                        };
+                    }
+                case VisualShaderNodeCellular::kPointGenFieldNumber: {
+                    return {
+                            VisualShaderNodeCellular::POINT_GEN_RANDOM,
+                            VisualShaderNodeCellular::POINT_GEN_REGULAR,
+                            VisualShaderNodeCellular::POINT_GEN_HALTON23,
+                            VisualShaderNodeCellular::POINT_GEN_HAMMERSLEY
+                        };
+                    }
+                case VisualShaderNodeCellular::kRandColorFieldNumber:
+                case VisualShaderNodeCellular::kPeriodicFieldNumber: {
+                    return {0, 1}; // false, true
+                }
+                default:
                     break;
             }
             break;

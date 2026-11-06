@@ -112,6 +112,14 @@ message VisualShader {
             VisualShaderNodeBrick brick = 46;
             VisualShaderNodeTile tile = 47;
             VisualShaderNodeFunction function = 48;
+
+            /*************************************/
+            /* FILTERS                           */
+            /*************************************/
+            VisualShaderNodeCellular cellular = 49;
+            VisualShaderNodeIlluminate illuminate = 50;
+            VisualShaderNodeEmboss emboss = 51;
+            VisualShaderNodeNormalMap normal_map = 52;
         }
     }
     

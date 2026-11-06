@@ -437,6 +437,10 @@ void VisualShaderEditor::init() {
   t_nodes.emplace_back(std::make_shared<VisualShaderProtoNode<VisualShaderNodeBrick>>());
   t_nodes.emplace_back(std::make_shared<VisualShaderProtoNode<VisualShaderNodeTile>>());
   t_nodes.emplace_back(std::make_shared<VisualShaderProtoNode<VisualShaderNodeFunction>>());
+  t_nodes.emplace_back(std::make_shared<VisualShaderProtoNode<VisualShaderNodeCellular>>());
+  t_nodes.emplace_back(std::make_shared<VisualShaderProtoNode<VisualShaderNodeIlluminate>>());
+  t_nodes.emplace_back(std::make_shared<VisualShaderProtoNode<VisualShaderNodeEmboss>>());
+  t_nodes.emplace_back(std::make_shared<VisualShaderProtoNode<VisualShaderNodeNormalMap>>());
 
   for (const std::shared_ptr<IVisualShaderProtoNode>& node : t_nodes) {
     create_node_dialog_nodes_tree_items.emplace_back(
@@ -1370,6 +1374,34 @@ bool VisualShaderGraphicsScene::add_node_to_scene(const int& n_id, const std::sh
         REGISTER_NODE_FIELD_LINE_EDIT_FLOAT(VisualShaderNodeFunction::kScaleXFieldNumber, "Scale X");
         REGISTER_NODE_FIELD_LINE_EDIT_FLOAT(VisualShaderNodeFunction::kScaleYFieldNumber, "Scale Y");
         REGISTER_NODE_FIELD_REPEATED_MESSAGE(VisualShaderNodeFunction::kGradientFieldNumber, ColorGradientStop::kPositionFieldNumber);
+        break;
+      }
+      case VisualShader::VisualShaderNode::kCellularFieldNumber: {
+        REGISTER_NODE_FIELD_COMBO_BOX(VisualShaderNodeCellular::kCellTypeFieldNumber);
+        REGISTER_NODE_FIELD_COMBO_BOX(VisualShaderNodeCellular::kDistanceFieldNumber);
+        REGISTER_NODE_FIELD_COMBO_BOX(VisualShaderNodeCellular::kPointGenFieldNumber);
+        REGISTER_NODE_FIELD_LINE_EDIT_INT(VisualShaderNodeCellular::kSeedFieldNumber, "Seed");
+        REGISTER_NODE_FIELD_LINE_EDIT_FLOAT(VisualShaderNodeCellular::kIntensityFieldNumber, "Intensity");
+        REGISTER_NODE_FIELD_LINE_EDIT_FLOAT(VisualShaderNodeCellular::kJitterFieldNumber, "Jitter");
+        REGISTER_NODE_FIELD_LINE_EDIT_INT(VisualShaderNodeCellular::kNumPointsFieldNumber, "Num Points");
+        REGISTER_NODE_FIELD_CHECK_BOX(VisualShaderNodeCellular::kRandColorFieldNumber);
+        REGISTER_NODE_FIELD_CHECK_BOX(VisualShaderNodeCellular::kPeriodicFieldNumber);
+        REGISTER_NODE_FIELD_REPEATED_MESSAGE(VisualShaderNodeCellular::kGradientFieldNumber, ColorGradientStop::kPositionFieldNumber);
+        break;
+      }
+      case VisualShader::VisualShaderNode::kIlluminateFieldNumber: {
+        REGISTER_NODE_FIELD_LINE_EDIT_FLOAT(VisualShaderNodeIlluminate::kThetaFieldNumber, "Theta");
+        REGISTER_NODE_FIELD_LINE_EDIT_FLOAT(VisualShaderNodeIlluminate::kPhiFieldNumber, "Phi");
+        REGISTER_NODE_FIELD_LINE_EDIT_FLOAT(VisualShaderNodeIlluminate::kShininessFieldNumber, "Shininess");
+        break;
+      }
+      case VisualShader::VisualShaderNode::kEmbossFieldNumber: {
+        REGISTER_NODE_FIELD_LINE_EDIT_FLOAT(VisualShaderNodeEmboss::kStrengthFieldNumber, "Strength");
+        REGISTER_NODE_FIELD_LINE_EDIT_FLOAT(VisualShaderNodeEmboss::kAngleFieldNumber, "Angle");
+        break;
+      }
+      case VisualShader::VisualShaderNode::kNormalMapFieldNumber: {
+        REGISTER_NODE_FIELD_LINE_EDIT_FLOAT(VisualShaderNodeNormalMap::kStrengthFieldNumber, "Strength");
         break;
       }
       case VisualShader::VisualShaderNode::kDotProductFieldNumber:

@@ -28,6 +28,8 @@
 #include "generator/vs_node_pattern_generators.hpp"
 
 #include <algorithm>
+#include <array>
+#include <cmath>
 #include <cstdint>
 #include <iomanip>
 #include <sstream>
@@ -111,6 +113,41 @@ std::string to_glsl_array(const std::vector<float>& values) {
   }
   code += ")";
   return code;
+}
+
+std::string to_glsl_vec2_array(const std::vector<std::array<float, 2>>& values) {
+  std::string code{"vec2[" + std::to_string(values.size()) + "]("};
+  for (std::size_t i = 0; i < values.size(); ++i) {
+    if (i != 0) code += ", ";
+    code += "vec2(" + to_glsl_float(values.at(i).at(0)) + ", " + to_glsl_float(values.at(i).at(1)) + ")";
+  }
+  code += ")";
+  return code;
+}
+
+std::string to_glsl_int_array(const std::vector<int>& values) {
+  std::string code{"int[" + std::to_string(values.size()) + "]("};
+  for (std::size_t i = 0; i < values.size(); ++i) {
+    if (i != 0) code += ", ";
+    code += std::to_string(values.at(i));
+  }
+  code += ")";
+  return code;
+}
+
+/**
+ * @brief A re-implementation of @c FMath.radicalInverse_vdC (van der Corput radical inverse).
+ */
+float radical_inverse_vdc(const int& base, int i) {
+  double digit{1.0 / static_cast<double>(base)};
+  double radical{digit};
+  double inverse{0.0};
+  while (i != 0) {
+    inverse += digit * static_cast<double>(i % base);
+    digit *= radical;
+    i /= base;
+  }
+  return static_cast<float>(inverse);
 }
 
 /**
@@ -450,6 +487,228 @@ std::string VisualShaderNodeGeneratorFunction::generate_code(
   code += std::string("\t") + "float " + val + " = " + val_expr + ";" + std::string("\n");
 
   code += emit_gradient_lookup(gradient, out, val, "pattern_n" + std::to_string(id));
+  code += std::string("\t") + output_vars.at(0) + " = " + out + ";" + std::string("\n");
+
+  return code;
+}
+
+/*************************************/
+/* Cellular                          */
+/*************************************/
+
+std::string VisualShaderNodeGeneratorCellular::generate_code(
+    [[maybe_unused]] const int& id, [[maybe_unused]] const std::vector<std::string>& input_vars,
+    [[maybe_unused]] const std::vector<std::string>& output_vars) const {
+  // The source implementation needs at least two points to evaluate the "distance to the k-th nearest
+  // feature point" cell types, so clamp the requested amount to that lower bound.
+  const int point_count{std::max(2, num_points)};
+  const float sqrt_point_count{std::sqrt(static_cast<float>(point_count))};
+
+  // Bake the feature points exactly like @c PatternCellular.regeneratePoints does. The seed is re-applied
+  // for each phase (points and colors) to match the source's separate @c FMath.setSeed calls.
+  JavaRandom points_random{static_cast<std::uint64_t>(seed)};
+  std::vector<std::array<float, 2>> base_points;
+  base_points.reserve(static_cast<std::size_t>(point_count));
+
+  for (int i{0}; i < point_count; ++i) {
+    const float jitter_x{(points_random.next_float() - 0.5f) * jitter / sqrt_point_count};
+    const float jitter_y{(points_random.next_float() - 0.5f) * jitter / sqrt_point_count};
+
+    float x{0.0f};
+    float y{0.0f};
+
+    switch (point_gen) {
+      case VisualShaderNodeCellular::POINT_GEN_RANDOM: {
+        x = points_random.next_float() + jitter_x;
+        y = points_random.next_float() + jitter_y;
+        break;
+      }
+      case VisualShaderNodeCellular::POINT_GEN_REGULAR: {
+        const int mod{static_cast<int>(sqrt_point_count + 0.999f)};
+        x = static_cast<float>(i % mod) / static_cast<float>(mod) + jitter_x;
+        y = static_cast<float>(i / mod) / static_cast<float>(mod) + jitter_y;
+        break;
+      }
+      case VisualShaderNodeCellular::POINT_GEN_HALTON23: {
+        x = radical_inverse_vdc(2, i) + jitter_x;
+        y = radical_inverse_vdc(3, i) + jitter_y;
+        break;
+      }
+      case VisualShaderNodeCellular::POINT_GEN_HAMMERSLEY: {
+        const float div{1.0f / static_cast<float>(point_count)};
+        x = static_cast<float>(i) * div + jitter_x;
+        y = radical_inverse_vdc(2, i) + jitter_y;
+        break;
+      }
+      default: {
+        break;
+      }
+    }
+
+    base_points.push_back({x, y});
+  }
+
+  JavaRandom colors_random{static_cast<std::uint64_t>(seed)};
+  std::vector<float> random_colors(static_cast<std::size_t>(point_count));
+  for (float& color : random_colors) color = colors_random.next_float();
+
+  // For kd tree lookup the source replicates the points onto a torus to obtain a periodic pattern. The
+  // replicas keep the index of the original point so that @c randomColors lookups stay consistent.
+  std::vector<std::array<float, 2>> points{base_points};
+  std::vector<int> indices;
+  indices.reserve(base_points.size());
+  for (int i{0}; i < point_count; ++i) indices.push_back(i);
+
+  if (periodic) {
+    for (int i{0}; i < point_count; ++i) {
+      const float px{base_points.at(static_cast<std::size_t>(i)).at(0)};
+      const float py{base_points.at(static_cast<std::size_t>(i)).at(1)};
+      const float nx{px < 0.5f ? px + 1.0f : px - 1.0f};
+      const float ny{py < 0.5f ? py + 1.0f : py - 1.0f};
+
+      points.push_back({nx, py});
+      indices.push_back(i);
+      points.push_back({px, ny});
+      indices.push_back(i);
+      points.push_back({nx, ny});
+      indices.push_back(i);
+    }
+  }
+
+  const std::string id_str{std::to_string(id)};
+  const std::string uv{"cell_uv_n" + id_str};
+  const std::string out{"cell_out_n" + id_str};
+  const std::string val{"cell_val_n" + id_str};
+  const std::string points_var{"cell_points_n" + id_str};
+  const std::string indices_var{"cell_idx_n" + id_str};
+  const std::string colors_var{"cell_colors_n" + id_str};
+  const std::string nearest_var{"cell_nearest_n" + id_str};
+  const std::string d1{"cell_d1_n" + id_str};
+  const std::string d2{"cell_d2_n" + id_str};
+  const std::string d3{"cell_d3_n" + id_str};
+  const std::string i1{"cell_i1_n" + id_str};
+  const std::string i2{"cell_i2_n" + id_str};
+  const std::string i3{"cell_i3_n" + id_str};
+
+  std::string metric;
+  switch (distance) {
+    case VisualShaderNodeCellular::DIST_MANHATTAN: {
+      metric = "abs(cell_dx_" + id_str + ") + abs(cell_dy_" + id_str + ")";
+      break;
+    }
+    case VisualShaderNodeCellular::DIST_MAX: {
+      metric = "max(abs(cell_dx_" + id_str + "), abs(cell_dy_" + id_str + "))";
+      break;
+    }
+    case VisualShaderNodeCellular::DIST_MINKOWSKI: {
+      metric = "pow(sqrt(abs(cell_dx_" + id_str + ")) + sqrt(abs(cell_dy_" + id_str + ")), 2.0)";
+      break;
+    }
+    case VisualShaderNodeCellular::DIST_EUCLID:
+    default: {
+      metric = "sqrt(cell_dx_" + id_str + " * cell_dx_" + id_str + " + cell_dy_" + id_str + " * cell_dy_" + id_str +
+               ")";
+      break;
+    }
+  }
+
+  std::string code;
+
+  code += std::string("\t") + "// Cellular" + std::string("\n");
+  code += std::string("\t") + "const vec2 " + points_var + "[" + std::to_string(points.size()) + "] = " +
+          to_glsl_vec2_array(points) + ";" + std::string("\n");
+  code += std::string("\t") + "const int " + indices_var + "[" + std::to_string(indices.size()) + "] = " +
+          to_glsl_int_array(indices) + ";" + std::string("\n");
+  code += std::string("\t") + "const float " + colors_var + "[" + std::to_string(random_colors.size()) + "] = " +
+          to_glsl_array(random_colors) + ";" + std::string("\n");
+  code += std::string("\t") + "vec2 " + uv + " = fract(" + input_vars.at(0) + ");" + std::string("\n");
+  code += std::string("\t") + "float " + d1 + " = 1e20;" + std::string("\n");
+  code += std::string("\t") + "float " + d2 + " = 1e20;" + std::string("\n");
+  code += std::string("\t") + "float " + d3 + " = 1e20;" + std::string("\n");
+  code += std::string("\t") + "int " + i1 + " = 0;" + std::string("\n");
+  code += std::string("\t") + "int " + i2 + " = 0;" + std::string("\n");
+  code += std::string("\t") + "int " + i3 + " = 0;" + std::string("\n");
+  code += std::string("\t") + "for (int i = 0; i < " + std::to_string(points.size()) + "; i++) {" + std::string("\n");
+  code += std::string("\t") + std::string("\t") + "float cell_dx_" + id_str + " = " + uv + ".x - " + points_var +
+          "[i].x;" + std::string("\n");
+  code += std::string("\t") + std::string("\t") + "float cell_dy_" + id_str + " = " + uv + ".y - " + points_var +
+          "[i].y;" + std::string("\n");
+  code += std::string("\t") + std::string("\t") + "float cell_dist_" + id_str + " = " + metric + ";" +
+          std::string("\n");
+  code += std::string("\t") + std::string("\t") + "if (cell_dist_" + id_str + " < " + d1 + ") {" + std::string("\n");
+  code += std::string("\t") + std::string("\t") + std::string("\t") + d3 + " = " + d2 + ";" + std::string("\n");
+  code += std::string("\t") + std::string("\t") + std::string("\t") + d2 + " = " + d1 + ";" + std::string("\n");
+  code += std::string("\t") + std::string("\t") + std::string("\t") + d1 + " = cell_dist_" + id_str + ";" +
+          std::string("\n");
+  code += std::string("\t") + std::string("\t") + std::string("\t") + i3 + " = " + i2 + ";" + std::string("\n");
+  code += std::string("\t") + std::string("\t") + std::string("\t") + i2 + " = " + i1 + ";" + std::string("\n");
+  code += std::string("\t") + std::string("\t") + std::string("\t") + i1 + " = " + indices_var + "[i];" +
+          std::string("\n");
+  code += std::string("\t") + std::string("\t") + "} else if (cell_dist_" + id_str + " < " + d2 + ") {" +
+          std::string("\n");
+  code += std::string("\t") + std::string("\t") + std::string("\t") + d3 + " = " + d2 + ";" + std::string("\n");
+  code += std::string("\t") + std::string("\t") + std::string("\t") + d2 + " = cell_dist_" + id_str + ";" +
+          std::string("\n");
+  code += std::string("\t") + std::string("\t") + std::string("\t") + i3 + " = " + i2 + ";" + std::string("\n");
+  code += std::string("\t") + std::string("\t") + std::string("\t") + i2 + " = " + indices_var + "[i];" +
+          std::string("\n");
+  code += std::string("\t") + std::string("\t") + "} else if (cell_dist_" + id_str + " < " + d3 + ") {" +
+          std::string("\n");
+  code += std::string("\t") + std::string("\t") + std::string("\t") + d3 + " = cell_dist_" + id_str + ";" +
+          std::string("\n");
+  code += std::string("\t") + std::string("\t") + std::string("\t") + i3 + " = " + indices_var + "[i];" +
+          std::string("\n");
+  code += std::string("\t") + std::string("\t") + "}" + std::string("\n");
+  code += std::string("\t") + "}" + std::string("\n");
+
+  code += std::string("\t") + "float " + val + " = 0.0;" + std::string("\n");
+
+  switch (cell_type) {
+    case VisualShaderNodeCellular::CELL_F1: {
+      code += std::string("\t") + val + " = " + d1 + ";" + std::string("\n");
+      code += std::string("\t") + val + " *= " + to_glsl_float(intensity) + ";" + std::string("\n");
+      code += std::string("\t") + val + " *= " + to_glsl_float(sqrt_point_count) + ";" + std::string("\n");
+      code += std::string("\t") + val + " = clamp(" + val + ", 0.0, 1.0);" + std::string("\n");
+      code += std::string("\t") + "int " + nearest_var + " = " + i1 + ";" + std::string("\n");
+      break;
+    }
+    case VisualShaderNodeCellular::CELL_F2: {
+      code += std::string("\t") + val + " = " + d2 + " / 1.4142;" + std::string("\n");
+      code += std::string("\t") + val + " *= " + to_glsl_float(intensity) + ";" + std::string("\n");
+      code += std::string("\t") + val + " *= " + to_glsl_float(sqrt_point_count) + ";" + std::string("\n");
+      code += std::string("\t") + val + " = clamp(" + val + ", 0.0, 1.0);" + std::string("\n");
+      code += std::string("\t") + "int " + nearest_var + " = " + i2 + ";" + std::string("\n");
+      break;
+    }
+    case VisualShaderNodeCellular::CELL_F3: {
+      code += std::string("\t") + val + " = " + d3 + " / 2.0;" + std::string("\n");
+      code += std::string("\t") + val + " *= " + to_glsl_float(intensity) + ";" + std::string("\n");
+      code += std::string("\t") + val + " *= " + to_glsl_float(sqrt_point_count) + ";" + std::string("\n");
+      code += std::string("\t") + val + " = clamp(" + val + ", 0.0, 1.0);" + std::string("\n");
+      code += std::string("\t") + "int " + nearest_var + " = " + i3 + ";" + std::string("\n");
+      break;
+    }
+    case VisualShaderNodeCellular::CELL_F2_MINUS_F1: {
+      code += std::string("\t") + val + " = abs(" + d1 + " - " + d2 + ") * 1.4142;" + std::string("\n");
+      code += std::string("\t") + val + " *= " + to_glsl_float(intensity) + ";" + std::string("\n");
+      code += std::string("\t") + val + " *= " + to_glsl_float(sqrt_point_count) + ";" + std::string("\n");
+      code += std::string("\t") + val + " = clamp(" + val + ", 0.0, 1.0);" + std::string("\n");
+      code += std::string("\t") + "int " + nearest_var + " = " + i1 + ";" + std::string("\n");
+      break;
+    }
+    case VisualShaderNodeCellular::CELL_CONSTANT:
+    default: {
+      code += std::string("\t") + val + " = " + to_glsl_float(intensity) + ";" + std::string("\n");
+      code += std::string("\t") + "int " + nearest_var + " = " + i1 + ";" + std::string("\n");
+      break;
+    }
+  }
+
+  if (rand_color) {
+    code += std::string("\t") + val + " *= " + colors_var + "[" + nearest_var + "];" + std::string("\n");
+  }
+
+  code += emit_gradient_lookup(gradient, out, val, "cell_n" + id_str);
   code += std::string("\t") + output_vars.at(0) + " = " + out + ";" + std::string("\n");
 
   return code;

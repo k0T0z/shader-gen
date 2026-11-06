@@ -567,4 +567,45 @@ class VisualShaderNodeGeneratorBlend : public VisualShaderNodeGenerator {
   const bool inv_alpha;
 };
 
+class VisualShaderNodeGeneratorIlluminate : public VisualShaderNodeGenerator {
+ public:
+  VisualShaderNodeGeneratorIlluminate(const float& theta, const float& phi, const float& shininess)
+      : VisualShaderNodeGenerator(), theta(theta), phi(phi), shininess(shininess) {}
+
+  virtual std::string generate_code([[maybe_unused]] const int& id,
+                                    [[maybe_unused]] const std::vector<std::string>& input_vars,
+                                    [[maybe_unused]] const std::vector<std::string>& output_vars) const override;
+
+ private:
+  const float theta;
+  const float phi;
+  const float shininess;
+};
+
+class VisualShaderNodeGeneratorEmboss : public VisualShaderNodeGenerator {
+ public:
+  VisualShaderNodeGeneratorEmboss(const float& strength, const float& angle)
+      : VisualShaderNodeGenerator(), strength(strength), angle(angle) {}
+
+  virtual std::string generate_code([[maybe_unused]] const int& id,
+                                    [[maybe_unused]] const std::vector<std::string>& input_vars,
+                                    [[maybe_unused]] const std::vector<std::string>& output_vars) const override;
+
+ private:
+  const float strength;
+  const float angle;
+};
+
+class VisualShaderNodeGeneratorNormalMap : public VisualShaderNodeGenerator {
+ public:
+  VisualShaderNodeGeneratorNormalMap(const float& strength) : VisualShaderNodeGenerator(), strength(strength) {}
+
+  virtual std::string generate_code([[maybe_unused]] const int& id,
+                                    [[maybe_unused]] const std::vector<std::string>& input_vars,
+                                    [[maybe_unused]] const std::vector<std::string>& output_vars) const override;
+
+ private:
+  const float strength;
+};
+
 #endif  // ENIGMA_VISUAL_SHADER_NODE_GENERATORS_HPP

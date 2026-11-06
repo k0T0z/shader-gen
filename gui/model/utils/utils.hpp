@@ -152,6 +152,31 @@ inline static QVariant get_proto_field_default_value_override(const google::prot
            {VisualShaderNodeFunction::kScaleXFieldNumber, 1.0f},
            {VisualShaderNodeFunction::kScaleYFieldNumber, 1.0f},
        }},
+      // Cellular
+      {std::string(VisualShaderNodeCellular::descriptor()->full_name()),
+       {
+           {VisualShaderNodeCellular::kIntensityFieldNumber, 1.0f},
+           {VisualShaderNodeCellular::kNumPointsFieldNumber, 16},
+           {VisualShaderNodeCellular::kPeriodicFieldNumber, true},
+       }},
+      // Illuminate
+      {std::string(VisualShaderNodeIlluminate::descriptor()->full_name()),
+       {
+           {VisualShaderNodeIlluminate::kThetaFieldNumber, 45.0f},
+           {VisualShaderNodeIlluminate::kPhiFieldNumber, 45.0f},
+           {VisualShaderNodeIlluminate::kShininessFieldNumber, 20.0f},
+       }},
+      // Emboss
+      {std::string(VisualShaderNodeEmboss::descriptor()->full_name()),
+       {
+           {VisualShaderNodeEmboss::kStrengthFieldNumber, 8.0f},
+           {VisualShaderNodeEmboss::kAngleFieldNumber, 45.0f},
+       }},
+      // NormalMap
+      {std::string(VisualShaderNodeNormalMap::descriptor()->full_name()),
+       {
+           {VisualShaderNodeNormalMap::kStrengthFieldNumber, 1.0f},
+       }},
   };
 
   const std::unordered_map<std::string, std::unordered_map<int, QVariant>>::const_iterator node_it{
@@ -495,6 +520,18 @@ inline static std::shared_ptr<VisualShaderNodePortTypeGenerator> get_port_type_g
     }
     case VisualShader::VisualShaderNode::kFunctionFieldNumber: {
         return std::make_shared<VisualShaderNodePortTypeGeneratorFunction>(proto_node);
+    }
+    case VisualShader::VisualShaderNode::kCellularFieldNumber: {
+        return std::make_shared<VisualShaderNodePortTypeGeneratorCellular>(proto_node);
+    }
+    case VisualShader::VisualShaderNode::kIlluminateFieldNumber: {
+        return std::make_shared<VisualShaderNodePortTypeGeneratorIlluminate>(proto_node);
+    }
+    case VisualShader::VisualShaderNode::kEmbossFieldNumber: {
+        return std::make_shared<VisualShaderNodePortTypeGeneratorEmboss>(proto_node);
+    }
+    case VisualShader::VisualShaderNode::kNormalMapFieldNumber: {
+        return std::make_shared<VisualShaderNodePortTypeGeneratorNormalMap>(proto_node);
     }
     default:
       WARN_PRINT("Unsupported node type: " + std::to_string(oneof_value_field_number));

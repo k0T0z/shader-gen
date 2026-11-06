@@ -1163,3 +1163,108 @@ message VisualShaderNodeFunction {
     repeated ColorGradientStop gradient = 6;
 }
 
+/*************************************/
+/* FILTERS                           */
+/*************************************/
+
+message VisualShaderNodeCellular {
+    option (node_caption) = "Cellular";
+    option (node_input_port_count) = 1;
+    option (node_input_port_caption) = "uv";
+
+    option (node_output_port_count) = 1;
+    option (node_output_port_caption) = "";
+
+    option (node_category_path) = "Noise";
+
+    option (node_description) = "Worley cellular texture basis function. The distance between the input 'UV' and a set "
+     "of feature points is evaluated and mapped through a color ramp. The feature points can be placed randomly, on a "
+     "regular grid, or using a Halton/Hammersley sequence.";
+
+    enum VisualShaderNodeCellularCellType {
+        CELL_F1 = 0 [(value_caption) = "F1"];
+        CELL_F2 = 1 [(value_caption) = "F2"];
+        CELL_F3 = 2 [(value_caption) = "F3"];
+        CELL_CONSTANT = 3 [(value_caption) = "Constant"];
+        CELL_F2_MINUS_F1 = 4 [(value_caption) = "F2 - F1"];
+    };
+
+    enum VisualShaderNodeCellularDistance {
+        DIST_EUCLID = 0 [(value_caption) = "Euclid"];
+        DIST_MANHATTAN = 1 [(value_caption) = "Manhattan"];
+        DIST_MAX = 2 [(value_caption) = "Max"];
+        DIST_MINKOWSKI = 3 [(value_caption) = "Minkowski 0.5"];
+    };
+
+    enum VisualShaderNodeCellularPointGen {
+        POINT_GEN_RANDOM = 0 [(value_caption) = "Random"];
+        POINT_GEN_REGULAR = 1 [(value_caption) = "Regular"];
+        POINT_GEN_HALTON23 = 2 [(value_caption) = "Halton 2,3"];
+        POINT_GEN_HAMMERSLEY = 3 [(value_caption) = "Hammersley"];
+    };
+
+    optional VisualShaderNodeCellularCellType cell_type = 1;
+    optional VisualShaderNodeCellularDistance distance = 2;
+    optional VisualShaderNodeCellularPointGen point_gen = 3;
+    optional int32 seed = 4;
+    optional float intensity = 5;
+    optional float jitter = 6;
+    optional int32 num_points = 7;
+    optional bool rand_color = 8;
+    optional bool periodic = 9;
+    repeated ColorGradientStop gradient = 10;
+}
+
+message VisualShaderNodeIlluminate {
+    option (node_caption) = "Illuminate";
+    option (node_input_port_count) = 2;
+    option (node_input_port_caption) = "Color";
+    option (node_input_port_caption) = "Normal Map";
+
+    option (node_output_port_count) = 1;
+    option (node_output_port_caption) = "";
+
+    option (node_category_path) = "Special/Color";
+
+    option (node_description) = "Uses a normal map to compute a Phong illumination. Input 'Color' is the color to "
+     "illuminate and input 'Normal Map' provides the surface normals.";
+
+    optional float theta = 1;
+    optional float phi = 2;
+    optional float shininess = 3;
+}
+
+message VisualShaderNodeEmboss {
+    option (node_caption) = "Emboss";
+    option (node_input_port_count) = 2;
+    option (node_input_port_caption) = "Color";
+    option (node_input_port_caption) = "Height";
+
+    option (node_output_port_count) = 1;
+    option (node_output_port_caption) = "";
+
+    option (node_category_path) = "Special/Color";
+
+    option (node_description) = "A simple emboss effect that adds or subtracts white based on the grayscale "
+     "derivative of the 'Height' input.";
+
+    optional float strength = 1;
+    optional float angle = 2;
+}
+
+message VisualShaderNodeNormalMap {
+    option (node_caption) = "NormalMap";
+    option (node_input_port_count) = 1;
+    option (node_input_port_caption) = "Height";
+
+    option (node_output_port_count) = 1;
+    option (node_output_port_caption) = "";
+
+    option (node_category_path) = "Special/Color";
+
+    option (node_description) = "Converts a grayscale height map into a normal map using the surface derivative "
+     "of the 'Height' input.";
+
+    optional float strength = 1;
+}
+

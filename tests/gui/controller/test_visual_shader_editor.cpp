@@ -196,3 +196,253 @@ void VisualShaderEditorTest::repro_add_gradient_stop_in_brick()
 
     delete root_model;
 }
+
+namespace {
+// Encodes the given graph and generates the preview shader for @p node_id, exercising the same
+// generator entry point used by the editor's renderer widget refresh.
+std::string generate_preview_for_node(gui::model::schema::VisualShader& visual_shader, const int node_id) {
+    MessageModel* root_model = new MessageModel(&visual_shader);
+    root_model->build_sub_models();
+
+    const ProtoModel* nodes = root_model->get_sub_model(
+        FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber)));
+    const ProtoModel* connections = root_model->get_sub_model(
+        FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kConnectionsFieldNumber)));
+    if (nodes == nullptr || connections == nullptr) {
+        delete root_model;
+        return std::string();
+    }
+
+    const std::string graph = controller_utils::encode_graph(nodes, connections);
+    const std::string preview = shadergen_visual_shader_generator::generate_preview_shader(graph, node_id, 0);
+    delete root_model;
+    return preview;
+}
+}  // namespace
+
+// Regression test for the newly ported NeoTextureEdit nodes. Each test builds a minimal graph that
+// feeds the node's inputs and verifies the generator can produce a preview without throwing.
+void VisualShaderEditorTest::new_node_cellular_generates_preview()
+{
+    using VisualShaderNodeCellular = gui::model::schema::VisualShaderNodeCellular;
+
+    gui::model::schema::VisualShader visual_shader;
+    {
+        VisualShader::VisualShaderNode* node = visual_shader.add_nodes();
+        node->set_id(0);
+        node->mutable_output();
+    }
+    {
+        VisualShader::VisualShaderNode* node = visual_shader.add_nodes();
+        node->set_id(1);
+        VisualShaderNodeCellular* cellular = node->mutable_cellular();
+        cellular->set_cell_type(VisualShaderNodeCellular::CELL_F2_MINUS_F1);
+        cellular->set_distance(VisualShaderNodeCellular::DIST_EUCLID);
+        cellular->set_point_gen(VisualShaderNodeCellular::POINT_GEN_RANDOM);
+        cellular->set_seed(0);
+        cellular->set_intensity(1.0f);
+        cellular->set_jitter(0.0f);
+        cellular->set_num_points(16);
+        cellular->set_rand_color(false);
+        cellular->set_periodic(true);
+        ColorGradientStop* stop0 = cellular->add_gradient();
+        stop0->set_position(0.0f);
+        stop0->set_a(1.0f);
+        ColorGradientStop* stop1 = cellular->add_gradient();
+        stop1->set_position(1.0f);
+        stop1->set_r(1.0f);
+        stop1->set_g(1.0f);
+        stop1->set_b(1.0f);
+        stop1->set_a(1.0f);
+    }
+    {
+        VisualShader::VisualShaderNode* node = visual_shader.add_nodes();
+        node->set_id(2);
+        node->mutable_input()->set_type(VisualShaderNodeInput::INPUT_TYPE_UV);
+    }
+    {
+        VisualShader::VisualShaderConnection* connection = visual_shader.add_connections();
+        connection->set_id(0);
+        connection->set_from_node_id(2);
+        connection->set_from_port_index(0);
+        connection->set_to_node_id(1);
+        connection->set_to_port_index(0);
+    }
+    {
+        VisualShader::VisualShaderConnection* connection = visual_shader.add_connections();
+        connection->set_id(1);
+        connection->set_from_node_id(1);
+        connection->set_from_port_index(0);
+        connection->set_to_node_id(0);
+        connection->set_to_port_index(0);
+    }
+
+    QVERIFY(!generate_preview_for_node(visual_shader, 1).empty());
+}
+
+void VisualShaderEditorTest::new_node_illuminate_generates_preview()
+{
+    using VisualShaderNodeIlluminate = gui::model::schema::VisualShaderNodeIlluminate;
+    using VisualShaderNodeColorConstant = gui::model::schema::VisualShaderNodeColorConstant;
+
+    gui::model::schema::VisualShader visual_shader;
+    {
+        VisualShader::VisualShaderNode* node = visual_shader.add_nodes();
+        node->set_id(0);
+        node->mutable_output();
+    }
+    {
+        VisualShader::VisualShaderNode* node = visual_shader.add_nodes();
+        node->set_id(1);
+        VisualShaderNodeIlluminate* illuminate = node->mutable_illuminate();
+        illuminate->set_theta(45.0f);
+        illuminate->set_phi(45.0f);
+        illuminate->set_shininess(20.0f);
+    }
+    {
+        VisualShader::VisualShaderNode* node = visual_shader.add_nodes();
+        node->set_id(2);
+        VisualShaderNodeColorConstant* color = node->mutable_color_constant();
+        color->set_r(255);
+        color->set_g(255);
+        color->set_b(255);
+        color->set_a(255);
+    }
+    {
+        VisualShader::VisualShaderNode* node = visual_shader.add_nodes();
+        node->set_id(3);
+        VisualShaderNodeColorConstant* normal = node->mutable_color_constant();
+        normal->set_r(128);
+        normal->set_g(128);
+        normal->set_b(255);
+        normal->set_a(255);
+    }
+    {
+        VisualShader::VisualShaderConnection* connection = visual_shader.add_connections();
+        connection->set_id(0);
+        connection->set_from_node_id(2);
+        connection->set_from_port_index(0);
+        connection->set_to_node_id(1);
+        connection->set_to_port_index(0);
+    }
+    {
+        VisualShader::VisualShaderConnection* connection = visual_shader.add_connections();
+        connection->set_id(1);
+        connection->set_from_node_id(3);
+        connection->set_from_port_index(0);
+        connection->set_to_node_id(1);
+        connection->set_to_port_index(1);
+    }
+    {
+        VisualShader::VisualShaderConnection* connection = visual_shader.add_connections();
+        connection->set_id(2);
+        connection->set_from_node_id(1);
+        connection->set_from_port_index(0);
+        connection->set_to_node_id(0);
+        connection->set_to_port_index(0);
+    }
+
+    QVERIFY(!generate_preview_for_node(visual_shader, 1).empty());
+}
+
+void VisualShaderEditorTest::new_node_emboss_generates_preview()
+{
+    using VisualShaderNodeEmboss = gui::model::schema::VisualShaderNodeEmboss;
+    using VisualShaderNodeColorConstant = gui::model::schema::VisualShaderNodeColorConstant;
+    using VisualShaderNodeFloatConstant = gui::model::schema::VisualShaderNodeFloatConstant;
+
+    gui::model::schema::VisualShader visual_shader;
+    {
+        VisualShader::VisualShaderNode* node = visual_shader.add_nodes();
+        node->set_id(0);
+        node->mutable_output();
+    }
+    {
+        VisualShader::VisualShaderNode* node = visual_shader.add_nodes();
+        node->set_id(1);
+        VisualShaderNodeEmboss* emboss = node->mutable_emboss();
+        emboss->set_strength(8.0f);
+        emboss->set_angle(45.0f);
+    }
+    {
+        VisualShader::VisualShaderNode* node = visual_shader.add_nodes();
+        node->set_id(2);
+        VisualShaderNodeColorConstant* color = node->mutable_color_constant();
+        color->set_r(255);
+        color->set_g(255);
+        color->set_b(255);
+        color->set_a(255);
+    }
+    {
+        VisualShader::VisualShaderNode* node = visual_shader.add_nodes();
+        node->set_id(3);
+        node->mutable_float_constant()->set_value(0.5f);
+    }
+    {
+        VisualShader::VisualShaderConnection* connection = visual_shader.add_connections();
+        connection->set_id(0);
+        connection->set_from_node_id(2);
+        connection->set_from_port_index(0);
+        connection->set_to_node_id(1);
+        connection->set_to_port_index(0);
+    }
+    {
+        VisualShader::VisualShaderConnection* connection = visual_shader.add_connections();
+        connection->set_id(1);
+        connection->set_from_node_id(3);
+        connection->set_from_port_index(0);
+        connection->set_to_node_id(1);
+        connection->set_to_port_index(1);
+    }
+    {
+        VisualShader::VisualShaderConnection* connection = visual_shader.add_connections();
+        connection->set_id(2);
+        connection->set_from_node_id(1);
+        connection->set_from_port_index(0);
+        connection->set_to_node_id(0);
+        connection->set_to_port_index(0);
+    }
+
+    QVERIFY(!generate_preview_for_node(visual_shader, 1).empty());
+}
+
+void VisualShaderEditorTest::new_node_normal_map_generates_preview()
+{
+    using VisualShaderNodeNormalMap = gui::model::schema::VisualShaderNodeNormalMap;
+
+    gui::model::schema::VisualShader visual_shader;
+    {
+        VisualShader::VisualShaderNode* node = visual_shader.add_nodes();
+        node->set_id(0);
+        node->mutable_output();
+    }
+    {
+        VisualShader::VisualShaderNode* node = visual_shader.add_nodes();
+        node->set_id(1);
+        VisualShaderNodeNormalMap* normal_map = node->mutable_normal_map();
+        normal_map->set_strength(1.0f);
+    }
+    {
+        VisualShader::VisualShaderNode* node = visual_shader.add_nodes();
+        node->set_id(2);
+        node->mutable_float_constant()->set_value(0.5f);
+    }
+    {
+        VisualShader::VisualShaderConnection* connection = visual_shader.add_connections();
+        connection->set_id(0);
+        connection->set_from_node_id(2);
+        connection->set_from_port_index(0);
+        connection->set_to_node_id(1);
+        connection->set_to_port_index(0);
+    }
+    {
+        VisualShader::VisualShaderConnection* connection = visual_shader.add_connections();
+        connection->set_id(1);
+        connection->set_from_node_id(1);
+        connection->set_from_port_index(0);
+        connection->set_to_node_id(0);
+        connection->set_to_port_index(0);
+    }
+
+    QVERIFY(!generate_preview_for_node(visual_shader, 1).empty());
+}
