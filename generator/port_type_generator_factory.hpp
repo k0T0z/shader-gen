@@ -167,9 +167,6 @@ inline static std::shared_ptr<VisualShaderNodePortTypeGenerator> get_port_type_g
     case VisualShader::VisualShaderNode::kPerlinNoiseFieldNumber: {
         return std::make_shared<VisualShaderNodePortTypeGeneratorPerlinNoise>(proto_node);
     }
-    case VisualShader::VisualShaderNode::kVoronoiNoiseFieldNumber: {
-        return std::make_shared<VisualShaderNodePortTypeGeneratorVoronoiNoise>(proto_node);
-    }
     case VisualShader::VisualShaderNode::kDotProductFieldNumber: {
         return std::make_shared<VisualShaderNodePortTypeGeneratorDotProduct>(proto_node);
     }

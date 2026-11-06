@@ -204,6 +204,24 @@ class VisualShaderNodeGeneratorCellular : public VisualShaderNodeGenerator {
 };
 
 /*************************************/
+/* Value (Simple) Noise              */
+/*************************************/
+
+class VisualShaderNodeGeneratorValueNoise : public VisualShaderNodeGenerator {
+ public:
+  VisualShaderNodeGeneratorValueNoise(const float& scale) : VisualShaderNodeGenerator(), scale(scale) {}
+
+  virtual std::string generate_global_per_node([[maybe_unused]] const int& id) const override;
+
+  virtual std::string generate_code([[maybe_unused]] const int& id,
+                                    [[maybe_unused]] const std::vector<std::string>& input_vars,
+                                    [[maybe_unused]] const std::vector<std::string>& output_vars) const override;
+
+ private:
+  const float scale;
+};
+
+/*************************************/
 /* Perlin (Gradient) Noise           */
 /*************************************/
 

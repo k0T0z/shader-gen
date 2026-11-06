@@ -305,18 +305,6 @@ class VisualShaderNodePortTypeGeneratorPerlinNoise : public VisualShaderNodePort
   const std::shared_ptr<IVisualShaderProtoNode> proto_node;
 };
 
-class VisualShaderNodePortTypeGeneratorVoronoiNoise : public VisualShaderNodePortTypeGenerator {
- public:
-  VisualShaderNodePortTypeGeneratorVoronoiNoise(const std::shared_ptr<IVisualShaderProtoNode> proto_node)
-      : VisualShaderNodePortTypeGenerator(), proto_node(proto_node) {}
-
-  virtual VisualShaderNodePortType get_input_port_type(const int& port_index) const override;
-  virtual VisualShaderNodePortType get_output_port_type(const int& port_index) const override;
-
- private:
-  const std::shared_ptr<IVisualShaderProtoNode> proto_node;
-};
-
 class VisualShaderNodePortTypeGeneratorDotProduct : public VisualShaderNodePortTypeGenerator {
  public:
   VisualShaderNodePortTypeGeneratorDotProduct(const std::shared_ptr<IVisualShaderProtoNode> proto_node)

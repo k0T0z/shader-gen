@@ -166,7 +166,6 @@ class VisualShaderProtoNode : public IVisualShaderProtoNode {
     else if constexpr (std::is_same_v<Proto, VisualShaderNodeVectorFunc>) return VisualShader::VisualShaderNode::kVectorFuncFieldNumber;
     else if constexpr (std::is_same_v<Proto, VisualShaderNodeValueNoise>) return VisualShader::VisualShaderNode::kValueNoiseFieldNumber;
     else if constexpr (std::is_same_v<Proto, VisualShaderNodePerlinNoise>) return VisualShader::VisualShaderNode::kPerlinNoiseFieldNumber;
-    else if constexpr (std::is_same_v<Proto, VisualShaderNodeVoronoiNoise>) return VisualShader::VisualShaderNode::kVoronoiNoiseFieldNumber;
     else if constexpr (std::is_same_v<Proto, VisualShaderNodeDotProduct>) return VisualShader::VisualShaderNode::kDotProductFieldNumber;
     else if constexpr (std::is_same_v<Proto, VisualShaderNodeVectorLen>) return VisualShader::VisualShaderNode::kVectorLenFieldNumber;
     else if constexpr (std::is_same_v<Proto, VisualShaderNodeClamp>) return VisualShader::VisualShaderNode::kClampFieldNumber;

@@ -73,7 +73,6 @@ message VisualShader {
             /*************************************/
             VisualShaderNodeValueNoise value_noise = 20;
             VisualShaderNodePerlinNoise perlin_noise = 21;
-            VisualShaderNodeVoronoiNoise voronoi_noise = 22;
 
             /*************************************/
             /* MISC                              */

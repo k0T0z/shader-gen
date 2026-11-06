@@ -462,28 +462,6 @@ VisualShaderNodePortType VisualShaderNodePortTypeGeneratorPerlinNoise::get_outpu
     return VisualShaderNodePortType::PORT_TYPE_UNSPECIFIED;
 }
 
-VisualShaderNodePortType VisualShaderNodePortTypeGeneratorVoronoiNoise::get_input_port_type(const int& port_index) const {
-    VALIDATE_INDEX_NON_VOID(port_index, proto_node->get_input_port_count(), VisualShaderNodePortType::PORT_TYPE_UNSPECIFIED, "Voronoi noise port index out of range.");
-    switch (port_index) {
-    case 0:
-        return VisualShaderNodePortType::PORT_TYPE_VECTOR_2D;
-    default:
-        break;
-    }
-    return VisualShaderNodePortType::PORT_TYPE_UNSPECIFIED;
-}
-
-VisualShaderNodePortType VisualShaderNodePortTypeGeneratorVoronoiNoise::get_output_port_type(const int& port_index) const {
-    VALIDATE_INDEX_NON_VOID(port_index, proto_node->get_output_port_count(), VisualShaderNodePortType::PORT_TYPE_UNSPECIFIED, "Voronoi noise port index out of range.");
-    switch (port_index) {
-    case 0:
-        return VisualShaderNodePortType::PORT_TYPE_VECTOR_4D;
-    default:
-        break;
-    }
-    return VisualShaderNodePortType::PORT_TYPE_UNSPECIFIED;
-}
-
 VisualShaderNodePortType VisualShaderNodePortTypeGeneratorDotProduct::get_input_port_type(const int& port_index) const {
     VALIDATE_INDEX_NON_VOID(port_index, proto_node->get_input_port_count(), VisualShaderNodePortType::PORT_TYPE_UNSPECIFIED, "Dot product port index out of range.");
     switch (port_index) {

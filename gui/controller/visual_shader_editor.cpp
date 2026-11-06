@@ -407,7 +407,6 @@ void VisualShaderEditor::init() {
 
   t_nodes.emplace_back(std::make_shared<VisualShaderProtoNode<VisualShaderNodeValueNoise>>());
   t_nodes.emplace_back(std::make_shared<VisualShaderProtoNode<VisualShaderNodePerlinNoise>>());
-  t_nodes.emplace_back(std::make_shared<VisualShaderProtoNode<VisualShaderNodeVoronoiNoise>>());
 
   t_nodes.emplace_back(std::make_shared<VisualShaderProtoNode<VisualShaderNodeDotProduct>>());
   t_nodes.emplace_back(std::make_shared<VisualShaderProtoNode<VisualShaderNodeVectorLen>>());
@@ -1304,11 +1303,6 @@ bool VisualShaderGraphicsScene::add_node_to_scene(const int& n_id, const std::sh
         REGISTER_NODE_FIELD_LINE_EDIT_INT(VisualShaderNodePerlinNoise::kSeedFieldNumber, "Seed");
         REGISTER_NODE_FIELD_CHECK_BOX(VisualShaderNodePerlinNoise::kPeriodicFieldNumber);
         REGISTER_NODE_FIELD_REPEATED_MESSAGE(VisualShaderNodePerlinNoise::kGradientFieldNumber, ColorGradientStop::kPositionFieldNumber);
-        break;
-      }
-      case VisualShader::VisualShaderNode::kVoronoiNoiseFieldNumber: {
-        REGISTER_NODE_FIELD_LINE_EDIT_FLOAT(VisualShaderNodeVoronoiNoise::kAngleOffsetFieldNumber, "Angle Offset");
-        REGISTER_NODE_FIELD_LINE_EDIT_FLOAT(VisualShaderNodeVoronoiNoise::kCellDensityFieldNumber, "Cell Density");
         break;
       }
       case VisualShader::VisualShaderNode::kIsFieldNumber: {

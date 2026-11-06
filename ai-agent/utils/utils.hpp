@@ -71,7 +71,6 @@ inline static std::vector<int> get_node_type_population() {
     node_type_population.emplace_back(VisualShader::VisualShaderNode::kVectorFuncFieldNumber);
     node_type_population.emplace_back(VisualShader::VisualShaderNode::kValueNoiseFieldNumber);
     node_type_population.emplace_back(VisualShader::VisualShaderNode::kPerlinNoiseFieldNumber);
-    node_type_population.emplace_back(VisualShader::VisualShaderNode::kVoronoiNoiseFieldNumber);
     node_type_population.emplace_back(VisualShader::VisualShaderNode::kDotProductFieldNumber);
     node_type_population.emplace_back(VisualShader::VisualShaderNode::kVectorLenFieldNumber);
     node_type_population.emplace_back(VisualShader::VisualShaderNode::kClampFieldNumber);
@@ -410,19 +409,6 @@ inline static std::pair<ContinuousRangeVariant, ContinuousRangeVariant> get_rang
                 }
                 case VisualShaderNodePerlinNoise::kSeedFieldNumber: {
                     return std::make_pair(-1, 100);
-                }
-                default: 
-                    break;
-            }
-            break;
-        }
-        case VisualShader::VisualShaderNode::kVoronoiNoiseFieldNumber: {
-            switch (field_number) {
-                case VisualShaderNodeVoronoiNoise::kCellDensityFieldNumber: {
-                    return std::make_pair(0.0f, 100.0f);
-                }
-                case VisualShaderNodeVoronoiNoise::kAngleOffsetFieldNumber: {
-                    return std::make_pair(0.0f, 360.0f);
                 }
                 default: 
                     break;

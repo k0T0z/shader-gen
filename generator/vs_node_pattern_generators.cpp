@@ -922,3 +922,77 @@ std::string VisualShaderNodeGeneratorPerlinNoise::generate_code(
 
   return code;
 }
+
+/*************************************/
+/* Value (Simple) Noise              */
+/*************************************/
+
+std::string VisualShaderNodeGeneratorValueNoise::generate_global_per_node([[maybe_unused]] const int& id) const {
+  std::string code;
+  code += "float noise_random_value(vec2 uv) {" + std::string("\n");
+  code += std::string("\t") + "return fract(sin(dot(uv, vec2(12.9898, 78.233)))*43758.5453);" + std::string("\n");
+  code += std::string("}") + "\n\n";
+
+  code += "float noise_interpolate(float a, float b, float t) {" + std::string("\n");
+  code += std::string("\t") + "return (1.0-t)*a + (t*b);" + std::string("\n");
+  code += std::string("}") + "\n\n";
+
+  code += "float value_noise(vec2 uv) {" + std::string("\n");
+  code += std::string("\t") + "vec2 i = floor(uv);" + std::string("\n");
+  code += std::string("\t") + "vec2 f = fract(uv);" + std::string("\n");
+  code += std::string("\t") + "f = f * f * (3.0 - 2.0 * f);" + std::string("\n");
+  code += std::string("\t") + std::string("\n");
+  code += std::string("\t") + "uv = abs(fract(uv) - 0.5);" + std::string("\n");
+  code += std::string("\t") + "vec2 c0 = i + vec2(0.0, 0.0);" + std::string("\n");
+  code += std::string("\t") + "vec2 c1 = i + vec2(1.0, 0.0);" + std::string("\n");
+  code += std::string("\t") + "vec2 c2 = i + vec2(0.0, 1.0);" + std::string("\n");
+  code += std::string("\t") + "vec2 c3 = i + vec2(1.0, 1.0);" + std::string("\n");
+  code += std::string("\t") + "float r0 = noise_random_value(c0);" + std::string("\n");
+  code += std::string("\t") + "float r1 = noise_random_value(c1);" + std::string("\n");
+  code += std::string("\t") + "float r2 = noise_random_value(c2);" + std::string("\n");
+  code += std::string("\t") + "float r3 = noise_random_value(c3);" + std::string("\n");
+  code += std::string("\t") + std::string("\n");
+  code += std::string("\t") + "float bottom_of_grid = noise_interpolate(r0, r1, f.x);" + std::string("\n");
+  code += std::string("\t") + "float top_of_grid = noise_interpolate(r2, r3, f.x);" + std::string("\n");
+  code += std::string("\t") + "float t = noise_interpolate(bottom_of_grid, top_of_grid, f.y);" + std::string("\n");
+  code += std::string("\t") + "return t;" + std::string("\n");
+  code += std::string("}") + "\n\n";
+
+  code +=
+      "void generate_value_noise_float(vec2 uv, float scale, out float "
+      "out_buffer) {" +
+      std::string("\n");
+  code += std::string("\t") + "float t = 0.0;" + std::string("\n");
+  code += std::string("\t") + std::string("\n");
+  code += std::string("\t") + "float freq = pow(2.0, float(0));" + std::string("\n");
+  code += std::string("\t") + "float amp = pow(0.5, float(3-0));" + std::string("\n");
+  code += std::string("\t") + "t += value_noise(vec2(uv.x*scale/freq, uv.y*scale/freq))*amp;" + std::string("\n");
+  code += std::string("\t") + std::string("\n");
+  code += std::string("\t") + "freq = pow(2.0, float(1));" + std::string("\n");
+  code += std::string("\t") + "amp = pow(0.5, float(3-1));" + std::string("\n");
+  code += std::string("\t") + "t += value_noise(vec2(uv.x*scale/freq, uv.y*scale/freq))*amp;" + std::string("\n");
+  code += std::string("\t") + std::string("\n");
+  code += std::string("\t") + "freq = pow(2.0, float(2));" + std::string("\n");
+  code += std::string("\t") + "amp = pow(0.5, float(3-2));" + std::string("\n");
+  code += std::string("\t") + "t += value_noise(vec2(uv.x*scale/freq, uv.y*scale/freq))*amp;" + std::string("\n");
+  code += std::string("\t") + std::string("\n");
+  code += std::string("\t") + "out_buffer = t;" + std::string("\n");
+  code += std::string("}") + "\n\n";
+
+  return code;
+}
+
+std::string VisualShaderNodeGeneratorValueNoise::generate_code(
+    [[maybe_unused]] const int& id, [[maybe_unused]] const std::vector<std::string>& input_vars,
+    [[maybe_unused]] const std::vector<std::string>& output_vars) const {
+  std::string code;
+
+  code += std::string("\t") + "// Value Noise" + std::string("\n");
+  code += std::string("\t") + "float out_buffer_n" + std::to_string(id) + " = 0.0;" + std::string("\n");
+  code += std::string("\t") + "generate_value_noise_float(" + input_vars[0] + ", " + to_glsl_float(scale) + ", out_buffer_n" +
+          std::to_string(id) + ");" + std::string("\n");
+  code += std::string("\t") + output_vars[0] + " = vec4(out_buffer_n" + std::to_string(id) + ", out_buffer_n" + std::to_string(id) + ", out_buffer_n" + std::to_string(id) + ", 1.0);" + std::string("\n");
+  code += std::string("\t") + std::string("\n");
+
+  return code;
+}

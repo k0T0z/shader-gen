@@ -27,7 +27,6 @@
 
 #include <gtest/gtest.h>
 
-#include "generator/vs_node_noise_generators.hpp"
 #include "generator/vs_node_pattern_generators.hpp"
 #include "generator/visual_shader_node_generators.hpp"
 
@@ -237,56 +236,6 @@ TEST(VisualShaderNodeGeneratorTest, TestVisualShaderNodeGeneratorPerlinNoiseGene
     "perlin_grad_n0(perlin_perm_n0(BA + Jz), xyz.x - 1.0, xyz.y, xyz.z - 1.0)), perlin_lerp_n0(u, "
     "perlin_grad_n0(perlin_perm_n0(AB + Jz), xyz.x, xyz.y - 1.0, xyz.z - 1.0), perlin_grad_n0(perlin_perm_n0(BB + Jz), "
     "xyz.x - 1.0, xyz.y - 1.0, xyz.z - 1.0))));\n"
-    "}\n\n"};
-  ASSERT_EQ(code, expected_code);
-}
-
-TEST(VisualShaderNodeGeneratorTest, TestVisualShaderNodeGeneratorVoronoiNoiseGenerateCode) {
-  VisualShaderNodeGeneratorVoronoiNoise voronoi_noise_generator{10.0f, 10.0f};
-  std::vector<std::string> input_vars = {"a"};
-  std::vector<std::string> output_vars = {"b"};
-  std::string code{voronoi_noise_generator.generate_code(0, input_vars, output_vars)};
-  std::string expected_code{
-      "\t// Voronoi Noise\n"
-      "\tfloat out_buffer_n0 = 0.0;\n"
-      "\tfloat cells_n0 = 0.0; // TODO: How we can use this?\n"
-      "\tgenerate_voronoi_noise_float(a, 10.000000, 10.000000, out_buffer_n0, cells_n0);\n"
-      "\tb = vec4(out_buffer_n0, out_buffer_n0, out_buffer_n0, 1.0);\n"
-      "\t\n"};
-  ASSERT_EQ(code, expected_code);
-}
-
-TEST(VisualShaderNodeGeneratorTest, TestVisualShaderNodeGeneratorVoronoiNoiseGenerateGlobalPerNode) {
-  VisualShaderNodeGeneratorVoronoiNoise voronoi_noise_generator{10.0f, 10.0f};
-  std::vector<std::string> input_vars = {"a"};
-  std::vector<std::string> output_vars = {"b"};
-  std::string code{voronoi_noise_generator.generate_global_per_node(0)};
-  std::string expected_code{
-    "vec2 voronoi_noise_random_vector(vec2 uv, float offset) {\n"
-    "\tmat2 m = mat2(15.27, 47.63, 99.41, 89.98);\n"
-    "\t\n"
-    "\tuv = fract(sin(m * uv) * 46839.32);\n"
-    "\t\n"
-    "\treturn vec2(sin(uv.y*+offset)*0.5+0.5, cos(uv.x*offset)*0.5+0.5);\n"
-    "}\n\n"
-    "void generate_voronoi_noise_float(vec2 uv, float angle_offset, float cell_density, out float out_buffer, out float cells) {\n"
-    "\tvec2 g = floor(uv * cell_density);\n"
-    "\tvec2 f = fract(uv * cell_density);\n"
-    "\tfloat t = 8.0;\n"
-    "\tvec3 res = vec3(8.0, 0.0, 0.0);\n"
-    "\t\n"
-    "\tfor(int y=-1; y<=1; y++) {\n"
-    "\t\tfor(int x=-1; x<=1; x++) {\n"
-    "\t\t\tvec2 lattice = vec2(x,y);\n"
-    "\t\t\tvec2 offset = voronoi_noise_random_vector(lattice + g, angle_offset);\n"
-    "\t\t\tfloat d = distance(lattice + offset, f);\n"
-    "\t\t\tif(d < res.x) {\n"
-    "\t\t\t\tres = vec3(d, offset.x, offset.y);\n"
-    "\t\t\t\tout_buffer = res.x;\n"
-    "\t\t\t\tcells = res.y;\n"
-    "\t\t\t}\n"
-    "\t\t}\n"
-    "\t}\n"
     "}\n\n"};
   ASSERT_EQ(code, expected_code);
 }

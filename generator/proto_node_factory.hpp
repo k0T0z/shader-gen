@@ -100,9 +100,6 @@ inline static std::shared_ptr<IVisualShaderProtoNode> get_proto_node_by_oneof_va
     case VisualShader::VisualShaderNode::kPerlinNoiseFieldNumber: {
       return std::make_shared<VisualShaderProtoNode<VisualShaderNodePerlinNoise>>();
     }
-    case VisualShader::VisualShaderNode::kVoronoiNoiseFieldNumber: {
-      return std::make_shared<VisualShaderProtoNode<VisualShaderNodeVoronoiNoise>>();
-    }
     case VisualShader::VisualShaderNode::kDotProductFieldNumber: {
       return std::make_shared<VisualShaderProtoNode<VisualShaderNodeDotProduct>>();
     }

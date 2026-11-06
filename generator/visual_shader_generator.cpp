@@ -36,7 +36,6 @@
 #include "error_macros.hpp"
 #include "generator/graph_string_utils.hpp"
 #include "generator/port_type_generator_factory.hpp"
-#include "generator/vs_node_noise_generators.hpp"
 #include "generator/vs_node_pattern_generators.hpp"
 
 using namespace shadergen_graph_string_utils;
@@ -426,20 +425,6 @@ static std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>> raw_t
           const std::vector<VisualShaderColorGradientStop> gradient{parse_color_gradient(parameters)};
 
           generators[n_id] = std::make_shared<VisualShaderNodeGeneratorPerlinNoise>(scale_x, scale_y, value_scale, persistence, start_band, end_band, seed, periodic, gradient);
-          break;
-      }
-      case VisualShader::VisualShaderNode::kVoronoiNoiseFieldNumber: {
-          const auto parameter_tokens = split_string(parameters.at(0), '=');
-          const int field_number = std::stoi(get_node_entity_parameter_field_number(parameter_tokens));
-          CONTINUE_IF_TRUE(field_number != VisualShaderNodeVoronoiNoise::kCellDensityFieldNumber, "Wrong field number.");
-          const float cell_density{std::stof(get_node_entity_parameter_value(parameter_tokens))};
-
-          const auto parameter_tokens1 = split_string(parameters.at(1), '=');
-          const int field_number1 = std::stoi(get_node_entity_parameter_field_number(parameter_tokens1));
-          CONTINUE_IF_TRUE(field_number1 != VisualShaderNodeVoronoiNoise::kAngleOffsetFieldNumber, "Wrong field number.");
-          const float angle_offset{std::stof(get_node_entity_parameter_value(parameter_tokens1))};
-
-          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorVoronoiNoise>(angle_offset, cell_density);
           break;
       }
       case VisualShader::VisualShaderNode::kDotProductFieldNumber: {

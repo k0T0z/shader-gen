@@ -151,7 +151,6 @@ set(SHADER_GEN_HPP_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/ai-agent/elitism.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/generator/visual_shader_generator.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/generator/visual_shader_node_generators.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/generator/vs_node_noise_generators.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/generator/vs_node_pattern_generators.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/generator/visual_shader_node_port_type_generator.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/generator/utils/utils.hpp
@@ -181,7 +180,6 @@ set(SHADER_GEN_CPP_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/ai-agent/parameters.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/generator/visual_shader_generator.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/generator/visual_shader_node_generators.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/generator/vs_node_noise_generators.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/generator/vs_node_pattern_generators.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/generator/visual_shader_node_port_type_generator.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/gui/model/proto_model.cpp
