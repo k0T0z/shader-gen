@@ -35,7 +35,7 @@
 /* Value (Simple) Noise              */
 /*************************************/
 
-std::string VisualShaderNodeGeneratorValueNoise::generate_global([[maybe_unused]] const int& id) const {
+std::string VisualShaderNodeGeneratorValueNoise::generate_global_per_node([[maybe_unused]] const int& id) const {
     std::string code;
   code += "float noise_random_value(vec2 uv) {" + std::string("\n");
   code += std::string("\t") + "return fract(sin(dot(uv, vec2(12.9898, 78.233)))*43758.5453);" + std::string("\n");
@@ -112,7 +112,7 @@ std::string VisualShaderNodeGeneratorValueNoise::generate_code(
 /* Voronoi (Worley) Noise            */
 /*************************************/
 
-std::string VisualShaderNodeGeneratorVoronoiNoise::generate_global([[maybe_unused]] const int& id) const {
+std::string VisualShaderNodeGeneratorVoronoiNoise::generate_global_per_node([[maybe_unused]] const int& id) const {
     std::string code;
 
   code += "vec2 voronoi_noise_random_vector(vec2 uv, float offset) {" + std::string("\n");

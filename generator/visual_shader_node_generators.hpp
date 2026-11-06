@@ -59,7 +59,7 @@ class VisualShaderNodeGeneratorInput : public VisualShaderNodeGenerator {
  public:
   VisualShaderNodeGeneratorInput(const VisualShaderNodeInput::VisualShaderNodeInputType& input_type);
 
-  virtual std::string generate_global([[maybe_unused]] const int& id) const override;
+  virtual std::string generate_global_per_node([[maybe_unused]] const int& id) const override;
 
   virtual std::string generate_code([[maybe_unused]] const int& id,
                                     [[maybe_unused]] const std::vector<std::string>& input_vars,
@@ -74,7 +74,7 @@ class VisualShaderNodeGeneratorOutput : public VisualShaderNodeGenerator {
  public:
   VisualShaderNodeGeneratorOutput();
 
-  virtual std::string generate_global([[maybe_unused]] const int& id) const override;
+  virtual std::string generate_global_per_node([[maybe_unused]] const int& id) const override;
 
   virtual std::string generate_code([[maybe_unused]] const int& id,
                                     [[maybe_unused]] const std::vector<std::string>& input_vars,
@@ -471,7 +471,7 @@ class VisualShaderNodeGeneratorColorCorrect : public VisualShaderNodeGenerator {
                                         const float& desaturate)
       : VisualShaderNodeGenerator(), brightness(brightness), contrast(contrast), gamma(gamma), desaturate(desaturate) {}
 
-  virtual std::string generate_global([[maybe_unused]] const int& id) const override;
+  virtual std::string generate_global_per_node([[maybe_unused]] const int& id) const override;
 
   virtual std::string generate_code([[maybe_unused]] const int& id,
                                     [[maybe_unused]] const std::vector<std::string>& input_vars,
@@ -508,7 +508,7 @@ class VisualShaderNodeGeneratorModulus : public VisualShaderNodeGenerator {
   VisualShaderNodeGeneratorModulus(const float& modulus, const bool& normalize, const int& x_bias)
       : VisualShaderNodeGenerator(), modulus(modulus), normalize(normalize), x_bias(x_bias) {}
 
-  virtual std::string generate_global([[maybe_unused]] const int& id) const override;
+  virtual std::string generate_global_per_node([[maybe_unused]] const int& id) const override;
 
   virtual std::string generate_code([[maybe_unused]] const int& id,
                                     [[maybe_unused]] const std::vector<std::string>& input_vars,

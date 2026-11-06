@@ -1044,7 +1044,7 @@ std::string generate_preview_shader(const std::string& graph,
 
   CHECK_CONDITION_TRUE_NON_VOID(!status, std::string(), "Failed to generate shader for node " + std::to_string(node_id) + ".");
 
-  global_code += "out vec4 " + output_var + ";" + std::string("\n");
+  global_code_per_node += "out vec4 " + output_var + ";" + std::string("\n");
 
   std::shared_ptr<VisualShaderNodePortTypeGenerator> port_type_generator{port_type_generators.at(node_id)};
 
@@ -1145,9 +1145,9 @@ static inline bool generate_shader_for_each_node(std::string& global_code, std::
     CHECK_CONDITION_TRUE_NON_VOID(!status, false, "Failed to generate shader for node " + std::to_string(from_node) + ".");
   }
 
+  global_code += generator->generate_global(node_id);
   std::string proto_name{proto_node->get_name()};
   if (global_processed.find(proto_name) == global_processed.end()) {
-    global_code += generator->generate_global(node_id);
     global_code_per_node += generator->generate_global_per_node(node_id);
   }
   global_processed.insert(proto_name);

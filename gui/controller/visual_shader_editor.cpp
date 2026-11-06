@@ -1051,6 +1051,15 @@ bool VisualShaderGraphicsScene::write_default_values_to_node(const int& n_id) {
     const google::protobuf::FieldDescriptor* field_descriptor{node_type_descriptor->field(i)};
     const int field_number{field_descriptor->number()};
 
+    // Repeated message fields (e.g. a color gradient's stops) hold their default as a list of rows.
+    if (field_descriptor->is_repeated() &&
+        field_descriptor->cpp_type() == google::protobuf::FieldDescriptor::CPPTYPE_MESSAGE) {
+      const QVariant default_value{shadergen_utils::get_proto_field_default_value(field_descriptor)};
+      CONTINUE_IF_TRUE(!write_default_repeated_field_values_to_node(n_id, field_descriptor, default_value.toList()),
+                       "Failed to write the default values of repeated field " + std::to_string(field_number));
+      continue;
+    }
+
     // Skip the fields that are already set (e.g. nodes loaded from model.json)
     SILENT_CONTINUE_IF_TRUE(get_node_field_value(n_id, field_number).isValid());
 
@@ -1059,6 +1068,32 @@ bool VisualShaderGraphicsScene::write_default_values_to_node(const int& n_id) {
 
     CONTINUE_IF_TRUE(!update_node_field_in_model(n_id, field_number, default_value),
                      "Failed to write the default value of field " + std::to_string(field_number));
+  }
+
+  return true;
+}
+
+bool VisualShaderGraphicsScene::write_default_repeated_field_values_to_node(
+    const int& n_id, const google::protobuf::FieldDescriptor* field_descriptor, const QVariantList& default_rows) {
+  CHECK_PARAM_NULLPTR_NON_VOID(field_descriptor, false, "Field descriptor is null.");
+
+  RepeatedMessageModel* repeated_field_model{get_node_repeated_field_model(n_id, field_descriptor->number())};
+  CHECK_PARAM_NULLPTR_NON_VOID(repeated_field_model, false, "Repeated field model is not a RepeatedMessageModel.");
+
+  // Skip the fields that are already populated (e.g. nodes loaded from model.json)
+  SILENT_CHECK_CONDITION_TRUE_NON_VOID(repeated_field_model->rowCount() > 0, true);
+
+  for (const QVariant& row_variant : default_rows) {
+    const QVariantMap row{row_variant.toMap()};
+    const int row_index{repeated_field_model->append_row()};
+    CHECK_CONDITION_TRUE_NON_VOID(row_index < 0, false, "Failed to append a row to a repeated field.");
+
+    for (QVariantMap::const_iterator it{row.constBegin()}; it != row.constEnd(); ++it) {
+      const int sub_field_number{it.key().toInt()};
+      CHECK_CONDITION_TRUE_NON_VOID(
+          !update_node_repeated_field_in_model(n_id, field_descriptor->number(), row_index, sub_field_number, it.value()),
+          false, "Failed to write the default value of column " + std::to_string(sub_field_number));
+    }
   }
 
   return true;

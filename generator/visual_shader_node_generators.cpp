@@ -38,7 +38,7 @@ VisualShaderNodeGeneratorInput::VisualShaderNodeGeneratorInput(const VisualShade
   input_types_value_names[(int)VisualShaderNodeInput::INPUT_TYPE_TIME] = "uTime";
 }
 
-std::string VisualShaderNodeGeneratorInput::generate_global([[maybe_unused]] const int& id) const {
+std::string VisualShaderNodeGeneratorInput::generate_global_per_node([[maybe_unused]] const int& id) const {
   std::string code;
 
   // Which value name we will face first?
@@ -91,7 +91,7 @@ VisualShaderNodeGeneratorOutput::VisualShaderNodeGeneratorOutput() : VisualShade
   output_types_value_names[0] = "FragColor";
 }
 
-std::string VisualShaderNodeGeneratorOutput::generate_global([[maybe_unused]] const int& id) const {
+std::string VisualShaderNodeGeneratorOutput::generate_global_per_node([[maybe_unused]] const int& id) const {
   std::string code;
 
   // Which value name we will face first?
@@ -762,7 +762,7 @@ std::string VisualShaderNodeGeneratorColorize::generate_code(
   return code;
 }
 
-std::string VisualShaderNodeGeneratorColorCorrect::generate_global([[maybe_unused]] const int& id) const {
+std::string VisualShaderNodeGeneratorColorCorrect::generate_global_per_node([[maybe_unused]] const int& id) const {
   std::string code;
 
   code += "int color_correct_max_idx(vec3 c) {" + std::string("\n");
@@ -925,7 +925,7 @@ std::string VisualShaderNodeGeneratorMath1::generate_code(
   return code;
 }
 
-std::string VisualShaderNodeGeneratorModulus::generate_global([[maybe_unused]] const int& id) const {
+std::string VisualShaderNodeGeneratorModulus::generate_global_per_node([[maybe_unused]] const int& id) const {
   std::string code;
 
   // Java's float '%' operator is a truncated remainder (sign of the dividend), while GLSL's mod() is

@@ -30,6 +30,8 @@
 
 #include <google/protobuf/descriptor.h>
 #include <QString>
+#include <QVariantList>
+#include <QVariantMap>
 #include <string>
 #include <unordered_map>
 #include "error_macros.hpp"
@@ -98,6 +100,10 @@ inline static int get_node_type_field_number(const google::protobuf::Descriptor*
  *       that survives a rename) so that a freshly added node starts in the same state as the node it
  *       was ported from.
  *
+ * @note A repeated field cannot hold a single value, so a repeated message field (e.g. a node's color
+ *       gradient stops) is described as a @c QVariantList with one @c QVariantMap entry per row, each
+ *       mapping the field number of a column inside the repeated message to its default value.
+ *
  * @param field_desc
  * @return QVariant The overridden default value, or an invalid @c QVariant when the field keeps its
  *         Protobuf default.
@@ -108,12 +114,36 @@ inline static QVariant get_proto_field_default_value_override(const google::prot
   const google::protobuf::Descriptor* node_type{field_desc->containing_type()};
   CHECK_PARAM_NULLPTR_NON_VOID(node_type, QVariant(), "Field containing type is null.");
 
+  // The default color ramp of every node ported with a color gradient (NTE's @c ColorGradientParam):
+  // an opaque black stop at 0.0 and an opaque white stop at 1.0.
+  static const QVariantList default_color_gradient_stops{
+      QVariantMap{
+          {QString::number(ColorGradientStop::kPositionFieldNumber), 0.0f},
+          {QString::number(ColorGradientStop::kRFieldNumber), 0.0f},
+          {QString::number(ColorGradientStop::kGFieldNumber), 0.0f},
+          {QString::number(ColorGradientStop::kBFieldNumber), 0.0f},
+          {QString::number(ColorGradientStop::kAFieldNumber), 1.0f},
+      },
+      QVariantMap{
+          {QString::number(ColorGradientStop::kPositionFieldNumber), 1.0f},
+          {QString::number(ColorGradientStop::kRFieldNumber), 1.0f},
+          {QString::number(ColorGradientStop::kGFieldNumber), 1.0f},
+          {QString::number(ColorGradientStop::kBFieldNumber), 1.0f},
+          {QString::number(ColorGradientStop::kAFieldNumber), 1.0f},
+      },
+  };
+
   static const std::unordered_map<int, std::unordered_map<int, QVariant>> overrides{
       // ColorCorrect
       {VisualShader::VisualShaderNode::kColorCorrectFieldNumber,
        {
            {VisualShaderNodeColorCorrect::kContrastFieldNumber, 1.0f},
            {VisualShaderNodeColorCorrect::kGammaFieldNumber, 1.0f},
+       }},
+      // Colorize
+      {VisualShader::VisualShaderNode::kColorizeFieldNumber,
+       {
+           {VisualShaderNodeColorize::kGradientFieldNumber, default_color_gradient_stops},
        }},
       // Math1
       {VisualShader::VisualShaderNode::kMath1FieldNumber,
@@ -145,12 +175,14 @@ inline static QVariant get_proto_field_default_value_override(const google::prot
       {VisualShader::VisualShaderNode::kGradientFieldNumber,
        {
            {VisualShaderNodeGradient::kGradientTypeFieldNumber, 0},
+           {VisualShaderNodeGradient::kGradientFieldNumber, default_color_gradient_stops},
        }},
       // Checker
       {VisualShader::VisualShaderNode::kCheckerFieldNumber,
        {
            {VisualShaderNodeChecker::kScaleXFieldNumber, 1.0f},
            {VisualShaderNodeChecker::kScaleYFieldNumber, 1.0f},
+           {VisualShaderNodeChecker::kGradientFieldNumber, default_color_gradient_stops},
        }},
       // Brick
       {VisualShader::VisualShaderNode::kBrickFieldNumber,
@@ -162,12 +194,14 @@ inline static QVariant get_proto_field_default_value_override(const google::prot
            {VisualShaderNodeBrick::kGapXFieldNumber, 0.03f},
            {VisualShaderNodeBrick::kGapYFieldNumber, 0.03f},
            {VisualShaderNodeBrick::kSmoothFieldNumber, 0.05f},
+           {VisualShaderNodeBrick::kGradientFieldNumber, default_color_gradient_stops},
        }},
       // Tile
       {VisualShader::VisualShaderNode::kTileFieldNumber,
        {
            {VisualShaderNodeTile::kBorderXFieldNumber, 0.1f},
            {VisualShaderNodeTile::kBorderYFieldNumber, 0.1f},
+           {VisualShaderNodeTile::kGradientFieldNumber, default_color_gradient_stops},
        }},
       // Function
       {VisualShader::VisualShaderNode::kFunctionFieldNumber,
@@ -177,6 +211,7 @@ inline static QVariant get_proto_field_default_value_override(const google::prot
            {VisualShaderNodeFunction::kCombinerFieldNumber, 0},
            {VisualShaderNodeFunction::kScaleXFieldNumber, 1.0f},
            {VisualShaderNodeFunction::kScaleYFieldNumber, 1.0f},
+           {VisualShaderNodeFunction::kGradientFieldNumber, default_color_gradient_stops},
        }},
       // Cellular
       {VisualShader::VisualShaderNode::kCellularFieldNumber,
@@ -184,6 +219,7 @@ inline static QVariant get_proto_field_default_value_override(const google::prot
            {VisualShaderNodeCellular::kIntensityFieldNumber, 1.0f},
            {VisualShaderNodeCellular::kNumPointsFieldNumber, 16},
            {VisualShaderNodeCellular::kPeriodicFieldNumber, true},
+           {VisualShaderNodeCellular::kGradientFieldNumber, default_color_gradient_stops},
        }},
       // Illuminate
       {VisualShader::VisualShaderNode::kIlluminateFieldNumber,
@@ -214,6 +250,7 @@ inline static QVariant get_proto_field_default_value_override(const google::prot
            {VisualShaderNodePerlinNoise::kEndBandFieldNumber, 8},
            {VisualShaderNodePerlinNoise::kSeedFieldNumber, -1},
            {VisualShaderNodePerlinNoise::kPeriodicFieldNumber, true},
+           {VisualShaderNodePerlinNoise::kGradientFieldNumber, default_color_gradient_stops},
        }},
   };
 

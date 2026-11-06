@@ -42,7 +42,7 @@ class VisualShaderNodeGeneratorValueNoise : public VisualShaderNodeGenerator {
     public:
     VisualShaderNodeGeneratorValueNoise(const float& scale) : VisualShaderNodeGenerator(), scale(scale) {}
 
-    virtual std::string generate_global([[maybe_unused]] const int& id) const override;
+    virtual std::string generate_global_per_node([[maybe_unused]] const int& id) const override;
 
     virtual std::string generate_code([[maybe_unused]] const int& id,
                                       [[maybe_unused]] const std::vector<std::string>& input_vars,
@@ -61,7 +61,7 @@ class VisualShaderNodeGeneratorVoronoiNoise : public VisualShaderNodeGenerator {
     VisualShaderNodeGeneratorVoronoiNoise(const float& angle_offset, const float& cell_density)
         : VisualShaderNodeGenerator(), angle_offset(angle_offset), cell_density(cell_density) {}
 
-    virtual std::string generate_global([[maybe_unused]] const int& id) const override;
+    virtual std::string generate_global_per_node([[maybe_unused]] const int& id) const override;
 
     virtual std::string generate_code([[maybe_unused]] const int& id,
                                       [[maybe_unused]] const std::vector<std::string>& input_vars,

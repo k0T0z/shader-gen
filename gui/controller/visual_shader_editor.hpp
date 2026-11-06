@@ -449,6 +449,22 @@ class VisualShaderGraphicsScene : public QGraphicsScene {
    */
   bool write_default_values_to_node(const int& n_id);
 
+  /**
+   * @brief Seed the default rows of a repeated message field of a node (e.g. a color gradient's stops).
+   *
+   * @note proto3 repeated fields default to empty, so nodes ported from implementations that started
+   *       with a non-empty list (e.g. a default color ramp) would otherwise be created without any row.
+   *       Does nothing when the field already has rows (e.g. nodes loaded from @c model.json).
+   *
+   * @param n_id
+   * @param field_descriptor The descriptor of the repeated message field inside the node.
+   * @param default_rows One @c QVariantMap entry per row, mapping the field number (as a string) of a
+   *        column inside the repeated message to its default value.
+   * @return bool
+   */
+  bool write_default_repeated_field_values_to_node(const int& n_id, const google::protobuf::FieldDescriptor* field_descriptor,
+                                                   const QVariantList& default_rows);
+
   bool delete_node_from_model(const int& n_id);
   bool delete_node_from_scene(const int& n_id, const int& in_port_count, const int& out_port_count);
   bool delete_node(const int& n_id, const int& in_port_count, const int& out_port_count);

@@ -754,60 +754,87 @@ std::string VisualShaderNodeGeneratorCellular::generate_code(
 /*************************************/
 
 std::string VisualShaderNodeGeneratorPerlinNoise::generate_global([[maybe_unused]] const int& id) const {
+  const std::string id_str{std::to_string(id)};
+  const std::string floor_to_int_var{"perlin_floor_to_int_n" + id_str};
+  const std::string fade_var{"perlin_fade_n" + id_str};
+  const std::string lerp_var{"perlin_lerp_n" + id_str};
+  const std::string grad_var{"perlin_grad_n" + id_str};
+  const std::string permutation_var{"perlin_p_n" + id_str};
+  const std::string perm_var{"perlin_perm_n" + id_str};
+  const std::string sample_var{"perlin_sample3d_n" + id_str};
+  const std::string sample_periodic_var{"perlin_sample3d_periodic_n" + id_str};
+
   std::string code;
 
-  code += "int perlin_floor_to_int(float a) {" + std::string("\n");
+  // `generate_global` runs once per node instance, so every symbol is id-suffixed to keep the emitted block
+  // self-contained. The permutation table is declared at global scope so the driver can place it in constant
+  // memory and index it dynamically. Passing it as an `in int p[256]` function parameter forces the driver to
+  // copy the whole array per call, which exhausts the shader's register budget on some drivers (NVIDIA C5041
+  // "cannot locate suitable resource to bind variable ... Possibly large array").
+  code += "int " + floor_to_int_var + "(float a) {" + std::string("\n");
   code += std::string("\t") + "return (a >= 0.0) ? int(a) : int(a) - 1;" + std::string("\n");
   code += std::string("}") + "\n\n";
 
-  code += "float perlin_fade(float t) {" + std::string("\n");
+  code += "float " + fade_var + "(float t) {" + std::string("\n");
   code += std::string("\t") + "return t * t * t * (t * (t * 6.0 - 15.0) + 10.0);" + std::string("\n");
   code += std::string("}") + "\n\n";
 
-  code += "float perlin_lerp(float t, float a, float b) {" + std::string("\n");
+  code += "float " + lerp_var + "(float t, float a, float b) {" + std::string("\n");
   code += std::string("\t") + "return a + t * (b - a);" + std::string("\n");
   code += std::string("}") + "\n\n";
 
-  code += "float perlin_grad(int hash, float x, float y, float z) {" + std::string("\n");
+  code += "float " + grad_var + "(int hash, float x, float y, float z) {" + std::string("\n");
   code += std::string("\t") + "int h = hash & 15;" + std::string("\n");
   code += std::string("\t") + "float u = (h < 8) ? x : y;" + std::string("\n");
   code += std::string("\t") + "float v = (h < 4) ? y : ((h == 12 || h == 14) ? x : z);" + std::string("\n");
   code += std::string("\t") + "return ((h & 1) == 0 ? u : -u) + ((h & 2) == 0 ? v : -v);" + std::string("\n");
   code += std::string("}") + "\n\n";
 
-  code += "int perlin_perm(in int p[256], int idx) {" + std::string("\n");
-  code += std::string("\t") + "return p[idx & 255];" + std::string("\n");
+  code += "const int " + permutation_var + "[256] = " + to_glsl_perlin_permutation(build_perlin_permutation(seed)) +
+          ";" + std::string("\n\n");
+
+  code += "int " + perm_var + "(int idx) {" + std::string("\n");
+  code += std::string("\t") + "return " + permutation_var + "[idx & 255];" + std::string("\n");
   code += std::string("}") + "\n\n";
 
-  code += "float perlin_sample3d(in int p[256], vec3 pos, float scale) {" + std::string("\n");
+  code += "float " + sample_var + "(vec3 pos, float scale) {" + std::string("\n");
   code += std::string("\t") + "vec3 xyz = pos * scale;" + std::string("\n");
-  code += std::string("\t") + "int X = perlin_floor_to_int(xyz.x);" + std::string("\n");
-  code += std::string("\t") + "int Y = perlin_floor_to_int(xyz.y);" + std::string("\n");
-  code += std::string("\t") + "int Z = perlin_floor_to_int(xyz.z);" + std::string("\n");
+  code += std::string("\t") + "int X = " + floor_to_int_var + "(xyz.x);" + std::string("\n");
+  code += std::string("\t") + "int Y = " + floor_to_int_var + "(xyz.y);" + std::string("\n");
+  code += std::string("\t") + "int Z = " + floor_to_int_var + "(xyz.z);" + std::string("\n");
   code += std::string("\t") + "xyz -= vec3(float(X), float(Y), float(Z));" + std::string("\n");
   code += std::string("\t") + "X &= 255;" + std::string("\n");
   code += std::string("\t") + "Y &= 255;" + std::string("\n");
   code += std::string("\t") + "Z &= 255;" + std::string("\n");
   code += std::string("\t") + std::string("\n");
-  code += std::string("\t") + "float u = perlin_fade(xyz.x);" + std::string("\n");
-  code += std::string("\t") + "float v = perlin_fade(xyz.y);" + std::string("\n");
-  code += std::string("\t") + "float w = perlin_fade(xyz.z);" + std::string("\n");
+  code += std::string("\t") + "float u = " + fade_var + "(xyz.x);" + std::string("\n");
+  code += std::string("\t") + "float v = " + fade_var + "(xyz.y);" + std::string("\n");
+  code += std::string("\t") + "float w = " + fade_var + "(xyz.z);" + std::string("\n");
   code += std::string("\t") + std::string("\n");
-  code += std::string("\t") + "int A = perlin_perm(p, X) + Y;" + std::string("\n");
-  code += std::string("\t") + "int AA = perlin_perm(p, A) + Z;" + std::string("\n");
-  code += std::string("\t") + "int AB = perlin_perm(p, A + 1) + Z;" + std::string("\n");
-  code += std::string("\t") + "int B = perlin_perm(p, X + 1) + Y;" + std::string("\n");
-  code += std::string("\t") + "int BA = perlin_perm(p, B) + Z;" + std::string("\n");
-  code += std::string("\t") + "int BB = perlin_perm(p, B + 1) + Z;" + std::string("\n");
+  code += std::string("\t") + "int A = " + perm_var + "(X) + Y;" + std::string("\n");
+  code += std::string("\t") + "int AA = " + perm_var + "(A) + Z;" + std::string("\n");
+  code += std::string("\t") + "int AB = " + perm_var + "(A + 1) + Z;" + std::string("\n");
+  code += std::string("\t") + "int B = " + perm_var + "(X + 1) + Y;" + std::string("\n");
+  code += std::string("\t") + "int BA = " + perm_var + "(B) + Z;" + std::string("\n");
+  code += std::string("\t") + "int BB = " + perm_var + "(B + 1) + Z;" + std::string("\n");
   code += std::string("\t") + std::string("\n");
-  code += std::string("\t") + "return perlin_lerp(w, perlin_lerp(v, perlin_lerp(u, perlin_grad(perlin_perm(p, AA), xyz.x, xyz.y, xyz.z), perlin_grad(perlin_perm(p, BA), xyz.x - 1.0, xyz.y, xyz.z)), perlin_lerp(u, perlin_grad(perlin_perm(p, AB), xyz.x, xyz.y - 1.0, xyz.z), perlin_grad(perlin_perm(p, BB), xyz.x - 1.0, xyz.y - 1.0, xyz.z))), perlin_lerp(v, perlin_lerp(u, perlin_grad(perlin_perm(p, AA + 1), xyz.x, xyz.y, xyz.z - 1.0), perlin_grad(perlin_perm(p, BA + 1), xyz.x - 1.0, xyz.y, xyz.z - 1.0)), perlin_lerp(u, perlin_grad(perlin_perm(p, AB + 1), xyz.x, xyz.y - 1.0, xyz.z - 1.0), perlin_grad(perlin_perm(p, BB + 1), xyz.x - 1.0, xyz.y - 1.0, xyz.z - 1.0))));" + std::string("\n");
+  code += std::string("\t") + "return " + lerp_var + "(w, " + lerp_var + "(v, " + lerp_var + "(u, " + grad_var + "(" +
+          perm_var + "(AA), xyz.x, xyz.y, xyz.z), " + grad_var + "(" + perm_var +
+          "(BA), xyz.x - 1.0, xyz.y, xyz.z)), " + lerp_var + "(u, " + grad_var + "(" + perm_var +
+          "(AB), xyz.x, xyz.y - 1.0, xyz.z), " + grad_var + "(" + perm_var +
+          "(BB), xyz.x - 1.0, xyz.y - 1.0, xyz.z))), " + lerp_var + "(v, " + lerp_var + "(u, " + grad_var + "(" +
+          perm_var + "(AA + 1), xyz.x, xyz.y, xyz.z - 1.0), " + grad_var + "(" + perm_var +
+          "(BA + 1), xyz.x - 1.0, xyz.y, xyz.z - 1.0)), " + lerp_var + "(u, " + grad_var + "(" + perm_var +
+          "(AB + 1), xyz.x, xyz.y - 1.0, xyz.z - 1.0), " + grad_var + "(" + perm_var +
+          "(BB + 1), xyz.x - 1.0, xyz.y - 1.0, xyz.z - 1.0))));" +
+          std::string("\n");
   code += std::string("}") + "\n\n";
 
-  code += "float perlin_sample3d_periodic(in int p[256], vec3 pos, int period_x, int period_y, int period_z) {" + std::string("\n");
+  code += "float " + sample_periodic_var + "(vec3 pos, int period_x, int period_y, int period_z) {" + std::string("\n");
   code += std::string("\t") + "vec3 xyz = pos;" + std::string("\n");
-  code += std::string("\t") + "int X = perlin_floor_to_int(xyz.x);" + std::string("\n");
-  code += std::string("\t") + "int Y = perlin_floor_to_int(xyz.y);" + std::string("\n");
-  code += std::string("\t") + "int Z = perlin_floor_to_int(xyz.z);" + std::string("\n");
+  code += std::string("\t") + "int X = " + floor_to_int_var + "(xyz.x);" + std::string("\n");
+  code += std::string("\t") + "int Y = " + floor_to_int_var + "(xyz.y);" + std::string("\n");
+  code += std::string("\t") + "int Z = " + floor_to_int_var + "(xyz.z);" + std::string("\n");
   code += std::string("\t") + "xyz -= vec3(float(X), float(Y), float(Z));" + std::string("\n");
   code += std::string("\t") + "X &= 255;" + std::string("\n");
   code += std::string("\t") + "Y &= 255;" + std::string("\n");
@@ -820,18 +847,27 @@ std::string VisualShaderNodeGeneratorPerlinNoise::generate_global([[maybe_unused
   code += std::string("\t") + "int Jy = (Iy + 1) % period_y;" + std::string("\n");
   code += std::string("\t") + "int Jz = (Iz + 1) % period_z;" + std::string("\n");
   code += std::string("\t") + std::string("\n");
-  code += std::string("\t") + "float u = perlin_fade(xyz.x);" + std::string("\n");
-  code += std::string("\t") + "float v = perlin_fade(xyz.y);" + std::string("\n");
-  code += std::string("\t") + "float w = perlin_fade(xyz.z);" + std::string("\n");
+  code += std::string("\t") + "float u = " + fade_var + "(xyz.x);" + std::string("\n");
+  code += std::string("\t") + "float v = " + fade_var + "(xyz.y);" + std::string("\n");
+  code += std::string("\t") + "float w = " + fade_var + "(xyz.z);" + std::string("\n");
   code += std::string("\t") + std::string("\n");
-  code += std::string("\t") + "int A = perlin_perm(p, Ix);" + std::string("\n");
-  code += std::string("\t") + "int AA = perlin_perm(p, A + Iy);" + std::string("\n");
-  code += std::string("\t") + "int AB = perlin_perm(p, A + Jy);" + std::string("\n");
-  code += std::string("\t") + "int B = perlin_perm(p, Jx);" + std::string("\n");
-  code += std::string("\t") + "int BA = perlin_perm(p, B + Iy);" + std::string("\n");
-  code += std::string("\t") + "int BB = perlin_perm(p, B + Jy);" + std::string("\n");
+  code += std::string("\t") + "int A = " + perm_var + "(Ix);" + std::string("\n");
+  code += std::string("\t") + "int AA = " + perm_var + "(A + Iy);" + std::string("\n");
+  code += std::string("\t") + "int AB = " + perm_var + "(A + Jy);" + std::string("\n");
+  code += std::string("\t") + "int B = " + perm_var + "(Jx);" + std::string("\n");
+  code += std::string("\t") + "int BA = " + perm_var + "(B + Iy);" + std::string("\n");
+  code += std::string("\t") + "int BB = " + perm_var + "(B + Jy);" + std::string("\n");
   code += std::string("\t") + std::string("\n");
-  code += std::string("\t") + "return perlin_lerp(w, perlin_lerp(v, perlin_lerp(u, perlin_grad(perlin_perm(p, AA + Iz), xyz.x, xyz.y, xyz.z), perlin_grad(perlin_perm(p, BA + Iz), xyz.x - 1.0, xyz.y, xyz.z)), perlin_lerp(u, perlin_grad(perlin_perm(p, AB + Iz), xyz.x, xyz.y - 1.0, xyz.z), perlin_grad(perlin_perm(p, BB + Iz), xyz.x - 1.0, xyz.y - 1.0, xyz.z))), perlin_lerp(v, perlin_lerp(u, perlin_grad(perlin_perm(p, AA + Jz), xyz.x, xyz.y, xyz.z - 1.0), perlin_grad(perlin_perm(p, BA + Jz), xyz.x - 1.0, xyz.y, xyz.z - 1.0)), perlin_lerp(u, perlin_grad(perlin_perm(p, AB + Jz), xyz.x, xyz.y - 1.0, xyz.z - 1.0), perlin_grad(perlin_perm(p, BB + Jz), xyz.x - 1.0, xyz.y - 1.0, xyz.z - 1.0))));" + std::string("\n");
+  code += std::string("\t") + "return " + lerp_var + "(w, " + lerp_var + "(v, " + lerp_var + "(u, " + grad_var + "(" +
+          perm_var + "(AA + Iz), xyz.x, xyz.y, xyz.z), " + grad_var + "(" + perm_var +
+          "(BA + Iz), xyz.x - 1.0, xyz.y, xyz.z)), " + lerp_var + "(u, " + grad_var + "(" + perm_var +
+          "(AB + Iz), xyz.x, xyz.y - 1.0, xyz.z), " + grad_var + "(" + perm_var +
+          "(BB + Iz), xyz.x - 1.0, xyz.y - 1.0, xyz.z))), " + lerp_var + "(v, " + lerp_var + "(u, " + grad_var + "(" +
+          perm_var + "(AA + Jz), xyz.x, xyz.y, xyz.z - 1.0), " + grad_var + "(" + perm_var +
+          "(BA + Jz), xyz.x - 1.0, xyz.y, xyz.z - 1.0)), " + lerp_var + "(u, " + grad_var + "(" + perm_var +
+          "(AB + Jz), xyz.x, xyz.y - 1.0, xyz.z - 1.0), " + grad_var + "(" + perm_var +
+          "(BB + Jz), xyz.x - 1.0, xyz.y - 1.0, xyz.z - 1.0))));" +
+          std::string("\n");
   code += std::string("}") + "\n\n";
 
   return code;
@@ -842,15 +878,14 @@ std::string VisualShaderNodeGeneratorPerlinNoise::generate_code(
     [[maybe_unused]] const std::vector<std::string>& output_vars) const {
   const std::string id_str{std::to_string(id)};
   const std::string uv{input_vars.at(0)};
-  const std::string permutation_var{"perlin_p_n" + id_str};
+  const std::string sample_var{"perlin_sample3d_n" + id_str};
+  const std::string sample_periodic_var{"perlin_sample3d_periodic_n" + id_str};
   const std::string val_var{"perlin_val_n" + id_str};
   const std::string out_var{"perlin_out_n" + id_str};
 
   std::string code;
 
   code += std::string("\t") + "// Perlin Noise" + std::string("\n");
-  code += std::string("\t") + "const int " + permutation_var + "[256] = " +
-          to_glsl_perlin_permutation(build_perlin_permutation(seed)) + ";" + std::string("\n");
   code += std::string("\t") + "float " + val_var + " = 0.0;" + std::string("\n");
 
   // Sum the "Start Band" .. "End Band" octaves the same way @c PatternPerlinNoise._valueRGBA does. The
@@ -868,12 +903,12 @@ std::string VisualShaderNodeGeneratorPerlinNoise::generate_code(
       const int period_x{std::max(1, static_cast<int>(freq * scale_x))};
       const int period_y{std::max(1, static_cast<int>(freq * scale_y))};
 
-      code += std::string("\t") + val_var + " += perlin_sample3d_periodic(" + permutation_var + ", " + position +
-              ", " + std::to_string(period_x) + ", " + std::to_string(period_y) + ", 256) * " +
-              to_glsl_float(mult) + ";" + std::string("\n");
+      code += std::string("\t") + val_var + " += " + sample_periodic_var + "(" + position + ", " +
+              std::to_string(period_x) + ", " + std::to_string(period_y) + ", 256) * " + to_glsl_float(mult) + ";" +
+              std::string("\n");
     } else {
-      code += std::string("\t") + val_var + " += perlin_sample3d(" + permutation_var + ", " + position + ", 1.0) * " +
-              to_glsl_float(mult) + ";" + std::string("\n");
+      code += std::string("\t") + val_var + " += " + sample_var + "(" + position + ", 1.0) * " + to_glsl_float(mult) +
+              ";" + std::string("\n");
     }
 
     freq *= 2.0f;

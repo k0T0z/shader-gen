@@ -45,11 +45,11 @@ TEST(VisualShaderNodeGeneratorTest, TestVisualShaderNodeGeneratorValueNoiseGener
   ASSERT_EQ(code, expected_code);
 }
 
-TEST(VisualShaderNodeGeneratorTest, TestVisualShaderNodeGeneratorValueNoiseGenerateGlobal) {
+TEST(VisualShaderNodeGeneratorTest, TestVisualShaderNodeGeneratorValueNoiseGenerateGlobalPerNode) {
   VisualShaderNodeGeneratorValueNoise value_noise_generator{100.0f};
   std::vector<std::string> input_vars = {"a"};
   std::vector<std::string> output_vars = {"b"};
-  std::string code{value_noise_generator.generate_global(0)};
+  std::string code{value_noise_generator.generate_global_per_node(0)};
   std::string expected_code{
     "float noise_random_value(vec2 uv) {\n"
     "\treturn fract(sin(dot(uv, vec2(12.9898, 78.233)))*43758.5453);\n"
@@ -105,35 +105,21 @@ TEST(VisualShaderNodeGeneratorTest, TestVisualShaderNodeGeneratorPerlinNoiseGene
   std::string code{perlin_noise_generator.generate_code(0, input_vars, output_vars)};
   std::string expected_code{
       "\t// Perlin Noise\n"
-      "\tconst int perlin_p_n0[256] = int[256](151, 160, 137, 91, 90, 15, 131, 13, 201, 95, 96, 53, 194, 233, 7, 225, "
-      "140, 36, 103, 30, 69, "
-      "142, 8, 99, 37, 240, 21, 10, 23, 190, 6, 148, 247, 120, 234, 75, 0, 26, 197, 62, 94, 252, "
-      "219, 203, 117, 35, 11, 32, 57, 177, 33, 88, 237, 149, 56, 87, 174, 20, 125, 136, 171, 168, 68, "
-      "175, 74, 165, 71, 134, 139, 48, 27, 166, 77, 146, 158, 231, 83, 111, 229, 122, 60, 211, 133, 230, "
-      "220, 105, 92, 41, 55, 46, 245, 40, 244, 102, 143, 54, 65, 25, 63, 161, 1, 216, 80, 73, 209, "
-      "76, 132, 187, 208, 89, 18, 169, 200, 196, 135, 130, 116, 188, 159, 86, 164, 100, 109, 198, 173, 186, "
-      "3, 64, 52, 217, 226, 250, 124, 123, 5, 202, 38, 147, 118, 126, 255, 82, 85, 212, 207, 206, 59, "
-      "227, 47, 16, 58, 17, 182, 189, 28, 42, 223, 183, 170, 213, 119, 248, 152, 2, 44, 154, 163, 70, "
-      "221, 153, 101, 155, 167, 43, 172, 9, 129, 22, 39, 253, 19, 98, 108, 110, 79, 113, 224, 232, 178, "
-      "185, 112, 104, 218, 246, 97, 228, 251, 34, 242, 193, 238, 210, 144, 12, 191, 179, 162, 241, 81, 51, "
-      "145, 235, 249, 14, 239, 107, 49, 192, 214, 31, 181, 199, 106, 157, 184, 84, 204, 176, 115, 121, 50, "
-      "45, 127, 4, 150, 254, 138, 236, 205, 93, 222, 114, 67, 29, 24, 72, 243, 141, 128, 195, 78, 66, "
-      "215, 61, 156, 180);\n"
       "\tfloat perlin_val_n0 = 0.0;\n"
-      "\tperlin_val_n0 += perlin_sample3d_periodic(perlin_p_n0, vec3(a.x * 1.000000, a.y * 2.000000, 0.0), 1, 2, 256) "
-      "* 1.000000;\n"
-      "\tperlin_val_n0 += perlin_sample3d_periodic(perlin_p_n0, vec3(a.x * 2.000000, a.y * 4.000000, 0.0), 2, 4, 256) "
-      "* 0.500000;\n"
-      "\tperlin_val_n0 += perlin_sample3d_periodic(perlin_p_n0, vec3(a.x * 4.000000, a.y * 8.000000, 0.0), 4, 8, 256) "
-      "* 0.250000;\n"
-      "\tperlin_val_n0 += perlin_sample3d_periodic(perlin_p_n0, vec3(a.x * 8.000000, a.y * 16.000000, 0.0), 8, 16, 256) "
-      "* 0.125000;\n"
-      "\tperlin_val_n0 += perlin_sample3d_periodic(perlin_p_n0, vec3(a.x * 16.000000, a.y * 32.000000, 0.0), 16, 32, "
-      "256) * 0.062500;\n"
-      "\tperlin_val_n0 += perlin_sample3d_periodic(perlin_p_n0, vec3(a.x * 32.000000, a.y * 64.000000, 0.0), 32, 64, "
-      "256) * 0.031250;\n"
-      "\tperlin_val_n0 += perlin_sample3d_periodic(perlin_p_n0, vec3(a.x * 64.000000, a.y * 128.000000, 0.0), 64, 128, "
-      "256) * 0.015625;\n"
+      "\tperlin_val_n0 += perlin_sample3d_periodic_n0(vec3(a.x * 1.000000, a.y * 2.000000, 0.0), 1, 2, 256) * "
+      "1.000000;\n"
+      "\tperlin_val_n0 += perlin_sample3d_periodic_n0(vec3(a.x * 2.000000, a.y * 4.000000, 0.0), 2, 4, 256) * "
+      "0.500000;\n"
+      "\tperlin_val_n0 += perlin_sample3d_periodic_n0(vec3(a.x * 4.000000, a.y * 8.000000, 0.0), 4, 8, 256) * "
+      "0.250000;\n"
+      "\tperlin_val_n0 += perlin_sample3d_periodic_n0(vec3(a.x * 8.000000, a.y * 16.000000, 0.0), 8, 16, 256) * "
+      "0.125000;\n"
+      "\tperlin_val_n0 += perlin_sample3d_periodic_n0(vec3(a.x * 16.000000, a.y * 32.000000, 0.0), 16, 32, 256) * "
+      "0.062500;\n"
+      "\tperlin_val_n0 += perlin_sample3d_periodic_n0(vec3(a.x * 32.000000, a.y * 64.000000, 0.0), 32, 64, 256) * "
+      "0.031250;\n"
+      "\tperlin_val_n0 += perlin_sample3d_periodic_n0(vec3(a.x * 64.000000, a.y * 128.000000, 0.0), 64, 128, 256) * "
+      "0.015625;\n"
       "\tperlin_val_n0 = perlin_val_n0 * 0.5 + 0.5;\n"
       "\tperlin_val_n0 *= 1.000000;\n"
       "\tperlin_val_n0 = clamp(perlin_val_n0, 0.0, 1.0);\n"
@@ -156,57 +142,71 @@ TEST(VisualShaderNodeGeneratorTest, TestVisualShaderNodeGeneratorPerlinNoiseGene
       1.0f, 2.0f, 1.0f, 0.5f, 1, 7, -1, true, std::vector<VisualShaderColorGradientStop>{}};
   std::string code{perlin_noise_generator.generate_global(0)};
   std::string expected_code{
-    "int perlin_floor_to_int(float a) {\n"
+    "int perlin_floor_to_int_n0(float a) {\n"
     "\treturn (a >= 0.0) ? int(a) : int(a) - 1;\n"
     "}\n\n"
-    "float perlin_fade(float t) {\n"
+    "float perlin_fade_n0(float t) {\n"
     "\treturn t * t * t * (t * (t * 6.0 - 15.0) + 10.0);\n"
     "}\n\n"
-    "float perlin_lerp(float t, float a, float b) {\n"
+    "float perlin_lerp_n0(float t, float a, float b) {\n"
     "\treturn a + t * (b - a);\n"
     "}\n\n"
-    "float perlin_grad(int hash, float x, float y, float z) {\n"
+    "float perlin_grad_n0(int hash, float x, float y, float z) {\n"
     "\tint h = hash & 15;\n"
     "\tfloat u = (h < 8) ? x : y;\n"
     "\tfloat v = (h < 4) ? y : ((h == 12 || h == 14) ? x : z);\n"
     "\treturn ((h & 1) == 0 ? u : -u) + ((h & 2) == 0 ? v : -v);\n"
     "}\n\n"
-    "int perlin_perm(in int p[256], int idx) {\n"
-    "\treturn p[idx & 255];\n"
+    "const int perlin_p_n0[256] = int[256](151, 160, 137, 91, 90, 15, 131, 13, 201, 95, 96, 53, 194, 233, 7, 225, "
+    "140, 36, 103, 30, 69, "
+    "142, 8, 99, 37, 240, 21, 10, 23, 190, 6, 148, 247, 120, 234, 75, 0, 26, 197, 62, 94, 252, "
+    "219, 203, 117, 35, 11, 32, 57, 177, 33, 88, 237, 149, 56, 87, 174, 20, 125, 136, 171, 168, 68, "
+    "175, 74, 165, 71, 134, 139, 48, 27, 166, 77, 146, 158, 231, 83, 111, 229, 122, 60, 211, 133, 230, "
+    "220, 105, 92, 41, 55, 46, 245, 40, 244, 102, 143, 54, 65, 25, 63, 161, 1, 216, 80, 73, 209, "
+    "76, 132, 187, 208, 89, 18, 169, 200, 196, 135, 130, 116, 188, 159, 86, 164, 100, 109, 198, 173, 186, "
+    "3, 64, 52, 217, 226, 250, 124, 123, 5, 202, 38, 147, 118, 126, 255, 82, 85, 212, 207, 206, 59, "
+    "227, 47, 16, 58, 17, 182, 189, 28, 42, 223, 183, 170, 213, 119, 248, 152, 2, 44, 154, 163, 70, "
+    "221, 153, 101, 155, 167, 43, 172, 9, 129, 22, 39, 253, 19, 98, 108, 110, 79, 113, 224, 232, 178, "
+    "185, 112, 104, 218, 246, 97, 228, 251, 34, 242, 193, 238, 210, 144, 12, 191, 179, 162, 241, 81, 51, "
+    "145, 235, 249, 14, 239, 107, 49, 192, 214, 31, 181, 199, 106, 157, 184, 84, 204, 176, 115, 121, 50, "
+    "45, 127, 4, 150, 254, 138, 236, 205, 93, 222, 114, 67, 29, 24, 72, 243, 141, 128, 195, 78, 66, "
+    "215, 61, 156, 180);\n\n"
+    "int perlin_perm_n0(int idx) {\n"
+    "\treturn perlin_p_n0[idx & 255];\n"
     "}\n\n"
-    "float perlin_sample3d(in int p[256], vec3 pos, float scale) {\n"
+    "float perlin_sample3d_n0(vec3 pos, float scale) {\n"
     "\tvec3 xyz = pos * scale;\n"
-    "\tint X = perlin_floor_to_int(xyz.x);\n"
-    "\tint Y = perlin_floor_to_int(xyz.y);\n"
-    "\tint Z = perlin_floor_to_int(xyz.z);\n"
+    "\tint X = perlin_floor_to_int_n0(xyz.x);\n"
+    "\tint Y = perlin_floor_to_int_n0(xyz.y);\n"
+    "\tint Z = perlin_floor_to_int_n0(xyz.z);\n"
     "\txyz -= vec3(float(X), float(Y), float(Z));\n"
     "\tX &= 255;\n"
     "\tY &= 255;\n"
     "\tZ &= 255;\n"
     "\t\n"
-    "\tfloat u = perlin_fade(xyz.x);\n"
-    "\tfloat v = perlin_fade(xyz.y);\n"
-    "\tfloat w = perlin_fade(xyz.z);\n"
+    "\tfloat u = perlin_fade_n0(xyz.x);\n"
+    "\tfloat v = perlin_fade_n0(xyz.y);\n"
+    "\tfloat w = perlin_fade_n0(xyz.z);\n"
     "\t\n"
-    "\tint A = perlin_perm(p, X) + Y;\n"
-    "\tint AA = perlin_perm(p, A) + Z;\n"
-    "\tint AB = perlin_perm(p, A + 1) + Z;\n"
-    "\tint B = perlin_perm(p, X + 1) + Y;\n"
-    "\tint BA = perlin_perm(p, B) + Z;\n"
-    "\tint BB = perlin_perm(p, B + 1) + Z;\n"
+    "\tint A = perlin_perm_n0(X) + Y;\n"
+    "\tint AA = perlin_perm_n0(A) + Z;\n"
+    "\tint AB = perlin_perm_n0(A + 1) + Z;\n"
+    "\tint B = perlin_perm_n0(X + 1) + Y;\n"
+    "\tint BA = perlin_perm_n0(B) + Z;\n"
+    "\tint BB = perlin_perm_n0(B + 1) + Z;\n"
     "\t\n"
-    "\treturn perlin_lerp(w, perlin_lerp(v, perlin_lerp(u, perlin_grad(perlin_perm(p, AA), xyz.x, xyz.y, xyz.z), "
-    "perlin_grad(perlin_perm(p, BA), xyz.x - 1.0, xyz.y, xyz.z)), perlin_lerp(u, perlin_grad(perlin_perm(p, AB), xyz.x, "
-    "xyz.y - 1.0, xyz.z), perlin_grad(perlin_perm(p, BB), xyz.x - 1.0, xyz.y - 1.0, xyz.z))), perlin_lerp(v, "
-    "perlin_lerp(u, perlin_grad(perlin_perm(p, AA + 1), xyz.x, xyz.y, xyz.z - 1.0), perlin_grad(perlin_perm(p, BA + 1), "
-    "xyz.x - 1.0, xyz.y, xyz.z - 1.0)), perlin_lerp(u, perlin_grad(perlin_perm(p, AB + 1), xyz.x, xyz.y - 1.0, xyz.z - "
-    "1.0), perlin_grad(perlin_perm(p, BB + 1), xyz.x - 1.0, xyz.y - 1.0, xyz.z - 1.0))));\n"
+    "\treturn perlin_lerp_n0(w, perlin_lerp_n0(v, perlin_lerp_n0(u, perlin_grad_n0(perlin_perm_n0(AA), xyz.x, xyz.y, xyz.z), "
+    "perlin_grad_n0(perlin_perm_n0(BA), xyz.x - 1.0, xyz.y, xyz.z)), perlin_lerp_n0(u, perlin_grad_n0(perlin_perm_n0(AB), "
+    "xyz.x, xyz.y - 1.0, xyz.z), perlin_grad_n0(perlin_perm_n0(BB), xyz.x - 1.0, xyz.y - 1.0, xyz.z))), perlin_lerp_n0(v, "
+    "perlin_lerp_n0(u, perlin_grad_n0(perlin_perm_n0(AA + 1), xyz.x, xyz.y, xyz.z - 1.0), perlin_grad_n0(perlin_perm_n0(BA + "
+    "1), xyz.x - 1.0, xyz.y, xyz.z - 1.0)), perlin_lerp_n0(u, perlin_grad_n0(perlin_perm_n0(AB + 1), xyz.x, xyz.y - 1.0, "
+    "xyz.z - 1.0), perlin_grad_n0(perlin_perm_n0(BB + 1), xyz.x - 1.0, xyz.y - 1.0, xyz.z - 1.0))));\n"
     "}\n\n"
-    "float perlin_sample3d_periodic(in int p[256], vec3 pos, int period_x, int period_y, int period_z) {\n"
+    "float perlin_sample3d_periodic_n0(vec3 pos, int period_x, int period_y, int period_z) {\n"
     "\tvec3 xyz = pos;\n"
-    "\tint X = perlin_floor_to_int(xyz.x);\n"
-    "\tint Y = perlin_floor_to_int(xyz.y);\n"
-    "\tint Z = perlin_floor_to_int(xyz.z);\n"
+    "\tint X = perlin_floor_to_int_n0(xyz.x);\n"
+    "\tint Y = perlin_floor_to_int_n0(xyz.y);\n"
+    "\tint Z = perlin_floor_to_int_n0(xyz.z);\n"
     "\txyz -= vec3(float(X), float(Y), float(Z));\n"
     "\tX &= 255;\n"
     "\tY &= 255;\n"
@@ -219,24 +219,24 @@ TEST(VisualShaderNodeGeneratorTest, TestVisualShaderNodeGeneratorPerlinNoiseGene
     "\tint Jy = (Iy + 1) % period_y;\n"
     "\tint Jz = (Iz + 1) % period_z;\n"
     "\t\n"
-    "\tfloat u = perlin_fade(xyz.x);\n"
-    "\tfloat v = perlin_fade(xyz.y);\n"
-    "\tfloat w = perlin_fade(xyz.z);\n"
+    "\tfloat u = perlin_fade_n0(xyz.x);\n"
+    "\tfloat v = perlin_fade_n0(xyz.y);\n"
+    "\tfloat w = perlin_fade_n0(xyz.z);\n"
     "\t\n"
-    "\tint A = perlin_perm(p, Ix);\n"
-    "\tint AA = perlin_perm(p, A + Iy);\n"
-    "\tint AB = perlin_perm(p, A + Jy);\n"
-    "\tint B = perlin_perm(p, Jx);\n"
-    "\tint BA = perlin_perm(p, B + Iy);\n"
-    "\tint BB = perlin_perm(p, B + Jy);\n"
+    "\tint A = perlin_perm_n0(Ix);\n"
+    "\tint AA = perlin_perm_n0(A + Iy);\n"
+    "\tint AB = perlin_perm_n0(A + Jy);\n"
+    "\tint B = perlin_perm_n0(Jx);\n"
+    "\tint BA = perlin_perm_n0(B + Iy);\n"
+    "\tint BB = perlin_perm_n0(B + Jy);\n"
     "\t\n"
-    "\treturn perlin_lerp(w, perlin_lerp(v, perlin_lerp(u, perlin_grad(perlin_perm(p, AA + Iz), xyz.x, xyz.y, xyz.z), "
-    "perlin_grad(perlin_perm(p, BA + Iz), xyz.x - 1.0, xyz.y, xyz.z)), perlin_lerp(u, perlin_grad(perlin_perm(p, AB + "
-    "Iz), xyz.x, xyz.y - 1.0, xyz.z), perlin_grad(perlin_perm(p, BB + Iz), xyz.x - 1.0, xyz.y - 1.0, xyz.z))), "
-    "perlin_lerp(v, perlin_lerp(u, perlin_grad(perlin_perm(p, AA + Jz), xyz.x, xyz.y, xyz.z - 1.0), "
-    "perlin_grad(perlin_perm(p, BA + Jz), xyz.x - 1.0, xyz.y, xyz.z - 1.0)), perlin_lerp(u, perlin_grad(perlin_perm(p, "
-    "AB + Jz), xyz.x, xyz.y - 1.0, xyz.z - 1.0), perlin_grad(perlin_perm(p, BB + Jz), xyz.x - 1.0, xyz.y - 1.0, xyz.z - "
-    "1.0))));\n"
+    "\treturn perlin_lerp_n0(w, perlin_lerp_n0(v, perlin_lerp_n0(u, perlin_grad_n0(perlin_perm_n0(AA + Iz), xyz.x, xyz.y, xyz.z), "
+    "perlin_grad_n0(perlin_perm_n0(BA + Iz), xyz.x - 1.0, xyz.y, xyz.z)), perlin_lerp_n0(u, perlin_grad_n0(perlin_perm_n0(AB + "
+    "Iz), xyz.x, xyz.y - 1.0, xyz.z), perlin_grad_n0(perlin_perm_n0(BB + Iz), xyz.x - 1.0, xyz.y - 1.0, xyz.z))), "
+    "perlin_lerp_n0(v, perlin_lerp_n0(u, perlin_grad_n0(perlin_perm_n0(AA + Jz), xyz.x, xyz.y, xyz.z - 1.0), "
+    "perlin_grad_n0(perlin_perm_n0(BA + Jz), xyz.x - 1.0, xyz.y, xyz.z - 1.0)), perlin_lerp_n0(u, "
+    "perlin_grad_n0(perlin_perm_n0(AB + Jz), xyz.x, xyz.y - 1.0, xyz.z - 1.0), perlin_grad_n0(perlin_perm_n0(BB + Jz), "
+    "xyz.x - 1.0, xyz.y - 1.0, xyz.z - 1.0))));\n"
     "}\n\n"};
   ASSERT_EQ(code, expected_code);
 }
@@ -256,11 +256,11 @@ TEST(VisualShaderNodeGeneratorTest, TestVisualShaderNodeGeneratorVoronoiNoiseGen
   ASSERT_EQ(code, expected_code);
 }
 
-TEST(VisualShaderNodeGeneratorTest, TestVisualShaderNodeGeneratorVoronoiNoiseGenerateGlobal) {
+TEST(VisualShaderNodeGeneratorTest, TestVisualShaderNodeGeneratorVoronoiNoiseGenerateGlobalPerNode) {
   VisualShaderNodeGeneratorVoronoiNoise voronoi_noise_generator{10.0f, 10.0f};
   std::vector<std::string> input_vars = {"a"};
   std::vector<std::string> output_vars = {"b"};
-  std::string code{voronoi_noise_generator.generate_global(0)};
+  std::string code{voronoi_noise_generator.generate_global_per_node(0)};
   std::string expected_code{
     "vec2 voronoi_noise_random_vector(vec2 uv, float offset) {\n"
     "\tmat2 m = mat2(15.27, 47.63, 99.41, 89.98);\n"
@@ -324,9 +324,9 @@ TEST(VisualShaderNodeGeneratorTest, TestVisualShaderNodeGeneratorColorCorrectGen
   ASSERT_EQ(code, expected_code);
 }
 
-TEST(VisualShaderNodeGeneratorTest, TestVisualShaderNodeGeneratorColorCorrectGenerateGlobal) {
+TEST(VisualShaderNodeGeneratorTest, TestVisualShaderNodeGeneratorColorCorrectGenerateGlobalPerNode) {
   VisualShaderNodeGeneratorColorCorrect color_correct_generator{0.0f, 1.0f, 1.0f, 0.0f};
-  std::string code{color_correct_generator.generate_global(0)};
+  std::string code{color_correct_generator.generate_global_per_node(0)};
   std::string expected_code{
       "int color_correct_max_idx(vec3 c) {\n"
       "\tif (c.x > c.y) {\n"
@@ -432,9 +432,9 @@ TEST(VisualShaderNodeGeneratorTest, TestVisualShaderNodeGeneratorMath1GenerateCo
   ASSERT_EQ(code, expected_code);
 }
 
-TEST(VisualShaderNodeGeneratorTest, TestVisualShaderNodeGeneratorModulusGenerateGlobal) {
+TEST(VisualShaderNodeGeneratorTest, TestVisualShaderNodeGeneratorModulusGenerateGlobalPerNode) {
   VisualShaderNodeGeneratorModulus modulus_generator{0.5f, true, 0};
-  std::string code{modulus_generator.generate_global(0)};
+  std::string code{modulus_generator.generate_global_per_node(0)};
   std::string expected_code{
       "float modulus_mod(float x, float y) {\n"
       "\treturn x - y * trunc(x / y);\n"
