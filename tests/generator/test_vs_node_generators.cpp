@@ -799,8 +799,8 @@ TEST(VisualShaderNodeGeneratorTest, TestVisualShaderNodeGeneratorBrickGenerateCo
   std::string code{brick_generator.generate_code(0, input_vars, output_vars)};
   std::string expected_code{
       "\t// Brick\n"
-      "\tconst float pattern_colors_n0[2] = float[2](0.821355, 0.377933);\n"
-      "\tconst float pattern_shifts_n0[1] = float[1](0.033939);\n"
+      "\tconst float pattern_colors_n0[2] = float[2](0.721693, 0.352360);\n"
+      "\tconst float pattern_shifts_n0[1] = float[1](0.133095);\n"
       "\tvec2 pattern_uv_n0 = fract(a);\n"
       "\tfloat pattern_norm_x_n0 = 2.000000;\n"
       "\tfloat pattern_norm_y_n0 = 1.000000;\n"

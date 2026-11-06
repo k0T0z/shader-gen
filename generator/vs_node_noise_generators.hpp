@@ -53,45 +53,6 @@ class VisualShaderNodeGeneratorValueNoise : public VisualShaderNodeGenerator {
 };
 
 /*************************************/
-/* Perlin (Gradient) Noise           */
-/*************************************/
-
-class VisualShaderNodeGeneratorPerlinNoise : public VisualShaderNodeGenerator {
-    public:
-    VisualShaderNodeGeneratorPerlinNoise(const float& scale_x, const float& scale_y, const float& value_scale,
-                                         const float& persistence, const int& start_band, const int& end_band,
-                                         const int& seed, const bool& periodic,
-                                         const std::vector<VisualShaderColorGradientStop>& gradient)
-        : VisualShaderNodeGenerator(),
-          scale_x(scale_x),
-          scale_y(scale_y),
-          value_scale(value_scale),
-          persistence(persistence),
-          start_band(start_band),
-          end_band(end_band),
-          seed(seed),
-          periodic(periodic),
-          gradient(gradient) {}
-
-    virtual std::string generate_global([[maybe_unused]] const int& id) const override;
-
-    virtual std::string generate_code([[maybe_unused]] const int& id,
-                                      [[maybe_unused]] const std::vector<std::string>& input_vars,
-                                      [[maybe_unused]] const std::vector<std::string>& output_vars) const override;
-
-    private:
-    const float scale_x;
-    const float scale_y;
-    const float value_scale;
-    const float persistence;
-    const int start_band;
-    const int end_band;
-    const int seed;
-    const bool periodic;
-    const std::vector<VisualShaderColorGradientStop> gradient;
-};
-
-/*************************************/
 /* Voronoi (Worley) Noise            */
 /*************************************/
 
