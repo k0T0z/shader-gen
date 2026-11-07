@@ -1231,48 +1231,6 @@ inline static DiscreteContinuousRangeVariant get_range_for_field(const int& node
 
     return get_range_for_continuous_field(node_type, field_number, sub_field);
 }
-
-/**
- * @brief Get the field number of the repeated @c ColorGradientStop field of a node type.
- *
- * @note Repeated fields are encoded as @c "<row>:<column>" parameters (e.g. @c "0:1=0.0"), so the
- *       column number alone cannot identify the field. This resolves the node's gradient field
- *       number so callers can pass it together with the column number to the range lookups.
- *
- * @return The gradient field number, or @c -1 if the node type has no repeated @c ColorGradientStop.
- */
-inline static int get_color_gradient_field_number(const int& node_type) {
-    switch (node_type) {
-        case VisualShader::VisualShaderNode::kPerlinNoiseFieldNumber: {
-            return VisualShaderNodePerlinNoise::kGradientFieldNumber;
-        }
-        case VisualShader::VisualShaderNode::kColorizeFieldNumber: {
-            return VisualShaderNodeColorize::kGradientFieldNumber;
-        }
-        case VisualShader::VisualShaderNode::kGradientFieldNumber: {
-            return VisualShaderNodeGradient::kGradientFieldNumber;
-        }
-        case VisualShader::VisualShaderNode::kCheckerFieldNumber: {
-            return VisualShaderNodeChecker::kGradientFieldNumber;
-        }
-        case VisualShader::VisualShaderNode::kBrickFieldNumber: {
-            return VisualShaderNodeBrick::kGradientFieldNumber;
-        }
-        case VisualShader::VisualShaderNode::kTileFieldNumber: {
-            return VisualShaderNodeTile::kGradientFieldNumber;
-        }
-        case VisualShader::VisualShaderNode::kFunctionFieldNumber: {
-            return VisualShaderNodeFunction::kGradientFieldNumber;
-        }
-        case VisualShader::VisualShaderNode::kCellularFieldNumber: {
-            return VisualShaderNodeCellular::kGradientFieldNumber;
-        }
-        default:
-            break;
-    }
-
-    return -1;
-}
 }  // namespace ai_agent_utils
 
 #endif  // AI_AGENT_UTILS_HPP

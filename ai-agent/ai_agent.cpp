@@ -84,20 +84,21 @@ namespace ai_agent_main {
                         new_parameters.resize(parameters.size());
 
                         for (int j{0}; j < parameters.size(); ++j) {
-                            const std::string parameter{parameters.at(j)}; // Format: <field_number>=value or <row>:<column>=value
+                            const std::string parameter{parameters.at(j)}; // Format: <field_number>=value or <field_number>:<row>:<column>=value
                             const std::vector<std::string> parameter_tokens{ai_agent_utils::split_string(parameter, '=')};
                             const std::string parameter_key{ai_agent_utils::get_node_entity_parameter_field_number(parameter_tokens)};
 
-                            // A repeated field (e.g. the color gradient) is encoded as "<row>:<column>"
-                            // parameters, where the row is a data index rather than a field number. Calling
-                            // std::stoi on such a key would silently drop the ":<column>" part, so instead we
-                            // resolve the repeated field's own number and pass the column as the sub-field.
+                            // A repeated field (e.g. the color gradient) is encoded as
+                            // "<field number>:<row>:<column>" parameters, where the row is a data index
+                            // rather than a field number. Calling std::stoi on such a key would silently drop
+                            // the ":<row>:<column>" part, so instead we take the field number from the first
+                            // token and the sub-field number from the last token.
                             const std::vector<std::string> key_tokens{ai_agent_utils::split_string(parameter_key, ':')};
                             int field_number{-1};
                             int sub_field{-1};
                             if (key_tokens.size() > 1) {
-                                field_number = ai_agent_utils::get_color_gradient_field_number(oneof_value_field_number);
-                                sub_field = std::stoi(key_tokens.at(1));
+                                field_number = std::stoi(key_tokens.at(0));
+                                sub_field = std::stoi(key_tokens.at(2));
                             } else {
                                 field_number = std::stoi(parameter_key);
                             }

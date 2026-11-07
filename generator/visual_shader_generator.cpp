@@ -106,10 +106,10 @@ static std::unordered_map<int, std::shared_ptr<IVisualShaderProtoNode>> raw_to_p
  * @brief Decode the color gradient stops of a node from its encoded parameters.
  *
  * Every value inside the repeated @c ColorGradientStop field is exposed as an ordinary node parameter
- * keyed by @c "<row>:<column field number>" (e.g. @c "0:1=0.57" for the position of the first stop, or
- * @c "1:2=0.23" for the red channel of the second stop). Scalar parameters (keys without a @c ':') are
- * ignored so the gradient can be decoded by scanning the whole parameter list. Rows are returned sorted
- * by their row index.
+ * keyed by @c "<field number>:<row>:<column field number>" (e.g. @c "9:0:1=0.57" for the position of
+ * the first stop, or @c "9:1:2=0.23" for the red channel of the second stop). Scalar parameters (keys
+ * without a @c ':') are ignored so the gradient can be decoded by scanning the whole parameter list.
+ * Rows are returned sorted by their row index.
  */
 static std::vector<VisualShaderColorGradientStop> parse_color_gradient(const std::vector<std::string>& parameters) noexcept {
   std::map<int, VisualShaderColorGradientStop> stops_by_row;
@@ -117,10 +117,10 @@ static std::vector<VisualShaderColorGradientStop> parse_color_gradient(const std
   for (const std::string& parameter : parameters) {
     const std::vector<std::string> parameter_tokens{split_string(parameter, '=')};
     const std::vector<std::string> key_tokens{split_string(get_node_entity_parameter_field_number(parameter_tokens), ':')};
-    if (key_tokens.size() < 2) continue;  // Not part of the repeated field.
+    if (key_tokens.size() < 3) continue;  // Not part of the repeated field.
 
-    const int row{std::stoi(key_tokens.at(0))};
-    const int sub_field{std::stoi(key_tokens.at(1))};
+    const int row{std::stoi(key_tokens.at(1))};
+    const int sub_field{std::stoi(key_tokens.at(2))};
     const float value{std::stof(get_node_entity_parameter_value(parameter_tokens))};
 
     // Zero-initialize the stop the first time a row is encountered.

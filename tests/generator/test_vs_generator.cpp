@@ -274,14 +274,14 @@ TEST(VisualShaderGeneratorTest, TestParameterWithoutValueFallsBackToDefault) {
 }
 
 // Regression test: a repeated ColorGradientStop field is encoded as one parameter per value, keyed by
-// "<row>:<column field number>" (e.g. "0:1=0.0" for the position of the first stop). The generator must
-// decode these parameters back into an ordered list of stops.
+// "<field number>:<row>:<column field number>" (e.g. "1:0:1=0.0" for the position of the first stop of
+// a field numbered 1). The generator must decode these parameters back into an ordered list of stops.
 TEST(VisualShaderGeneratorTest, TestIndexKeyedColorGradientRamp) {
   const std::string graph{
       "0;0;3,"                          // Output (oneof=3): id=0, no params
       "0;1;8;1=0.5;2=0.5;3=0.5;4=1.0,"  // ColorConstant (oneof=8): id=1, gray
       // Colorize (oneof=43): id=2, two stops: (pos 0 -> black) and (pos 1 -> white)
-      "0;2;43;0:1=0.0;0:2=0.0;0:3=0.0;0:4=0.0;0:5=1.0;1:1=1.0;1:2=1.0;1:3=1.0;1:4=1.0;1:5=1.0,"
+      "0;2;43;1:0:1=0.0;1:0:2=0.0;1:0:3=0.0;1:0:4=0.0;1:0:5=1.0;1:1:1=1.0;1:1:2=1.0;1:1:3=1.0;1:1:4=1.0;1:1:5=1.0,"
       "1;0;1;0;2;0,"  // color constant(1) output 0 -> colorize(2) input 0
       "1;1;2;0;0;0"   // colorize(2) output 0 -> output(0) input 0
   };

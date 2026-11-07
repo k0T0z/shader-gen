@@ -109,8 +109,9 @@ inline static std::string encode_graph(const ProtoModel* nodes, const ProtoModel
                 const RepeatedMessageModel* repeated_field_model{dynamic_cast<const RepeatedMessageModel*>(field_model)};
                 CHECK_PARAM_NULLPTR_NON_VOID(repeated_field_model, "", "Repeated field model is nullptr.");
 
-                // A repeated field is a set of parameters keyed by "<row>:<column field number>" so that
-                // every value inside a repeated field behaves like an ordinary node parameter.
+                // A repeated field is a set of parameters keyed by
+                // "<field number>:<row>:<column field number>" so that every value inside a repeated
+                // field behaves like an ordinary node parameter.
                 for (int row{0}; row < repeated_field_model->rowCount(); ++row) {
                     const MessageModel* row_model{repeated_field_model->get_sub_model(row)};
                     CHECK_PARAM_NULLPTR_NON_VOID(row_model, "", "Repeated field row model is nullptr.");
@@ -127,7 +128,7 @@ inline static std::string encode_graph(const ProtoModel* nodes, const ProtoModel
                             column_value = shadergen_utils::get_proto_field_default_value(column_descriptor);
                         }
 
-                        const std::string key{std::to_string(row) + ':' + std::to_string(column_descriptor->number())};
+                        const std::string key{std::to_string(field_number) + ':' + std::to_string(row) + ':' + std::to_string(column_descriptor->number())};
                         parameters.push_back(shadergen_graph_string_utils::join_string(
                             {key, column_value.toString().toStdString()}, '='));
                     }

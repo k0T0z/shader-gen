@@ -45,7 +45,7 @@ set(CMAKE_RELWITHDEBINFO_POSTFIX "rd")
 
 set(ENIGMA_ORG_NAME "ENIGMA Development Environment")
 set(SHADER_GEN_PROJECT_NAME "Shader Gen")
-set(SHADER_GEN_PROJECT_VERSION "2.5.1")
+set(SHADER_GEN_PROJECT_VERSION "2.6.0")
 set(SHADER_GEN_PROJECT_DESCRIPTION "Shader Gen is a tool to generate shaders using machine learning.")
 set(SHADER_GEN_EXECUTABLE_NAME "shader-gen")
 set(SHADER_GEN_PROTO_LIBRARY_NAME "${SHADER_GEN_EXECUTABLE_NAME}-proto")
