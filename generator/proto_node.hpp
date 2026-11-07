@@ -166,7 +166,6 @@ class VisualShaderProtoNode : public IVisualShaderProtoNode {
     else if constexpr (std::is_same_v<Proto, VisualShaderNodeVectorFunc>) return VisualShader::VisualShaderNode::kVectorFuncFieldNumber;
     else if constexpr (std::is_same_v<Proto, VisualShaderNodeValueNoise>) return VisualShader::VisualShaderNode::kValueNoiseFieldNumber;
     else if constexpr (std::is_same_v<Proto, VisualShaderNodePerlinNoise>) return VisualShader::VisualShaderNode::kPerlinNoiseFieldNumber;
-    else if constexpr (std::is_same_v<Proto, VisualShaderNodeVoronoiNoise>) return VisualShader::VisualShaderNode::kVoronoiNoiseFieldNumber;
     else if constexpr (std::is_same_v<Proto, VisualShaderNodeDotProduct>) return VisualShader::VisualShaderNode::kDotProductFieldNumber;
     else if constexpr (std::is_same_v<Proto, VisualShaderNodeVectorLen>) return VisualShader::VisualShaderNode::kVectorLenFieldNumber;
     else if constexpr (std::is_same_v<Proto, VisualShaderNodeClamp>) return VisualShader::VisualShaderNode::kClampFieldNumber;
@@ -181,6 +180,22 @@ class VisualShaderProtoNode : public IVisualShaderProtoNode {
     else if constexpr (std::is_same_v<Proto, VisualShaderNodeSwitch>) return VisualShader::VisualShaderNode::kSwitchNodeFieldNumber;
     else if constexpr (std::is_same_v<Proto, VisualShaderNodeIs>) return VisualShader::VisualShaderNode::kIsFieldNumber;
     else if constexpr (std::is_same_v<Proto, VisualShaderNodeCompare>) return VisualShader::VisualShaderNode::kCompareFieldNumber;
+    else if constexpr (std::is_same_v<Proto, VisualShaderNodeColorCorrect>) return VisualShader::VisualShaderNode::kColorCorrectFieldNumber;
+    else if constexpr (std::is_same_v<Proto, VisualShaderNodeMath1>) return VisualShader::VisualShaderNode::kMath1FieldNumber;
+    else if constexpr (std::is_same_v<Proto, VisualShaderNodeModulus>) return VisualShader::VisualShaderNode::kModulusFieldNumber;
+    else if constexpr (std::is_same_v<Proto, VisualShaderNodeCombine>) return VisualShader::VisualShaderNode::kCombineFieldNumber;
+    else if constexpr (std::is_same_v<Proto, VisualShaderNodeMask>) return VisualShader::VisualShaderNode::kMaskFieldNumber;
+    else if constexpr (std::is_same_v<Proto, VisualShaderNodeBlend>) return VisualShader::VisualShaderNode::kBlendFieldNumber;
+    else if constexpr (std::is_same_v<Proto, VisualShaderNodeColorize>) return VisualShader::VisualShaderNode::kColorizeFieldNumber;
+    else if constexpr (std::is_same_v<Proto, VisualShaderNodeGradient>) return VisualShader::VisualShaderNode::kGradientFieldNumber;
+    else if constexpr (std::is_same_v<Proto, VisualShaderNodeChecker>) return VisualShader::VisualShaderNode::kCheckerFieldNumber;
+    else if constexpr (std::is_same_v<Proto, VisualShaderNodeBrick>) return VisualShader::VisualShaderNode::kBrickFieldNumber;
+    else if constexpr (std::is_same_v<Proto, VisualShaderNodeTile>) return VisualShader::VisualShaderNode::kTileFieldNumber;
+    else if constexpr (std::is_same_v<Proto, VisualShaderNodeFunction>) return VisualShader::VisualShaderNode::kFunctionFieldNumber;
+    else if constexpr (std::is_same_v<Proto, VisualShaderNodeCellular>) return VisualShader::VisualShaderNode::kCellularFieldNumber;
+    else if constexpr (std::is_same_v<Proto, VisualShaderNodeIlluminate>) return VisualShader::VisualShaderNode::kIlluminateFieldNumber;
+    else if constexpr (std::is_same_v<Proto, VisualShaderNodeEmboss>) return VisualShader::VisualShaderNode::kEmbossFieldNumber;
+    else if constexpr (std::is_same_v<Proto, VisualShaderNodeNormalMap>) return VisualShader::VisualShaderNode::kNormalMapFieldNumber;
     else {
       static_assert(false, "Unsupported proto type!");
       return -1;

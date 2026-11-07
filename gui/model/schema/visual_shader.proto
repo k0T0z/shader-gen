@@ -73,7 +73,6 @@ message VisualShader {
             /*************************************/
             VisualShaderNodeValueNoise value_noise = 20;
             VisualShaderNodePerlinNoise perlin_noise = 21;
-            VisualShaderNodeVoronoiNoise voronoi_noise = 22;
 
             /*************************************/
             /* MISC                              */
@@ -92,6 +91,34 @@ message VisualShader {
             VisualShaderNodeSwitch switch_node = 34;
             VisualShaderNodeIs is = 35;
             VisualShaderNodeCompare compare = 36;
+
+            /*************************************/
+            /* SPECIAL                           */
+            /*************************************/
+            VisualShaderNodeColorCorrect color_correct = 37;
+            VisualShaderNodeMath1 math_1 = 38;
+            VisualShaderNodeModulus modulus = 39;
+            VisualShaderNodeCombine combine = 40;
+            VisualShaderNodeMask mask = 41;
+            VisualShaderNodeBlend blend = 42;
+            VisualShaderNodeColorize colorize = 43;
+
+            /*************************************/
+            /* PATTERNS                          */
+            /*************************************/
+            VisualShaderNodeGradient gradient = 44;
+            VisualShaderNodeChecker checker = 45;
+            VisualShaderNodeBrick brick = 46;
+            VisualShaderNodeTile tile = 47;
+            VisualShaderNodeFunction function = 48;
+
+            /*************************************/
+            /* FILTERS                           */
+            /*************************************/
+            VisualShaderNodeCellular cellular = 49;
+            VisualShaderNodeIlluminate illuminate = 50;
+            VisualShaderNodeEmboss emboss = 51;
+            VisualShaderNodeNormalMap normal_map = 52;
         }
     }
     

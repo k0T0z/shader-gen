@@ -100,9 +100,6 @@ inline static std::shared_ptr<IVisualShaderProtoNode> get_proto_node_by_oneof_va
     case VisualShader::VisualShaderNode::kPerlinNoiseFieldNumber: {
       return std::make_shared<VisualShaderProtoNode<VisualShaderNodePerlinNoise>>();
     }
-    case VisualShader::VisualShaderNode::kVoronoiNoiseFieldNumber: {
-      return std::make_shared<VisualShaderProtoNode<VisualShaderNodeVoronoiNoise>>();
-    }
     case VisualShader::VisualShaderNode::kDotProductFieldNumber: {
       return std::make_shared<VisualShaderProtoNode<VisualShaderNodeDotProduct>>();
     }
@@ -144,6 +141,54 @@ inline static std::shared_ptr<IVisualShaderProtoNode> get_proto_node_by_oneof_va
     }
     case VisualShader::VisualShaderNode::kCompareFieldNumber: {
       return std::make_shared<VisualShaderProtoNode<VisualShaderNodeCompare>>();
+    }
+    case VisualShader::VisualShaderNode::kColorCorrectFieldNumber: {
+      return std::make_shared<VisualShaderProtoNode<VisualShaderNodeColorCorrect>>();
+    }
+    case VisualShader::VisualShaderNode::kMath1FieldNumber: {
+      return std::make_shared<VisualShaderProtoNode<VisualShaderNodeMath1>>();
+    }
+    case VisualShader::VisualShaderNode::kModulusFieldNumber: {
+      return std::make_shared<VisualShaderProtoNode<VisualShaderNodeModulus>>();
+    }
+    case VisualShader::VisualShaderNode::kCombineFieldNumber: {
+      return std::make_shared<VisualShaderProtoNode<VisualShaderNodeCombine>>();
+    }
+    case VisualShader::VisualShaderNode::kMaskFieldNumber: {
+      return std::make_shared<VisualShaderProtoNode<VisualShaderNodeMask>>();
+    }
+    case VisualShader::VisualShaderNode::kBlendFieldNumber: {
+      return std::make_shared<VisualShaderProtoNode<VisualShaderNodeBlend>>();
+    }
+    case VisualShader::VisualShaderNode::kColorizeFieldNumber: {
+      return std::make_shared<VisualShaderProtoNode<VisualShaderNodeColorize>>();
+    }
+    case VisualShader::VisualShaderNode::kGradientFieldNumber: {
+      return std::make_shared<VisualShaderProtoNode<VisualShaderNodeGradient>>();
+    }
+    case VisualShader::VisualShaderNode::kCheckerFieldNumber: {
+      return std::make_shared<VisualShaderProtoNode<VisualShaderNodeChecker>>();
+    }
+    case VisualShader::VisualShaderNode::kBrickFieldNumber: {
+      return std::make_shared<VisualShaderProtoNode<VisualShaderNodeBrick>>();
+    }
+    case VisualShader::VisualShaderNode::kTileFieldNumber: {
+      return std::make_shared<VisualShaderProtoNode<VisualShaderNodeTile>>();
+    }
+    case VisualShader::VisualShaderNode::kFunctionFieldNumber: {
+      return std::make_shared<VisualShaderProtoNode<VisualShaderNodeFunction>>();
+    }
+    case VisualShader::VisualShaderNode::kCellularFieldNumber: {
+      return std::make_shared<VisualShaderProtoNode<VisualShaderNodeCellular>>();
+    }
+    case VisualShader::VisualShaderNode::kIlluminateFieldNumber: {
+      return std::make_shared<VisualShaderProtoNode<VisualShaderNodeIlluminate>>();
+    }
+    case VisualShader::VisualShaderNode::kEmbossFieldNumber: {
+      return std::make_shared<VisualShaderProtoNode<VisualShaderNodeEmboss>>();
+    }
+    case VisualShader::VisualShaderNode::kNormalMapFieldNumber: {
+      return std::make_shared<VisualShaderProtoNode<VisualShaderNodeNormalMap>>();
     }
     default:
       WARN_PRINT("Unsupported node type: " + std::to_string(oneof_value_field_number));

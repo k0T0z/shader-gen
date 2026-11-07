@@ -30,6 +30,10 @@
 
 #include <google/protobuf/descriptor.h>
 #include <QString>
+#include <QVariantList>
+#include <QVariantMap>
+#include <string>
+#include <unordered_map>
 #include "error_macros.hpp"
 #include "gui/model/schema/visual_shader_nodes.pb.h"
 #include "generator/proto_node_factory.hpp"
@@ -62,6 +66,205 @@ inline static bool is_inside_real_oneof(const google::protobuf::FieldDescriptor*
 }
 
 /**
+ * @brief Get the @c VisualShaderNode::node_type oneof field number of a node message type.
+ *
+ * @note Protobuf does not generate a reverse mapping from a message descriptor back to the oneof
+ *       member that embeds it, so we scan the @c VisualShaderNode oneof. Each node message type is
+ *       used by exactly one oneof member, which makes this lookup unambiguous.
+ *
+ * @param node_type The node message descriptor (e.g. @c VisualShaderNodeColorCorrect).
+ * @return int The oneof field number (e.g. @c VisualShader::VisualShaderNode::kColorCorrectFieldNumber),
+ *         or @c -1 when the message is not part of the oneof.
+ */
+inline static int get_node_type_field_number(const google::protobuf::Descriptor* node_type) noexcept {
+  CHECK_PARAM_NULLPTR_NON_VOID(node_type, -1, "Node type descriptor is null.");
+
+  const google::protobuf::Descriptor* parent{VisualShader::VisualShaderNode::descriptor()};
+  for (int i{0}; i < parent->field_count(); ++i) {
+    const google::protobuf::FieldDescriptor* field{parent->field(i)};
+    if (field->cpp_type() == google::protobuf::FieldDescriptor::CPPTYPE_MESSAGE &&
+        field->message_type() == node_type) {
+      return field->number();
+    }
+  }
+
+  return -1;
+}
+
+/**
+ * @brief Get the node field defaults that the Protobuf schema cannot express.
+ *
+ * @note proto3 fields always default to zero/empty and this project intentionally keeps the schema
+ *       free of custom default options. The table below restores the defaults of the original node
+ *       implementations (keyed by the node type and the field number, i.e. the stable field identity
+ *       that survives a rename) so that a freshly added node starts in the same state as the node it
+ *       was ported from.
+ *
+ * @note A repeated field cannot hold a single value, so a repeated message field (e.g. a node's color
+ *       gradient stops) is described as a @c QVariantList with one @c QVariantMap entry per row, each
+ *       mapping the field number of a column inside the repeated message to its default value.
+ *
+ * @param field_desc
+ * @return QVariant The overridden default value, or an invalid @c QVariant when the field keeps its
+ *         Protobuf default.
+ */
+inline static QVariant get_proto_field_default_value_override(const google::protobuf::FieldDescriptor* field_desc) noexcept {
+  CHECK_PARAM_NULLPTR_NON_VOID(field_desc, QVariant(), "Field descriptor is null.");
+
+  const google::protobuf::Descriptor* node_type{field_desc->containing_type()};
+  CHECK_PARAM_NULLPTR_NON_VOID(node_type, QVariant(), "Field containing type is null.");
+
+  // The default color ramp of every node ported with a color gradient (NTE's @c ColorGradientParam):
+  // an opaque black stop at 0.0 and an opaque white stop at 1.0.
+  static const QVariantList default_color_gradient_stops{
+      QVariantMap{
+          {QString::number(ColorGradientStop::kPositionFieldNumber), 0.0f},
+          {QString::number(ColorGradientStop::kRFieldNumber), 0.0f},
+          {QString::number(ColorGradientStop::kGFieldNumber), 0.0f},
+          {QString::number(ColorGradientStop::kBFieldNumber), 0.0f},
+          {QString::number(ColorGradientStop::kAFieldNumber), 1.0f},
+      },
+      QVariantMap{
+          {QString::number(ColorGradientStop::kPositionFieldNumber), 1.0f},
+          {QString::number(ColorGradientStop::kRFieldNumber), 1.0f},
+          {QString::number(ColorGradientStop::kGFieldNumber), 1.0f},
+          {QString::number(ColorGradientStop::kBFieldNumber), 1.0f},
+          {QString::number(ColorGradientStop::kAFieldNumber), 1.0f},
+      },
+  };
+
+  static const std::unordered_map<int, std::unordered_map<int, QVariant>> overrides{
+      // ColorCorrect
+      {VisualShader::VisualShaderNode::kColorCorrectFieldNumber,
+       {
+           {VisualShaderNodeColorCorrect::kContrastFieldNumber, 1.0f},
+           {VisualShaderNodeColorCorrect::kGammaFieldNumber, 1.0f},
+       }},
+      // Colorize
+      {VisualShader::VisualShaderNode::kColorizeFieldNumber,
+       {
+           {VisualShaderNodeColorize::kGradientFieldNumber, default_color_gradient_stops},
+       }},
+      // Math1
+      {VisualShader::VisualShaderNode::kMath1FieldNumber,
+       {
+           {VisualShaderNodeMath1::kOnRFieldNumber, true},
+           {VisualShaderNodeMath1::kOnGFieldNumber, true},
+           {VisualShaderNodeMath1::kOnBFieldNumber, true},
+       }},
+      // Modulus
+      {VisualShader::VisualShaderNode::kModulusFieldNumber,
+       {
+           {VisualShaderNodeModulus::kModulusFieldNumber, 0.5f},
+           {VisualShaderNodeModulus::kNormalizeFieldNumber, true},
+       }},
+      // Combine
+      {VisualShader::VisualShaderNode::kCombineFieldNumber,
+       {
+           {VisualShaderNodeCombine::kInput1FieldNumber, 0},
+           {VisualShaderNodeCombine::kInput2FieldNumber, 1},
+           {VisualShaderNodeCombine::kInput3FieldNumber, 2},
+           {VisualShaderNodeCombine::kInput4FieldNumber, 3},
+       }},
+      // Blend
+      {VisualShader::VisualShaderNode::kBlendFieldNumber,
+       {
+           {VisualShaderNodeBlend::kOpacityFieldNumber, 1.0f},
+       }},
+      // Gradient
+      {VisualShader::VisualShaderNode::kGradientFieldNumber,
+       {
+           {VisualShaderNodeGradient::kGradientTypeFieldNumber, 0},
+           {VisualShaderNodeGradient::kGradientFieldNumber, default_color_gradient_stops},
+       }},
+      // Checker
+      {VisualShader::VisualShaderNode::kCheckerFieldNumber,
+       {
+           {VisualShaderNodeChecker::kScaleXFieldNumber, 1.0f},
+           {VisualShaderNodeChecker::kScaleYFieldNumber, 1.0f},
+           {VisualShaderNodeChecker::kGradientFieldNumber, default_color_gradient_stops},
+       }},
+      // Brick
+      {VisualShader::VisualShaderNode::kBrickFieldNumber,
+       {
+           {VisualShaderNodeBrick::kNumXFieldNumber, 4},
+           {VisualShaderNodeBrick::kNumYFieldNumber, 6},
+           {VisualShaderNodeBrick::kShiftFieldNumber, 0.5f},
+           {VisualShaderNodeBrick::kRandShiftFieldNumber, 0.1f},
+           {VisualShaderNodeBrick::kGapXFieldNumber, 0.03f},
+           {VisualShaderNodeBrick::kGapYFieldNumber, 0.03f},
+           {VisualShaderNodeBrick::kSmoothFieldNumber, 0.05f},
+           {VisualShaderNodeBrick::kGradientFieldNumber, default_color_gradient_stops},
+       }},
+      // Tile
+      {VisualShader::VisualShaderNode::kTileFieldNumber,
+       {
+           {VisualShaderNodeTile::kBorderXFieldNumber, 0.1f},
+           {VisualShaderNodeTile::kBorderYFieldNumber, 0.1f},
+           {VisualShaderNodeTile::kGradientFieldNumber, default_color_gradient_stops},
+       }},
+      // Function
+      {VisualShader::VisualShaderNode::kFunctionFieldNumber,
+       {
+           {VisualShaderNodeFunction::kFunctionUFieldNumber, 0},
+           {VisualShaderNodeFunction::kFunctionVFieldNumber, 0},
+           {VisualShaderNodeFunction::kCombinerFieldNumber, 0},
+           {VisualShaderNodeFunction::kScaleXFieldNumber, 1.0f},
+           {VisualShaderNodeFunction::kScaleYFieldNumber, 1.0f},
+           {VisualShaderNodeFunction::kGradientFieldNumber, default_color_gradient_stops},
+       }},
+      // Cellular
+      {VisualShader::VisualShaderNode::kCellularFieldNumber,
+       {
+           {VisualShaderNodeCellular::kIntensityFieldNumber, 1.0f},
+           {VisualShaderNodeCellular::kNumPointsFieldNumber, 16},
+           {VisualShaderNodeCellular::kPeriodicFieldNumber, true},
+           {VisualShaderNodeCellular::kGradientFieldNumber, default_color_gradient_stops},
+       }},
+      // Illuminate
+      {VisualShader::VisualShaderNode::kIlluminateFieldNumber,
+       {
+           {VisualShaderNodeIlluminate::kThetaFieldNumber, 45.0f},
+           {VisualShaderNodeIlluminate::kPhiFieldNumber, 45.0f},
+           {VisualShaderNodeIlluminate::kShininessFieldNumber, 20.0f},
+       }},
+      // Emboss
+      {VisualShader::VisualShaderNode::kEmbossFieldNumber,
+       {
+           {VisualShaderNodeEmboss::kStrengthFieldNumber, 8.0f},
+           {VisualShaderNodeEmboss::kAngleFieldNumber, 45.0f},
+       }},
+      // NormalMap
+      {VisualShader::VisualShaderNode::kNormalMapFieldNumber,
+       {
+           {VisualShaderNodeNormalMap::kStrengthFieldNumber, 1.0f},
+       }},
+      // PerlinNoise
+      {VisualShader::VisualShaderNode::kPerlinNoiseFieldNumber,
+       {
+           {VisualShaderNodePerlinNoise::kScaleXFieldNumber, 1.0f},
+           {VisualShaderNodePerlinNoise::kScaleYFieldNumber, 1.0f},
+           {VisualShaderNodePerlinNoise::kValueScaleFieldNumber, 1.0f},
+           {VisualShaderNodePerlinNoise::kPersistenceFieldNumber, 0.5f},
+           {VisualShaderNodePerlinNoise::kStartBandFieldNumber, 1},
+           {VisualShaderNodePerlinNoise::kEndBandFieldNumber, 8},
+           {VisualShaderNodePerlinNoise::kSeedFieldNumber, -1},
+           {VisualShaderNodePerlinNoise::kPeriodicFieldNumber, true},
+           {VisualShaderNodePerlinNoise::kGradientFieldNumber, default_color_gradient_stops},
+       }},
+  };
+
+  const std::unordered_map<int, std::unordered_map<int, QVariant>>::const_iterator node_it{
+      overrides.find(get_node_type_field_number(node_type))};
+  SILENT_CHECK_CONDITION_TRUE_NON_VOID(node_it == overrides.end(), QVariant());
+
+  const std::unordered_map<int, QVariant>::const_iterator field_it{node_it->second.find(field_desc->number())};
+  SILENT_CHECK_CONDITION_TRUE_NON_VOID(field_it == node_it->second.end(), QVariant());
+
+  return field_it->second;
+}
+
+/**
  * @brief Get the Protobuf default value of a field as a @c QVariant.
  *
  * @note A node can hold optional fields that were never set, which the models report as an
@@ -74,6 +277,9 @@ inline static bool is_inside_real_oneof(const google::protobuf::FieldDescriptor*
  */
 inline static QVariant get_proto_field_default_value(const google::protobuf::FieldDescriptor* field_desc) noexcept {
   CHECK_PARAM_NULLPTR_NON_VOID(field_desc, QVariant(), "Field descriptor is null.");
+
+  const QVariant overridden_default_value{get_proto_field_default_value_override(field_desc)};
+  SILENT_CHECK_CONDITION_TRUE_NON_VOID(overridden_default_value.isValid(), overridden_default_value);
 
   switch (field_desc->cpp_type()) {
     case google::protobuf::FieldDescriptor::CPPTYPE_INT32:
@@ -266,9 +472,6 @@ inline static std::shared_ptr<VisualShaderNodePortTypeGenerator> get_port_type_g
     case VisualShader::VisualShaderNode::kPerlinNoiseFieldNumber: {
         return std::make_shared<VisualShaderNodePortTypeGeneratorPerlinNoise>(proto_node);
     }
-    case VisualShader::VisualShaderNode::kVoronoiNoiseFieldNumber: {
-        return std::make_shared<VisualShaderNodePortTypeGeneratorVoronoiNoise>(proto_node);
-    }
     case VisualShader::VisualShaderNode::kDotProductFieldNumber: {
         return std::make_shared<VisualShaderNodePortTypeGeneratorDotProduct>(proto_node);
     }
@@ -353,6 +556,54 @@ inline static std::shared_ptr<VisualShaderNodePortTypeGenerator> get_port_type_g
 
         const VisualShaderNodeCompare::VisualShaderNodeCompareType type {compare_type_model->data().toInt()};
         return std::make_shared<VisualShaderNodePortTypeGeneratorCompare>(proto_node, type);
+    }
+    case VisualShader::VisualShaderNode::kColorCorrectFieldNumber: {
+        return std::make_shared<VisualShaderNodePortTypeGeneratorColorCorrect>(proto_node);
+    }
+    case VisualShader::VisualShaderNode::kMath1FieldNumber: {
+        return std::make_shared<VisualShaderNodePortTypeGeneratorMath1>(proto_node);
+    }
+    case VisualShader::VisualShaderNode::kModulusFieldNumber: {
+        return std::make_shared<VisualShaderNodePortTypeGeneratorModulus>(proto_node);
+    }
+    case VisualShader::VisualShaderNode::kCombineFieldNumber: {
+        return std::make_shared<VisualShaderNodePortTypeGeneratorCombine>(proto_node);
+    }
+    case VisualShader::VisualShaderNode::kMaskFieldNumber: {
+        return std::make_shared<VisualShaderNodePortTypeGeneratorMask>(proto_node);
+    }
+    case VisualShader::VisualShaderNode::kBlendFieldNumber: {
+        return std::make_shared<VisualShaderNodePortTypeGeneratorBlend>(proto_node);
+    }
+    case VisualShader::VisualShaderNode::kColorizeFieldNumber: {
+        return std::make_shared<VisualShaderNodePortTypeGeneratorColorize>(proto_node);
+    }
+    case VisualShader::VisualShaderNode::kGradientFieldNumber: {
+        return std::make_shared<VisualShaderNodePortTypeGeneratorGradient>(proto_node);
+    }
+    case VisualShader::VisualShaderNode::kCheckerFieldNumber: {
+        return std::make_shared<VisualShaderNodePortTypeGeneratorChecker>(proto_node);
+    }
+    case VisualShader::VisualShaderNode::kBrickFieldNumber: {
+        return std::make_shared<VisualShaderNodePortTypeGeneratorBrick>(proto_node);
+    }
+    case VisualShader::VisualShaderNode::kTileFieldNumber: {
+        return std::make_shared<VisualShaderNodePortTypeGeneratorTile>(proto_node);
+    }
+    case VisualShader::VisualShaderNode::kFunctionFieldNumber: {
+        return std::make_shared<VisualShaderNodePortTypeGeneratorFunction>(proto_node);
+    }
+    case VisualShader::VisualShaderNode::kCellularFieldNumber: {
+        return std::make_shared<VisualShaderNodePortTypeGeneratorCellular>(proto_node);
+    }
+    case VisualShader::VisualShaderNode::kIlluminateFieldNumber: {
+        return std::make_shared<VisualShaderNodePortTypeGeneratorIlluminate>(proto_node);
+    }
+    case VisualShader::VisualShaderNode::kEmbossFieldNumber: {
+        return std::make_shared<VisualShaderNodePortTypeGeneratorEmboss>(proto_node);
+    }
+    case VisualShader::VisualShaderNode::kNormalMapFieldNumber: {
+        return std::make_shared<VisualShaderNodePortTypeGeneratorNormalMap>(proto_node);
     }
     default:
       WARN_PRINT("Unsupported node type: " + std::to_string(oneof_value_field_number));

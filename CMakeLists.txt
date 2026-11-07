@@ -45,7 +45,7 @@ set(CMAKE_RELWITHDEBINFO_POSTFIX "rd")
 
 set(ENIGMA_ORG_NAME "ENIGMA Development Environment")
 set(SHADER_GEN_PROJECT_NAME "Shader Gen")
-set(SHADER_GEN_PROJECT_VERSION "2.1.0")
+set(SHADER_GEN_PROJECT_VERSION "2.5.0")
 set(SHADER_GEN_PROJECT_DESCRIPTION "Shader Gen is a tool to generate shaders using machine learning.")
 set(SHADER_GEN_EXECUTABLE_NAME "shader-gen")
 set(SHADER_GEN_PROTO_LIBRARY_NAME "${SHADER_GEN_EXECUTABLE_NAME}-proto")
@@ -151,7 +151,7 @@ set(SHADER_GEN_HPP_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/ai-agent/elitism.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/generator/visual_shader_generator.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/generator/visual_shader_node_generators.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/generator/vs_node_noise_generators.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/generator/vs_node_pattern_generators.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/generator/visual_shader_node_port_type_generator.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/generator/utils/utils.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/gui/model/proto_model.hpp
@@ -180,7 +180,7 @@ set(SHADER_GEN_CPP_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/ai-agent/parameters.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/generator/visual_shader_generator.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/generator/visual_shader_node_generators.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/generator/vs_node_noise_generators.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/generator/vs_node_pattern_generators.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/generator/visual_shader_node_port_type_generator.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/gui/model/proto_model.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/gui/model/message_model.cpp

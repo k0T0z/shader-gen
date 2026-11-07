@@ -42,5 +42,5 @@ I personally follow these rules to make the codebase clean and maintainable: [Th
 ## Acknowledgements
 
 > [!NOTE]
-> The way my ``Visual Shader Editor`` and ``Generator`` are written is inspired by [Godot](https://github.com/godotengine/godot) Game Engine. Check [Godot's LICENSE](https://github.com/godotengine/godot/blob/master/LICENSE.txt) for more info.
+> The way my ``Visual Shader Editor`` and ``Generator`` are written is inspired by [Godot](https://github.com/godotengine/godot) Game Engine. Check [Godot's LICENSE](https://github.com/godotengine/godot/blob/master/LICENSE.txt) for more info. Also, check [NeoTextureEdit](https://sourceforge.net/p/neotextureedit/code/ci/master/tree/) as the generator uses most of its textures.
 

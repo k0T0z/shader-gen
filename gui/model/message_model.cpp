@@ -233,7 +233,14 @@ QModelIndex MessageModel::parent([[maybe_unused]] const QModelIndex& child) cons
         If the parent model is a RepeatedMessageModel, then the row should be the index in it.
         While the column will be last_accessed_field_index value. Check last_accessed_field_index
         for more information.
-        
+
+        If last_accessed_field_index is invalid (< 0), then no single field of this row was
+        addressed, so there is no specific cell to point at. In that case the whole repeated
+        field is considered changed, so we report it as a whole instead of a single cell: the
+        repeated model is treated as one column inside its parent message, so the returned index
+        is the repeated model's own index in its parent (row 0, column = the repeated model's
+        field index inside the parent message).
+
         If the parent model is a MessageModel, then the row should be 0 and the column should 
         be the index in it. Same goes for OneofModel.
         
@@ -242,6 +249,9 @@ QModelIndex MessageModel::parent([[maybe_unused]] const QModelIndex& child) cons
         only allowed to have children of type PrimitiveModel.
     */
   if (RepeatedMessageModel * repeated_m{dynamic_cast<RepeatedMessageModel*>(t)}) {
+    if (last_accessed_field_index < 0) {
+      return repeated_m->parent(QModelIndex());
+    }
     return repeated_m->index(m_index_in_parent, last_accessed_field_index, repeated_m->parent(QModelIndex()));
   } else if (MessageModel * message_m{dynamic_cast<MessageModel*>(t)}) {
     return message_m->index(0, m_index_in_parent, message_m->parent(QModelIndex()));

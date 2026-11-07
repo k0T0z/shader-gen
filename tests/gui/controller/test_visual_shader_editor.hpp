@@ -44,6 +44,14 @@ private slots:
     void my_first_test();
     void my_second_test();
 
+    void repro_create_input_select_uv();
+    void repro_add_gradient_stop_in_brick();
+
+    void new_node_cellular_generates_preview();
+    void new_node_illuminate_generates_preview();
+    void new_node_emboss_generates_preview();
+    void new_node_normal_map_generates_preview();
+
 private:
     VisualShaderEditor* editor;
 

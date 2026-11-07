@@ -449,6 +449,22 @@ class VisualShaderGraphicsScene : public QGraphicsScene {
    */
   bool write_default_values_to_node(const int& n_id);
 
+  /**
+   * @brief Seed the default rows of a repeated message field of a node (e.g. a color gradient's stops).
+   *
+   * @note proto3 repeated fields default to empty, so nodes ported from implementations that started
+   *       with a non-empty list (e.g. a default color ramp) would otherwise be created without any row.
+   *       Does nothing when the field already has rows (e.g. nodes loaded from @c model.json).
+   *
+   * @param n_id
+   * @param field_descriptor The descriptor of the repeated message field inside the node.
+   * @param default_rows One @c QVariantMap entry per row, mapping the field number (as a string) of a
+   *        column inside the repeated message to its default value.
+   * @return bool
+   */
+  bool write_default_repeated_field_values_to_node(const int& n_id, const google::protobuf::FieldDescriptor* field_descriptor,
+                                                   const QVariantList& default_rows);
+
   bool delete_node_from_model(const int& n_id);
   bool delete_node_from_scene(const int& n_id, const int& in_port_count, const int& out_port_count);
   bool delete_node(const int& n_id, const int& in_port_count, const int& out_port_count);
@@ -456,6 +472,23 @@ class VisualShaderGraphicsScene : public QGraphicsScene {
 
   bool update_node_in_model(const int& n_id, const int& field_number, const QVariant& value, const int& row_entry = -1);
   bool update_node_field_in_model(const int& n_id, const int& field_number, const QVariant& value);
+
+  /**
+   * @brief Write one value inside a repeated message field of a node.
+   *
+   * @note Addresses the value the same way the graph string does: by the row index inside the
+   *       repeated field and the field number of the column inside the repeated message.
+   *
+   * @param n_id
+   * @param field_number The field number of the repeated field inside the node.
+   * @param row The row index inside the repeated field.
+   * @param sub_field_number The field number of the column inside the repeated message.
+   * @param value
+   * @return bool
+   */
+  bool update_node_repeated_field_in_model(const int& n_id, const int& field_number, const int& row,
+                                           const int& sub_field_number, const QVariant& value);
+
   bool update_node_in_scene(const int& n_id, const int& field_number, const QVariant& value);
   bool update_node_field_in_scene(const int& n_id, const int& field_number, const QVariant& value);
   bool update_node(const int& n_id, const int& field_number, const QVariant& value);
@@ -569,6 +602,10 @@ class VisualShaderGraphicsScene : public QGraphicsScene {
 
   void on_port_type_generator_requested(const int& n_id);
 
+  void on_node_repeated_field_row_add_requested(const int& n_id, const int& field_number);
+  void on_node_repeated_field_row_remove_requested(const int& n_id, const int& field_number, const int& row);
+  void on_node_repeated_field_sort_requested(const int& n_id, const int& field_number, const int& sort_field_number);
+
  private:
   VisualShaderEditor* editor;
 
@@ -591,6 +628,9 @@ class VisualShaderGraphicsScene : public QGraphicsScene {
 
   void remove_item(QGraphicsItem* item);
   bool check_if_connection_out_of_bounds(VisualShaderOutputPortGraphicsObject* from_o_port, VisualShaderInputPortGraphicsObject* to_i_port);
+
+  RepeatedMessageModel* get_node_repeated_field_model(const int& n_id, const int& field_number) const;
+  void refresh_node_repeated_field_widget(const int& n_id, const int& field_number);
 };
 
 /**********************************************************************/
@@ -1248,6 +1288,42 @@ private:
   int field_number;
 };
 
+/**
+    @brief A widget that edits a repeated message field (e.g. a color gradient) as a list of rows.
+
+    @note Each row exposes one editor per column of the repeated message. Every edit is forwarded to
+          the scene as a scalar update addressed by the row index and the column's field number, so
+          that a repeated field is edited exactly like a set of ordinary node parameters. Adding and
+          removing rows, as well as sorting them, is also requested from the scene.
+*/
+class VisualShaderNodeFieldRepeatedMessage : public QWidget {
+  Q_OBJECT
+
+ public:
+  VisualShaderNodeFieldRepeatedMessage(RepeatedMessageModel* repeated_model, const int& sort_field_number,
+                                       const int& n_id, const int& field_number, QWidget* parent = nullptr);
+  ~VisualShaderNodeFieldRepeatedMessage() = default;
+
+  void refresh_from_model();
+
+ Q_SIGNALS:
+  void node_repeated_field_update_requested(const int& n_id, const int& field_number, const int& row,
+                                            const int& sub_field_number, const QVariant& value);
+  void node_repeated_field_row_add_requested(const int& n_id, const int& field_number);
+  void node_repeated_field_row_remove_requested(const int& n_id, const int& field_number, const int& row);
+  void node_repeated_field_sort_requested(const int& n_id, const int& field_number, const int& sort_field_number);
+
+ private:
+  void clear_rows();
+  void build_row(const int& row);
+
+  RepeatedMessageModel* m_repeated_model;
+  int m_sort_field_number;
+  int m_n_id;
+  int m_field_number;
+  QVBoxLayout* m_rows_layout;
+};
+
 #define REGISTER_NODE_FIELD_COMBO_BOX(field_number) \
   if (true) { \
     QVariant initial_value{visual_shader_model->data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), \
@@ -1350,6 +1426,27 @@ private:
     embed_widget_layout->addWidget(node_field_widget); \
     QObject::connect(node_field_widget, QOverload<int>::of(&QSpinBox::valueChanged), this, &VisualShaderGraphicsScene::on_update_renderer_widgets_requested); \
     QObject::connect(node_field_widget, &VisualShaderNodeFieldSpinBox::node_update_requested, this, &VisualShaderGraphicsScene::update_node_field_in_model); \
+    node_field_widgets[n_id][field_number] = node_field_widget; \
+  } else                                                                                                        \
+    ((void)0)
+
+#define REGISTER_NODE_FIELD_REPEATED_MESSAGE(field_number, sort_field_number) \
+  if (true) { \
+    const ProtoModel* node_field_model = visual_shader_model->get_sub_model(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), \
+      FieldPath::RepeatedAt(row_entry), \
+      FieldPath::FieldNumber(node_type_field_number), \
+      FieldPath::FieldNumber(field_number))); \
+    RepeatedMessageModel* repeated_field_model = dynamic_cast<RepeatedMessageModel*>(const_cast<ProtoModel*>(node_field_model)); \
+    CHECK_PARAM_NULLPTR_NON_VOID(repeated_field_model, false, "Repeated field model is not a RepeatedMessageModel."); \
+    VisualShaderNodeFieldRepeatedMessage* node_field_widget = new VisualShaderNodeFieldRepeatedMessage(repeated_field_model, sort_field_number, n_id, field_number, embed_widget); \
+    node_field_widget->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Fixed); \
+    node_field_widget->setContentsMargins(0, 0, 0, 0);  \
+    embed_widget_layout->addWidget(node_field_widget); \
+    QObject::connect(node_field_widget, &VisualShaderNodeFieldRepeatedMessage::node_repeated_field_update_requested, this, &VisualShaderGraphicsScene::update_node_repeated_field_in_model); \
+    QObject::connect(node_field_widget, &VisualShaderNodeFieldRepeatedMessage::node_repeated_field_update_requested, this, &VisualShaderGraphicsScene::on_update_renderer_widgets_requested); \
+    QObject::connect(node_field_widget, &VisualShaderNodeFieldRepeatedMessage::node_repeated_field_row_add_requested, this, &VisualShaderGraphicsScene::on_node_repeated_field_row_add_requested); \
+    QObject::connect(node_field_widget, &VisualShaderNodeFieldRepeatedMessage::node_repeated_field_row_remove_requested, this, &VisualShaderGraphicsScene::on_node_repeated_field_row_remove_requested); \
+    QObject::connect(node_field_widget, &VisualShaderNodeFieldRepeatedMessage::node_repeated_field_sort_requested, this, &VisualShaderGraphicsScene::on_node_repeated_field_sort_requested); \
     node_field_widgets[n_id][field_number] = node_field_widget; \
   } else                                                                                                        \
     ((void)0)

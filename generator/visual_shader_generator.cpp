@@ -29,13 +29,14 @@
 
 #include <algorithm>
 #include <iomanip>
+#include <map>
 #include <memory>
 #include <sstream>
 
 #include "error_macros.hpp"
 #include "generator/graph_string_utils.hpp"
 #include "generator/port_type_generator_factory.hpp"
-#include "generator/vs_node_noise_generators.hpp"
+#include "generator/vs_node_pattern_generators.hpp"
 
 using namespace shadergen_graph_string_utils;
 
@@ -101,6 +102,47 @@ static std::unordered_map<int, std::shared_ptr<IVisualShaderProtoNode>> raw_to_p
   return proto_nodes;
 }
 
+/**
+ * @brief Decode the color gradient stops of a node from its encoded parameters.
+ *
+ * Every value inside the repeated @c ColorGradientStop field is exposed as an ordinary node parameter
+ * keyed by @c "<row>:<column field number>" (e.g. @c "0:1=0.57" for the position of the first stop, or
+ * @c "1:2=0.23" for the red channel of the second stop). Scalar parameters (keys without a @c ':') are
+ * ignored so the gradient can be decoded by scanning the whole parameter list. Rows are returned sorted
+ * by their row index.
+ */
+static std::vector<VisualShaderColorGradientStop> parse_color_gradient(const std::vector<std::string>& parameters) noexcept {
+  std::map<int, VisualShaderColorGradientStop> stops_by_row;
+
+  for (const std::string& parameter : parameters) {
+    const std::vector<std::string> parameter_tokens{split_string(parameter, '=')};
+    const std::vector<std::string> key_tokens{split_string(get_node_entity_parameter_field_number(parameter_tokens), ':')};
+    if (key_tokens.size() < 2) continue;  // Not part of the repeated field.
+
+    const int row{std::stoi(key_tokens.at(0))};
+    const int sub_field{std::stoi(key_tokens.at(1))};
+    const float value{std::stof(get_node_entity_parameter_value(parameter_tokens))};
+
+    // Zero-initialize the stop the first time a row is encountered.
+    VisualShaderColorGradientStop& stop{
+        stops_by_row.emplace(row, VisualShaderColorGradientStop{0.0f, 0.0f, 0.0f, 0.0f, 0.0f}).first->second};
+
+    switch (sub_field) {
+      case 1: stop.position = value; break;
+      case 2: stop.r = value; break;
+      case 3: stop.g = value; break;
+      case 4: stop.b = value; break;
+      case 5: stop.a = value; break;
+      default: break;
+    }
+  }
+
+  std::vector<VisualShaderColorGradientStop> stops;
+  stops.reserve(stops_by_row.size());
+  for (const auto& [row, stop] : stops_by_row) stops.push_back(stop);
+  return stops;
+}
+
 static std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>> raw_to_generators(const std::string& graph) noexcept {
   std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>> generators;
 
@@ -160,7 +202,7 @@ static std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>> raw_t
           const auto parameter_tokens = split_string(parameters.at(0), '=');
           const int field_number = std::stoi(get_node_entity_parameter_field_number(parameter_tokens));
           CONTINUE_IF_TRUE(field_number != VisualShaderNodeBooleanConstant::kValueFieldNumber, "Wrong field number.");
-          const bool value{(bool)std::stoi(get_node_entity_parameter_value(parameter_tokens))};
+          const bool value{get_node_entity_parameter_value_as_bool(parameter_tokens)};
 
           generators[n_id] = std::make_shared<VisualShaderNodeGeneratorBoolConstant>(value);
           break;
@@ -338,26 +380,51 @@ static std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>> raw_t
           break;
       }
       case VisualShader::VisualShaderNode::kPerlinNoiseFieldNumber: {
-          const auto parameter_tokens = split_string(parameters.at(0), '=');
-          const int field_number = std::stoi(get_node_entity_parameter_field_number(parameter_tokens));
-          CONTINUE_IF_TRUE(field_number != VisualShaderNodePerlinNoise::kScaleFieldNumber, "Wrong field number.");
-          const float scale{std::stof(get_node_entity_parameter_value(parameter_tokens))};
+          CONTINUE_IF_TRUE(parameters.size() < 8, "Missing parameters.");
 
-          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorPerlinNoise>(scale);
-          break;
-      }
-      case VisualShader::VisualShaderNode::kVoronoiNoiseFieldNumber: {
           const auto parameter_tokens = split_string(parameters.at(0), '=');
           const int field_number = std::stoi(get_node_entity_parameter_field_number(parameter_tokens));
-          CONTINUE_IF_TRUE(field_number != VisualShaderNodeVoronoiNoise::kCellDensityFieldNumber, "Wrong field number.");
-          const float cell_density{std::stof(get_node_entity_parameter_value(parameter_tokens))};
+          CONTINUE_IF_TRUE(field_number != VisualShaderNodePerlinNoise::kScaleXFieldNumber, "Wrong field number.");
+          const float scale_x{std::stof(get_node_entity_parameter_value(parameter_tokens))};
 
           const auto parameter_tokens1 = split_string(parameters.at(1), '=');
           const int field_number1 = std::stoi(get_node_entity_parameter_field_number(parameter_tokens1));
-          CONTINUE_IF_TRUE(field_number1 != VisualShaderNodeVoronoiNoise::kAngleOffsetFieldNumber, "Wrong field number.");
-          const float angle_offset{std::stof(get_node_entity_parameter_value(parameter_tokens1))};
+          CONTINUE_IF_TRUE(field_number1 != VisualShaderNodePerlinNoise::kScaleYFieldNumber, "Wrong field number.");
+          const float scale_y{std::stof(get_node_entity_parameter_value(parameter_tokens1))};
 
-          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorVoronoiNoise>(angle_offset, cell_density);
+          const auto parameter_tokens2 = split_string(parameters.at(2), '=');
+          const int field_number2 = std::stoi(get_node_entity_parameter_field_number(parameter_tokens2));
+          CONTINUE_IF_TRUE(field_number2 != VisualShaderNodePerlinNoise::kValueScaleFieldNumber, "Wrong field number.");
+          const float value_scale{std::stof(get_node_entity_parameter_value(parameter_tokens2))};
+
+          const auto parameter_tokens3 = split_string(parameters.at(3), '=');
+          const int field_number3 = std::stoi(get_node_entity_parameter_field_number(parameter_tokens3));
+          CONTINUE_IF_TRUE(field_number3 != VisualShaderNodePerlinNoise::kPersistenceFieldNumber, "Wrong field number.");
+          const float persistence{std::stof(get_node_entity_parameter_value(parameter_tokens3))};
+
+          const auto parameter_tokens4 = split_string(parameters.at(4), '=');
+          const int field_number4 = std::stoi(get_node_entity_parameter_field_number(parameter_tokens4));
+          CONTINUE_IF_TRUE(field_number4 != VisualShaderNodePerlinNoise::kStartBandFieldNumber, "Wrong field number.");
+          const int start_band{std::stoi(get_node_entity_parameter_value(parameter_tokens4))};
+
+          const auto parameter_tokens5 = split_string(parameters.at(5), '=');
+          const int field_number5 = std::stoi(get_node_entity_parameter_field_number(parameter_tokens5));
+          CONTINUE_IF_TRUE(field_number5 != VisualShaderNodePerlinNoise::kEndBandFieldNumber, "Wrong field number.");
+          const int end_band{std::stoi(get_node_entity_parameter_value(parameter_tokens5))};
+
+          const auto parameter_tokens6 = split_string(parameters.at(6), '=');
+          const int field_number6 = std::stoi(get_node_entity_parameter_field_number(parameter_tokens6));
+          CONTINUE_IF_TRUE(field_number6 != VisualShaderNodePerlinNoise::kSeedFieldNumber, "Wrong field number.");
+          const int seed{std::stoi(get_node_entity_parameter_value(parameter_tokens6))};
+
+          const auto parameter_tokens7 = split_string(parameters.at(7), '=');
+          const int field_number7 = std::stoi(get_node_entity_parameter_field_number(parameter_tokens7));
+          CONTINUE_IF_TRUE(field_number7 != VisualShaderNodePerlinNoise::kPeriodicFieldNumber, "Wrong field number.");
+          const bool periodic{get_node_entity_parameter_value_as_bool(parameter_tokens7)};
+
+          const std::vector<VisualShaderColorGradientStop> gradient{parse_color_gradient(parameters)};
+
+          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorPerlinNoise>(scale_x, scale_y, value_scale, persistence, start_band, end_band, seed, periodic, gradient);
           break;
       }
       case VisualShader::VisualShaderNode::kDotProductFieldNumber: {
@@ -439,6 +506,378 @@ static std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>> raw_t
           const VisualShaderNodeCompare::VisualShaderNodeCompareCondition cond{std::stoi(get_node_entity_parameter_value(parameter_tokens2))};
 
           generators[n_id] = std::make_shared<VisualShaderNodeGeneratorCompare>(type, func, cond);
+          break;
+      }
+      case VisualShader::VisualShaderNode::kColorCorrectFieldNumber: {
+          const auto parameter_tokens = split_string(parameters.at(0), '=');
+          const int field_number = std::stoi(get_node_entity_parameter_field_number(parameter_tokens));
+          CONTINUE_IF_TRUE(field_number != VisualShaderNodeColorCorrect::kBrightnessFieldNumber, "Wrong field number.");
+          const float brightness{std::stof(get_node_entity_parameter_value(parameter_tokens))};
+
+          const auto parameter_tokens1 = split_string(parameters.at(1), '=');
+          const int field_number1 = std::stoi(get_node_entity_parameter_field_number(parameter_tokens1));
+          CONTINUE_IF_TRUE(field_number1 != VisualShaderNodeColorCorrect::kContrastFieldNumber, "Wrong field number.");
+          const float contrast{std::stof(get_node_entity_parameter_value(parameter_tokens1))};
+
+          const auto parameter_tokens2 = split_string(parameters.at(2), '=');
+          const int field_number2 = std::stoi(get_node_entity_parameter_field_number(parameter_tokens2));
+          CONTINUE_IF_TRUE(field_number2 != VisualShaderNodeColorCorrect::kGammaFieldNumber, "Wrong field number.");
+          const float gamma{std::stof(get_node_entity_parameter_value(parameter_tokens2))};
+
+          const auto parameter_tokens3 = split_string(parameters.at(3), '=');
+          const int field_number3 = std::stoi(get_node_entity_parameter_field_number(parameter_tokens3));
+          CONTINUE_IF_TRUE(field_number3 != VisualShaderNodeColorCorrect::kDesaturateFieldNumber, "Wrong field number.");
+          const float desaturate{std::stof(get_node_entity_parameter_value(parameter_tokens3))};
+
+          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorColorCorrect>(brightness, contrast, gamma, desaturate);
+          break;
+      }
+      case VisualShader::VisualShaderNode::kMath1FieldNumber: {
+          const auto parameter_tokens = split_string(parameters.at(0), '=');
+          const int field_number = std::stoi(get_node_entity_parameter_field_number(parameter_tokens));
+          CONTINUE_IF_TRUE(field_number != VisualShaderNodeMath1::kAFieldNumber, "Wrong field number.");
+          const float a{std::stof(get_node_entity_parameter_value(parameter_tokens))};
+
+          const auto parameter_tokens1 = split_string(parameters.at(1), '=');
+          const int field_number1 = std::stoi(get_node_entity_parameter_field_number(parameter_tokens1));
+          CONTINUE_IF_TRUE(field_number1 != VisualShaderNodeMath1::kFunctionFieldNumber, "Wrong field number.");
+          const VisualShaderNodeMath1::VisualShaderNodeMath1Function function{std::stoi(get_node_entity_parameter_value(parameter_tokens1))};
+
+          const auto parameter_tokens2 = split_string(parameters.at(2), '=');
+          const int field_number2 = std::stoi(get_node_entity_parameter_field_number(parameter_tokens2));
+          CONTINUE_IF_TRUE(field_number2 != VisualShaderNodeMath1::kOnRFieldNumber, "Wrong field number.");
+          const bool on_r{get_node_entity_parameter_value_as_bool(parameter_tokens2)};
+
+          const auto parameter_tokens3 = split_string(parameters.at(3), '=');
+          const int field_number3 = std::stoi(get_node_entity_parameter_field_number(parameter_tokens3));
+          CONTINUE_IF_TRUE(field_number3 != VisualShaderNodeMath1::kOnGFieldNumber, "Wrong field number.");
+          const bool on_g{get_node_entity_parameter_value_as_bool(parameter_tokens3)};
+
+          const auto parameter_tokens4 = split_string(parameters.at(4), '=');
+          const int field_number4 = std::stoi(get_node_entity_parameter_field_number(parameter_tokens4));
+          CONTINUE_IF_TRUE(field_number4 != VisualShaderNodeMath1::kOnBFieldNumber, "Wrong field number.");
+          const bool on_b{get_node_entity_parameter_value_as_bool(parameter_tokens4)};
+
+          const auto parameter_tokens5 = split_string(parameters.at(5), '=');
+          const int field_number5 = std::stoi(get_node_entity_parameter_field_number(parameter_tokens5));
+          CONTINUE_IF_TRUE(field_number5 != VisualShaderNodeMath1::kOnAFieldNumber, "Wrong field number.");
+          const bool on_a{get_node_entity_parameter_value_as_bool(parameter_tokens5)};
+
+          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorMath1>(a, function, on_r, on_g, on_b, on_a);
+          break;
+      }
+      case VisualShader::VisualShaderNode::kModulusFieldNumber: {
+          const auto parameter_tokens = split_string(parameters.at(0), '=');
+          const int field_number = std::stoi(get_node_entity_parameter_field_number(parameter_tokens));
+          CONTINUE_IF_TRUE(field_number != VisualShaderNodeModulus::kModulusFieldNumber, "Wrong field number.");
+          const float modulus{std::stof(get_node_entity_parameter_value(parameter_tokens))};
+
+          const auto parameter_tokens1 = split_string(parameters.at(1), '=');
+          const int field_number1 = std::stoi(get_node_entity_parameter_field_number(parameter_tokens1));
+          CONTINUE_IF_TRUE(field_number1 != VisualShaderNodeModulus::kNormalizeFieldNumber, "Wrong field number.");
+          const bool normalize{get_node_entity_parameter_value_as_bool(parameter_tokens1)};
+
+          const auto parameter_tokens2 = split_string(parameters.at(2), '=');
+          const int field_number2 = std::stoi(get_node_entity_parameter_field_number(parameter_tokens2));
+          CONTINUE_IF_TRUE(field_number2 != VisualShaderNodeModulus::kXBiasFieldNumber, "Wrong field number.");
+          const int x_bias{std::stoi(get_node_entity_parameter_value(parameter_tokens2))};
+
+          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorModulus>(modulus, normalize, x_bias);
+          break;
+      }
+      case VisualShader::VisualShaderNode::kCombineFieldNumber: {
+          const auto parameter_tokens = split_string(parameters.at(0), '=');
+          const int field_number = std::stoi(get_node_entity_parameter_field_number(parameter_tokens));
+          CONTINUE_IF_TRUE(field_number != VisualShaderNodeCombine::kInput1FieldNumber, "Wrong field number.");
+          const VisualShaderNodeCombine::VisualShaderNodeCombineChannel input_1{std::stoi(get_node_entity_parameter_value(parameter_tokens))};
+
+          const auto parameter_tokens1 = split_string(parameters.at(1), '=');
+          const int field_number1 = std::stoi(get_node_entity_parameter_field_number(parameter_tokens1));
+          CONTINUE_IF_TRUE(field_number1 != VisualShaderNodeCombine::kInput2FieldNumber, "Wrong field number.");
+          const VisualShaderNodeCombine::VisualShaderNodeCombineChannel input_2{std::stoi(get_node_entity_parameter_value(parameter_tokens1))};
+
+          const auto parameter_tokens2 = split_string(parameters.at(2), '=');
+          const int field_number2 = std::stoi(get_node_entity_parameter_field_number(parameter_tokens2));
+          CONTINUE_IF_TRUE(field_number2 != VisualShaderNodeCombine::kInput3FieldNumber, "Wrong field number.");
+          const VisualShaderNodeCombine::VisualShaderNodeCombineChannel input_3{std::stoi(get_node_entity_parameter_value(parameter_tokens2))};
+
+          const auto parameter_tokens3 = split_string(parameters.at(3), '=');
+          const int field_number3 = std::stoi(get_node_entity_parameter_field_number(parameter_tokens3));
+          CONTINUE_IF_TRUE(field_number3 != VisualShaderNodeCombine::kInput4FieldNumber, "Wrong field number.");
+          const VisualShaderNodeCombine::VisualShaderNodeCombineChannel input_4{std::stoi(get_node_entity_parameter_value(parameter_tokens3))};
+
+          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorCombine>(input_1, input_2, input_3, input_4);
+          break;
+      }
+      case VisualShader::VisualShaderNode::kMaskFieldNumber: {
+          const auto parameter_tokens = split_string(parameters.at(0), '=');
+          const int field_number = std::stoi(get_node_entity_parameter_field_number(parameter_tokens));
+          CONTINUE_IF_TRUE(field_number != VisualShaderNodeMask::kInvertFieldNumber, "Wrong field number.");
+          const bool invert{get_node_entity_parameter_value_as_bool(parameter_tokens)};
+
+          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorMask>(invert);
+          break;
+      }
+      case VisualShader::VisualShaderNode::kBlendFieldNumber: {
+          const auto parameter_tokens = split_string(parameters.at(0), '=');
+          const int field_number = std::stoi(get_node_entity_parameter_field_number(parameter_tokens));
+          CONTINUE_IF_TRUE(field_number != VisualShaderNodeBlend::kLayerFuncFieldNumber, "Wrong field number.");
+          const VisualShaderNodeBlend::VisualShaderNodeBlendFunction layer_func{std::stoi(get_node_entity_parameter_value(parameter_tokens))};
+
+          const auto parameter_tokens1 = split_string(parameters.at(1), '=');
+          const int field_number1 = std::stoi(get_node_entity_parameter_field_number(parameter_tokens1));
+          CONTINUE_IF_TRUE(field_number1 != VisualShaderNodeBlend::kOpacityFieldNumber, "Wrong field number.");
+          const float opacity{std::stof(get_node_entity_parameter_value(parameter_tokens1))};
+
+          const auto parameter_tokens2 = split_string(parameters.at(2), '=');
+          const int field_number2 = std::stoi(get_node_entity_parameter_field_number(parameter_tokens2));
+          CONTINUE_IF_TRUE(field_number2 != VisualShaderNodeBlend::kInvAlphaFieldNumber, "Wrong field number.");
+          const bool inv_alpha{get_node_entity_parameter_value_as_bool(parameter_tokens2)};
+
+          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorBlend>(layer_func, opacity, inv_alpha);
+          break;
+      }
+      case VisualShader::VisualShaderNode::kColorizeFieldNumber: {
+          // The gradient is the only field of this node, so every (index-keyed) parameter belongs to it.
+          const std::vector<VisualShaderColorGradientStop> gradient{parse_color_gradient(parameters)};
+
+          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorColorize>(gradient);
+          break;
+      }
+      case VisualShader::VisualShaderNode::kGradientFieldNumber: {
+          CONTINUE_IF_TRUE(parameters.size() < 1, "Missing parameters.");
+
+          const auto parameter_tokens = split_string(parameters.at(0), '=');
+          const int field_number = std::stoi(get_node_entity_parameter_field_number(parameter_tokens));
+          CONTINUE_IF_TRUE(field_number != VisualShaderNodeGradient::kGradientTypeFieldNumber, "Wrong field number.");
+          const VisualShaderNodeGradient::VisualShaderNodeGradientType gradient_type{std::stoi(get_node_entity_parameter_value(parameter_tokens))};
+
+          const std::vector<VisualShaderColorGradientStop> gradient{parse_color_gradient(parameters)};
+
+          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorGradient>(gradient_type, gradient);
+          break;
+      }
+      case VisualShader::VisualShaderNode::kCheckerFieldNumber: {
+          CONTINUE_IF_TRUE(parameters.size() < 2, "Missing parameters.");
+
+          const auto parameter_tokens = split_string(parameters.at(0), '=');
+          const int field_number = std::stoi(get_node_entity_parameter_field_number(parameter_tokens));
+          CONTINUE_IF_TRUE(field_number != VisualShaderNodeChecker::kScaleXFieldNumber, "Wrong field number.");
+          const float scale_x{std::stof(get_node_entity_parameter_value(parameter_tokens))};
+
+          const auto parameter_tokens1 = split_string(parameters.at(1), '=');
+          const int field_number1 = std::stoi(get_node_entity_parameter_field_number(parameter_tokens1));
+          CONTINUE_IF_TRUE(field_number1 != VisualShaderNodeChecker::kScaleYFieldNumber, "Wrong field number.");
+          const float scale_y{std::stof(get_node_entity_parameter_value(parameter_tokens1))};
+
+          const std::vector<VisualShaderColorGradientStop> gradient{parse_color_gradient(parameters)};
+
+          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorChecker>(scale_x, scale_y, gradient);
+          break;
+      }
+      case VisualShader::VisualShaderNode::kBrickFieldNumber: {
+          CONTINUE_IF_TRUE(parameters.size() < 8, "Missing parameters.");
+
+          const auto parameter_tokens = split_string(parameters.at(0), '=');
+          const int field_number = std::stoi(get_node_entity_parameter_field_number(parameter_tokens));
+          CONTINUE_IF_TRUE(field_number != VisualShaderNodeBrick::kNumXFieldNumber, "Wrong field number.");
+          const int num_x{std::stoi(get_node_entity_parameter_value(parameter_tokens))};
+
+          const auto parameter_tokens1 = split_string(parameters.at(1), '=');
+          const int field_number1 = std::stoi(get_node_entity_parameter_field_number(parameter_tokens1));
+          CONTINUE_IF_TRUE(field_number1 != VisualShaderNodeBrick::kNumYFieldNumber, "Wrong field number.");
+          const int num_y{std::stoi(get_node_entity_parameter_value(parameter_tokens1))};
+
+          const auto parameter_tokens2 = split_string(parameters.at(2), '=');
+          const int field_number2 = std::stoi(get_node_entity_parameter_field_number(parameter_tokens2));
+          CONTINUE_IF_TRUE(field_number2 != VisualShaderNodeBrick::kShiftFieldNumber, "Wrong field number.");
+          const float shift{std::stof(get_node_entity_parameter_value(parameter_tokens2))};
+
+          const auto parameter_tokens3 = split_string(parameters.at(3), '=');
+          const int field_number3 = std::stoi(get_node_entity_parameter_field_number(parameter_tokens3));
+          CONTINUE_IF_TRUE(field_number3 != VisualShaderNodeBrick::kRandShiftFieldNumber, "Wrong field number.");
+          const float rand_shift{std::stof(get_node_entity_parameter_value(parameter_tokens3))};
+
+          const auto parameter_tokens4 = split_string(parameters.at(4), '=');
+          const int field_number4 = std::stoi(get_node_entity_parameter_field_number(parameter_tokens4));
+          CONTINUE_IF_TRUE(field_number4 != VisualShaderNodeBrick::kGapXFieldNumber, "Wrong field number.");
+          const float gap_x{std::stof(get_node_entity_parameter_value(parameter_tokens4))};
+
+          const auto parameter_tokens5 = split_string(parameters.at(5), '=');
+          const int field_number5 = std::stoi(get_node_entity_parameter_field_number(parameter_tokens5));
+          CONTINUE_IF_TRUE(field_number5 != VisualShaderNodeBrick::kGapYFieldNumber, "Wrong field number.");
+          const float gap_y{std::stof(get_node_entity_parameter_value(parameter_tokens5))};
+
+          const auto parameter_tokens6 = split_string(parameters.at(6), '=');
+          const int field_number6 = std::stoi(get_node_entity_parameter_field_number(parameter_tokens6));
+          CONTINUE_IF_TRUE(field_number6 != VisualShaderNodeBrick::kSmoothFieldNumber, "Wrong field number.");
+          const float smooth{std::stof(get_node_entity_parameter_value(parameter_tokens6))};
+
+          const auto parameter_tokens7 = split_string(parameters.at(7), '=');
+          const int field_number7 = std::stoi(get_node_entity_parameter_field_number(parameter_tokens7));
+          CONTINUE_IF_TRUE(field_number7 != VisualShaderNodeBrick::kRandColorFieldNumber, "Wrong field number.");
+          const bool rand_color{get_node_entity_parameter_value_as_bool(parameter_tokens7)};
+
+          const std::vector<VisualShaderColorGradientStop> gradient{parse_color_gradient(parameters)};
+
+          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorBrick>(num_x, num_y, shift, rand_shift, gap_x, gap_y, smooth, rand_color, gradient);
+          break;
+      }
+      case VisualShader::VisualShaderNode::kTileFieldNumber: {
+          CONTINUE_IF_TRUE(parameters.size() < 3, "Missing parameters.");
+
+          const auto parameter_tokens = split_string(parameters.at(0), '=');
+          const int field_number = std::stoi(get_node_entity_parameter_field_number(parameter_tokens));
+          CONTINUE_IF_TRUE(field_number != VisualShaderNodeTile::kBorderXFieldNumber, "Wrong field number.");
+          const float border_x{std::stof(get_node_entity_parameter_value(parameter_tokens))};
+
+          const auto parameter_tokens1 = split_string(parameters.at(1), '=');
+          const int field_number1 = std::stoi(get_node_entity_parameter_field_number(parameter_tokens1));
+          CONTINUE_IF_TRUE(field_number1 != VisualShaderNodeTile::kBorderYFieldNumber, "Wrong field number.");
+          const float border_y{std::stof(get_node_entity_parameter_value(parameter_tokens1))};
+
+          const auto parameter_tokens2 = split_string(parameters.at(2), '=');
+          const int field_number2 = std::stoi(get_node_entity_parameter_field_number(parameter_tokens2));
+          CONTINUE_IF_TRUE(field_number2 != VisualShaderNodeTile::kSmoothFieldNumber, "Wrong field number.");
+          const float smooth{std::stof(get_node_entity_parameter_value(parameter_tokens2))};
+
+          const std::vector<VisualShaderColorGradientStop> gradient{parse_color_gradient(parameters)};
+
+          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorTile>(border_x, border_y, smooth, gradient);
+          break;
+      }
+      case VisualShader::VisualShaderNode::kFunctionFieldNumber: {
+          CONTINUE_IF_TRUE(parameters.size() < 5, "Missing parameters.");
+
+          const auto parameter_tokens = split_string(parameters.at(0), '=');
+          const int field_number = std::stoi(get_node_entity_parameter_field_number(parameter_tokens));
+          CONTINUE_IF_TRUE(field_number != VisualShaderNodeFunction::kFunctionUFieldNumber, "Wrong field number.");
+          const VisualShaderNodeFunction::VisualShaderNodeFunctionFn function_u{std::stoi(get_node_entity_parameter_value(parameter_tokens))};
+
+          const auto parameter_tokens1 = split_string(parameters.at(1), '=');
+          const int field_number1 = std::stoi(get_node_entity_parameter_field_number(parameter_tokens1));
+          CONTINUE_IF_TRUE(field_number1 != VisualShaderNodeFunction::kFunctionVFieldNumber, "Wrong field number.");
+          const VisualShaderNodeFunction::VisualShaderNodeFunctionFn function_v{std::stoi(get_node_entity_parameter_value(parameter_tokens1))};
+
+          const auto parameter_tokens2 = split_string(parameters.at(2), '=');
+          const int field_number2 = std::stoi(get_node_entity_parameter_field_number(parameter_tokens2));
+          CONTINUE_IF_TRUE(field_number2 != VisualShaderNodeFunction::kCombinerFieldNumber, "Wrong field number.");
+          const VisualShaderNodeFunction::VisualShaderNodeFunctionCombiner combiner{std::stoi(get_node_entity_parameter_value(parameter_tokens2))};
+
+          const auto parameter_tokens3 = split_string(parameters.at(3), '=');
+          const int field_number3 = std::stoi(get_node_entity_parameter_field_number(parameter_tokens3));
+          CONTINUE_IF_TRUE(field_number3 != VisualShaderNodeFunction::kScaleXFieldNumber, "Wrong field number.");
+          const float scale_x{std::stof(get_node_entity_parameter_value(parameter_tokens3))};
+
+          const auto parameter_tokens4 = split_string(parameters.at(4), '=');
+          const int field_number4 = std::stoi(get_node_entity_parameter_field_number(parameter_tokens4));
+          CONTINUE_IF_TRUE(field_number4 != VisualShaderNodeFunction::kScaleYFieldNumber, "Wrong field number.");
+          const float scale_y{std::stof(get_node_entity_parameter_value(parameter_tokens4))};
+
+          const std::vector<VisualShaderColorGradientStop> gradient{parse_color_gradient(parameters)};
+
+          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorFunction>(function_u, function_v, combiner, scale_x, scale_y, gradient);
+          break;
+      }
+      case VisualShader::VisualShaderNode::kCellularFieldNumber: {
+          CONTINUE_IF_TRUE(parameters.size() < 9, "Missing parameters.");
+
+          const auto parameter_tokens = split_string(parameters.at(0), '=');
+          const int field_number = std::stoi(get_node_entity_parameter_field_number(parameter_tokens));
+          CONTINUE_IF_TRUE(field_number != VisualShaderNodeCellular::kCellTypeFieldNumber, "Wrong field number.");
+          const VisualShaderNodeCellular::VisualShaderNodeCellularCellType cell_type{std::stoi(get_node_entity_parameter_value(parameter_tokens))};
+
+          const auto parameter_tokens1 = split_string(parameters.at(1), '=');
+          const int field_number1 = std::stoi(get_node_entity_parameter_field_number(parameter_tokens1));
+          CONTINUE_IF_TRUE(field_number1 != VisualShaderNodeCellular::kDistanceFieldNumber, "Wrong field number.");
+          const VisualShaderNodeCellular::VisualShaderNodeCellularDistance distance{std::stoi(get_node_entity_parameter_value(parameter_tokens1))};
+
+          const auto parameter_tokens2 = split_string(parameters.at(2), '=');
+          const int field_number2 = std::stoi(get_node_entity_parameter_field_number(parameter_tokens2));
+          CONTINUE_IF_TRUE(field_number2 != VisualShaderNodeCellular::kPointGenFieldNumber, "Wrong field number.");
+          const VisualShaderNodeCellular::VisualShaderNodeCellularPointGen point_gen{std::stoi(get_node_entity_parameter_value(parameter_tokens2))};
+
+          const auto parameter_tokens3 = split_string(parameters.at(3), '=');
+          const int field_number3 = std::stoi(get_node_entity_parameter_field_number(parameter_tokens3));
+          CONTINUE_IF_TRUE(field_number3 != VisualShaderNodeCellular::kSeedFieldNumber, "Wrong field number.");
+          const int seed{std::stoi(get_node_entity_parameter_value(parameter_tokens3))};
+
+          const auto parameter_tokens4 = split_string(parameters.at(4), '=');
+          const int field_number4 = std::stoi(get_node_entity_parameter_field_number(parameter_tokens4));
+          CONTINUE_IF_TRUE(field_number4 != VisualShaderNodeCellular::kIntensityFieldNumber, "Wrong field number.");
+          const float intensity{std::stof(get_node_entity_parameter_value(parameter_tokens4))};
+
+          const auto parameter_tokens5 = split_string(parameters.at(5), '=');
+          const int field_number5 = std::stoi(get_node_entity_parameter_field_number(parameter_tokens5));
+          CONTINUE_IF_TRUE(field_number5 != VisualShaderNodeCellular::kJitterFieldNumber, "Wrong field number.");
+          const float jitter{std::stof(get_node_entity_parameter_value(parameter_tokens5))};
+
+          const auto parameter_tokens6 = split_string(parameters.at(6), '=');
+          const int field_number6 = std::stoi(get_node_entity_parameter_field_number(parameter_tokens6));
+          CONTINUE_IF_TRUE(field_number6 != VisualShaderNodeCellular::kNumPointsFieldNumber, "Wrong field number.");
+          const int num_points{std::stoi(get_node_entity_parameter_value(parameter_tokens6))};
+
+          const auto parameter_tokens7 = split_string(parameters.at(7), '=');
+          const int field_number7 = std::stoi(get_node_entity_parameter_field_number(parameter_tokens7));
+          CONTINUE_IF_TRUE(field_number7 != VisualShaderNodeCellular::kRandColorFieldNumber, "Wrong field number.");
+          const bool rand_color{get_node_entity_parameter_value_as_bool(parameter_tokens7)};
+
+          const auto parameter_tokens8 = split_string(parameters.at(8), '=');
+          const int field_number8 = std::stoi(get_node_entity_parameter_field_number(parameter_tokens8));
+          CONTINUE_IF_TRUE(field_number8 != VisualShaderNodeCellular::kPeriodicFieldNumber, "Wrong field number.");
+          const bool periodic{get_node_entity_parameter_value_as_bool(parameter_tokens8)};
+
+          const std::vector<VisualShaderColorGradientStop> gradient{parse_color_gradient(parameters)};
+
+          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorCellular>(cell_type, distance, point_gen, seed, intensity, jitter, num_points, rand_color, periodic, gradient);
+          break;
+      }
+      case VisualShader::VisualShaderNode::kIlluminateFieldNumber: {
+          CONTINUE_IF_TRUE(parameters.size() < 3, "Missing parameters.");
+
+          const auto parameter_tokens = split_string(parameters.at(0), '=');
+          const int field_number = std::stoi(get_node_entity_parameter_field_number(parameter_tokens));
+          CONTINUE_IF_TRUE(field_number != VisualShaderNodeIlluminate::kThetaFieldNumber, "Wrong field number.");
+          const float theta{std::stof(get_node_entity_parameter_value(parameter_tokens))};
+
+          const auto parameter_tokens1 = split_string(parameters.at(1), '=');
+          const int field_number1 = std::stoi(get_node_entity_parameter_field_number(parameter_tokens1));
+          CONTINUE_IF_TRUE(field_number1 != VisualShaderNodeIlluminate::kPhiFieldNumber, "Wrong field number.");
+          const float phi{std::stof(get_node_entity_parameter_value(parameter_tokens1))};
+
+          const auto parameter_tokens2 = split_string(parameters.at(2), '=');
+          const int field_number2 = std::stoi(get_node_entity_parameter_field_number(parameter_tokens2));
+          CONTINUE_IF_TRUE(field_number2 != VisualShaderNodeIlluminate::kShininessFieldNumber, "Wrong field number.");
+          const float shininess{std::stof(get_node_entity_parameter_value(parameter_tokens2))};
+
+          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorIlluminate>(theta, phi, shininess);
+          break;
+      }
+      case VisualShader::VisualShaderNode::kEmbossFieldNumber: {
+          CONTINUE_IF_TRUE(parameters.size() < 2, "Missing parameters.");
+
+          const auto parameter_tokens = split_string(parameters.at(0), '=');
+          const int field_number = std::stoi(get_node_entity_parameter_field_number(parameter_tokens));
+          CONTINUE_IF_TRUE(field_number != VisualShaderNodeEmboss::kStrengthFieldNumber, "Wrong field number.");
+          const float strength{std::stof(get_node_entity_parameter_value(parameter_tokens))};
+
+          const auto parameter_tokens1 = split_string(parameters.at(1), '=');
+          const int field_number1 = std::stoi(get_node_entity_parameter_field_number(parameter_tokens1));
+          CONTINUE_IF_TRUE(field_number1 != VisualShaderNodeEmboss::kAngleFieldNumber, "Wrong field number.");
+          const float angle{std::stof(get_node_entity_parameter_value(parameter_tokens1))};
+
+          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorEmboss>(strength, angle);
+          break;
+      }
+      case VisualShader::VisualShaderNode::kNormalMapFieldNumber: {
+          CONTINUE_IF_TRUE(parameters.size() < 1, "Missing parameters.");
+
+          const auto parameter_tokens = split_string(parameters.at(0), '=');
+          const int field_number = std::stoi(get_node_entity_parameter_field_number(parameter_tokens));
+          CONTINUE_IF_TRUE(field_number != VisualShaderNodeNormalMap::kStrengthFieldNumber, "Wrong field number.");
+          const float strength{std::stof(get_node_entity_parameter_value(parameter_tokens))};
+
+          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorNormalMap>(strength);
           break;
       }
       default:
@@ -590,7 +1029,7 @@ std::string generate_preview_shader(const std::string& graph,
 
   CHECK_CONDITION_TRUE_NON_VOID(!status, std::string(), "Failed to generate shader for node " + std::to_string(node_id) + ".");
 
-  global_code += "out vec4 " + output_var + ";" + std::string("\n");
+  global_code_per_node += "out vec4 " + output_var + ";" + std::string("\n");
 
   std::shared_ptr<VisualShaderNodePortTypeGenerator> port_type_generator{port_type_generators.at(node_id)};
 
@@ -691,9 +1130,9 @@ static inline bool generate_shader_for_each_node(std::string& global_code, std::
     CHECK_CONDITION_TRUE_NON_VOID(!status, false, "Failed to generate shader for node " + std::to_string(from_node) + ".");
   }
 
+  global_code += generator->generate_global(node_id);
   std::string proto_name{proto_node->get_name()};
   if (global_processed.find(proto_name) == global_processed.end()) {
-    global_code += generator->generate_global(node_id);
     global_code_per_node += generator->generate_global_per_node(node_id);
   }
   global_processed.insert(proto_name);

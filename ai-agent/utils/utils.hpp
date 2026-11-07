@@ -71,7 +71,6 @@ inline static std::vector<int> get_node_type_population() {
     node_type_population.emplace_back(VisualShader::VisualShaderNode::kVectorFuncFieldNumber);
     node_type_population.emplace_back(VisualShader::VisualShaderNode::kValueNoiseFieldNumber);
     node_type_population.emplace_back(VisualShader::VisualShaderNode::kPerlinNoiseFieldNumber);
-    node_type_population.emplace_back(VisualShader::VisualShaderNode::kVoronoiNoiseFieldNumber);
     node_type_population.emplace_back(VisualShader::VisualShaderNode::kDotProductFieldNumber);
     node_type_population.emplace_back(VisualShader::VisualShaderNode::kVectorLenFieldNumber);
     node_type_population.emplace_back(VisualShader::VisualShaderNode::kClampFieldNumber);
@@ -86,6 +85,22 @@ inline static std::vector<int> get_node_type_population() {
     node_type_population.emplace_back(VisualShader::VisualShaderNode::kSwitchNodeFieldNumber);
     node_type_population.emplace_back(VisualShader::VisualShaderNode::kIsFieldNumber);
     node_type_population.emplace_back(VisualShader::VisualShaderNode::kCompareFieldNumber);
+    node_type_population.emplace_back(VisualShader::VisualShaderNode::kColorCorrectFieldNumber);
+    node_type_population.emplace_back(VisualShader::VisualShaderNode::kMath1FieldNumber);
+    node_type_population.emplace_back(VisualShader::VisualShaderNode::kModulusFieldNumber);
+    node_type_population.emplace_back(VisualShader::VisualShaderNode::kCombineFieldNumber);
+    node_type_population.emplace_back(VisualShader::VisualShaderNode::kMaskFieldNumber);
+    node_type_population.emplace_back(VisualShader::VisualShaderNode::kBlendFieldNumber);
+    node_type_population.emplace_back(VisualShader::VisualShaderNode::kColorizeFieldNumber);
+    node_type_population.emplace_back(VisualShader::VisualShaderNode::kGradientFieldNumber);
+    node_type_population.emplace_back(VisualShader::VisualShaderNode::kCheckerFieldNumber);
+    node_type_population.emplace_back(VisualShader::VisualShaderNode::kBrickFieldNumber);
+    node_type_population.emplace_back(VisualShader::VisualShaderNode::kTileFieldNumber);
+    node_type_population.emplace_back(VisualShader::VisualShaderNode::kFunctionFieldNumber);
+    node_type_population.emplace_back(VisualShader::VisualShaderNode::kCellularFieldNumber);
+    node_type_population.emplace_back(VisualShader::VisualShaderNode::kIlluminateFieldNumber);
+    node_type_population.emplace_back(VisualShader::VisualShaderNode::kEmbossFieldNumber);
+    node_type_population.emplace_back(VisualShader::VisualShaderNode::kNormalMapFieldNumber);
 
     return node_type_population;
 }
@@ -378,23 +393,181 @@ inline static std::pair<ContinuousRangeVariant, ContinuousRangeVariant> get_rang
         }
         case VisualShader::VisualShaderNode::kPerlinNoiseFieldNumber: {
             switch (field_number) {
-                case VisualShaderNodePerlinNoise::kScaleFieldNumber: {
-                    return std::make_pair(0.0f, 100.0f);
+                case VisualShaderNodePerlinNoise::kScaleXFieldNumber:
+                case VisualShaderNodePerlinNoise::kScaleYFieldNumber: {
+                    return std::make_pair(1.0f, 64.0f);
+                }
+                case VisualShaderNodePerlinNoise::kValueScaleFieldNumber: {
+                    return std::make_pair(0.0f, 10.0f);
+                }
+                case VisualShaderNodePerlinNoise::kPersistenceFieldNumber: {
+                    return std::make_pair(0.0f, 1.0f);
+                }
+                case VisualShaderNodePerlinNoise::kStartBandFieldNumber:
+                case VisualShaderNodePerlinNoise::kEndBandFieldNumber: {
+                    return std::make_pair(1, 16);
+                }
+                case VisualShaderNodePerlinNoise::kSeedFieldNumber: {
+                    return std::make_pair(-1, 100);
                 }
                 default: 
                     break;
             }
             break;
         }
-        case VisualShader::VisualShaderNode::kVoronoiNoiseFieldNumber: {
+        case VisualShader::VisualShaderNode::kColorCorrectFieldNumber: {
             switch (field_number) {
-                case VisualShaderNodeVoronoiNoise::kCellDensityFieldNumber: {
+                case VisualShaderNodeColorCorrect::kBrightnessFieldNumber: {
+                    return std::make_pair(-1.0f, 1.0f);
+                }
+                case VisualShaderNodeColorCorrect::kContrastFieldNumber: {
+                    return std::make_pair(0.0f, 5.0f);
+                }
+                case VisualShaderNodeColorCorrect::kGammaFieldNumber: {
+                    return std::make_pair(1.0f/256.0f, 3.0f);
+                }
+                case VisualShaderNodeColorCorrect::kDesaturateFieldNumber: {
+                    return std::make_pair(0.0f, 1.0f);
+                }
+                default:
+                    break;
+            }
+            break;
+        }
+        case VisualShader::VisualShaderNode::kMath1FieldNumber: {
+            switch (field_number) {
+                case VisualShaderNodeMath1::kAFieldNumber: {
+                    return std::make_pair(-1.0f, 1.0f);
+                }
+                default:
+                    break;
+            }
+            break;
+        }
+        case VisualShader::VisualShaderNode::kModulusFieldNumber: {
+            switch (field_number) {
+                case VisualShaderNodeModulus::kModulusFieldNumber: {
+                    return std::make_pair(0.0f, 1.0f);
+                }
+                default:
+                    break;
+            }
+            break;
+        }
+        case VisualShader::VisualShaderNode::kBlendFieldNumber: {
+            switch (field_number) {
+                case VisualShaderNodeBlend::kOpacityFieldNumber: {
+                    return std::make_pair(0.0f, 1.0f);
+                }
+                default:
+                    break;
+            }
+            break;
+        }
+        case VisualShader::VisualShaderNode::kCheckerFieldNumber: {
+            switch (field_number) {
+                case VisualShaderNodeChecker::kScaleXFieldNumber:
+                case VisualShaderNodeChecker::kScaleYFieldNumber: {
                     return std::make_pair(0.0f, 100.0f);
                 }
-                case VisualShaderNodeVoronoiNoise::kAngleOffsetFieldNumber: {
+                default:
+                    break;
+            }
+            break;
+        }
+        case VisualShader::VisualShaderNode::kBrickFieldNumber: {
+            switch (field_number) {
+                case VisualShaderNodeBrick::kShiftFieldNumber:
+                case VisualShaderNodeBrick::kRandShiftFieldNumber:
+                case VisualShaderNodeBrick::kGapXFieldNumber:
+                case VisualShaderNodeBrick::kGapYFieldNumber:
+                case VisualShaderNodeBrick::kSmoothFieldNumber: {
+                    return std::make_pair(0.0f, 1.0f);
+                }
+                default:
+                    break;
+            }
+            break;
+        }
+        case VisualShader::VisualShaderNode::kTileFieldNumber: {
+            switch (field_number) {
+                case VisualShaderNodeTile::kBorderXFieldNumber:
+                case VisualShaderNodeTile::kBorderYFieldNumber: {
+                    return std::make_pair(0.0f, 0.5f);
+                }
+                case VisualShaderNodeTile::kSmoothFieldNumber: {
+                    return std::make_pair(0.0f, 1.0f);
+                }
+                default:
+                    break;
+            }
+            break;
+        }
+        case VisualShader::VisualShaderNode::kFunctionFieldNumber: {
+            switch (field_number) {
+                case VisualShaderNodeFunction::kScaleXFieldNumber:
+                case VisualShaderNodeFunction::kScaleYFieldNumber: {
+                    return std::make_pair(0.0f, 100.0f);
+                }
+                default:
+                    break;
+            }
+            break;
+        }
+        case VisualShader::VisualShaderNode::kCellularFieldNumber: {
+            switch (field_number) {
+                case VisualShaderNodeCellular::kSeedFieldNumber: {
+                    return std::make_pair(0, 100);
+                }
+                case VisualShaderNodeCellular::kIntensityFieldNumber: {
+                    return std::make_pair(0.0f, 10.0f);
+                }
+                case VisualShaderNodeCellular::kJitterFieldNumber: {
+                    return std::make_pair(0.0f, 1.0f);
+                }
+                case VisualShaderNodeCellular::kNumPointsFieldNumber: {
+                    return std::make_pair(1, 64);
+                }
+                default:
+                    break;
+            }
+            break;
+        }
+        case VisualShader::VisualShaderNode::kIlluminateFieldNumber: {
+            switch (field_number) {
+                case VisualShaderNodeIlluminate::kThetaFieldNumber: {
+                    return std::make_pair(0.0f, 90.0f);
+                }
+                case VisualShaderNodeIlluminate::kPhiFieldNumber: {
                     return std::make_pair(0.0f, 360.0f);
                 }
-                default: 
+                case VisualShaderNodeIlluminate::kShininessFieldNumber: {
+                    return std::make_pair(1.0f, 2000.0f);
+                }
+                default:
+                    break;
+            }
+            break;
+        }
+        case VisualShader::VisualShaderNode::kEmbossFieldNumber: {
+            switch (field_number) {
+                case VisualShaderNodeEmboss::kStrengthFieldNumber: {
+                    return std::make_pair(0.0f, 100.0f);
+                }
+                case VisualShaderNodeEmboss::kAngleFieldNumber: {
+                    return std::make_pair(0.0f, 360.0f);
+                }
+                default:
+                    break;
+            }
+            break;
+        }
+        case VisualShader::VisualShaderNode::kNormalMapFieldNumber: {
+            switch (field_number) {
+                case VisualShaderNodeNormalMap::kStrengthFieldNumber: {
+                    return std::make_pair(0.0f, 100.0f);
+                }
+                default:
                     break;
             }
             break;
@@ -761,6 +934,134 @@ inline static std::vector<int> get_range_for_discrete_field(const int& node_type
                         };
                     }
                 default: 
+                    break;
+            }
+            break;
+        }
+        case VisualShader::VisualShaderNode::kMath1FieldNumber: {
+            switch (field_number) {
+                case VisualShaderNodeMath1::kFunctionFieldNumber: {
+                    return {
+                            VisualShaderNodeMath1::FUNC_ADD, 
+                            VisualShaderNodeMath1::FUNC_MUL, 
+                            VisualShaderNodeMath1::FUNC_SUB,
+                            VisualShaderNodeMath1::FUNC_POW
+                        };
+                    }
+                default: 
+                    break;
+            }
+            break;
+        }
+        case VisualShader::VisualShaderNode::kCombineFieldNumber: {
+            switch (field_number) {
+                case VisualShaderNodeCombine::kInput1FieldNumber:
+                case VisualShaderNodeCombine::kInput2FieldNumber:
+                case VisualShaderNodeCombine::kInput3FieldNumber:
+                case VisualShaderNodeCombine::kInput4FieldNumber: {
+                    return {
+                            VisualShaderNodeCombine::CHANNEL_R, 
+                            VisualShaderNodeCombine::CHANNEL_G, 
+                            VisualShaderNodeCombine::CHANNEL_B,
+                            VisualShaderNodeCombine::CHANNEL_A
+                        };
+                    }
+                default: 
+                    break;
+            }
+            break;
+        }
+        case VisualShader::VisualShaderNode::kBlendFieldNumber: {
+            switch (field_number) {
+                case VisualShaderNodeBlend::kLayerFuncFieldNumber: {
+                    return {
+                            VisualShaderNodeBlend::BLEND_NORMAL, 
+                            VisualShaderNodeBlend::BLEND_MULTIPLY, 
+                            VisualShaderNodeBlend::BLEND_DIVIDE,
+                            VisualShaderNodeBlend::BLEND_SCREEN,
+                            VisualShaderNodeBlend::BLEND_OVERLAY,
+                            VisualShaderNodeBlend::BLEND_DODGE,
+                            VisualShaderNodeBlend::BLEND_BURN,
+                            VisualShaderNodeBlend::BLEND_DIFFERENCE,
+                            VisualShaderNodeBlend::BLEND_ADDITION,
+                            VisualShaderNodeBlend::BLEND_SUBTRACT
+                        };
+                    }
+                default: 
+                    break;
+            }
+            break;
+        }
+        case VisualShader::VisualShaderNode::kGradientFieldNumber: {
+            switch (field_number) {
+                case VisualShaderNodeGradient::kGradientTypeFieldNumber: {
+                    return {
+                            VisualShaderNodeGradient::GRADIENT_LINEAR, 
+                            VisualShaderNodeGradient::GRADIENT_RADIAL, 
+                            VisualShaderNodeGradient::GRADIENT_SQUARE
+                        };
+                    }
+                default: 
+                    break;
+            }
+            break;
+        }
+        case VisualShader::VisualShaderNode::kFunctionFieldNumber: {
+            switch (field_number) {
+                case VisualShaderNodeFunction::kFunctionUFieldNumber:
+                case VisualShaderNodeFunction::kFunctionVFieldNumber: {
+                    return {
+                            VisualShaderNodeFunction::FUNC_SIN, 
+                            VisualShaderNodeFunction::FUNC_SAW, 
+                            VisualShaderNodeFunction::FUNC_SQUARE
+                        };
+                    }
+                case VisualShaderNodeFunction::kCombinerFieldNumber: {
+                    return {
+                            VisualShaderNodeFunction::COMBINE_MULTIPLY, 
+                            VisualShaderNodeFunction::COMBINE_ADD, 
+                            VisualShaderNodeFunction::COMBINE_MAX,
+                            VisualShaderNodeFunction::COMBINE_MIN,
+                            VisualShaderNodeFunction::COMBINE_POW
+                        };
+                    }
+                default: 
+                    break;
+            }
+            break;
+        }
+        case VisualShader::VisualShaderNode::kCellularFieldNumber: {
+            switch (field_number) {
+                case VisualShaderNodeCellular::kCellTypeFieldNumber: {
+                    return {
+                            VisualShaderNodeCellular::CELL_F1,
+                            VisualShaderNodeCellular::CELL_F2,
+                            VisualShaderNodeCellular::CELL_F3,
+                            VisualShaderNodeCellular::CELL_CONSTANT,
+                            VisualShaderNodeCellular::CELL_F2_MINUS_F1
+                        };
+                    }
+                case VisualShaderNodeCellular::kDistanceFieldNumber: {
+                    return {
+                            VisualShaderNodeCellular::DIST_EUCLID,
+                            VisualShaderNodeCellular::DIST_MANHATTAN,
+                            VisualShaderNodeCellular::DIST_MAX,
+                            VisualShaderNodeCellular::DIST_MINKOWSKI
+                        };
+                    }
+                case VisualShaderNodeCellular::kPointGenFieldNumber: {
+                    return {
+                            VisualShaderNodeCellular::POINT_GEN_RANDOM,
+                            VisualShaderNodeCellular::POINT_GEN_REGULAR,
+                            VisualShaderNodeCellular::POINT_GEN_HALTON23,
+                            VisualShaderNodeCellular::POINT_GEN_HAMMERSLEY
+                        };
+                    }
+                case VisualShaderNodeCellular::kRandColorFieldNumber:
+                case VisualShaderNodeCellular::kPeriodicFieldNumber: {
+                    return {0, 1}; // false, true
+                }
+                default:
                     break;
             }
             break;

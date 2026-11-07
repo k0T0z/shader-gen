@@ -167,9 +167,6 @@ inline static std::shared_ptr<VisualShaderNodePortTypeGenerator> get_port_type_g
     case VisualShader::VisualShaderNode::kPerlinNoiseFieldNumber: {
         return std::make_shared<VisualShaderNodePortTypeGeneratorPerlinNoise>(proto_node);
     }
-    case VisualShader::VisualShaderNode::kVoronoiNoiseFieldNumber: {
-        return std::make_shared<VisualShaderNodePortTypeGeneratorVoronoiNoise>(proto_node);
-    }
     case VisualShader::VisualShaderNode::kDotProductFieldNumber: {
         return std::make_shared<VisualShaderNodePortTypeGeneratorDotProduct>(proto_node);
     }
@@ -241,6 +238,54 @@ inline static std::shared_ptr<VisualShaderNodePortTypeGenerator> get_port_type_g
         const VisualShaderNodeCompare::VisualShaderNodeCompareType type{std::stoi(get_node_entity_parameter_value(parameter_tokens))};
 
         return std::make_shared<VisualShaderNodePortTypeGeneratorCompare>(proto_node, type);
+    }
+    case VisualShader::VisualShaderNode::kColorCorrectFieldNumber: {
+        return std::make_shared<VisualShaderNodePortTypeGeneratorColorCorrect>(proto_node);
+    }
+    case VisualShader::VisualShaderNode::kMath1FieldNumber: {
+        return std::make_shared<VisualShaderNodePortTypeGeneratorMath1>(proto_node);
+    }
+    case VisualShader::VisualShaderNode::kModulusFieldNumber: {
+        return std::make_shared<VisualShaderNodePortTypeGeneratorModulus>(proto_node);
+    }
+    case VisualShader::VisualShaderNode::kCombineFieldNumber: {
+        return std::make_shared<VisualShaderNodePortTypeGeneratorCombine>(proto_node);
+    }
+    case VisualShader::VisualShaderNode::kMaskFieldNumber: {
+        return std::make_shared<VisualShaderNodePortTypeGeneratorMask>(proto_node);
+    }
+    case VisualShader::VisualShaderNode::kBlendFieldNumber: {
+        return std::make_shared<VisualShaderNodePortTypeGeneratorBlend>(proto_node);
+    }
+    case VisualShader::VisualShaderNode::kColorizeFieldNumber: {
+        return std::make_shared<VisualShaderNodePortTypeGeneratorColorize>(proto_node);
+    }
+    case VisualShader::VisualShaderNode::kGradientFieldNumber: {
+        return std::make_shared<VisualShaderNodePortTypeGeneratorGradient>(proto_node);
+    }
+    case VisualShader::VisualShaderNode::kCheckerFieldNumber: {
+        return std::make_shared<VisualShaderNodePortTypeGeneratorChecker>(proto_node);
+    }
+    case VisualShader::VisualShaderNode::kBrickFieldNumber: {
+        return std::make_shared<VisualShaderNodePortTypeGeneratorBrick>(proto_node);
+    }
+    case VisualShader::VisualShaderNode::kTileFieldNumber: {
+        return std::make_shared<VisualShaderNodePortTypeGeneratorTile>(proto_node);
+    }
+    case VisualShader::VisualShaderNode::kFunctionFieldNumber: {
+        return std::make_shared<VisualShaderNodePortTypeGeneratorFunction>(proto_node);
+    }
+    case VisualShader::VisualShaderNode::kCellularFieldNumber: {
+        return std::make_shared<VisualShaderNodePortTypeGeneratorCellular>(proto_node);
+    }
+    case VisualShader::VisualShaderNode::kIlluminateFieldNumber: {
+        return std::make_shared<VisualShaderNodePortTypeGeneratorIlluminate>(proto_node);
+    }
+    case VisualShader::VisualShaderNode::kEmbossFieldNumber: {
+        return std::make_shared<VisualShaderNodePortTypeGeneratorEmboss>(proto_node);
+    }
+    case VisualShader::VisualShaderNode::kNormalMapFieldNumber: {
+        return std::make_shared<VisualShaderNodePortTypeGeneratorNormalMap>(proto_node);
     }
     default:
       WARN_PRINT("Unsupported node type: " + std::to_string(oneof_value_field_number));

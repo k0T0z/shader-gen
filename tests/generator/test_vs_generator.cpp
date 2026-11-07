@@ -31,7 +31,7 @@
 
 #include "generator/visual_shader_generator.hpp"
 #include "generator/visual_shader_node_generators.hpp"
-#include "generator/vs_node_noise_generators.hpp"
+#include "generator/vs_node_pattern_generators.hpp"
 #include "gui/model/schema/visual_shader_nodes.pb.h"
 #include "gui/controller/vs_proto_node.hpp"
 
@@ -271,4 +271,29 @@ TEST(VisualShaderGeneratorTest, TestParameterWithoutValueFallsBackToDefault) {
   std::string generated_code;
   ASSERT_NO_THROW(generated_code = shadergen_visual_shader_generator::generate_preview_shader(graph, 2, 0));
   ASSERT_FALSE(generated_code.empty());
+}
+
+// Regression test: a repeated ColorGradientStop field is encoded as one parameter per value, keyed by
+// "<row>:<column field number>" (e.g. "0:1=0.0" for the position of the first stop). The generator must
+// decode these parameters back into an ordered list of stops.
+TEST(VisualShaderGeneratorTest, TestIndexKeyedColorGradientRamp) {
+  const std::string graph{
+      "0;0;3,"                          // Output (oneof=3): id=0, no params
+      "0;1;8;1=0.5;2=0.5;3=0.5;4=1.0,"  // ColorConstant (oneof=8): id=1, gray
+      // Colorize (oneof=43): id=2, two stops: (pos 0 -> black) and (pos 1 -> white)
+      "0;2;43;0:1=0.0;0:2=0.0;0:3=0.0;0:4=0.0;0:5=1.0;1:1=1.0;1:2=1.0;1:3=1.0;1:4=1.0;1:5=1.0,"
+      "1;0;1;0;2;0,"  // color constant(1) output 0 -> colorize(2) input 0
+      "1;1;2;0;0;0"   // colorize(2) output 0 -> output(0) input 0
+  };
+
+  std::string generated_code;
+  ASSERT_TRUE(shadergen_visual_shader_generator::generate_shader(graph, generated_code));
+
+  // The stops must be decoded in row order: black at position 0 first, then white at position 1.
+  ASSERT_NE(generated_code.find("vec4 colorize_out_n2 = vec4(0.000000, 0.000000, 0.000000, 1.000000);"),
+            std::string::npos);
+  ASSERT_NE(generated_code.find("if (colorize_pos_n2 >= 1.000000) {"), std::string::npos);
+  ASSERT_NE(generated_code.find("mix(vec4(0.000000, 0.000000, 0.000000, 1.000000), "
+                                "vec4(1.000000, 1.000000, 1.000000, 1.000000), colorize_interp_n2_0)"),
+            std::string::npos);
 }
