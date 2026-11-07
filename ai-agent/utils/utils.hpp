@@ -300,7 +300,7 @@ inline static T random_int_exclude_first_include_second(const T& a, const T& b) 
  * @return std::pair<int, int> 
  */
 using ContinuousRangeVariant = std::variant<int, float>;
-inline static std::pair<ContinuousRangeVariant, ContinuousRangeVariant> get_range_for_continuous_field(const int& node_type, const int& field_number) {
+inline static std::pair<ContinuousRangeVariant, ContinuousRangeVariant> get_range_for_continuous_field(const int& node_type, const int& field_number, const int& sub_field = -1) {
     switch (node_type) {
         case VisualShader::VisualShaderNode::kFloatConstantFieldNumber: {
             switch (field_number) {
@@ -410,7 +410,63 @@ inline static std::pair<ContinuousRangeVariant, ContinuousRangeVariant> get_rang
                 case VisualShaderNodePerlinNoise::kSeedFieldNumber: {
                     return std::make_pair(-1, 100);
                 }
+                case VisualShaderNodePerlinNoise::kGradientFieldNumber: {
+                    switch (sub_field) {
+                        case ColorGradientStop::kPositionFieldNumber:
+                        case ColorGradientStop::kRFieldNumber:
+                        case ColorGradientStop::kGFieldNumber:
+                        case ColorGradientStop::kBFieldNumber:
+                        case ColorGradientStop::kAFieldNumber: {
+                            return std::make_pair(0.0f, 1.0f);
+                        }
+                        default:
+                            break;
+                    }
+                    break;
+                }
                 default: 
+                    break;
+            }
+            break;
+        }
+        case VisualShader::VisualShaderNode::kColorizeFieldNumber: {
+            switch (field_number) {
+                case VisualShaderNodeColorize::kGradientFieldNumber: {
+                    switch (sub_field) {
+                        case ColorGradientStop::kPositionFieldNumber:
+                        case ColorGradientStop::kRFieldNumber:
+                        case ColorGradientStop::kGFieldNumber:
+                        case ColorGradientStop::kBFieldNumber:
+                        case ColorGradientStop::kAFieldNumber: {
+                            return std::make_pair(0.0f, 1.0f);
+                        }
+                        default:
+                            break;
+                    }
+                    break;
+                }
+                default:
+                    break;
+            }
+            break;
+        }
+        case VisualShader::VisualShaderNode::kGradientFieldNumber: {
+            switch (field_number) {
+                case VisualShaderNodeGradient::kGradientFieldNumber: {
+                    switch (sub_field) {
+                        case ColorGradientStop::kPositionFieldNumber:
+                        case ColorGradientStop::kRFieldNumber:
+                        case ColorGradientStop::kGFieldNumber:
+                        case ColorGradientStop::kBFieldNumber:
+                        case ColorGradientStop::kAFieldNumber: {
+                            return std::make_pair(0.0f, 1.0f);
+                        }
+                        default:
+                            break;
+                    }
+                    break;
+                }
+                default:
                     break;
             }
             break;
@@ -470,6 +526,20 @@ inline static std::pair<ContinuousRangeVariant, ContinuousRangeVariant> get_rang
                 case VisualShaderNodeChecker::kScaleYFieldNumber: {
                     return std::make_pair(0.0f, 100.0f);
                 }
+                case VisualShaderNodeChecker::kGradientFieldNumber: {
+                    switch (sub_field) {
+                        case ColorGradientStop::kPositionFieldNumber:
+                        case ColorGradientStop::kRFieldNumber:
+                        case ColorGradientStop::kGFieldNumber:
+                        case ColorGradientStop::kBFieldNumber:
+                        case ColorGradientStop::kAFieldNumber: {
+                            return std::make_pair(0.0f, 1.0f);
+                        }
+                        default:
+                            break;
+                    }
+                    break;
+                }
                 default:
                     break;
             }
@@ -477,12 +547,30 @@ inline static std::pair<ContinuousRangeVariant, ContinuousRangeVariant> get_rang
         }
         case VisualShader::VisualShaderNode::kBrickFieldNumber: {
             switch (field_number) {
+                case VisualShaderNodeBrick::kNumXFieldNumber:
+                case VisualShaderNodeBrick::kNumYFieldNumber: {
+                    return std::make_pair(1, 32);
+                }
                 case VisualShaderNodeBrick::kShiftFieldNumber:
                 case VisualShaderNodeBrick::kRandShiftFieldNumber:
                 case VisualShaderNodeBrick::kGapXFieldNumber:
                 case VisualShaderNodeBrick::kGapYFieldNumber:
                 case VisualShaderNodeBrick::kSmoothFieldNumber: {
                     return std::make_pair(0.0f, 1.0f);
+                }
+                case VisualShaderNodeBrick::kGradientFieldNumber: {
+                    switch (sub_field) {
+                        case ColorGradientStop::kPositionFieldNumber:
+                        case ColorGradientStop::kRFieldNumber:
+                        case ColorGradientStop::kGFieldNumber:
+                        case ColorGradientStop::kBFieldNumber:
+                        case ColorGradientStop::kAFieldNumber: {
+                            return std::make_pair(0.0f, 1.0f);
+                        }
+                        default:
+                            break;
+                    }
+                    break;
                 }
                 default:
                     break;
@@ -498,6 +586,20 @@ inline static std::pair<ContinuousRangeVariant, ContinuousRangeVariant> get_rang
                 case VisualShaderNodeTile::kSmoothFieldNumber: {
                     return std::make_pair(0.0f, 1.0f);
                 }
+                case VisualShaderNodeTile::kGradientFieldNumber: {
+                    switch (sub_field) {
+                        case ColorGradientStop::kPositionFieldNumber:
+                        case ColorGradientStop::kRFieldNumber:
+                        case ColorGradientStop::kGFieldNumber:
+                        case ColorGradientStop::kBFieldNumber:
+                        case ColorGradientStop::kAFieldNumber: {
+                            return std::make_pair(0.0f, 1.0f);
+                        }
+                        default:
+                            break;
+                    }
+                    break;
+                }
                 default:
                     break;
             }
@@ -508,6 +610,20 @@ inline static std::pair<ContinuousRangeVariant, ContinuousRangeVariant> get_rang
                 case VisualShaderNodeFunction::kScaleXFieldNumber:
                 case VisualShaderNodeFunction::kScaleYFieldNumber: {
                     return std::make_pair(0.0f, 100.0f);
+                }
+                case VisualShaderNodeFunction::kGradientFieldNumber: {
+                    switch (sub_field) {
+                        case ColorGradientStop::kPositionFieldNumber:
+                        case ColorGradientStop::kRFieldNumber:
+                        case ColorGradientStop::kGFieldNumber:
+                        case ColorGradientStop::kBFieldNumber:
+                        case ColorGradientStop::kAFieldNumber: {
+                            return std::make_pair(0.0f, 1.0f);
+                        }
+                        default:
+                            break;
+                    }
+                    break;
                 }
                 default:
                     break;
@@ -527,6 +643,20 @@ inline static std::pair<ContinuousRangeVariant, ContinuousRangeVariant> get_rang
                 }
                 case VisualShaderNodeCellular::kNumPointsFieldNumber: {
                     return std::make_pair(1, 64);
+                }
+                case VisualShaderNodeCellular::kGradientFieldNumber: {
+                    switch (sub_field) {
+                        case ColorGradientStop::kPositionFieldNumber:
+                        case ColorGradientStop::kRFieldNumber:
+                        case ColorGradientStop::kGFieldNumber:
+                        case ColorGradientStop::kBFieldNumber:
+                        case ColorGradientStop::kAFieldNumber: {
+                            return std::make_pair(0.0f, 1.0f);
+                        }
+                        default:
+                            break;
+                    }
+                    break;
                 }
                 default:
                     break;
@@ -973,6 +1103,9 @@ inline static std::vector<int> get_range_for_discrete_field(const int& node_type
         }
         case VisualShader::VisualShaderNode::kBlendFieldNumber: {
             switch (field_number) {
+                case VisualShaderNodeBlend::kInvAlphaFieldNumber: {
+                    return {0, 1}; // false, true
+                }
                 case VisualShaderNodeBlend::kLayerFuncFieldNumber: {
                     return {
                             VisualShaderNodeBlend::BLEND_NORMAL, 
@@ -1066,17 +1199,79 @@ inline static std::vector<int> get_range_for_discrete_field(const int& node_type
             }
             break;
         }
+        case VisualShader::VisualShaderNode::kPerlinNoiseFieldNumber: {
+            switch (field_number) {
+                case VisualShaderNodePerlinNoise::kPeriodicFieldNumber: {
+                    return {0, 1}; // false, true
+                }
+                default:
+                    break;
+            }
+            break;
+        }
+        case VisualShader::VisualShaderNode::kBrickFieldNumber: {
+            switch (field_number) {
+                case VisualShaderNodeBrick::kRandColorFieldNumber: {
+                    return {0, 1}; // false, true
+                }
+                default:
+                    break;
+            }
+            break;
+        }
     }
 
     return {};
 }
 
 using DiscreteContinuousRangeVariant = std::variant<std::vector<int>, std::pair<ContinuousRangeVariant, ContinuousRangeVariant>>;
-inline static DiscreteContinuousRangeVariant get_range_for_field(const int& node_type, const int& field_number) {
+inline static DiscreteContinuousRangeVariant get_range_for_field(const int& node_type, const int& field_number, const int& sub_field = -1) {
     const std::vector<int> discrete_range{get_range_for_discrete_field(node_type, field_number)};
     SILENT_CHECK_CONDITION_TRUE_NON_VOID(!discrete_range.empty(), discrete_range);
 
-    return get_range_for_continuous_field(node_type, field_number);
+    return get_range_for_continuous_field(node_type, field_number, sub_field);
+}
+
+/**
+ * @brief Get the field number of the repeated @c ColorGradientStop field of a node type.
+ *
+ * @note Repeated fields are encoded as @c "<row>:<column>" parameters (e.g. @c "0:1=0.0"), so the
+ *       column number alone cannot identify the field. This resolves the node's gradient field
+ *       number so callers can pass it together with the column number to the range lookups.
+ *
+ * @return The gradient field number, or @c -1 if the node type has no repeated @c ColorGradientStop.
+ */
+inline static int get_color_gradient_field_number(const int& node_type) {
+    switch (node_type) {
+        case VisualShader::VisualShaderNode::kPerlinNoiseFieldNumber: {
+            return VisualShaderNodePerlinNoise::kGradientFieldNumber;
+        }
+        case VisualShader::VisualShaderNode::kColorizeFieldNumber: {
+            return VisualShaderNodeColorize::kGradientFieldNumber;
+        }
+        case VisualShader::VisualShaderNode::kGradientFieldNumber: {
+            return VisualShaderNodeGradient::kGradientFieldNumber;
+        }
+        case VisualShader::VisualShaderNode::kCheckerFieldNumber: {
+            return VisualShaderNodeChecker::kGradientFieldNumber;
+        }
+        case VisualShader::VisualShaderNode::kBrickFieldNumber: {
+            return VisualShaderNodeBrick::kGradientFieldNumber;
+        }
+        case VisualShader::VisualShaderNode::kTileFieldNumber: {
+            return VisualShaderNodeTile::kGradientFieldNumber;
+        }
+        case VisualShader::VisualShaderNode::kFunctionFieldNumber: {
+            return VisualShaderNodeFunction::kGradientFieldNumber;
+        }
+        case VisualShader::VisualShaderNode::kCellularFieldNumber: {
+            return VisualShaderNodeCellular::kGradientFieldNumber;
+        }
+        default:
+            break;
+    }
+
+    return -1;
 }
 }  // namespace ai_agent_utils
 

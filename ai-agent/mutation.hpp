@@ -76,27 +76,42 @@ inline static std::string mutate(
                         continue;
                     }
 
-                    const std::string parameter{parameters.at(i)}; // Format: field_number=value
+                    const std::string parameter{parameters.at(i)}; // Format: <field_number>=value or <row>:<column>=value
                     const std::vector<std::string> parameter_tokens{ai_agent_utils::split_string(parameter, '=')};
-                    const int field_number = std::stoi(ai_agent_utils::get_node_entity_parameter_field_number(parameter_tokens));
-                    const ai_agent_utils::DiscreteContinuousRangeVariant range{ai_agent_utils::get_range_for_field(oneof_value_field_number, field_number)};
+                    const std::string parameter_key{ai_agent_utils::get_node_entity_parameter_field_number(parameter_tokens)};
+
+                    // A repeated field (e.g. the color gradient) is encoded as "<row>:<column>" parameters,
+                    // where the row is a data index rather than a field number. Calling std::stoi on such a
+                    // key would silently drop the ":<column>" part, so instead we resolve the repeated
+                    // field's own number and pass the column as the sub-field.
+                    const std::vector<std::string> key_tokens{ai_agent_utils::split_string(parameter_key, ':')};
+                    int field_number{-1};
+                    int sub_field{-1};
+                    if (key_tokens.size() > 1) {
+                        field_number = ai_agent_utils::get_color_gradient_field_number(oneof_value_field_number);
+                        sub_field = std::stoi(key_tokens.at(1));
+                    } else {
+                        field_number = std::stoi(parameter_key);
+                    }
+
+                    const ai_agent_utils::DiscreteContinuousRangeVariant range{ai_agent_utils::get_range_for_field(oneof_value_field_number, field_number, sub_field)};
                     std::string new_parameter;
                     if (std::holds_alternative<std::vector<int>>(range)) {
                         const std::vector<int> discrete_range{std::get<std::vector<int>>(range)};
                         const int random_index{ai_agent_utils::random_int_inclusive<int>(0, (int)discrete_range.size() - 1)};
-                        new_parameter = ai_agent_utils::join_string({std::to_string(field_number), std::to_string(discrete_range.at(random_index))}, '=');
+                        new_parameter = ai_agent_utils::join_string({parameter_key, std::to_string(discrete_range.at(random_index))}, '=');
                     } else if (std::holds_alternative<std::pair<ai_agent_utils::ContinuousRangeVariant, ai_agent_utils::ContinuousRangeVariant>>(range)) {
                         const std::pair<ai_agent_utils::ContinuousRangeVariant, ai_agent_utils::ContinuousRangeVariant> continuous_range{std::get<std::pair<ai_agent_utils::ContinuousRangeVariant, ai_agent_utils::ContinuousRangeVariant>>(range)};
                         if (std::holds_alternative<int>(continuous_range.first) && std::holds_alternative<int>(continuous_range.second)) {
                             const int lower_bound{std::get<int>(continuous_range.first)};
                             const int upper_bound{std::get<int>(continuous_range.second)};
                             const float random_value{ai_agent_utils::random_real_inclusive<float>(lower_bound, upper_bound)};
-                            new_parameter = ai_agent_utils::join_string({std::to_string(field_number), std::to_string(random_value)}, '=');
+                            new_parameter = ai_agent_utils::join_string({parameter_key, std::to_string(random_value)}, '=');
                         } else if (std::holds_alternative<float>(continuous_range.first) && std::holds_alternative<float>(continuous_range.second)) {
                             const float lower_bound{std::get<float>(continuous_range.first)};
                             const float upper_bound{std::get<float>(continuous_range.second)};
                             const float random_value{ai_agent_utils::random_real_inclusive<float>(lower_bound, upper_bound)};
-                            new_parameter = ai_agent_utils::join_string({std::to_string(field_number), std::to_string(random_value)}, '=');
+                            new_parameter = ai_agent_utils::join_string({parameter_key, std::to_string(random_value)}, '=');
                         }
                     }
                     new_parameters.at(i) = new_parameter;
