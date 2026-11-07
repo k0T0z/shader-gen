@@ -793,3 +793,33 @@ TEST(VisualShaderNodeGeneratorTest, TestVisualShaderNodeGeneratorBrickGenerateCo
       "\tb = pattern_out_n0;\n"};
   ASSERT_EQ(code, expected_code);
 }
+
+TEST(VisualShaderNodeGeneratorTest, TestVisualShaderNodeGeneratorCellularGenerateGlobal) {
+  VisualShaderNodeGeneratorCellular cellular_generator{
+      VisualShaderNodeCellular::CELL_F1, VisualShaderNodeCellular::DIST_EUCLID,
+      VisualShaderNodeCellular::POINT_GEN_RANDOM, 0, 1.0f, 0.0f, 2, false, false,
+      std::vector<VisualShaderColorGradientStop>{}};
+  const std::string code{cellular_generator.generate_global(0)};
+
+  // The feature point tables are hoisted to global scope; two points and no periodic replication.
+  EXPECT_NE(code.find("const vec2 cell_points_n0[2] = vec2[2]("), std::string::npos);
+  EXPECT_NE(code.find("const int cell_idx_n0[2] = int[2]("), std::string::npos);
+  EXPECT_NE(code.find("const float cell_colors_n0[2] = float[2]("), std::string::npos);
+}
+
+TEST(VisualShaderNodeGeneratorTest, TestVisualShaderNodeGeneratorCellularGenerateCode) {
+  VisualShaderNodeGeneratorCellular cellular_generator{
+      VisualShaderNodeCellular::CELL_F1, VisualShaderNodeCellular::DIST_EUCLID,
+      VisualShaderNodeCellular::POINT_GEN_RANDOM, 0, 1.0f, 0.0f, 2, false, true,
+      std::vector<VisualShaderColorGradientStop>{}};
+  std::vector<std::string> input_vars = {"a"};
+  std::vector<std::string> output_vars = {"b"};
+  const std::string code{cellular_generator.generate_code(0, input_vars, output_vars)};
+
+  // The tables now live at global scope, so the function body only references them.
+  EXPECT_EQ(code.find("const vec2 cell_points_n0["), std::string::npos);
+  EXPECT_NE(code.find("cell_points_n0[i].x"), std::string::npos);
+  EXPECT_NE(code.find("cell_idx_n0[i]"), std::string::npos);
+  // Two points with periodic replication expand to eight feature points.
+  EXPECT_NE(code.find("for (int i = 0; i < 8; i++)"), std::string::npos);
+}
