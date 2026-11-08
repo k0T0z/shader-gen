@@ -281,7 +281,7 @@ TEST(VisualShaderGeneratorTest, TestIndexKeyedColorGradientRamp) {
       "0;0;3,"                          // Output (oneof=3): id=0, no params
       "0;1;8;1=0.5;2=0.5;3=0.5;4=1.0,"  // ColorConstant (oneof=8): id=1, gray
       // Colorize (oneof=43): id=2, two stops: (pos 0 -> black) and (pos 1 -> white)
-      "0;2;43;1:0:1=0.0;1:0:2=0.0;1:0:3=0.0;1:0:4=0.0;1:0:5=1.0;1:1:1=1.0;1:1:2=1.0;1:1:3=1.0;1:1:4=1.0;1:1:5=1.0,"
+      "0;2;43;1:0:1=0.0;1:0:2=0.0;1:0:3=0.0;1:0:4=0.0;1:0:5=255.0;1:1:1=1.0;1:1:2=255.0;1:1:3=255.0;1:1:4=255.0;1:1:5=255.0,"
       "1;0;1;0;2;0,"  // color constant(1) output 0 -> colorize(2) input 0
       "1;1;2;0;0;0"   // colorize(2) output 0 -> output(0) input 0
   };
@@ -290,10 +290,10 @@ TEST(VisualShaderGeneratorTest, TestIndexKeyedColorGradientRamp) {
   ASSERT_TRUE(shadergen_visual_shader_generator::generate_shader(graph, generated_code));
 
   // The stops must be decoded in row order: black at position 0 first, then white at position 1.
-  ASSERT_NE(generated_code.find("vec4 colorize_out_n2 = vec4(0.000000, 0.000000, 0.000000, 1.000000);"),
+  ASSERT_NE(generated_code.find("vec4 colorize_out_n2 = vec4(0.000000, 0.000000, 0.000000, 255.000000) / 255.000000;"),
             std::string::npos);
   ASSERT_NE(generated_code.find("if (colorize_pos_n2 >= 1.000000) {"), std::string::npos);
-  ASSERT_NE(generated_code.find("mix(vec4(0.000000, 0.000000, 0.000000, 1.000000), "
-                                "vec4(1.000000, 1.000000, 1.000000, 1.000000), colorize_interp_n2_0)"),
+  ASSERT_NE(generated_code.find("mix(vec4(0.000000, 0.000000, 0.000000, 255.000000) / 255.000000, "
+                                "vec4(255.000000, 255.000000, 255.000000, 255.000000) / 255.000000, colorize_interp_n2_0)"),
             std::string::npos);
 }

@@ -247,13 +247,13 @@ void VisualShaderEditorTest::new_node_cellular_generates_preview()
         cellular->set_periodic(true);
         ColorGradientStop* stop0 = cellular->add_gradient();
         stop0->set_position(0.0f);
-        stop0->set_a(1.0f);
+        stop0->set_a(255.0f);
         ColorGradientStop* stop1 = cellular->add_gradient();
         stop1->set_position(1.0f);
-        stop1->set_r(1.0f);
-        stop1->set_g(1.0f);
-        stop1->set_b(1.0f);
-        stop1->set_a(1.0f);
+        stop1->set_r(255.0f);
+        stop1->set_g(255.0f);
+        stop1->set_b(255.0f);
+        stop1->set_a(255.0f);
     }
     {
         VisualShader::VisualShaderNode* node = visual_shader.add_nodes();

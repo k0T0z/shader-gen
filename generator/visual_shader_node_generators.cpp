@@ -697,17 +697,19 @@ std::string VisualShaderNodeGeneratorColorize::generate_code(
     return oss.str();
   };
 
+  // Color channels are stored on the same 0-255 scale as VisualShaderNodeColorConstant, so they are
+  // divided by 255 here to emit a normalized vec4 (matching the ColorConstant codegen).
   const auto to_glsl_color = [&to_glsl_float](const VisualShaderColorGradientStop& stop) -> std::string {
     return "vec4(" + to_glsl_float(stop.r) + ", " + to_glsl_float(stop.g) + ", " + to_glsl_float(stop.b) + ", " +
-           to_glsl_float(stop.a) + ")";
+           to_glsl_float(stop.a) + ") / " + to_glsl_float(255.0f);
   };
 
   // Fall back to the default color gradient when no stops are provided so that
   // the generated ramp is always well-formed.
   std::vector<VisualShaderColorGradientStop> stops{gradient};
   if (stops.empty()) {
-    stops.push_back(VisualShaderColorGradientStop{0.0f, 0.0f, 0.0f, 0.0f, 1.0f});
-    stops.push_back(VisualShaderColorGradientStop{1.0f, 1.0f, 1.0f, 1.0f, 1.0f});
+    stops.push_back(VisualShaderColorGradientStop{0.0f, 0.0f, 0.0f, 0.0f, 255.0f});
+    stops.push_back(VisualShaderColorGradientStop{1.0f, 255.0f, 255.0f, 255.0f, 255.0f});
   }
 
   const std::string out_buffer{"colorize_out_n" + std::to_string(id)};

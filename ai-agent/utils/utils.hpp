@@ -412,12 +412,15 @@ inline static std::pair<ContinuousRangeVariant, ContinuousRangeVariant> get_rang
                 }
                 case VisualShaderNodePerlinNoise::kGradientFieldNumber: {
                     switch (sub_field) {
-                        case ColorGradientStop::kPositionFieldNumber:
+                        case ColorGradientStop::kPositionFieldNumber: {
+                            return std::make_pair(0.0f, 1.0f);
+                        }
                         case ColorGradientStop::kRFieldNumber:
                         case ColorGradientStop::kGFieldNumber:
                         case ColorGradientStop::kBFieldNumber:
                         case ColorGradientStop::kAFieldNumber: {
-                            return std::make_pair(0.0f, 1.0f);
+                            // The RGBA channels share the 0..255 scale of VisualShaderNodeColorConstant.
+                            return std::make_pair(0.0f, 255.0f);
                         }
                         default:
                             break;
@@ -433,12 +436,15 @@ inline static std::pair<ContinuousRangeVariant, ContinuousRangeVariant> get_rang
             switch (field_number) {
                 case VisualShaderNodeColorize::kGradientFieldNumber: {
                     switch (sub_field) {
-                        case ColorGradientStop::kPositionFieldNumber:
+                        case ColorGradientStop::kPositionFieldNumber: {
+                            return std::make_pair(0.0f, 1.0f);
+                        }
                         case ColorGradientStop::kRFieldNumber:
                         case ColorGradientStop::kGFieldNumber:
                         case ColorGradientStop::kBFieldNumber:
                         case ColorGradientStop::kAFieldNumber: {
-                            return std::make_pair(0.0f, 1.0f);
+                            // The RGBA channels share the 0..255 scale of VisualShaderNodeColorConstant.
+                            return std::make_pair(0.0f, 255.0f);
                         }
                         default:
                             break;
@@ -454,12 +460,15 @@ inline static std::pair<ContinuousRangeVariant, ContinuousRangeVariant> get_rang
             switch (field_number) {
                 case VisualShaderNodeGradient::kGradientFieldNumber: {
                     switch (sub_field) {
-                        case ColorGradientStop::kPositionFieldNumber:
+                        case ColorGradientStop::kPositionFieldNumber: {
+                            return std::make_pair(0.0f, 1.0f);
+                        }
                         case ColorGradientStop::kRFieldNumber:
                         case ColorGradientStop::kGFieldNumber:
                         case ColorGradientStop::kBFieldNumber:
                         case ColorGradientStop::kAFieldNumber: {
-                            return std::make_pair(0.0f, 1.0f);
+                            // The RGBA channels share the 0..255 scale of VisualShaderNodeColorConstant.
+                            return std::make_pair(0.0f, 255.0f);
                         }
                         default:
                             break;
@@ -528,12 +537,15 @@ inline static std::pair<ContinuousRangeVariant, ContinuousRangeVariant> get_rang
                 }
                 case VisualShaderNodeChecker::kGradientFieldNumber: {
                     switch (sub_field) {
-                        case ColorGradientStop::kPositionFieldNumber:
+                        case ColorGradientStop::kPositionFieldNumber: {
+                            return std::make_pair(0.0f, 1.0f);
+                        }
                         case ColorGradientStop::kRFieldNumber:
                         case ColorGradientStop::kGFieldNumber:
                         case ColorGradientStop::kBFieldNumber:
                         case ColorGradientStop::kAFieldNumber: {
-                            return std::make_pair(0.0f, 1.0f);
+                            // The RGBA channels share the 0..255 scale of VisualShaderNodeColorConstant.
+                            return std::make_pair(0.0f, 255.0f);
                         }
                         default:
                             break;
@@ -560,12 +572,15 @@ inline static std::pair<ContinuousRangeVariant, ContinuousRangeVariant> get_rang
                 }
                 case VisualShaderNodeBrick::kGradientFieldNumber: {
                     switch (sub_field) {
-                        case ColorGradientStop::kPositionFieldNumber:
+                        case ColorGradientStop::kPositionFieldNumber: {
+                            return std::make_pair(0.0f, 1.0f);
+                        }
                         case ColorGradientStop::kRFieldNumber:
                         case ColorGradientStop::kGFieldNumber:
                         case ColorGradientStop::kBFieldNumber:
                         case ColorGradientStop::kAFieldNumber: {
-                            return std::make_pair(0.0f, 1.0f);
+                            // The RGBA channels share the 0..255 scale of VisualShaderNodeColorConstant.
+                            return std::make_pair(0.0f, 255.0f);
                         }
                         default:
                             break;
@@ -588,12 +603,15 @@ inline static std::pair<ContinuousRangeVariant, ContinuousRangeVariant> get_rang
                 }
                 case VisualShaderNodeTile::kGradientFieldNumber: {
                     switch (sub_field) {
-                        case ColorGradientStop::kPositionFieldNumber:
+                        case ColorGradientStop::kPositionFieldNumber: {
+                            return std::make_pair(0.0f, 1.0f);
+                        }
                         case ColorGradientStop::kRFieldNumber:
                         case ColorGradientStop::kGFieldNumber:
                         case ColorGradientStop::kBFieldNumber:
                         case ColorGradientStop::kAFieldNumber: {
-                            return std::make_pair(0.0f, 1.0f);
+                            // The RGBA channels share the 0..255 scale of VisualShaderNodeColorConstant.
+                            return std::make_pair(0.0f, 255.0f);
                         }
                         default:
                             break;
@@ -613,12 +631,15 @@ inline static std::pair<ContinuousRangeVariant, ContinuousRangeVariant> get_rang
                 }
                 case VisualShaderNodeFunction::kGradientFieldNumber: {
                     switch (sub_field) {
-                        case ColorGradientStop::kPositionFieldNumber:
+                        case ColorGradientStop::kPositionFieldNumber: {
+                            return std::make_pair(0.0f, 1.0f);
+                        }
                         case ColorGradientStop::kRFieldNumber:
                         case ColorGradientStop::kGFieldNumber:
                         case ColorGradientStop::kBFieldNumber:
                         case ColorGradientStop::kAFieldNumber: {
-                            return std::make_pair(0.0f, 1.0f);
+                            // The RGBA channels share the 0..255 scale of VisualShaderNodeColorConstant.
+                            return std::make_pair(0.0f, 255.0f);
                         }
                         default:
                             break;
@@ -646,12 +667,15 @@ inline static std::pair<ContinuousRangeVariant, ContinuousRangeVariant> get_rang
                 }
                 case VisualShaderNodeCellular::kGradientFieldNumber: {
                     switch (sub_field) {
-                        case ColorGradientStop::kPositionFieldNumber:
+                        case ColorGradientStop::kPositionFieldNumber: {
+                            return std::make_pair(0.0f, 1.0f);
+                        }
                         case ColorGradientStop::kRFieldNumber:
                         case ColorGradientStop::kGFieldNumber:
                         case ColorGradientStop::kBFieldNumber:
                         case ColorGradientStop::kAFieldNumber: {
-                            return std::make_pair(0.0f, 1.0f);
+                            // The RGBA channels share the 0..255 scale of VisualShaderNodeColorConstant.
+                            return std::make_pair(0.0f, 255.0f);
                         }
                         default:
                             break;

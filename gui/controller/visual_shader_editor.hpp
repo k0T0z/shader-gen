@@ -35,6 +35,7 @@
 #include <QtCore/QSize>
 #include <QtWidgets/QComboBox>
 #include <QtWidgets/QDialog>
+#include <QtWidgets/QDoubleSpinBox>
 #include <QtWidgets/QGraphicsObject>
 #include <QtWidgets/QGraphicsProxyWidget>
 #include <QtWidgets/QGraphicsScene>

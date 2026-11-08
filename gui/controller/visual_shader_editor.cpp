@@ -3885,6 +3885,13 @@ void VisualShaderNodeFieldRepeatedMessage::build_row(const int& row) {
   QHBoxLayout* row_layout{new QHBoxLayout(row_widget)};
   row_layout->setContentsMargins(0, 0, 0, 0);
 
+  // The RGBA channels are kept around so that a color swatch can be built once every one of them
+  // has been created.
+  QSpinBox* color_r_spin_box{nullptr};
+  QSpinBox* color_g_spin_box{nullptr};
+  QSpinBox* color_b_spin_box{nullptr};
+  QSpinBox* color_a_spin_box{nullptr};
+
   for (int column{0}; column < row_model->columnCount(); ++column) {
     const FieldDescriptor* column_descriptor{row_model->get_column_descriptor(column)};
     SILENT_CHECK_PARAM_NULLPTR(column_descriptor);
@@ -3894,29 +3901,59 @@ void VisualShaderNodeFieldRepeatedMessage::build_row(const int& row) {
 
     const int sub_field_number{column_descriptor->number()};
     const QVariant column_value{column_model->data()};
+    const QString column_tooltip{QString::fromStdString(std::string(column_descriptor->name()))};
 
     switch (column_descriptor->cpp_type()) {
       case FieldDescriptor::CPPTYPE_FLOAT:
       case FieldDescriptor::CPPTYPE_DOUBLE: {
-        QLineEdit* line_edit{new QLineEdit(QString::number(column_value.toFloat()), row_widget)};
-        line_edit->setMaximumWidth(64);
-        line_edit->setToolTip(QString::fromStdString(std::string(column_descriptor->name())));
-        QObject::connect(line_edit, &QLineEdit::textChanged, this,
-                         [this, row, sub_field_number](const QString& text) {
-                           bool ok{false};
-                           const float value{text.toFloat(&ok)};
-                           SILENT_CHECK_CONDITION_TRUE(!ok);
-                           Q_EMIT node_repeated_field_update_requested(m_n_id, m_field_number, row, sub_field_number, value);
-                         });
+        if (sub_field_number == ColorGradientStop::kPositionFieldNumber) {
+          // The position along the gradient ramp is normalized to the 0..1 range.
+          QDoubleSpinBox* spin_box{new QDoubleSpinBox(row_widget)};
+          spin_box->setRange(0.0, 1.0);
+          spin_box->setSingleStep(0.01);
+          spin_box->setDecimals(2);
+          spin_box->setMaximumWidth(64);
+          spin_box->setToolTip(column_tooltip);
+          spin_box->setValue(column_value.toFloat());
+          QObject::connect(spin_box, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this,
+                           [this, row, sub_field_number](const double& value) {
+                             Q_EMIT node_repeated_field_update_requested(m_n_id, m_field_number, row, sub_field_number,
+                                                                        static_cast<float>(value));
+                           });
 
-        if (sub_field_number == m_sort_field_number) {
-          // The rows are reordered once the user is done editing the sort key.
-          QObject::connect(line_edit, &QLineEdit::editingFinished, this, [this]() {
-            Q_EMIT node_repeated_field_sort_requested(m_n_id, m_field_number, m_sort_field_number);
-          });
+          if (sub_field_number == m_sort_field_number) {
+            // The rows are reordered once the user is done editing the sort key.
+            QObject::connect(spin_box, &QDoubleSpinBox::editingFinished, this, [this]() {
+              Q_EMIT node_repeated_field_sort_requested(m_n_id, m_field_number, m_sort_field_number);
+            });
+          }
+
+          row_layout->addWidget(spin_box);
+          break;
         }
 
-        row_layout->addWidget(line_edit);
+        // The RGBA channels share the 0..255 scale of VisualShaderNodeColorConstant.
+        QSpinBox* spin_box{new QSpinBox(row_widget)};
+        spin_box->setRange(0, 255);
+        spin_box->setMaximumWidth(64);
+        spin_box->setToolTip(column_tooltip);
+        spin_box->setValue(column_value.toInt());
+        QObject::connect(spin_box, QOverload<int>::of(&QSpinBox::valueChanged), this,
+                         [this, row, sub_field_number](const int& value) {
+                           Q_EMIT node_repeated_field_update_requested(m_n_id, m_field_number, row, sub_field_number,
+                                                                      static_cast<float>(value));
+                         });
+        row_layout->addWidget(spin_box);
+
+        if (sub_field_number == ColorGradientStop::kRFieldNumber) {
+          color_r_spin_box = spin_box;
+        } else if (sub_field_number == ColorGradientStop::kGFieldNumber) {
+          color_g_spin_box = spin_box;
+        } else if (sub_field_number == ColorGradientStop::kBFieldNumber) {
+          color_b_spin_box = spin_box;
+        } else if (sub_field_number == ColorGradientStop::kAFieldNumber) {
+          color_a_spin_box = spin_box;
+        }
         break;
       }
       case FieldDescriptor::CPPTYPE_INT32: {
@@ -3981,6 +4018,31 @@ void VisualShaderNodeFieldRepeatedMessage::build_row(const int& row) {
         WARN_PRINT("Unsupported repeated field column type: " + std::string(column_descriptor->name()));
         break;
     }
+  }
+
+  // A small square that previews the color of the stop, mirroring the ColorConstant color preview.
+  if (color_r_spin_box && color_g_spin_box && color_b_spin_box && color_a_spin_box) {
+    QLabel* color_swatch{new QLabel(row_widget)};
+    color_swatch->setFixedSize(16, 16);
+    color_swatch->setContentsMargins(0, 0, 0, 0);
+    color_swatch->setToolTip("The color of this gradient stop");
+
+    auto update_color_swatch = [color_swatch, color_r_spin_box, color_g_spin_box, color_b_spin_box,
+                                color_a_spin_box]() {
+      const QColor color(color_r_spin_box->value(), color_g_spin_box->value(), color_b_spin_box->value(),
+                         color_a_spin_box->value());
+      QPixmap pixmap(color_swatch->size());
+      pixmap.fill(color);
+      color_swatch->setPixmap(pixmap);
+    };
+    update_color_swatch();
+
+    for (QSpinBox* spin_box : {color_r_spin_box, color_g_spin_box, color_b_spin_box, color_a_spin_box}) {
+      QObject::connect(spin_box, QOverload<int>::of(&QSpinBox::valueChanged), this,
+                       [update_color_swatch](const int&) { update_color_swatch(); });
+    }
+
+    row_layout->addWidget(color_swatch);
   }
 
   QPushButton* remove_row_button{new QPushButton("-", row_widget)};

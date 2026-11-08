@@ -115,21 +115,22 @@ inline static QVariant get_proto_field_default_value_override(const google::prot
   CHECK_PARAM_NULLPTR_NON_VOID(node_type, QVariant(), "Field containing type is null.");
 
   // The default color ramp of every node ported with a color gradient (NTE's @c ColorGradientParam):
-  // an opaque black stop at 0.0 and an opaque white stop at 1.0.
+  // an opaque black stop at 0.0 and an opaque white stop at 1.0. Color channels share the same 0-255
+  // scale as @c VisualShaderNodeColorConstant; the generator divides them by 255 before use.
   static const QVariantList default_color_gradient_stops{
       QVariantMap{
           {QString::number(ColorGradientStop::kPositionFieldNumber), 0.0f},
           {QString::number(ColorGradientStop::kRFieldNumber), 0.0f},
           {QString::number(ColorGradientStop::kGFieldNumber), 0.0f},
           {QString::number(ColorGradientStop::kBFieldNumber), 0.0f},
-          {QString::number(ColorGradientStop::kAFieldNumber), 1.0f},
+          {QString::number(ColorGradientStop::kAFieldNumber), 255.0f},
       },
       QVariantMap{
           {QString::number(ColorGradientStop::kPositionFieldNumber), 1.0f},
-          {QString::number(ColorGradientStop::kRFieldNumber), 1.0f},
-          {QString::number(ColorGradientStop::kGFieldNumber), 1.0f},
-          {QString::number(ColorGradientStop::kBFieldNumber), 1.0f},
-          {QString::number(ColorGradientStop::kAFieldNumber), 1.0f},
+          {QString::number(ColorGradientStop::kRFieldNumber), 255.0f},
+          {QString::number(ColorGradientStop::kGFieldNumber), 255.0f},
+          {QString::number(ColorGradientStop::kBFieldNumber), 255.0f},
+          {QString::number(ColorGradientStop::kAFieldNumber), 255.0f},
       },
   };
 
