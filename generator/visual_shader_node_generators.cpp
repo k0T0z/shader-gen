@@ -27,6 +27,7 @@
 
 #include "generator/visual_shader_node_generators.hpp"
 
+#include <algorithm>
 #include <cmath>
 #include <iomanip>
 #include <sstream>
@@ -711,6 +712,15 @@ std::string VisualShaderNodeGeneratorColorize::generate_code(
     stops.push_back(VisualShaderColorGradientStop{0.0f, 0.0f, 0.0f, 0.0f, 255.0f});
     stops.push_back(VisualShaderColorGradientStop{1.0f, 255.0f, 255.0f, 255.0f, 255.0f});
   }
+
+  // The editor keeps the gradient rows sorted by position, but a graph supplied directly (e.g. by the
+  // genetic algorithm) may hold the stops in an arbitrary order. Emitting them as-is would produce a
+  // negative interpolation denominator (next_pos - prev_pos) and an unreachable branch, so sort them
+  // here to keep every segment positive and every branch reachable.
+  std::stable_sort(stops.begin(), stops.end(),
+                   [](const VisualShaderColorGradientStop& a, const VisualShaderColorGradientStop& b) {
+                     return a.position < b.position;
+                   });
 
   const std::string out_buffer{"colorize_out_n" + std::to_string(id)};
   const std::string pos_buffer{"colorize_pos_n" + std::to_string(id)};

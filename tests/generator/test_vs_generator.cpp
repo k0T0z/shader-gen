@@ -297,3 +297,66 @@ TEST(VisualShaderGeneratorTest, TestIndexKeyedColorGradientRamp) {
                                 "vec4(255.000000, 255.000000, 255.000000, 255.000000) / 255.000000, colorize_interp_n2_0)"),
             std::string::npos);
 }
+
+// Regression test for the Cellular node (oneof field number 49) and its nested ColorGradient parameter
+// (repeated field number 10, stops keyed as "10:<row>:<col>").
+//
+// Two defects are covered:
+//  1) The ramp interpolation emitted for a ColorGradient assumes the stops are already sorted by
+//     position but does not enforce it. This graph supplies the stop positions out of order
+//     (0.488405, 0.587647, 0.474862, 0.709670), which used to emit a negative interpolation
+//     denominator (next_pos - prev_pos) and an unreachable `else if` branch.
+//  2) Colour channels are emitted verbatim; they must be normalised because they share the 0-255
+//     scale of VisualShaderNodeColorConstant.
+TEST(VisualShaderGeneratorTest, TestOutOfOrderColorGradientStopsAreSorted) {
+  const std::string graph{
+      "0;0;3,"                                                                        // Output (oneof=3): id=0
+      "0;1;2;1=1,"                                                                    // Input (oneof=2): id=1, UV
+      "0;2;49;1=3;2=3;3=0;4=45.328744;5=10.000000;6=0.703740;7=14.211581;8=0;9=0;"    // Cellular (oneof=49): id=2
+      "10:0:1=0.488405;10:0:2=0.5;10:0:3=0.2;10:0:4=0.1;10:0:5=1;"                    // stop row 0 (pos out of order)
+      "10:1:1=0.587647;10:1:2=0.1;10:1:3=0.7;10:1:4=0.2;10:1:5=1;"                    // stop row 1 (pos out of order)
+      "10:2:1=0.474862;10:2:2=0.9;10:2:3=0.1;10:2:4=0.3;10:2:5=1;"                    // stop row 2 (pos out of order)
+      "10:3:1=0.709670;10:3:2=0.2;10:3:3=0.3;10:3:4=0.9;10:3:5=1,"                    // stop row 3 (pos out of order)
+      "1;0;1;0;2;0,"                                                                  // uv(1) -> cellular(2)
+      "1;1;2;0;0;0"                                                                   // cellular(2) -> output(0)
+  };
+
+  std::string generated_code;
+  ASSERT_TRUE(shadergen_visual_shader_generator::generate_shader(graph, generated_code));
+
+  // Issue 2: the colour channels of the ramp are stored on the 0-255 scale, so the emitted vec4 must
+  // be normalised (divided by 255) and never left as-is.
+  ASSERT_NE(generated_code.find(") / 255.000000"), std::string::npos);
+
+  // Issue 1: every interpolation denominator (next_stop.position - prev_stop.position) must be > 0.
+  std::vector<double> denominators;
+  for (int i = 0;; ++i) {
+    const std::size_t start{generated_code.find("float cell_n2_interp_" + std::to_string(i) + " = (")};
+    if (start == std::string::npos) break;
+    const std::size_t slash{generated_code.find("/ ", start)};
+    const std::size_t semicolon{generated_code.find(';', slash)};
+    ASSERT_NE(slash, std::string::npos);
+    ASSERT_NE(semicolon, std::string::npos);
+    denominators.push_back(std::stod(generated_code.substr(slash + 2, semicolon - slash - 2)));
+  }
+  ASSERT_EQ(denominators.size(), 3u);  // Four stops produce three interpolation segments.
+  for (const double denominator : denominators) {
+    ASSERT_GT(denominator, 0.0) << "interpolation denominator is not positive";
+  }
+
+  // Issue 1 (reachability): the branch thresholds in the emitted else-if chain must be strictly
+  // ascending, otherwise the later branches can never be reached.
+  std::vector<double> thresholds;
+  const std::string marker{"cell_val_n2 < "};
+  std::size_t marker_pos{generated_code.find(marker)};
+  while (marker_pos != std::string::npos) {
+    const std::size_t value_pos{marker_pos + marker.size()};
+    const std::size_t end{generated_code.find(')', value_pos)};
+    thresholds.push_back(std::stod(generated_code.substr(value_pos, end - value_pos)));
+    marker_pos = generated_code.find(marker, end);
+  }
+  ASSERT_GE(thresholds.size(), 2u);
+  for (std::size_t i = 1; i < thresholds.size(); ++i) {
+    ASSERT_LT(thresholds.at(i - 1), thresholds.at(i)) << "interpolation branches are not reachable";
+  }
+}

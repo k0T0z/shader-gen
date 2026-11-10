@@ -65,6 +65,15 @@ std::string emit_gradient_lookup(const std::vector<VisualShaderColorGradientStop
     stops.push_back(VisualShaderColorGradientStop{1.0f, 255.0f, 255.0f, 255.0f, 255.0f});
   }
 
+  // The editor keeps the gradient rows sorted by position, but a graph supplied directly (e.g. by the
+  // genetic algorithm) may hold the stops in an arbitrary order. Emitting them as-is would produce a
+  // negative interpolation denominator (next_pos - prev_pos) and an unreachable branch, so sort them
+  // here to keep every segment positive and every branch reachable.
+  std::stable_sort(stops.begin(), stops.end(),
+                   [](const VisualShaderColorGradientStop& a, const VisualShaderColorGradientStop& b) {
+                     return a.position < b.position;
+                   });
+
   std::string code;
 
   code += std::string("\t") + "vec4 " + out_var + " = " + to_glsl_color(stops.front()) + ";" + std::string("\n");
