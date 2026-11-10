@@ -46,6 +46,7 @@
 #include <QtWidgets/QMenu>
 #include <QtWidgets/QPlainTextEdit>
 #include <QtWidgets/QPushButton>
+#include <QtWidgets/QScrollArea>
 #include <QtWidgets/QTextEdit>
 #include <QtWidgets/QTreeWidget>
 #include <QtWidgets/QVBoxLayout>
@@ -155,6 +156,26 @@ class VisualShaderEditor : public QWidget {
   void on_stop_matching_timer_timeout();
   void on_to_csv_button_pressed();
 
+  /**
+   * @brief Show the parameters of a node in the right side panel.
+   * 
+   * @note Called when the scene reports a node selection change. Passing @c -1 clears the panel
+   *       (e.g. when nothing is selected or the selected node has no parameters).
+   * 
+   * @param n_id 
+   */
+  void on_node_parameters_requested(const int& n_id);
+
+  /**
+   * @brief Release the parameters widget of a node that is being deleted.
+   * 
+   * @note If the deleted node's parameters are the ones currently shown in the panel, the panel is
+   *       cleared and the widget is detached so that the scene can safely destroy it.
+   * 
+   * @param n_id 
+   */
+  void on_node_parameters_widget_removed(const int& n_id);
+
  private:
   QHBoxLayout* layout;
 
@@ -163,6 +184,18 @@ class VisualShaderEditor : public QWidget {
   QVBoxLayout* side_layout;
   QLineEdit* name_edit;
   QPushButton* save_button;
+
+  ////////////////////////////////////
+  // Right-docked node parameters panel
+  ////////////////////////////////////
+
+  QWidget* parameters_dock;
+  QScrollArea* parameters_scroll_area;
+  QWidget* parameters_container;
+  QVBoxLayout* parameters_layout;
+  QLabel* parameters_hint_label;
+  QWidget* current_parameters_widget;  // The parameters widget currently shown in the panel (or nullptr)
+  int current_parameters_n_id;         // The id of the node whose parameters are shown (or -1)
 
   QHBoxLayout* scene_layer_layout;
   QWidget* scene_layer;  // Layer having the scene.
@@ -548,11 +581,44 @@ class VisualShaderGraphicsScene : public QGraphicsScene {
   VisualShaderNodeGraphicsObject* get_node_graphics_object(const int& n_id) const;
   VisualShaderConnectionGraphicsObject* get_connection_graphics_object(const int& c_id) const;
 
+  /**
+   * @brief Get the parameters widget of a node.
+   *
+   * @note The widget is built together with the node and holds one labeled row per editable field.
+   *       It is not part of the scene; the editor moves it into the right-docked parameters panel
+   *       when the node is selected.
+   *
+   * @param n_id
+   * @return QWidget* The parameters widget, or @c nullptr when the node has no parameters.
+   */
+  QWidget* get_node_parameters_widget(const int& n_id) const;
+
   int get_new_node_id() const;
   int get_new_connection_id() const;
   int find_node_entry(const int& n_id) const;
   int find_connection_entry(const int& c_id) const;
   int get_node_type_field_number(const int& n_id) const;
+
+ Q_SIGNALS:
+  /**
+   * @brief Request the editor to show the parameters of a node in its right-docked panel.
+   *
+   * @note EMITTED when a node is selected (with its @c n_id) or when the selection is cleared
+   *       (with @c -1). Connected to @c VisualShaderEditor::on_node_parameters_requested.
+   *
+   * @param n_id
+   */
+  void node_parameters_requested(const int& n_id);
+
+  /**
+   * @brief Notify the editor that the parameters widget of a node is about to be destroyed.
+   *
+   * @note EMITTED from @c VisualShaderGraphicsScene::delete_node_from_scene. Connected to
+   *       @c VisualShaderEditor::on_node_parameters_widget_removed.
+   *
+   * @param n_id
+   */
+  void node_parameters_widget_removed(const int& n_id);
 
  public Q_SLOTS:
   void on_scene_update_requested();
@@ -618,6 +684,9 @@ class VisualShaderGraphicsScene : public QGraphicsScene {
   // n_id -> field number -> QWidget*
   std::unordered_map<int, std::unordered_map<int, QWidget*>> node_field_widgets;
 
+  // n_id -> parameters widget (shown in the editor's right-docked panel). Not part of the scene.
+  std::unordered_map<int, QWidget*> node_parameters_widgets;
+
   // Main Model
   ProtoModel* visual_shader_model;
 
@@ -630,8 +699,26 @@ class VisualShaderGraphicsScene : public QGraphicsScene {
   void remove_item(QGraphicsItem* item);
   bool check_if_connection_out_of_bounds(VisualShaderOutputPortGraphicsObject* from_o_port, VisualShaderInputPortGraphicsObject* to_i_port);
 
+  /**
+   * @brief Add a labeled row (a label followed by an editor widget) to a parameters layout.
+   *
+   * @note Used by the @c REGISTER_NODE_FIELD_* macros to build a node's parameters widget.
+   *
+   * @param layout The parameters layout the row is appended to.
+   * @param parent The parameters widget that owns the row.
+   * @param label The text shown on the left side of the row.
+   * @param field_widget The editor widget shown on the right side of the row.
+   */
+  void add_parameter_row(QVBoxLayout* layout, QWidget* parent, const QString& label, QWidget* field_widget);
+
   RepeatedMessageModel* get_node_repeated_field_model(const int& n_id, const int& field_number) const;
   void refresh_node_repeated_field_widget(const int& n_id, const int& field_number);
+
+ protected:
+  /**
+   * @brief Clear the parameters panel when the empty canvas is clicked.
+   */
+  void mousePressEvent(QGraphicsSceneMouseEvent* event) override;
 };
 
 /**********************************************************************/
@@ -796,6 +883,17 @@ class VisualShaderNodeGraphicsObject : public QGraphicsObject {
 
   void scene_update_requested();
 
+  /**
+   * @brief Notify that this node was clicked, so the editor can show its parameters.
+   * 
+   * @note EMITTED from @c VisualShaderNodeGraphicsObject::mousePressEvent. Connected in
+   *       @c VisualShaderGraphicsScene::add_node_to_scene directly to
+   *       @c VisualShaderGraphicsScene::node_parameters_requested.
+   * 
+   * @param n_id 
+   */
+  void node_selected(const int& n_id);
+
   void in_port_remove_requested(VisualShaderInputPortGraphicsObject* in_port);
   void out_port_remove_requested(VisualShaderOutputPortGraphicsObject* out_port);
 
@@ -928,6 +1026,7 @@ class VisualShaderNodeGraphicsObject : public QGraphicsObject {
    */
   void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget = nullptr) override;
   void contextMenuEvent(QGraphicsSceneContextMenuEvent* event) override;
+  void mousePressEvent(QGraphicsSceneMouseEvent* event) override;
   void mouseReleaseEvent(QGraphicsSceneMouseEvent* event) override;
 };
 
@@ -1337,10 +1436,10 @@ class VisualShaderNodeFieldRepeatedMessage : public QWidget {
       FieldPath::FieldNumber(field_number))); \
     const EnumDescriptor* enum_descriptor = node_field_model->get_column_descriptor(0)->enum_type(); \
     CHECK_PARAM_NULLPTR_NON_VOID(enum_descriptor, false, "EnumDescriptor is nullptr."); \
-    VisualShaderNodeFieldComboBox* node_field_widget = new VisualShaderNodeFieldComboBox(initial_value, n_id, enum_descriptor, field_number, embed_widget); \
+    VisualShaderNodeFieldComboBox* node_field_widget = new VisualShaderNodeFieldComboBox(initial_value, n_id, enum_descriptor, field_number, params_widget); \
     node_field_widget->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Fixed); \
     node_field_widget->setContentsMargins(0, 0, 0, 0);  \
-    embed_widget_layout->addWidget(node_field_widget); \
+    add_parameter_row(params_layout, params_widget, QString::fromStdString(std::string(node_field_model->get_column_descriptor(0)->name())), node_field_widget); \
     QObject::connect(node_field_widget, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &VisualShaderGraphicsScene::on_update_renderer_widgets_requested); \
     QObject::connect(node_field_widget, &VisualShaderNodeFieldComboBox::node_update_requested, this, &VisualShaderGraphicsScene::update_node_field_in_model); \
     QObject::connect(node_field_widget, &VisualShaderNodeFieldComboBox::port_type_update_requested, n_o, &VisualShaderNodeGraphicsObject::port_type_update_requested); \
@@ -1354,11 +1453,10 @@ class VisualShaderNodeFieldRepeatedMessage : public QWidget {
       FieldPath::RepeatedAt(row_entry), \
       FieldPath::FieldNumber(node_type_field_number), \
       FieldPath::FieldNumber(field_number)))}; \
-    VisualShaderNodeFieldLineEditFloat* node_field_widget = new VisualShaderNodeFieldLineEditFloat(initial_value, n_id, field_number, embed_widget); \
+    VisualShaderNodeFieldLineEditFloat* node_field_widget = new VisualShaderNodeFieldLineEditFloat(initial_value, n_id, field_number, params_widget); \
     node_field_widget->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Fixed); \
     node_field_widget->setContentsMargins(0, 0, 0, 0);  \
-    embed_widget_layout->addWidget(node_field_widget); \
-    node_field_widget->setPlaceholderText(placeholder); \
+    add_parameter_row(params_layout, params_widget, QString(placeholder), node_field_widget); \
     QObject::connect(node_field_widget, &QLineEdit::textChanged, this, &VisualShaderGraphicsScene::on_update_renderer_widgets_requested); \
     QObject::connect(node_field_widget, &VisualShaderNodeFieldLineEditFloat::node_update_requested, this, &VisualShaderGraphicsScene::update_node_field_in_model); \
     node_field_widgets[n_id][field_number] = node_field_widget; \
@@ -1371,11 +1469,10 @@ class VisualShaderNodeFieldRepeatedMessage : public QWidget {
       FieldPath::RepeatedAt(row_entry), \
       FieldPath::FieldNumber(node_type_field_number), \
       FieldPath::FieldNumber(field_number)))}; \
-    VisualShaderNodeFieldLineEditInt* node_field_widget = new VisualShaderNodeFieldLineEditInt(initial_value, n_id, field_number, embed_widget); \
+    VisualShaderNodeFieldLineEditInt* node_field_widget = new VisualShaderNodeFieldLineEditInt(initial_value, n_id, field_number, params_widget); \
     node_field_widget->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Fixed); \
     node_field_widget->setContentsMargins(0, 0, 0, 0);  \
-    embed_widget_layout->addWidget(node_field_widget); \
-    node_field_widget->setPlaceholderText(placeholder); \
+    add_parameter_row(params_layout, params_widget, QString(placeholder), node_field_widget); \
     QObject::connect(node_field_widget, &QLineEdit::textChanged, this, &VisualShaderGraphicsScene::on_update_renderer_widgets_requested); \
     QObject::connect(node_field_widget, &VisualShaderNodeFieldLineEditInt::node_update_requested, this, &VisualShaderGraphicsScene::update_node_field_in_model); \
     node_field_widgets[n_id][field_number] = node_field_widget; \
@@ -1388,11 +1485,10 @@ class VisualShaderNodeFieldRepeatedMessage : public QWidget {
       FieldPath::RepeatedAt(row_entry), \
       FieldPath::FieldNumber(node_type_field_number), \
       FieldPath::FieldNumber(field_number)))}; \
-    VisualShaderNodeFieldLineEditUInt* node_field_widget = new VisualShaderNodeFieldLineEditUInt(initial_value, n_id, field_number, embed_widget); \
+    VisualShaderNodeFieldLineEditUInt* node_field_widget = new VisualShaderNodeFieldLineEditUInt(initial_value, n_id, field_number, params_widget); \
     node_field_widget->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Fixed); \
     node_field_widget->setContentsMargins(0, 0, 0, 0);  \
-    embed_widget_layout->addWidget(node_field_widget); \
-    node_field_widget->setPlaceholderText(placeholder); \
+    add_parameter_row(params_layout, params_widget, QString(placeholder), node_field_widget); \
     QObject::connect(node_field_widget, &QLineEdit::textChanged, this, &VisualShaderGraphicsScene::on_update_renderer_widgets_requested); \
     QObject::connect(node_field_widget, &VisualShaderNodeFieldLineEditUInt::node_update_requested, this, &VisualShaderGraphicsScene::update_node_field_in_model); \
     node_field_widgets[n_id][field_number] = node_field_widget; \
@@ -1405,10 +1501,14 @@ class VisualShaderNodeFieldRepeatedMessage : public QWidget {
       FieldPath::RepeatedAt(row_entry), \
       FieldPath::FieldNumber(node_type_field_number), \
       FieldPath::FieldNumber(field_number)))}; \
-    VisualShaderNodeFieldCheckBox* node_field_widget = new VisualShaderNodeFieldCheckBox(initial_value, n_id, field_number, embed_widget); \
+    const ProtoModel* node_field_model = visual_shader_model->get_sub_model(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), \
+      FieldPath::RepeatedAt(row_entry), \
+      FieldPath::FieldNumber(node_type_field_number), \
+      FieldPath::FieldNumber(field_number))); \
+    VisualShaderNodeFieldCheckBox* node_field_widget = new VisualShaderNodeFieldCheckBox(initial_value, n_id, field_number, params_widget); \
     node_field_widget->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Fixed); \
     node_field_widget->setContentsMargins(0, 0, 0, 0);  \
-    embed_widget_layout->addWidget(node_field_widget); \
+    add_parameter_row(params_layout, params_widget, QString::fromStdString(std::string(node_field_model->get_column_descriptor(0)->name())), node_field_widget); \
     QObject::connect(node_field_widget, &QCheckBox::stateChanged, this, &VisualShaderGraphicsScene::on_update_renderer_widgets_requested); \
     QObject::connect(node_field_widget, &VisualShaderNodeFieldCheckBox::node_update_requested, this, &VisualShaderGraphicsScene::update_node_field_in_model); \
     node_field_widgets[n_id][field_number] = node_field_widget; \
@@ -1421,17 +1521,21 @@ class VisualShaderNodeFieldRepeatedMessage : public QWidget {
       FieldPath::RepeatedAt(row_entry), \
       FieldPath::FieldNumber(node_type_field_number), \
       FieldPath::FieldNumber(field_number)))}; \
-    VisualShaderNodeFieldSpinBox* node_field_widget = new VisualShaderNodeFieldSpinBox(initial_value, min_value, max_value, n_id, field_number, embed_widget); \
+    const ProtoModel* node_field_model = visual_shader_model->get_sub_model(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), \
+      FieldPath::RepeatedAt(row_entry), \
+      FieldPath::FieldNumber(node_type_field_number), \
+      FieldPath::FieldNumber(field_number))); \
+    VisualShaderNodeFieldSpinBox* node_field_widget = new VisualShaderNodeFieldSpinBox(initial_value, min_value, max_value, n_id, field_number, params_widget); \
     node_field_widget->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Fixed); \
     node_field_widget->setContentsMargins(0, 0, 0, 0);  \
-    embed_widget_layout->addWidget(node_field_widget); \
+    add_parameter_row(params_layout, params_widget, QString::fromStdString(std::string(node_field_model->get_column_descriptor(0)->name())), node_field_widget); \
     QObject::connect(node_field_widget, QOverload<int>::of(&QSpinBox::valueChanged), this, &VisualShaderGraphicsScene::on_update_renderer_widgets_requested); \
     QObject::connect(node_field_widget, &VisualShaderNodeFieldSpinBox::node_update_requested, this, &VisualShaderGraphicsScene::update_node_field_in_model); \
     node_field_widgets[n_id][field_number] = node_field_widget; \
   } else                                                                                                        \
     ((void)0)
 
-#define REGISTER_NODE_FIELD_REPEATED_MESSAGE(field_number, sort_field_number) \
+#define REGISTER_NODE_FIELD_REPEATED_MESSAGE(field_number, sort_field_number, label) \
   if (true) { \
     const ProtoModel* node_field_model = visual_shader_model->get_sub_model(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), \
       FieldPath::RepeatedAt(row_entry), \
@@ -1439,10 +1543,10 @@ class VisualShaderNodeFieldRepeatedMessage : public QWidget {
       FieldPath::FieldNumber(field_number))); \
     RepeatedMessageModel* repeated_field_model = dynamic_cast<RepeatedMessageModel*>(const_cast<ProtoModel*>(node_field_model)); \
     CHECK_PARAM_NULLPTR_NON_VOID(repeated_field_model, false, "Repeated field model is not a RepeatedMessageModel."); \
-    VisualShaderNodeFieldRepeatedMessage* node_field_widget = new VisualShaderNodeFieldRepeatedMessage(repeated_field_model, sort_field_number, n_id, field_number, embed_widget); \
+    VisualShaderNodeFieldRepeatedMessage* node_field_widget = new VisualShaderNodeFieldRepeatedMessage(repeated_field_model, sort_field_number, n_id, field_number, params_widget); \
     node_field_widget->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Fixed); \
     node_field_widget->setContentsMargins(0, 0, 0, 0);  \
-    embed_widget_layout->addWidget(node_field_widget); \
+    add_parameter_row(params_layout, params_widget, QString(label), node_field_widget); \
     QObject::connect(node_field_widget, &VisualShaderNodeFieldRepeatedMessage::node_repeated_field_update_requested, this, &VisualShaderGraphicsScene::update_node_repeated_field_in_model); \
     QObject::connect(node_field_widget, &VisualShaderNodeFieldRepeatedMessage::node_repeated_field_update_requested, this, &VisualShaderGraphicsScene::on_update_renderer_widgets_requested); \
     QObject::connect(node_field_widget, &VisualShaderNodeFieldRepeatedMessage::node_repeated_field_row_add_requested, this, &VisualShaderGraphicsScene::on_node_repeated_field_row_add_requested); \

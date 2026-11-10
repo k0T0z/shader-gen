@@ -65,6 +65,13 @@ VisualShaderEditor::VisualShaderEditor(MessageModel* model, QWidget* parent)
       side_layout(nullptr),
       name_edit(nullptr),
       save_button(nullptr),
+      parameters_dock(nullptr),
+      parameters_scroll_area(nullptr),
+      parameters_container(nullptr),
+      parameters_layout(nullptr),
+      parameters_hint_label(nullptr),
+      current_parameters_widget(nullptr),
+      current_parameters_n_id(-1),
       scene_layer_layout(nullptr),
       scene_layer(nullptr),
       scene(nullptr),
@@ -165,6 +172,39 @@ void VisualShaderEditor::init() {
 
   side_widget->setLayout(side_outer_layout);
 
+  // Create the right-docked parameters panel. It shows the parameters of the selected node.
+  parameters_dock = new QWidget();
+  parameters_dock->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Expanding);
+  parameters_dock->setContentsMargins(5, 5, 5, 5);  // Left, top, right, bottom
+  parameters_dock->setMinimumWidth(280);
+
+  QVBoxLayout* parameters_dock_layout = new QVBoxLayout(parameters_dock);
+  parameters_dock_layout->setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
+  parameters_dock_layout->setSpacing(0);
+
+  parameters_scroll_area = new QScrollArea(parameters_dock);
+  parameters_scroll_area->setWidgetResizable(true);
+  parameters_scroll_area->setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+  parameters_scroll_area->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+
+  parameters_container = new QWidget();
+  parameters_layout = new QVBoxLayout(parameters_container);
+  parameters_layout->setContentsMargins(2, 2, 2, 2);  // Left, top, right, bottom
+  parameters_layout->setSpacing(4);
+  parameters_layout->setSizeConstraint(QLayout::SetMinimumSize);
+  parameters_layout->setAlignment(Qt::AlignTop);
+
+  parameters_hint_label = new QLabel("Select a node to edit its parameters.");
+  parameters_hint_label->setWordWrap(true);
+  parameters_hint_label->setAlignment(Qt::AlignTop | Qt::AlignHCenter);
+  parameters_layout->addWidget(parameters_hint_label);
+
+  parameters_container->setLayout(parameters_layout);
+  parameters_scroll_area->setWidget(parameters_container);
+
+  parameters_dock_layout->addWidget(parameters_scroll_area);
+  parameters_dock->setLayout(parameters_dock_layout);
+
   // Create the scene layer.
   scene_layer = new QWidget();
   scene_layer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
@@ -179,6 +219,12 @@ void VisualShaderEditor::init() {
 
   scene = new VisualShaderGraphicsScene(scene_layer);
   scene->set_editor(this);
+
+  // The scene requests the editor to show a node's parameters in the right-docked panel.
+  QObject::connect(scene, &VisualShaderGraphicsScene::node_parameters_requested, this,
+                   &VisualShaderEditor::on_node_parameters_requested);
+  QObject::connect(scene, &VisualShaderGraphicsScene::node_parameters_widget_removed, this,
+                   &VisualShaderEditor::on_node_parameters_widget_removed);
 
   view = new VisualShaderGraphicsView(scene, scene_layer);
   view->setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
@@ -337,6 +383,9 @@ void VisualShaderEditor::init() {
 
   // Add the scene layer to the main layout.
   layout->addWidget(scene_layer, 4);
+
+  // Add the right-docked parameters panel to the main layout.
+  layout->addWidget(parameters_dock, 2);
 
   ////////////////////////////////////
   // Code Previewer
@@ -620,6 +669,61 @@ void VisualShaderEditor::on_menu_button_pressed() {
   bool is_visible{side_widget->isVisible()};
   side_widget->setVisible(!is_visible);
   menu_button->setText(!is_visible ? "Hide Menu" : "Show Menu");
+}
+
+void VisualShaderEditor::on_node_parameters_requested(const int& n_id) {
+  CHECK_PARAM_NULLPTR(parameters_layout, "Parameters layout is nullptr.");
+  CHECK_PARAM_NULLPTR(parameters_hint_label, "Parameters hint label is nullptr.");
+
+  // Nothing to do if the requested node's parameters are already shown.
+  if (n_id != -1 && n_id == current_parameters_n_id && current_parameters_widget != nullptr) {
+    return;
+  }
+
+  // Detach the previously shown parameters widget (without destroying it; the scene owns it).
+  if (current_parameters_widget != nullptr) {
+    parameters_layout->removeWidget(current_parameters_widget);
+    current_parameters_widget->hide();
+    current_parameters_widget = nullptr;
+  }
+  current_parameters_n_id = -1;
+
+  // Resolve the widget for the requested node (may be null when the node has no parameters).
+  QWidget* params_widget{nullptr};
+  if (n_id != -1 && scene != nullptr) {
+    params_widget = scene->get_node_parameters_widget(n_id);
+  }
+
+  if (params_widget == nullptr) {
+    // Clear the panel and show the hint.
+    parameters_hint_label->show();
+    return;
+  }
+
+  // Show the requested node's parameters and hide the hint.
+  parameters_hint_label->hide();
+  parameters_layout->addWidget(params_widget);
+  params_widget->show();
+
+  current_parameters_widget = params_widget;
+  current_parameters_n_id = n_id;
+}
+
+void VisualShaderEditor::on_node_parameters_widget_removed(const int& n_id) {
+  CHECK_PARAM_NULLPTR(parameters_layout, "Parameters layout is nullptr.");
+
+  // Only clear the panel if the removed node is the one currently shown.
+  if (n_id != current_parameters_n_id || current_parameters_widget == nullptr) {
+    return;
+  }
+
+  parameters_layout->removeWidget(current_parameters_widget);
+  current_parameters_widget = nullptr;
+  current_parameters_n_id = -1;
+
+  if (parameters_hint_label != nullptr) {
+    parameters_hint_label->show();
+  }
 }
 
 void VisualShaderEditor::on_load_image_button_pressed() {
@@ -1098,6 +1202,29 @@ bool VisualShaderGraphicsScene::write_default_repeated_field_values_to_node(
   return true;
 }
 
+void VisualShaderGraphicsScene::add_parameter_row(QVBoxLayout* layout, QWidget* parent, const QString& label,
+                                                  QWidget* field_widget) {
+  CHECK_PARAM_NULLPTR(layout, "Parameters layout is nullptr.");
+  CHECK_PARAM_NULLPTR(parent, "Parameters widget is nullptr.");
+  CHECK_PARAM_NULLPTR(field_widget, "Field widget is nullptr.");
+
+  QWidget* row{new QWidget(parent)};
+  row->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Fixed);
+
+  QHBoxLayout* row_layout{new QHBoxLayout(row)};
+  row_layout->setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
+  row_layout->setSpacing(6);
+
+  QLabel* label_widget{new QLabel(label, row)};
+  label_widget->setMinimumWidth(80);
+  label_widget->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Fixed);
+
+  row_layout->addWidget(label_widget);
+  row_layout->addWidget(field_widget, 1);  // Reparents the field widget to the row
+
+  layout->addWidget(row);
+}
+
 bool VisualShaderGraphicsScene::add_node_to_scene(const int& n_id, const std::shared_ptr<IVisualShaderProtoNode>& proto_node, const QPointF& coordinate) {
   CHECK_CONDITION_TRUE_NON_VOID(node_graphics_objects.find(n_id) != node_graphics_objects.end(), false,
                                 "Graphics node object already exists");
@@ -1146,6 +1273,10 @@ bool VisualShaderGraphicsScene::add_node_to_scene(const int& n_id, const std::sh
   QObject::connect(n_o, &VisualShaderNodeGraphicsObject::port_type_generator_requested, this,
                    &VisualShaderGraphicsScene::on_port_type_generator_requested);
 
+  // Selecting a node asks the editor to show its parameters in the right-docked panel.
+  QObject::connect(n_o, &VisualShaderNodeGraphicsObject::node_selected, this,
+                   &VisualShaderGraphicsScene::node_parameters_requested);
+
   // If not the output node
   if (n_id != 0) {
     QObject::connect(n_o, &VisualShaderNodeGraphicsObject::node_deleted, this,
@@ -1156,6 +1287,20 @@ bool VisualShaderGraphicsScene::add_node_to_scene(const int& n_id, const std::sh
   int node_type_field_number{VisualShaderGraphicsScene::get_node_type_field_number(row_entry)};
 
   if (n_id != 0) {
+    // Build the parameters widget. It is NOT added to the node; the editor moves it into its
+    // right-docked parameters panel when the node is selected. This keeps nodes compact.
+    QWidget* params_widget{new QWidget()};
+
+    params_widget->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
+    params_widget->setContentsMargins(2, 2, 2, 2);  // Left, top, right, bottom
+
+    QVBoxLayout* params_layout = new QVBoxLayout(params_widget);
+    params_layout->setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
+    params_layout->setSizeConstraint(QLayout::SetMinimumSize);
+    params_layout->setSpacing(4);
+    params_layout->setAlignment(Qt::AlignTop);
+
+    // The node itself only keeps the show/hide preview button.
     QWidget* embed_widget{new QWidget()};
 
     embed_widget->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
@@ -1206,7 +1351,7 @@ bool VisualShaderGraphicsScene::add_node_to_scene(const int& n_id, const std::sh
         VisualShaderNodeFieldSpinBox* typed_a_spin = dynamic_cast<VisualShaderNodeFieldSpinBox*>(a_spin);
 
         // Create a color preview label
-        QLabel* color_preview = new QLabel(embed_widget);
+        QLabel* color_preview = new QLabel(params_widget);
         color_preview->setFixedHeight(20);
         color_preview->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Fixed);
         color_preview->setContentsMargins(0, 0, 0, 0);
@@ -1234,7 +1379,7 @@ bool VisualShaderGraphicsScene::add_node_to_scene(const int& n_id, const std::sh
         QObject::connect(typed_a_spin, QOverload<int>::of(&QSpinBox::valueChanged), this, [=](int) { update_color_preview(); });
 
         // Add the color preview to the layout
-        embed_widget_layout->addWidget(color_preview);
+        params_layout->addWidget(color_preview);
         break;
       }
       case VisualShader::VisualShaderNode::kVec2ConstantFieldNumber: {
@@ -1302,7 +1447,7 @@ bool VisualShaderGraphicsScene::add_node_to_scene(const int& n_id, const std::sh
         REGISTER_NODE_FIELD_LINE_EDIT_INT(VisualShaderNodePerlinNoise::kEndBandFieldNumber, "End Band");
         REGISTER_NODE_FIELD_LINE_EDIT_INT(VisualShaderNodePerlinNoise::kSeedFieldNumber, "Seed");
         REGISTER_NODE_FIELD_CHECK_BOX(VisualShaderNodePerlinNoise::kPeriodicFieldNumber);
-        REGISTER_NODE_FIELD_REPEATED_MESSAGE(VisualShaderNodePerlinNoise::kGradientFieldNumber, ColorGradientStop::kPositionFieldNumber);
+        REGISTER_NODE_FIELD_REPEATED_MESSAGE(VisualShaderNodePerlinNoise::kGradientFieldNumber, ColorGradientStop::kPositionFieldNumber, "Gradient");
         break;
       }
       case VisualShader::VisualShaderNode::kIsFieldNumber: {
@@ -1371,18 +1516,18 @@ bool VisualShaderGraphicsScene::add_node_to_scene(const int& n_id, const std::sh
         break;
       }
       case VisualShader::VisualShaderNode::kColorizeFieldNumber: {
-        REGISTER_NODE_FIELD_REPEATED_MESSAGE(VisualShaderNodeColorize::kGradientFieldNumber, ColorGradientStop::kPositionFieldNumber);
+        REGISTER_NODE_FIELD_REPEATED_MESSAGE(VisualShaderNodeColorize::kGradientFieldNumber, ColorGradientStop::kPositionFieldNumber, "Gradient");
         break;
       }
       case VisualShader::VisualShaderNode::kGradientFieldNumber: {
         REGISTER_NODE_FIELD_COMBO_BOX(VisualShaderNodeGradient::kGradientTypeFieldNumber);
-        REGISTER_NODE_FIELD_REPEATED_MESSAGE(VisualShaderNodeGradient::kGradientFieldNumber, ColorGradientStop::kPositionFieldNumber);
+        REGISTER_NODE_FIELD_REPEATED_MESSAGE(VisualShaderNodeGradient::kGradientFieldNumber, ColorGradientStop::kPositionFieldNumber, "Gradient");
         break;
       }
       case VisualShader::VisualShaderNode::kCheckerFieldNumber: {
         REGISTER_NODE_FIELD_LINE_EDIT_FLOAT(VisualShaderNodeChecker::kScaleXFieldNumber, "Scale X");
         REGISTER_NODE_FIELD_LINE_EDIT_FLOAT(VisualShaderNodeChecker::kScaleYFieldNumber, "Scale Y");
-        REGISTER_NODE_FIELD_REPEATED_MESSAGE(VisualShaderNodeChecker::kGradientFieldNumber, ColorGradientStop::kPositionFieldNumber);
+        REGISTER_NODE_FIELD_REPEATED_MESSAGE(VisualShaderNodeChecker::kGradientFieldNumber, ColorGradientStop::kPositionFieldNumber, "Gradient");
         break;
       }
       case VisualShader::VisualShaderNode::kBrickFieldNumber: {
@@ -1394,14 +1539,14 @@ bool VisualShaderGraphicsScene::add_node_to_scene(const int& n_id, const std::sh
         REGISTER_NODE_FIELD_LINE_EDIT_FLOAT(VisualShaderNodeBrick::kGapYFieldNumber, "Gap Y");
         REGISTER_NODE_FIELD_LINE_EDIT_FLOAT(VisualShaderNodeBrick::kSmoothFieldNumber, "Smooth");
         REGISTER_NODE_FIELD_CHECK_BOX(VisualShaderNodeBrick::kRandColorFieldNumber);
-        REGISTER_NODE_FIELD_REPEATED_MESSAGE(VisualShaderNodeBrick::kGradientFieldNumber, ColorGradientStop::kPositionFieldNumber);
+        REGISTER_NODE_FIELD_REPEATED_MESSAGE(VisualShaderNodeBrick::kGradientFieldNumber, ColorGradientStop::kPositionFieldNumber, "Gradient");
         break;
       }
       case VisualShader::VisualShaderNode::kTileFieldNumber: {
         REGISTER_NODE_FIELD_LINE_EDIT_FLOAT(VisualShaderNodeTile::kBorderXFieldNumber, "Border X");
         REGISTER_NODE_FIELD_LINE_EDIT_FLOAT(VisualShaderNodeTile::kBorderYFieldNumber, "Border Y");
         REGISTER_NODE_FIELD_LINE_EDIT_FLOAT(VisualShaderNodeTile::kSmoothFieldNumber, "Smooth");
-        REGISTER_NODE_FIELD_REPEATED_MESSAGE(VisualShaderNodeTile::kGradientFieldNumber, ColorGradientStop::kPositionFieldNumber);
+        REGISTER_NODE_FIELD_REPEATED_MESSAGE(VisualShaderNodeTile::kGradientFieldNumber, ColorGradientStop::kPositionFieldNumber, "Gradient");
         break;
       }
       case VisualShader::VisualShaderNode::kFunctionFieldNumber: {
@@ -1410,7 +1555,7 @@ bool VisualShaderGraphicsScene::add_node_to_scene(const int& n_id, const std::sh
         REGISTER_NODE_FIELD_COMBO_BOX(VisualShaderNodeFunction::kCombinerFieldNumber);
         REGISTER_NODE_FIELD_LINE_EDIT_FLOAT(VisualShaderNodeFunction::kScaleXFieldNumber, "Scale X");
         REGISTER_NODE_FIELD_LINE_EDIT_FLOAT(VisualShaderNodeFunction::kScaleYFieldNumber, "Scale Y");
-        REGISTER_NODE_FIELD_REPEATED_MESSAGE(VisualShaderNodeFunction::kGradientFieldNumber, ColorGradientStop::kPositionFieldNumber);
+        REGISTER_NODE_FIELD_REPEATED_MESSAGE(VisualShaderNodeFunction::kGradientFieldNumber, ColorGradientStop::kPositionFieldNumber, "Gradient");
         break;
       }
       case VisualShader::VisualShaderNode::kCellularFieldNumber: {
@@ -1423,7 +1568,7 @@ bool VisualShaderGraphicsScene::add_node_to_scene(const int& n_id, const std::sh
         REGISTER_NODE_FIELD_LINE_EDIT_INT(VisualShaderNodeCellular::kNumPointsFieldNumber, "Num Points");
         REGISTER_NODE_FIELD_CHECK_BOX(VisualShaderNodeCellular::kRandColorFieldNumber);
         REGISTER_NODE_FIELD_CHECK_BOX(VisualShaderNodeCellular::kPeriodicFieldNumber);
-        REGISTER_NODE_FIELD_REPEATED_MESSAGE(VisualShaderNodeCellular::kGradientFieldNumber, ColorGradientStop::kPositionFieldNumber);
+        REGISTER_NODE_FIELD_REPEATED_MESSAGE(VisualShaderNodeCellular::kGradientFieldNumber, ColorGradientStop::kPositionFieldNumber, "Gradient");
         break;
       }
       case VisualShader::VisualShaderNode::kIlluminateFieldNumber: {
@@ -1475,6 +1620,16 @@ bool VisualShaderGraphicsScene::add_node_to_scene(const int& n_id, const std::sh
     embed_widget_proxy->setWidget(embed_widget);
 
     n_o->set_embed_widget(embed_widget); // Set the embed widget to the node graphics object
+
+    // Register the parameters widget so the editor can show it when the node is selected.
+    // Nodes without any editable fields are not registered (the panel shows a hint instead).
+    if (params_layout->count() > 0) {
+      params_widget->hide();
+      node_parameters_widgets[n_id] = params_widget;
+    } else {
+      delete params_widget;
+      params_widget = nullptr;
+    }
 
     if (RendererWidget* spw{n_o->get_renderer_widget()}) {
       QObject::connect(spw, &RendererWidget::scene_update_requested, this,
@@ -1565,6 +1720,19 @@ bool VisualShaderGraphicsScene::delete_node_from_scene(const int& n_id, const in
 
       CONTINUE_IF_TRUE(!this->delete_connection(c_o->get_id(), n_id, i, c_o->get_to_node_id(), c_o->get_to_port_index()), "Failed to delete connection");
     }
+  }
+
+  // Remove the node's parameters widget. Notify the editor first so it can drop the widget from its
+  // panel before we destroy it.
+  auto params_it{node_parameters_widgets.find(n_id)};
+  if (params_it != node_parameters_widgets.end()) {
+    QWidget* params_widget{params_it->second};
+    node_parameters_widgets.erase(params_it);
+
+    Q_EMIT node_parameters_widget_removed(n_id);
+
+    params_widget->setParent(nullptr);
+    delete params_widget;
   }
 
   // Remove the node from the scene
@@ -2321,7 +2489,26 @@ VisualShaderConnectionGraphicsObject* VisualShaderGraphicsScene::get_connection_
   return c_o;
 }
 
+QWidget* VisualShaderGraphicsScene::get_node_parameters_widget(const int& n_id) const {
+  auto it{node_parameters_widgets.find(n_id)};
+  if (it != node_parameters_widgets.end()) {
+    return it->second;
+  }
+
+  return nullptr;
+}
+
 void VisualShaderGraphicsScene::on_scene_update_requested() { update(); }
+
+void VisualShaderGraphicsScene::mousePressEvent(QGraphicsSceneMouseEvent* event) {
+  QGraphicsScene::mousePressEvent(event);
+
+  // Clicking the empty canvas clears the parameters panel. Clicks on any item (node, port or
+  // connection) are ignored here; a node reports its own selection through the @c node_selected signal.
+  if (event->button() == Qt::LeftButton && !itemAt(event->scenePos(), QTransform())) {
+    Q_EMIT node_parameters_requested(-1);
+  }
+}
 
 void VisualShaderGraphicsScene::on_node_deleted(const int& n_id, const int& in_port_count, const int& out_port_count) {
   CHECK_CONDITION_TRUE(n_id == 0, "Cannot delete the output node");
@@ -3329,6 +3516,15 @@ QVariant VisualShaderNodeGraphicsObject::itemChange(GraphicsItemChange change, c
 
 void VisualShaderNodeGraphicsObject::contextMenuEvent(QGraphicsSceneContextMenuEvent* event) {
   context_menu->exec(event->screenPos());
+}
+
+void VisualShaderNodeGraphicsObject::mousePressEvent(QGraphicsSceneMouseEvent* event) {
+  QGraphicsObject::mousePressEvent(event);
+
+  // Clicking a node asks the editor to show its parameters in the right-docked panel.
+  if (event->button() == Qt::LeftButton) {
+    Q_EMIT node_selected(n_id);
+  }
 }
 
 void VisualShaderNodeGraphicsObject::mouseReleaseEvent(QGraphicsSceneMouseEvent* event) {
