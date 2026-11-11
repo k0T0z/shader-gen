@@ -1,6 +1,6 @@
 /*********************************************************************************/
 /*                                                                               */
-/*  Copyright (C) 2024 Seif Kandil (k0T0z)                                       */
+/*  Copyright (C) 2026 Seif Kandil (k0T0z)                                       */
 /*                                                                               */
 /*  This file is a part of the ENIGMA Development Environment.                   */
 /*                                                                               */
@@ -35,6 +35,8 @@
 #include <QtOpenGL/QOpenGLFunctions_4_3_Core>  // https://stackoverflow.com/a/64288966/14629018 explains why we need this.
 #include <QtOpenGL/QOpenGLShaderProgram>
 
+#include "generator/renderer/shader_renderer.hpp"
+
 /**
  * @brief This class is meant to be a temporary solution to preview the shader
  *        code. We should preview the shader code using ENIGMA's Graphics System.
@@ -42,14 +44,14 @@
  * @todo Replace this class with ENIGMA's Graphics System.
  * 
  */
-class RendererWidget : public QOpenGLWidget, protected QOpenGLFunctions_4_3_Core {
+class RendererWidget : public QOpenGLWidget, protected QOpenGLFunctions_4_3_Core, public shadergen_renderer::ShaderRenderer {
     Q_OBJECT
   
    public:
     RendererWidget(QWidget* parent = nullptr);
     ~RendererWidget() override;
   
-    void set_code(const std::string& code);
+    void set_code(const std::string& code) override;
   
    Q_SIGNALS:
     void scene_update_requested();

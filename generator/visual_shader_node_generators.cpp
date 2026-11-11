@@ -32,11 +32,13 @@
 #include <iomanip>
 #include <sstream>
 
+#include "generator/renderer/shader_renderer.hpp"
+
 VisualShaderNodeGeneratorInput::VisualShaderNodeGeneratorInput(const VisualShaderNodeInput::VisualShaderNodeInputType& input_type) 
     : VisualShaderNodeGenerator(), input_type(input_type) {
   input_types_value_names[(int)VisualShaderNodeInput::INPUT_TYPE_UNSPECIFIED] = "";
-  input_types_value_names[(int)VisualShaderNodeInput::INPUT_TYPE_UV] = "FragCoord";
-  input_types_value_names[(int)VisualShaderNodeInput::INPUT_TYPE_TIME] = "uTime";
+  input_types_value_names[(int)VisualShaderNodeInput::INPUT_TYPE_UV] = std::string(shadergen_renderer::ShaderRenderer::kFragCoordName);
+  input_types_value_names[(int)VisualShaderNodeInput::INPUT_TYPE_TIME] = std::string(shadergen_renderer::ShaderRenderer::kTimeUniformName);
 }
 
 std::string VisualShaderNodeGeneratorInput::generate_global_per_node([[maybe_unused]] const int& id) const {
@@ -89,7 +91,7 @@ std::string VisualShaderNodeGeneratorInput::generate_code(
 }
 
 VisualShaderNodeGeneratorOutput::VisualShaderNodeGeneratorOutput() : VisualShaderNodeGenerator() {
-  output_types_value_names[0] = "FragColor";
+  output_types_value_names[0] = std::string(shadergen_renderer::ShaderRenderer::kFragColorName);
 }
 
 std::string VisualShaderNodeGeneratorOutput::generate_global_per_node([[maybe_unused]] const int& id) const {
@@ -101,7 +103,7 @@ std::string VisualShaderNodeGeneratorOutput::generate_global_per_node([[maybe_un
   temp.resize(output_types_value_names.size());
 
   for (const auto& [key, value] : output_types_value_names) {
-    if (value == "FragColor") temp.at(0) = "out vec4 " + value + ";" + std::string("\n");
+    if (value == shadergen_renderer::ShaderRenderer::kFragColorName) temp.at(0) = "out vec4 " + value + ";" + std::string("\n");
   }
 
   for (const auto& value : temp) {

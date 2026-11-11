@@ -1,6 +1,6 @@
 /*********************************************************************************/
 /*                                                                               */
-/*  Copyright (C) 2024 Seif Kandil (k0T0z)                                       */
+/*  Copyright (C) 2026 Seif Kandil (k0T0z)                                       */
 /*                                                                               */
 /*  This file is a part of the ENIGMA Development Environment.                   */
 /*                                                                               */
@@ -40,6 +40,7 @@
 #include <QtWidgets/QGraphicsProxyWidget>
 #include <QtWidgets/QGraphicsScene>
 #include <QtWidgets/QGraphicsView>
+#include <QtWidgets/QGridLayout>
 #include <QtWidgets/QHBoxLayout>
 #include <QtWidgets/QLabel>
 #include <QtWidgets/QLineEdit>
@@ -499,6 +500,25 @@ class VisualShaderGraphicsScene : public QGraphicsScene {
   bool write_default_repeated_field_values_to_node(const int& n_id, const google::protobuf::FieldDescriptor* field_descriptor,
                                                    const QVariantList& default_rows);
 
+  /**
+   * @brief Seed the default values of a singular message field of a node (e.g. a node's optional
+   *        Matrix3x3 transformation).
+   *
+   * @note proto3 message fields default to zero, so a node ported from an implementation that started
+   *       with a non-zero default (e.g. an identity transformation) would otherwise be created with a
+   *       zeroed message. Entries that are already set (e.g. nodes loaded from @c model.json) are left
+   *       untouched.
+   *
+   * @param n_id
+   * @param field_descriptor The descriptor of the singular message field inside the node.
+   * @param default_entries A @c QVariantMap mapping the field number (as a string) of a column inside
+   *        the message to its default value.
+   * @return bool
+   */
+  bool write_default_message_field_values_to_node(const int& n_id,
+                                                  const google::protobuf::FieldDescriptor* field_descriptor,
+                                                  const QVariantMap& default_entries);
+
   bool delete_node_from_model(const int& n_id);
   bool delete_node_from_scene(const int& n_id, const int& in_port_count, const int& out_port_count);
   bool delete_node(const int& n_id, const int& in_port_count, const int& out_port_count);
@@ -522,6 +542,23 @@ class VisualShaderGraphicsScene : public QGraphicsScene {
    */
   bool update_node_repeated_field_in_model(const int& n_id, const int& field_number, const int& row,
                                            const int& sub_field_number, const QVariant& value);
+
+  /**
+   * @brief Write one entry of a coordinate consuming node's Matrix3x3 transformation.
+   *
+   * @note The transformation is a field of the node type message (e.g. VisualShaderNodeChecker), so it
+   *       is addressed through the node_type oneof value (fields <node type>:<transformation field
+   *       number>:<column field number>).
+   *
+   * @param n_id
+   * @param transformation_field_number The field number of the Matrix3x3 transformation on the node
+   *                                    type message (e.g. VisualShaderNodeCellular::kTransformationFieldNumber).
+   * @param column_field_number The field number of the entry inside the Matrix3x3 message (1..9).
+   * @param value
+   * @return bool
+   */
+  bool update_node_transformation_in_model(const int& n_id, const int& transformation_field_number,
+                                           const int& column_field_number, const QVariant& value);
 
   bool update_node_in_scene(const int& n_id, const int& field_number, const QVariant& value);
   bool update_node_field_in_scene(const int& n_id, const int& field_number, const QVariant& value);
@@ -1424,6 +1461,61 @@ class VisualShaderNodeFieldRepeatedMessage : public QWidget {
   QVBoxLayout* m_rows_layout;
 };
 
+/**
+    @brief A widget that edits a node's coordinate transformation (a Matrix3x3) as a 3x3 grid.
+
+    @note Each of the nine entries is edited as a float and forwarded to the scene addressed 
+          by its column field number, exactly like an ordinary node parameter.
+
+    @note A 3x3 cluster of transform buttons sits next to the grid. Every button (except the identity 
+          reset) right-multiplies the current matrix by a translate/scale/rotate step and re-emits 
+          the nine entries. Holding shift shrinks the step.
+*/
+class VisualShaderNodeFieldTransformation : public QWidget {
+  Q_OBJECT
+
+ public:
+  VisualShaderNodeFieldTransformation(const MessageModel* transformation_model, const int& transformation_field_number,
+                                      const int& n_id, QWidget* parent = nullptr);
+  ~VisualShaderNodeFieldTransformation() = default;
+
+ Q_SIGNALS:
+  void node_transformation_update_requested(const int& n_id, const int& transformation_field_number,
+                                            const int& column_field_number, const QVariant& value);
+
+ private:
+  /// The number of cells of the 3x3 matrix (m00..m22).
+  static constexpr int kMatrixCellCount{9};
+
+  /**
+   * @brief Right-multiply the current matrix by @c transformation and mirror the result.
+   *
+   * @note The current matrix is right-multiplied (@c M = M * T). Both matrices are row-major. The 
+   *       nine entries are refreshed in place and re-emitted once the product is computed.
+   *
+   * @param transformation The row-major 3x3 transformation to apply on the right.
+   */
+  void apply_transformation(const float* transformation);
+
+  /**
+   * @brief Mirror @c m_entries into the entry widgets and re-emit the nine column updates.
+   *
+   * @note The entry text is assigned with the signals blocked, so the refresh does not re-enter 
+   *       this widget as a per-entry update; the nine updates are emitted explicitly.
+   */
+  void write_transformation();
+
+  int m_n_id;
+  /// The field number of the Matrix3x3 transformation on the node type message, used to address the model.
+  int m_transformation_field_number;
+  /// The current matrix values, row-major (m00..m22), kept in sync with the entry widgets.
+  float m_entries[kMatrixCellCount];
+  /// The column field number backing each entry, used to address the model.
+  int m_column_field_numbers[kMatrixCellCount];
+  /// The entry widgets, refreshed in place after a transform button is pressed.
+  VisualShaderNodeFieldLineEditFloat* m_entry_widgets[kMatrixCellCount];
+};
+
 #define REGISTER_NODE_FIELD_COMBO_BOX(field_number) \
   if (true) { \
     QVariant initial_value{visual_shader_model->data(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), \
@@ -1553,6 +1645,24 @@ class VisualShaderNodeFieldRepeatedMessage : public QWidget {
     QObject::connect(node_field_widget, &VisualShaderNodeFieldRepeatedMessage::node_repeated_field_row_remove_requested, this, &VisualShaderGraphicsScene::on_node_repeated_field_row_remove_requested); \
     QObject::connect(node_field_widget, &VisualShaderNodeFieldRepeatedMessage::node_repeated_field_sort_requested, this, &VisualShaderGraphicsScene::on_node_repeated_field_sort_requested); \
     node_field_widgets[n_id][field_number] = node_field_widget; \
+  } else                                                                                                        \
+    ((void)0)
+
+#define REGISTER_NODE_FIELD_TRANSFORMATION(field_number) \
+  if (true) { \
+    const ProtoModel* transformation_model = visual_shader_model->get_sub_model(FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), \
+      FieldPath::RepeatedAt(row_entry), \
+      FieldPath::FieldNumber(node_type_field_number), \
+      FieldPath::FieldNumber(field_number))); \
+    const MessageModel* transformation_model_casted = dynamic_cast<const MessageModel*>(transformation_model); \
+    if (transformation_model_casted != nullptr) { \
+      VisualShaderNodeFieldTransformation* node_field_widget = new VisualShaderNodeFieldTransformation(transformation_model_casted, field_number, n_id, params_widget); \
+      node_field_widget->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Fixed); \
+      node_field_widget->setContentsMargins(0, 0, 0, 0);  \
+      add_parameter_row(params_layout, params_widget, QString("Transformation"), node_field_widget); \
+      QObject::connect(node_field_widget, &VisualShaderNodeFieldTransformation::node_transformation_update_requested, this, &VisualShaderGraphicsScene::update_node_transformation_in_model); \
+      QObject::connect(node_field_widget, &VisualShaderNodeFieldTransformation::node_transformation_update_requested, this, &VisualShaderGraphicsScene::on_update_renderer_widgets_requested); \
+    } \
   } else                                                                                                        \
     ((void)0)
 

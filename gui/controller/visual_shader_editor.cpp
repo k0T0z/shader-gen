@@ -32,6 +32,7 @@
 #include <QFileDialog>
 #include <QGuiApplication>
 
+#include <cmath>
 #include <sstream>
 #include <unordered_map>
 #include "error_macros.hpp"
@@ -1163,6 +1164,17 @@ bool VisualShaderGraphicsScene::write_default_values_to_node(const int& n_id) {
       continue;
     }
 
+    // A singular message field (e.g. a node's optional Matrix3x3 transformation) holds its default as
+    // a single row of columns. Fields without an overridden default report an invalid @c QVariant and
+    // are left to the Protobuf default as before.
+    if (field_descriptor->cpp_type() == google::protobuf::FieldDescriptor::CPPTYPE_MESSAGE) {
+      const QVariant default_value{shadergen_utils::get_proto_field_default_value(field_descriptor)};
+      SILENT_CONTINUE_IF_TRUE(!default_value.isValid());
+      CONTINUE_IF_TRUE(!write_default_message_field_values_to_node(n_id, field_descriptor, default_value.toMap()),
+                       "Failed to write the default values of message field " + std::to_string(field_number));
+      continue;
+    }
+
     // Skip the fields that are already set (e.g. nodes loaded from model.json)
     SILENT_CONTINUE_IF_TRUE(get_node_field_value(n_id, field_number).isValid());
 
@@ -1197,6 +1209,38 @@ bool VisualShaderGraphicsScene::write_default_repeated_field_values_to_node(
           !update_node_repeated_field_in_model(n_id, field_descriptor->number(), row_index, sub_field_number, it.value()),
           false, "Failed to write the default value of column " + std::to_string(sub_field_number));
     }
+  }
+
+  return true;
+}
+
+bool VisualShaderGraphicsScene::write_default_message_field_values_to_node(
+    const int& n_id, const google::protobuf::FieldDescriptor* field_descriptor, const QVariantMap& default_entries) {
+  CHECK_PARAM_NULLPTR_NON_VOID(field_descriptor, false, "Field descriptor is null.");
+
+  const int row_entry{find_node_entry(n_id)};
+  CHECK_CONDITION_TRUE_NON_VOID(row_entry == -1, false, "Failed to find node entry");
+
+  const int oneof_value_field_number{get_node_type_field_number(row_entry)};
+  CHECK_CONDITION_TRUE_NON_VOID(oneof_value_field_number == -1, false, "Failed to get oneof value field number");
+
+  for (QVariantMap::const_iterator it{default_entries.constBegin()}; it != default_entries.constEnd(); ++it) {
+    const int sub_field_number{it.key().toInt()};
+
+    const FieldPath path{FieldPath::Of<VisualShader>(
+        FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry),
+        FieldPath::FieldNumber(oneof_value_field_number), FieldPath::FieldNumber(field_descriptor->number()),
+        FieldPath::FieldNumber(sub_field_number))};
+
+    // Skip the entries that are already set (e.g. nodes loaded from model.json with a non-identity
+    // transformation). An unset optional field reports an invalid @c QVariant.
+    // get_sub_model() consumes the path (FieldPath::skip_component()), so the probe must run on a
+    // copy; otherwise @c path would be empty by the time set_data() resolves it.
+    FieldPath probe_path{path};
+    SILENT_CONTINUE_IF_TRUE(visual_shader_model->data(probe_path).isValid());
+
+    CONTINUE_IF_TRUE(!visual_shader_model->set_data(path, it.value()),
+                     "Failed to write the default value of column " + std::to_string(sub_field_number));
   }
 
   return true;
@@ -1436,6 +1480,7 @@ bool VisualShaderGraphicsScene::add_node_to_scene(const int& n_id, const std::sh
       }
       case VisualShader::VisualShaderNode::kValueNoiseFieldNumber: {
         REGISTER_NODE_FIELD_LINE_EDIT_FLOAT(VisualShaderNodeValueNoise::kScaleFieldNumber, "Scale");
+        REGISTER_NODE_FIELD_TRANSFORMATION(VisualShaderNodeValueNoise::kTransformationFieldNumber);
         break;
       }
       case VisualShader::VisualShaderNode::kPerlinNoiseFieldNumber: {
@@ -1448,6 +1493,7 @@ bool VisualShaderGraphicsScene::add_node_to_scene(const int& n_id, const std::sh
         REGISTER_NODE_FIELD_LINE_EDIT_INT(VisualShaderNodePerlinNoise::kSeedFieldNumber, "Seed");
         REGISTER_NODE_FIELD_CHECK_BOX(VisualShaderNodePerlinNoise::kPeriodicFieldNumber);
         REGISTER_NODE_FIELD_REPEATED_MESSAGE(VisualShaderNodePerlinNoise::kGradientFieldNumber, ColorGradientStop::kPositionFieldNumber, "Gradient");
+        REGISTER_NODE_FIELD_TRANSFORMATION(VisualShaderNodePerlinNoise::kTransformationFieldNumber);
         break;
       }
       case VisualShader::VisualShaderNode::kIsFieldNumber: {
@@ -1522,12 +1568,14 @@ bool VisualShaderGraphicsScene::add_node_to_scene(const int& n_id, const std::sh
       case VisualShader::VisualShaderNode::kGradientFieldNumber: {
         REGISTER_NODE_FIELD_COMBO_BOX(VisualShaderNodeGradient::kGradientTypeFieldNumber);
         REGISTER_NODE_FIELD_REPEATED_MESSAGE(VisualShaderNodeGradient::kGradientFieldNumber, ColorGradientStop::kPositionFieldNumber, "Gradient");
+        REGISTER_NODE_FIELD_TRANSFORMATION(VisualShaderNodeGradient::kTransformationFieldNumber);
         break;
       }
       case VisualShader::VisualShaderNode::kCheckerFieldNumber: {
         REGISTER_NODE_FIELD_LINE_EDIT_FLOAT(VisualShaderNodeChecker::kScaleXFieldNumber, "Scale X");
         REGISTER_NODE_FIELD_LINE_EDIT_FLOAT(VisualShaderNodeChecker::kScaleYFieldNumber, "Scale Y");
         REGISTER_NODE_FIELD_REPEATED_MESSAGE(VisualShaderNodeChecker::kGradientFieldNumber, ColorGradientStop::kPositionFieldNumber, "Gradient");
+        REGISTER_NODE_FIELD_TRANSFORMATION(VisualShaderNodeChecker::kTransformationFieldNumber);
         break;
       }
       case VisualShader::VisualShaderNode::kBrickFieldNumber: {
@@ -1540,6 +1588,7 @@ bool VisualShaderGraphicsScene::add_node_to_scene(const int& n_id, const std::sh
         REGISTER_NODE_FIELD_LINE_EDIT_FLOAT(VisualShaderNodeBrick::kSmoothFieldNumber, "Smooth");
         REGISTER_NODE_FIELD_CHECK_BOX(VisualShaderNodeBrick::kRandColorFieldNumber);
         REGISTER_NODE_FIELD_REPEATED_MESSAGE(VisualShaderNodeBrick::kGradientFieldNumber, ColorGradientStop::kPositionFieldNumber, "Gradient");
+        REGISTER_NODE_FIELD_TRANSFORMATION(VisualShaderNodeBrick::kTransformationFieldNumber);
         break;
       }
       case VisualShader::VisualShaderNode::kTileFieldNumber: {
@@ -1547,6 +1596,7 @@ bool VisualShaderGraphicsScene::add_node_to_scene(const int& n_id, const std::sh
         REGISTER_NODE_FIELD_LINE_EDIT_FLOAT(VisualShaderNodeTile::kBorderYFieldNumber, "Border Y");
         REGISTER_NODE_FIELD_LINE_EDIT_FLOAT(VisualShaderNodeTile::kSmoothFieldNumber, "Smooth");
         REGISTER_NODE_FIELD_REPEATED_MESSAGE(VisualShaderNodeTile::kGradientFieldNumber, ColorGradientStop::kPositionFieldNumber, "Gradient");
+        REGISTER_NODE_FIELD_TRANSFORMATION(VisualShaderNodeTile::kTransformationFieldNumber);
         break;
       }
       case VisualShader::VisualShaderNode::kFunctionFieldNumber: {
@@ -1556,6 +1606,7 @@ bool VisualShaderGraphicsScene::add_node_to_scene(const int& n_id, const std::sh
         REGISTER_NODE_FIELD_LINE_EDIT_FLOAT(VisualShaderNodeFunction::kScaleXFieldNumber, "Scale X");
         REGISTER_NODE_FIELD_LINE_EDIT_FLOAT(VisualShaderNodeFunction::kScaleYFieldNumber, "Scale Y");
         REGISTER_NODE_FIELD_REPEATED_MESSAGE(VisualShaderNodeFunction::kGradientFieldNumber, ColorGradientStop::kPositionFieldNumber, "Gradient");
+        REGISTER_NODE_FIELD_TRANSFORMATION(VisualShaderNodeFunction::kTransformationFieldNumber);
         break;
       }
       case VisualShader::VisualShaderNode::kCellularFieldNumber: {
@@ -1569,6 +1620,7 @@ bool VisualShaderGraphicsScene::add_node_to_scene(const int& n_id, const std::sh
         REGISTER_NODE_FIELD_CHECK_BOX(VisualShaderNodeCellular::kRandColorFieldNumber);
         REGISTER_NODE_FIELD_CHECK_BOX(VisualShaderNodeCellular::kPeriodicFieldNumber);
         REGISTER_NODE_FIELD_REPEATED_MESSAGE(VisualShaderNodeCellular::kGradientFieldNumber, ColorGradientStop::kPositionFieldNumber, "Gradient");
+        REGISTER_NODE_FIELD_TRANSFORMATION(VisualShaderNodeCellular::kTransformationFieldNumber);
         break;
       }
       case VisualShader::VisualShaderNode::kIlluminateFieldNumber: {
@@ -1804,6 +1856,28 @@ bool VisualShaderGraphicsScene::update_node_repeated_field_in_model(const int& n
                                   FieldPath::RepeatedAt(row), FieldPath::FieldNumber(sub_field_number)),
       value)};
   CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to update repeated node field in model");
+
+  return true;
+}
+
+bool VisualShaderGraphicsScene::update_node_transformation_in_model(const int& n_id, const int& transformation_field_number,
+                                                                    const int& column_field_number,
+                                                                    const QVariant& value) {
+  const int row_entry{find_node_entry(n_id)};
+  CHECK_CONDITION_TRUE_NON_VOID(row_entry == -1, false, "Failed to find node entry");
+
+  const int oneof_value_field_number{get_node_type_field_number(row_entry)};
+  CHECK_CONDITION_TRUE_NON_VOID(oneof_value_field_number == -1, false, "Failed to get oneof value field number");
+
+  // The transformation is a field of the node type message, so the column is addressed through the
+  // node_type oneof value message followed by the transformation field number.
+  const bool result{visual_shader_model->set_data(
+      FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(row_entry),
+                                  FieldPath::FieldNumber(oneof_value_field_number),
+                                  FieldPath::FieldNumber(transformation_field_number),
+                                  FieldPath::FieldNumber(column_field_number)),
+      value)};
+  CHECK_CONDITION_TRUE_NON_VOID(!result, false, "Failed to update node transformation in model");
 
   return true;
 }
@@ -4259,4 +4333,187 @@ void VisualShaderNodeFieldRepeatedMessage::refresh_from_model() {
   clear_rows();
 
   for (int row{0}; row < m_repeated_model->rowCount(); ++row) build_row(row);
+}
+
+VisualShaderNodeFieldTransformation::VisualShaderNodeFieldTransformation(const MessageModel* transformation_model,
+                                                                        const int& transformation_field_number,
+                                                                        const int& n_id, QWidget* parent)
+    : QWidget(parent), m_n_id(n_id), m_transformation_field_number(transformation_field_number) {
+  CHECK_PARAM_NULLPTR(transformation_model, "Transformation model is nullptr.");
+
+  setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
+  setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
+
+  for (int i{0}; i < kMatrixCellCount; ++i) {
+    m_entries[i] = 0.0f;
+    m_column_field_numbers[i] = 0;
+    m_entry_widgets[i] = nullptr;
+  }
+
+  QGridLayout* grid{new QGridLayout(this)};
+  grid->setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
+  grid->setSpacing(2);
+
+  // The nine entries of the row-major matrix (m00..m22) are laid out as a 3x3 grid.
+  for (int column{0}; column < transformation_model->columnCount() && column < kMatrixCellCount; ++column) {
+    const ProtoModel* column_model{transformation_model->get_sub_model_by_index(column)};
+    SILENT_CONTINUE_IF_TRUE(column_model == nullptr);
+
+    const FieldDescriptor* column_descriptor{transformation_model->get_column_descriptor(column)};
+    SILENT_CONTINUE_IF_TRUE(column_descriptor == nullptr);
+
+    QVariant initial_value{column_model->data()};
+    if (!initial_value.isValid()) initial_value = shadergen_utils::get_proto_field_default_value(column_descriptor);
+
+    m_entries[column] = initial_value.toFloat();
+    m_column_field_numbers[column] = column_descriptor->number();
+
+    VisualShaderNodeFieldLineEditFloat* entry{
+        new VisualShaderNodeFieldLineEditFloat(initial_value, n_id, column_descriptor->number(), this)};
+    entry->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Fixed);
+    entry->setContentsMargins(0, 0, 0, 0);  // Left, top, right, bottom
+
+    m_entry_widgets[column] = entry;
+
+    grid->addWidget(entry, column / 3, column % 3);
+
+    QObject::connect(entry, &VisualShaderNodeFieldLineEditFloat::node_update_requested, this,
+                     [this](const int&, const int& field_number, const QVariant& value) {
+                       // Keep the tracked matrix in sync so the transform buttons multiply an up to
+                       // date matrix even after the entries are edited by hand.
+                       for (int i{0}; i < kMatrixCellCount; ++i) {
+                         if (m_column_field_numbers[i] == field_number) {
+                           m_entries[i] = value.toFloat();
+                           break;
+                         }
+                       }
+                       Q_EMIT node_transformation_update_requested(m_n_id, m_transformation_field_number, field_number, value);
+                     });
+  }
+
+  // A 3x3 cluster of transform buttons:
+  //
+  //     z+  y+  z-
+  //     x-  I   x+
+  //     r-  y-  r+
+  //
+  // Every button except the identity reset right-multiplies the current matrix by a translate,
+  // scale or rotate step. Holding shift shrinks the step.
+  auto make_transform_button = [this, grid](const QString& text, const int& row, const int& column) {
+    QPushButton* button{new QPushButton(text, this)};
+    button->setFixedSize(32, 24);
+    button->setFocusPolicy(Qt::NoFocus);
+    grid->addWidget(button, row, column);
+    return button;
+  };
+
+  // The translate/scale/rotate step values; the modifier is read on every click so shift stays live.
+  auto step = []() {
+    struct Step {
+      float rotation_degrees;
+      float translation;
+      float scale;
+    };
+
+    const bool shift{QGuiApplication::queryKeyboardModifiers().testFlag(Qt::ShiftModifier)};
+    return shift ? Step{45.0f / 16.0f, 0.125f / 16.0f, 1.125f} : Step{45.0f / 4.0f, 0.125f / 2.0f, 2.0f};
+  };
+
+  QObject::connect(make_transform_button(QStringLiteral("z+"), 0, 3), &QPushButton::clicked, this, [this, step]() {
+    const float s{1.0f / step().scale};
+    const float transformation[kMatrixCellCount]{s, 0.0f, 0.0f, 0.0f, s, 0.0f, 0.0f, 0.0f, 1.0f};
+    apply_transformation(transformation);
+  });
+
+  QObject::connect(make_transform_button(QStringLiteral("y+"), 0, 4), &QPushButton::clicked, this, [this, step]() {
+    const float t{step().translation};
+    const float transformation[kMatrixCellCount]{1.0f, 0.0f, 0.0f, 0.0f, 1.0f, t, 0.0f, 0.0f, 1.0f};
+    apply_transformation(transformation);
+  });
+
+  QObject::connect(make_transform_button(QStringLiteral("z-"), 0, 5), &QPushButton::clicked, this, [this, step]() {
+    const float s{step().scale};
+    const float transformation[kMatrixCellCount]{s, 0.0f, 0.0f, 0.0f, s, 0.0f, 0.0f, 0.0f, 1.0f};
+    apply_transformation(transformation);
+  });
+
+  QObject::connect(make_transform_button(QStringLiteral("x-"), 1, 3), &QPushButton::clicked, this, [this, step]() {
+    const float t{-step().translation};
+    const float transformation[kMatrixCellCount]{1.0f, 0.0f, t, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f};
+    apply_transformation(transformation);
+  });
+
+  // The identity button replaces the matrix instead of multiplying it.
+  QObject::connect(make_transform_button(QStringLiteral("I"), 1, 4), &QPushButton::clicked, this, [this]() {
+    const float identity[kMatrixCellCount]{1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f};
+    for (int i{0}; i < kMatrixCellCount; ++i) m_entries[i] = identity[i];
+    write_transformation();
+  });
+
+  QObject::connect(make_transform_button(QStringLiteral("x+"), 1, 5), &QPushButton::clicked, this, [this, step]() {
+    const float t{step().translation};
+    const float transformation[kMatrixCellCount]{1.0f, 0.0f, t, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f};
+    apply_transformation(transformation);
+  });
+
+  QObject::connect(make_transform_button(QStringLiteral("r-"), 2, 3), &QPushButton::clicked, this, [this, step]() {
+    const float radians{-step().rotation_degrees * (3.14159265358979323846f / 180.0f)};
+    const float c{std::cos(radians)};
+    const float s{std::sin(radians)};
+    const float transformation[kMatrixCellCount]{c, s, 0.0f, -s, c, 0.0f, 0.0f, 0.0f, 1.0f};
+    apply_transformation(transformation);
+  });
+
+  QObject::connect(make_transform_button(QStringLiteral("y-"), 2, 4), &QPushButton::clicked, this, [this, step]() {
+    const float t{-step().translation};
+    const float transformation[kMatrixCellCount]{1.0f, 0.0f, 0.0f, 0.0f, 1.0f, t, 0.0f, 0.0f, 1.0f};
+    apply_transformation(transformation);
+  });
+
+  QObject::connect(make_transform_button(QStringLiteral("r+"), 2, 5), &QPushButton::clicked, this, [this, step]() {
+    const float radians{step().rotation_degrees * (3.14159265358979323846f / 180.0f)};
+    const float c{std::cos(radians)};
+    const float s{std::sin(radians)};
+    const float transformation[kMatrixCellCount]{c, s, 0.0f, -s, c, 0.0f, 0.0f, 0.0f, 1.0f};
+    apply_transformation(transformation);
+  });
+}
+
+void VisualShaderNodeFieldTransformation::apply_transformation(const float* transformation) {
+  CHECK_PARAM_NULLPTR(transformation, "Transformation is nullptr.");
+
+  // Right-multiply the current matrix by the given transformation (M = M * T). Both matrices are
+  // row-major.
+  const float product[kMatrixCellCount]{
+      m_entries[0] * transformation[0] + m_entries[1] * transformation[3] + m_entries[2] * transformation[6],
+      m_entries[0] * transformation[1] + m_entries[1] * transformation[4] + m_entries[2] * transformation[7],
+      m_entries[0] * transformation[2] + m_entries[1] * transformation[5] + m_entries[2] * transformation[8],
+      m_entries[3] * transformation[0] + m_entries[4] * transformation[3] + m_entries[5] * transformation[6],
+      m_entries[3] * transformation[1] + m_entries[4] * transformation[4] + m_entries[5] * transformation[7],
+      m_entries[3] * transformation[2] + m_entries[4] * transformation[5] + m_entries[5] * transformation[8],
+      m_entries[6] * transformation[0] + m_entries[7] * transformation[3] + m_entries[8] * transformation[6],
+      m_entries[6] * transformation[1] + m_entries[7] * transformation[4] + m_entries[8] * transformation[7],
+      m_entries[6] * transformation[2] + m_entries[7] * transformation[5] + m_entries[8] * transformation[8]};
+
+  for (int i{0}; i < kMatrixCellCount; ++i) m_entries[i] = product[i];
+
+  write_transformation();
+}
+
+void VisualShaderNodeFieldTransformation::write_transformation() {
+  // Refresh the entries in place. The text is set with the signals blocked so that the change does
+  // not re-enter this widget as a per-entry update; the nine updates are emitted explicitly below.
+  for (int i{0}; i < kMatrixCellCount; ++i) {
+    VisualShaderNodeFieldLineEditFloat* entry{m_entry_widgets[i]};
+    SILENT_CONTINUE_IF_TRUE(entry == nullptr);
+
+    const bool blocked{entry->blockSignals(true)};
+    entry->set_current_text(QString::number(m_entries[i], 'f', 4).toStdString());
+    entry->blockSignals(blocked);
+  }
+
+  for (int i{0}; i < kMatrixCellCount; ++i) {
+    Q_EMIT node_transformation_update_requested(m_n_id, m_transformation_field_number, m_column_field_numbers[i],
+                                                m_entries[i]);
+  }
 }

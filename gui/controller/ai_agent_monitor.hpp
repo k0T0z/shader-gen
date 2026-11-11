@@ -1,6 +1,6 @@
 /*********************************************************************************/
 /*                                                                               */
-/*  Copyright (C) 2024 Seif Kandil (k0T0z)                                       */
+/*  Copyright (C) 2026 Seif Kandil (k0T0z)                                       */
 /*                                                                               */
 /*  This file is a part of the ENIGMA Development Environment.                   */
 /*                                                                               */
@@ -42,6 +42,7 @@
 #include <QtOpenGL/QOpenGLShaderProgram>
 #include <QOpenGLFramebufferObject>
 
+#include "generator/renderer/shader_renderer.hpp"
 #include "gui/controller/fitness_plotter.hpp"
 
 class CurrentOutputRenderer;
@@ -109,7 +110,7 @@ class AIAgentMonitor : public QWidget {
   QImage create_random_image(const int& width, const int& height);
 };
 
-class CurrentOutputRenderer : public QOpenGLWidget, protected QOpenGLFunctions_4_3_Core  {
+class CurrentOutputRenderer : public QOpenGLWidget, protected QOpenGLFunctions_4_3_Core, public shadergen_renderer::ShaderRenderer {
  Q_OBJECT
   
  public:
@@ -119,7 +120,7 @@ class CurrentOutputRenderer : public QOpenGLWidget, protected QOpenGLFunctions_4
   void set_is_dynamic(const bool& is_dynamic);
 
   void force_set_code(const std::string& code);
-  void set_code(const std::string& code);
+  void set_code(const std::string& code) override;
   
   QImage get_pixel_data();
 

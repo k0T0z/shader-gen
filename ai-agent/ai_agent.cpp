@@ -162,7 +162,8 @@ namespace ai_agent_main {
         bool result{shadergen_visual_shader_generator::generate_shader(encoded_graph, code)};
         CHECK_CONDITION_TRUE_NON_VOID(!result, std::numeric_limits<unsigned long>::max(), "Failed to generate shader code");
 
-        QImage extracted_image = shader_sampler->sample_once(code);
+        shader_sampler->set_code(code);
+        QImage extracted_image = shader_sampler->sample_once();
 
         CHECK_CONDITION_TRUE_NON_VOID(extracted_image.isNull(), std::numeric_limits<unsigned long>::max(), "Failed to get fitness value");
 

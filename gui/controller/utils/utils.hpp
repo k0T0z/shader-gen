@@ -1,6 +1,6 @@
 /*********************************************************************************/
 /*                                                                               */
-/*  Copyright (C) 2024 Seif Kandil (k0T0z)                                       */
+/*  Copyright (C) 2026 Seif Kandil (k0T0z)                                       */
 /*                                                                               */
 /*  This file is a part of the ENIGMA Development Environment.                   */
 /*                                                                               */
@@ -88,13 +88,8 @@ inline static std::string encode_graph(const ProtoModel* nodes, const ProtoModel
 
         const int field_count{node_type_model->columnCount()};
 
-        if (field_count == 0) {
-            encoded_graph.push_back(shadergen_graph_string_utils::join_string({"0", std::to_string(n_id), std::to_string(oneof_value_field_number)}, ';'));
-            continue;
-        }
-
         std::vector<std::string> parameters;
-        parameters.reserve(field_count);
+        parameters.reserve(field_count + Matrix3x3::descriptor()->field_count());
 
         for (int j{0}; j < field_count; ++j) {
             const ProtoModel* field_model{node_type_model_casted->get_sub_model_by_index(j)};
@@ -137,8 +132,57 @@ inline static std::string encode_graph(const ProtoModel* nodes, const ProtoModel
                 continue;
             }
 
+            // A singular message field (the coordinate consuming nodes' Matrix3x3 transformation) is a
+            // set of parameters keyed by "<field number>:<column field number>" (e.g. "4:1=1" for m00),
+            // i.e. exactly like a value inside a repeated message field but without the row index. The
+            // identity matrix is omitted so that an untransformed node carries no redundant parameters.
+            if (field_descriptor->cpp_type() == FieldDescriptor::CPPTYPE_MESSAGE &&
+                field_descriptor->message_type() == Matrix3x3::descriptor()) {
+                const MessageModel* matrix_model{dynamic_cast<const MessageModel*>(field_model)};
+                CHECK_PARAM_NULLPTR_NON_VOID(matrix_model, "", "Matrix3x3 field model is not a MessageModel.");
+
+                std::vector<std::string> encoded_values(matrix_model->columnCount());
+                bool is_identity{true};
+
+                for (int column{0}; column < matrix_model->columnCount(); ++column) {
+                    const ProtoModel* column_model{matrix_model->get_sub_model_by_index(column)};
+                    CHECK_PARAM_NULLPTR_NON_VOID(column_model, "", "Matrix3x3 column model is nullptr.");
+
+                    const FieldDescriptor* column_descriptor{matrix_model->get_column_descriptor(column)};
+                    CHECK_PARAM_NULLPTR_NON_VOID(column_descriptor, "", "Matrix3x3 column descriptor is nullptr.");
+
+                    // The diagonal of the identity matrix is one, every other entry is zero. An entry
+                    // that was never set (e.g. a node whose transformation was not seeded into the
+                    // model) is an identity entry, so an untransformed node carries no parameters.
+                    const bool is_diagonal{column_descriptor->number() == Matrix3x3::kM00FieldNumber ||
+                                           column_descriptor->number() == Matrix3x3::kM11FieldNumber ||
+                                           column_descriptor->number() == Matrix3x3::kM22FieldNumber};
+                    const float identity_entry{is_diagonal ? 1.0f : 0.0f};
+
+                    QVariant column_value{column_model->data()};
+                    if (!column_value.isValid()) column_value = identity_entry;
+
+                    if (column_value.toFloat() != identity_entry) is_identity = false;
+
+                    encoded_values.at(column) = shadergen_graph_string_utils::join_string(
+                        {std::to_string(field_number) + ':' + std::to_string(column_descriptor->number()),
+                         column_value.toString().toStdString()},
+                        '=');
+                }
+
+                SILENT_CONTINUE_IF_TRUE(is_identity);
+
+                parameters.insert(parameters.end(), encoded_values.begin(), encoded_values.end());
+                continue;
+            }
+
             const QVariant field_value{field_model->data()};
             parameters.push_back(shadergen_graph_string_utils::join_string({std::to_string(field_number), field_value.toString().toStdString()}, '='));
+        }
+
+        if (parameters.empty()) {
+            encoded_graph.push_back(shadergen_graph_string_utils::join_string({"0", std::to_string(n_id), std::to_string(oneof_value_field_number)}, ';'));
+            continue;
         }
 
         encoded_graph.push_back(shadergen_graph_string_utils::join_string({"0", std::to_string(n_id), std::to_string(oneof_value_field_number), shadergen_graph_string_utils::join_string(parameters, ';')}, ';'));

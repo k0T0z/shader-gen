@@ -36,6 +36,7 @@
 #include "error_macros.hpp"
 #include "generator/graph_string_utils.hpp"
 #include "generator/port_type_generator_factory.hpp"
+#include "generator/renderer/shader_renderer.hpp"
 #include "generator/vs_node_pattern_generators.hpp"
 
 using namespace shadergen_graph_string_utils;
@@ -141,6 +142,44 @@ static std::vector<VisualShaderColorGradientStop> parse_color_gradient(const std
   stops.reserve(stops_by_row.size());
   for (const auto& [row, stop] : stops_by_row) stops.push_back(stop);
   return stops;
+}
+
+/**
+ * @brief Decode a node's base coordinate transformation from its encoded parameters.
+ *
+ * The coordinate consuming nodes declare a @c Matrix3x3 transformation, so each of its nine entries is
+ * exposed as an ordinary node parameter keyed by @c "<field number>:<column field number>" (e.g.
+ * @c "4:1=1" for @c m00), i.e. exactly like a value inside a repeated message field but without the row
+ * index. Only these two-token keys are transformation entries: scalar parameters are keyed by a single
+ * token and repeated message values (gradient stops) by three, so both are skipped and missing entries
+ * keep the identity default.
+ */
+static Matrix3x3 parse_transformation(const std::vector<std::string>& parameters) noexcept {
+  Matrix3x3 transformation{make_identity_transformation()};
+
+  for (const std::string& parameter : parameters) {
+    const std::vector<std::string> parameter_tokens{split_string(parameter, '=')};
+    const std::vector<std::string> key_tokens{split_string(get_node_entity_parameter_field_number(parameter_tokens), ':')};
+    if (key_tokens.size() != 2) continue;  // Not a transformation entry.
+
+    const int column{std::stoi(key_tokens.at(1))};
+    const float value{std::stof(get_node_entity_parameter_value(parameter_tokens))};
+
+    switch (column) {
+      case Matrix3x3::kM00FieldNumber: transformation.set_m00(value); break;
+      case Matrix3x3::kM01FieldNumber: transformation.set_m01(value); break;
+      case Matrix3x3::kM02FieldNumber: transformation.set_m02(value); break;
+      case Matrix3x3::kM10FieldNumber: transformation.set_m10(value); break;
+      case Matrix3x3::kM11FieldNumber: transformation.set_m11(value); break;
+      case Matrix3x3::kM12FieldNumber: transformation.set_m12(value); break;
+      case Matrix3x3::kM20FieldNumber: transformation.set_m20(value); break;
+      case Matrix3x3::kM21FieldNumber: transformation.set_m21(value); break;
+      case Matrix3x3::kM22FieldNumber: transformation.set_m22(value); break;
+      default: break;
+    }
+  }
+
+  return transformation;
 }
 
 static std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>> raw_to_generators(const std::string& graph) noexcept {
@@ -376,7 +415,7 @@ static std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>> raw_t
           CONTINUE_IF_TRUE(field_number != VisualShaderNodeValueNoise::kScaleFieldNumber, "Wrong field number.");
           const float scale{std::stof(get_node_entity_parameter_value(parameter_tokens))};
 
-          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorValueNoise>(scale);
+          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorValueNoise>(scale, parse_transformation(parameters));
           break;
       }
       case VisualShader::VisualShaderNode::kPerlinNoiseFieldNumber: {
@@ -424,7 +463,7 @@ static std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>> raw_t
 
           const std::vector<VisualShaderColorGradientStop> gradient{parse_color_gradient(parameters)};
 
-          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorPerlinNoise>(scale_x, scale_y, value_scale, persistence, start_band, end_band, seed, periodic, gradient);
+          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorPerlinNoise>(scale_x, scale_y, value_scale, persistence, start_band, end_band, seed, periodic, gradient, parse_transformation(parameters));
           break;
       }
       case VisualShader::VisualShaderNode::kDotProductFieldNumber: {
@@ -654,7 +693,7 @@ static std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>> raw_t
 
           const std::vector<VisualShaderColorGradientStop> gradient{parse_color_gradient(parameters)};
 
-          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorGradient>(gradient_type, gradient);
+          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorGradient>(gradient_type, gradient, parse_transformation(parameters));
           break;
       }
       case VisualShader::VisualShaderNode::kCheckerFieldNumber: {
@@ -672,7 +711,7 @@ static std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>> raw_t
 
           const std::vector<VisualShaderColorGradientStop> gradient{parse_color_gradient(parameters)};
 
-          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorChecker>(scale_x, scale_y, gradient);
+          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorChecker>(scale_x, scale_y, gradient, parse_transformation(parameters));
           break;
       }
       case VisualShader::VisualShaderNode::kBrickFieldNumber: {
@@ -720,7 +759,7 @@ static std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>> raw_t
 
           const std::vector<VisualShaderColorGradientStop> gradient{parse_color_gradient(parameters)};
 
-          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorBrick>(num_x, num_y, shift, rand_shift, gap_x, gap_y, smooth, rand_color, gradient);
+          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorBrick>(num_x, num_y, shift, rand_shift, gap_x, gap_y, smooth, rand_color, gradient, parse_transformation(parameters));
           break;
       }
       case VisualShader::VisualShaderNode::kTileFieldNumber: {
@@ -743,7 +782,7 @@ static std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>> raw_t
 
           const std::vector<VisualShaderColorGradientStop> gradient{parse_color_gradient(parameters)};
 
-          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorTile>(border_x, border_y, smooth, gradient);
+          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorTile>(border_x, border_y, smooth, gradient, parse_transformation(parameters));
           break;
       }
       case VisualShader::VisualShaderNode::kFunctionFieldNumber: {
@@ -776,7 +815,7 @@ static std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>> raw_t
 
           const std::vector<VisualShaderColorGradientStop> gradient{parse_color_gradient(parameters)};
 
-          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorFunction>(function_u, function_v, combiner, scale_x, scale_y, gradient);
+          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorFunction>(function_u, function_v, combiner, scale_x, scale_y, gradient, parse_transformation(parameters));
           break;
       }
       case VisualShader::VisualShaderNode::kCellularFieldNumber: {
@@ -829,7 +868,7 @@ static std::unordered_map<int, std::shared_ptr<VisualShaderNodeGenerator>> raw_t
 
           const std::vector<VisualShaderColorGradientStop> gradient{parse_color_gradient(parameters)};
 
-          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorCellular>(cell_type, distance, point_gen, seed, intensity, jitter, num_points, rand_color, periodic, gradient);
+          generators[n_id] = std::make_shared<VisualShaderNodeGeneratorCellular>(cell_type, distance, point_gen, seed, intensity, jitter, num_points, rand_color, periodic, gradient, parse_transformation(parameters));
           break;
       }
       case VisualShader::VisualShaderNode::kIlluminateFieldNumber: {
@@ -992,7 +1031,7 @@ bool generate_shader(const std::string& graph, std::string& code_buffer) noexcep
 std::string generate_preview_shader(const std::string& graph,
                                     const int& node_id, const int& port) noexcept { 
   static const std::string preview_func_name{"main"};
-  static const std::string output_var{"FragColor"};
+  static const std::string output_var{std::string(shadergen_renderer::ShaderRenderer::kFragColorName)};
 
   const auto proto_nodes = raw_to_proto_nodes(graph);
   const auto generators = raw_to_generators(graph);

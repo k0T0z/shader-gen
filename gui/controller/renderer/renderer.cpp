@@ -1,6 +1,6 @@
 /*********************************************************************************/
 /*                                                                               */
-/*  Copyright (C) 2024 Seif Kandil (k0T0z)                                       */
+/*  Copyright (C) 2026 Seif Kandil (k0T0z)                                       */
 /*                                                                               */
 /*  This file is a part of the ENIGMA Development Environment.                   */
 /*                                                                               */
@@ -26,6 +26,8 @@
 /*********************************************************************************/
 
 #include "gui/controller/renderer/renderer.hpp"
+
+#include <array>
 
 #include "error_macros.hpp"
 
@@ -71,14 +73,15 @@ void RendererWidget::paintGL() {
   
   CHECK_CONDITION_TRUE(!shader_program->bind(), "Failed to bind shader program");
   
-  int utime_location = shader_program->uniformLocation("uTime");
+  const std::string time_uniform_name{shadergen_renderer::ShaderRenderer::kTimeUniformName};
+  int utime_location = shader_program->uniformLocation(time_uniform_name.c_str());
   if (utime_location != -1) {
     float time_value = timer.elapsed() * 0.001f; // Convert ms to seconds
     shader_program->setUniformValue(utime_location, time_value);
   }
 
   glBindVertexArray(VAO);
-  glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+  glDrawArrays(GL_TRIANGLE_STRIP, 0, static_cast<GLsizei>(shadergen_renderer::ShaderRenderer::kQuadVertexCount));
   glBindVertexArray(0);
 
   shader_program->release();
@@ -96,12 +99,8 @@ void RendererWidget::cleanup() {
 }
 
 void RendererWidget::init_buffers() {
-  const float vertices[] = {
-    -1.0f,  1.0f,  0.0f,  1.0f,  // Vertex 1: Position (x,y), FragCoord (u,v)
-    -1.0f, -1.0f,  0.0f,  0.0f,  // Vertex 2: Position (x,y), FragCoord (u,v)
-     1.0f,  1.0f,  1.0f,  1.0f,  // Vertex 3: Position (x,y), FragCoord (u,v)
-     1.0f, -1.0f,  1.0f,  0.0f   // Vertex 4: Position (x,y), FragCoord (u,v)
-  };
+  const std::array<float, shadergen_renderer::ShaderRenderer::kQuadFloatCount>& vertices{
+      shadergen_renderer::ShaderRenderer::quad_vertices()};
 
   glGenVertexArrays(1, &VAO);
   glGenBuffers(1, &VBO);
@@ -117,7 +116,7 @@ void RendererWidget::init_buffers() {
 
   glBindVertexArray(VAO);
   glBindBuffer(GL_ARRAY_BUFFER, VBO);
-  glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+  glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices.data(), GL_STATIC_DRAW);
 
   // Check for errors after buffer setup
   err = glGetError();
@@ -156,47 +155,17 @@ void RendererWidget::update_shader_program() {
   makeCurrent();  // Ensure OpenGL context is current for shader operations
   
   std::unique_ptr<QOpenGLShaderProgram> new_program = std::make_unique<QOpenGLShaderProgram>(this);
-  
-  const char* vertex_shader_source = R"(
 
-#version 430 core
+  const std::string vertex_shader_source{shadergen_renderer::ShaderRenderer::vertex_shader_source()};
 
-#line 0  // Reset line numbers for better error messages
-layout(location = 0) in vec2 aPos;
-layout(location = 1) in vec2 aFragCoord;
-
-out vec2 FragCoord;
-
-void main() {
-  gl_Position = vec4(aPos, 0.0, 1.0);
-  FragCoord = aFragCoord;
-}
-
-)";
-
-  std::string fragment_shader_source;
-  if (code.empty()) {
-    fragment_shader_source = R"(
-
-#version 430 core
-
-#line 0  // Reset line numbers for better error messages
-out vec4 FragColor;
-in vec2 FragCoord;
-
-uniform float uTime;
-
-void main() {
-  FragColor = vec4(0.0, 0.0, 0.0, 1.0);
-}
-
-)";
-  } else {
-    fragment_shader_source = "#version 430 core\n\n" + code;
-  }
+  // The generated code already carries the version directive's body (see
+  // ShaderRenderer::fragment_shader_source); an empty graph falls back to the default shader.
+  const std::string fragment_shader_source{
+      code.empty() ? shadergen_renderer::ShaderRenderer::default_fragment_shader_source()
+                   : shadergen_renderer::ShaderRenderer::fragment_shader_source(code)};
 
   // Add shaders to new_program instead of shader_program
-  if (!new_program->addShaderFromSourceCode(QOpenGLShader::Vertex, vertex_shader_source)) {
+  if (!new_program->addShaderFromSourceCode(QOpenGLShader::Vertex, vertex_shader_source.c_str())) {
     WARN_PRINT("Vertex shader compilation failed:" + new_program->log().toStdString());
     doneCurrent();
     return;

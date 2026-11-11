@@ -1,6 +1,6 @@
 /*********************************************************************************/
 /*                                                                               */
-/*  Copyright (C) 2024 Seif Kandil (k0T0z)                                       */
+/*  Copyright (C) 2026 Seif Kandil (k0T0z)                                       */
 /*                                                                               */
 /*  This file is a part of the ENIGMA Development Environment.                   */
 /*                                                                               */
@@ -26,6 +26,8 @@
 /*********************************************************************************/
 
 #include "gui/controller/shader_sampler.hpp"
+
+#include <array>
 
 #include "error_macros.hpp"
 #include "generator/visual_shader_generator.hpp"
@@ -72,7 +74,8 @@ bool ShaderSampler::initialize() {
   // Create an FBO for the fixed resolution.
   QOpenGLFramebufferObjectFormat fbo_format;
   fbo_format.setAttachment(QOpenGLFramebufferObject::CombinedDepthStencil);
-  fbo = new QOpenGLFramebufferObject(256, 256, fbo_format);
+  fbo = new QOpenGLFramebufferObject(shadergen_renderer::ShaderRenderer::kDefaultResolution,
+                                     shadergen_renderer::ShaderRenderer::kDefaultResolution, fbo_format);
   
   context->doneCurrent();
   return true;
@@ -83,12 +86,8 @@ bool ShaderSampler::is_initialized() const {
 }
 
 void ShaderSampler::init_buffers() {
-  const float vertices[] = {
-    -1.0f,  1.0f,  0.0f,  1.0f,  // Vertex 1: Position (x,y), FragCoord (u,v)
-    -1.0f, -1.0f,  0.0f,  0.0f,  // Vertex 2: Position (x,y), FragCoord (u,v)
-     1.0f,  1.0f,  1.0f,  1.0f,  // Vertex 3: Position (x,y), FragCoord (u,v)
-     1.0f, -1.0f,  1.0f,  0.0f   // Vertex 4: Position (x,y), FragCoord (u,v)
-  };
+  const std::array<float, shadergen_renderer::ShaderRenderer::kQuadFloatCount>& vertices{
+      shadergen_renderer::ShaderRenderer::quad_vertices()};
 
   glGenVertexArrays(1, &VAO);
   glBindVertexArray(VAO);
@@ -96,7 +95,7 @@ void ShaderSampler::init_buffers() {
   glGenBuffers(1, &VBO);
   glBindBuffer(GL_ARRAY_BUFFER, VBO);
 
-  glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+  glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices.data(), GL_STATIC_DRAW);
 
   // Position attribute (x, y)
   glEnableVertexAttribArray(0);
@@ -111,59 +110,31 @@ void ShaderSampler::init_buffers() {
   glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
-bool ShaderSampler::compile_shader(const std::string& code, QOpenGLShaderProgram* program) {
-  const char* vertex_shader_source = R"(
+bool ShaderSampler::compile_shader(QOpenGLShaderProgram* program) {
+  const std::string vertex_shader_source{shadergen_renderer::ShaderRenderer::vertex_shader_source()};
 
-#version 430 core
+  // The generated code already carries the version directive's body (see
+  // ShaderRenderer::fragment_shader_source); an empty graph falls back to the default shader.
+  const std::string fragment_shader_source{
+      code.empty() ? shadergen_renderer::ShaderRenderer::default_fragment_shader_source()
+                   : shadergen_renderer::ShaderRenderer::fragment_shader_source(code)};
 
-#line 0  // Reset line numbers for better error messages
-layout(location = 0) in vec2 aPos;
-layout(location = 1) in vec2 aFragCoord;
-
-out vec2 FragCoord;
-
-void main() {
-  gl_Position = vec4(aPos, 0.0, 1.0);
-  FragCoord = aFragCoord;
-}
-
-)";
-
-  std::string fragment_shader_source;
-  if (code.empty()) {
-    fragment_shader_source = R"(
-
-#version 430 core
-
-#line 0  // Reset line numbers for better error messages
-out vec4 FragColor;
-in vec2 FragCoord;
-
-uniform float uTime;
-
-void main() {
-  FragColor = vec4(FragCoord, 0.5, 1.0);
-}
-
-)";
-  } else {
-    fragment_shader_source = "#version 430 core\n\n" + code;
-  }
-  
-  CHECK_CONDITION_TRUE_NON_VOID(!program->addShaderFromSourceCode(QOpenGLShader::Vertex, vertex_shader_source), false, "Vertex shader compilation failed: " + program->log().toStdString());
+  CHECK_CONDITION_TRUE_NON_VOID(!program->addShaderFromSourceCode(QOpenGLShader::Vertex, vertex_shader_source.c_str()), false, "Vertex shader compilation failed: " + program->log().toStdString());
   CHECK_CONDITION_TRUE_NON_VOID(!program->addShaderFromSourceCode(QOpenGLShader::Fragment, fragment_shader_source.c_str()), false, "Fragment shader compilation failed: " + program->log().toStdString());
   CHECK_CONDITION_TRUE_NON_VOID(!program->link(), false, "Shader program linking failed: " + program->log().toStdString());
 
   return true;
 }
 
-QImage ShaderSampler::sample_once(const std::string& code) {
+void ShaderSampler::set_code(const std::string& new_code) { this->code = new_code; }
+
+QImage ShaderSampler::sample_once() {
   CHECK_CONDITION_TRUE_NON_VOID(!isInitialized(), QImage(), "ShaderSampler is not initialized");
 
   CHECK_CONDITION_TRUE_NON_VOID(!context->makeCurrent(surface), QImage(), "Failed to make OpenGL context current");
 
   QOpenGLShaderProgram* program = new QOpenGLShaderProgram();
-  if (!compile_shader(code, program)) {
+  if (!compile_shader(program)) {
     ERROR_PRINT("Failed to compile shader code");
     context->doneCurrent();
     return QImage();
@@ -174,7 +145,8 @@ QImage ShaderSampler::sample_once(const std::string& code) {
     context->doneCurrent();
     return QImage();
   }
-  glViewport(0, 0, 256, 256);
+  glViewport(0, 0, shadergen_renderer::ShaderRenderer::kDefaultResolution,
+             shadergen_renderer::ShaderRenderer::kDefaultResolution);
   glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -190,7 +162,7 @@ QImage ShaderSampler::sample_once(const std::string& code) {
   // }
 
   glBindVertexArray(VAO);
-  glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+  glDrawArrays(GL_TRIANGLE_STRIP, 0, static_cast<GLsizei>(shadergen_renderer::ShaderRenderer::kQuadVertexCount));
   glBindVertexArray(0);
 
   program->release();

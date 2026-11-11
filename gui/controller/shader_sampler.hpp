@@ -1,6 +1,6 @@
 /*********************************************************************************/
 /*                                                                               */
-/*  Copyright (C) 2024 Seif Kandil (k0T0z)                                       */
+/*  Copyright (C) 2026 Seif Kandil (k0T0z)                                       */
 /*                                                                               */
 /*  This file is a part of the ENIGMA Development Environment.                   */
 /*                                                                               */
@@ -36,19 +36,25 @@
 #include <string>
 #include <QImage>
 
-class ShaderSampler : protected QOpenGLFunctions_4_3_Core {
+#include "generator/renderer/shader_renderer.hpp"
+
+class ShaderSampler : protected QOpenGLFunctions_4_3_Core, public shadergen_renderer::ShaderRenderer {
  public:
   ShaderSampler();
-  ~ShaderSampler();
+  ~ShaderSampler() override;
 
   bool initialize();
   bool is_initialized() const;
-  
-  QImage sample_once(const std::string& code);
+
+  void set_code(const std::string& code) override;
+
+  QImage sample_once();
 
  private:
   void init_buffers();
-  bool compile_shader(const std::string& code, QOpenGLShaderProgram* program);
+  bool compile_shader(QOpenGLShaderProgram* program);
+
+  std::string code;
 
   QOpenGLContext* context;
   QOffscreenSurface* surface;

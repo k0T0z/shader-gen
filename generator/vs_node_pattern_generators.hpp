@@ -1,6 +1,6 @@
 /*********************************************************************************/
 /*                                                                               */
-/*  Copyright (C) 2024 Seif Kandil (k0T0z)                                       */
+/*  Copyright (C) 2026 Seif Kandil (k0T0z)                                       */
 /*                                                                               */
 /*  This file is a part of the ENIGMA Development Environment.                   */
 /*                                                                               */
@@ -41,8 +41,12 @@
 class VisualShaderNodeGeneratorGradient : public VisualShaderNodeGenerator {
  public:
   VisualShaderNodeGeneratorGradient(const VisualShaderNodeGradient::VisualShaderNodeGradientType& gradient_type,
-                                    const std::vector<VisualShaderColorGradientStop>& gradient)
-      : VisualShaderNodeGenerator(), gradient_type(gradient_type), gradient(gradient) {}
+                                    const std::vector<VisualShaderColorGradientStop>& gradient,
+                                    const Matrix3x3& transformation = make_identity_transformation())
+      : VisualShaderNodeGenerator(),
+        gradient_type(gradient_type),
+        gradient(gradient),
+        transformation(transformation) {}
 
   virtual std::string generate_code([[maybe_unused]] const int& id,
                                     [[maybe_unused]] const std::vector<std::string>& input_vars,
@@ -51,6 +55,8 @@ class VisualShaderNodeGeneratorGradient : public VisualShaderNodeGenerator {
  private:
   const VisualShaderNodeGradient::VisualShaderNodeGradientType gradient_type;
   const std::vector<VisualShaderColorGradientStop> gradient;
+  // The node's coordinate transformation (a Matrix3x3 field of the node type message).
+  const Matrix3x3 transformation;
 };
 
 /*************************************/
@@ -60,8 +66,13 @@ class VisualShaderNodeGeneratorGradient : public VisualShaderNodeGenerator {
 class VisualShaderNodeGeneratorChecker : public VisualShaderNodeGenerator {
  public:
   VisualShaderNodeGeneratorChecker(const float& scale_x, const float& scale_y,
-                                   const std::vector<VisualShaderColorGradientStop>& gradient)
-      : VisualShaderNodeGenerator(), scale_x(scale_x), scale_y(scale_y), gradient(gradient) {}
+                                   const std::vector<VisualShaderColorGradientStop>& gradient,
+                                   const Matrix3x3& transformation = make_identity_transformation())
+      : VisualShaderNodeGenerator(),
+        scale_x(scale_x),
+        scale_y(scale_y),
+        gradient(gradient),
+        transformation(transformation) {}
 
   virtual std::string generate_code([[maybe_unused]] const int& id,
                                     [[maybe_unused]] const std::vector<std::string>& input_vars,
@@ -71,6 +82,8 @@ class VisualShaderNodeGeneratorChecker : public VisualShaderNodeGenerator {
   const float scale_x;
   const float scale_y;
   const std::vector<VisualShaderColorGradientStop> gradient;
+  // The node's coordinate transformation (a Matrix3x3 field of the node type message).
+  const Matrix3x3 transformation;
 };
 
 /*************************************/
@@ -81,7 +94,8 @@ class VisualShaderNodeGeneratorBrick : public VisualShaderNodeGenerator {
  public:
   VisualShaderNodeGeneratorBrick(const int& num_x, const int& num_y, const float& shift, const float& rand_shift,
                                  const float& gap_x, const float& gap_y, const float& smooth, const bool& rand_color,
-                                 const std::vector<VisualShaderColorGradientStop>& gradient)
+                                 const std::vector<VisualShaderColorGradientStop>& gradient,
+                                 const Matrix3x3& transformation = make_identity_transformation())
       : VisualShaderNodeGenerator(),
         num_x(num_x),
         num_y(num_y),
@@ -91,7 +105,8 @@ class VisualShaderNodeGeneratorBrick : public VisualShaderNodeGenerator {
         gap_y(gap_y),
         smooth(smooth),
         rand_color(rand_color),
-        gradient(gradient) {}
+        gradient(gradient),
+        transformation(transformation) {}
 
   virtual std::string generate_code([[maybe_unused]] const int& id,
                                     [[maybe_unused]] const std::vector<std::string>& input_vars,
@@ -107,6 +122,8 @@ class VisualShaderNodeGeneratorBrick : public VisualShaderNodeGenerator {
   const float smooth;
   const bool rand_color;
   const std::vector<VisualShaderColorGradientStop> gradient;
+  // The node's coordinate transformation (a Matrix3x3 field of the node type message).
+  const Matrix3x3 transformation;
 };
 
 /*************************************/
@@ -116,8 +133,14 @@ class VisualShaderNodeGeneratorBrick : public VisualShaderNodeGenerator {
 class VisualShaderNodeGeneratorTile : public VisualShaderNodeGenerator {
  public:
   VisualShaderNodeGeneratorTile(const float& border_x, const float& border_y, const float& smooth,
-                                const std::vector<VisualShaderColorGradientStop>& gradient)
-      : VisualShaderNodeGenerator(), border_x(border_x), border_y(border_y), smooth(smooth), gradient(gradient) {}
+                                const std::vector<VisualShaderColorGradientStop>& gradient,
+                                const Matrix3x3& transformation = make_identity_transformation())
+      : VisualShaderNodeGenerator(),
+        border_x(border_x),
+        border_y(border_y),
+        smooth(smooth),
+        gradient(gradient),
+        transformation(transformation) {}
 
   virtual std::string generate_code([[maybe_unused]] const int& id,
                                     [[maybe_unused]] const std::vector<std::string>& input_vars,
@@ -128,6 +151,8 @@ class VisualShaderNodeGeneratorTile : public VisualShaderNodeGenerator {
   const float border_y;
   const float smooth;
   const std::vector<VisualShaderColorGradientStop> gradient;
+  // The node's coordinate transformation (a Matrix3x3 field of the node type message).
+  const Matrix3x3 transformation;
 };
 
 /*************************************/
@@ -140,14 +165,16 @@ class VisualShaderNodeGeneratorFunction : public VisualShaderNodeGenerator {
                                     const VisualShaderNodeFunction::VisualShaderNodeFunctionFn& function_v,
                                     const VisualShaderNodeFunction::VisualShaderNodeFunctionCombiner& combiner,
                                     const float& scale_x, const float& scale_y,
-                                    const std::vector<VisualShaderColorGradientStop>& gradient)
+                                    const std::vector<VisualShaderColorGradientStop>& gradient,
+                                    const Matrix3x3& transformation = make_identity_transformation())
       : VisualShaderNodeGenerator(),
         function_u(function_u),
         function_v(function_v),
         combiner(combiner),
         scale_x(scale_x),
         scale_y(scale_y),
-        gradient(gradient) {}
+        gradient(gradient),
+        transformation(transformation) {}
 
   virtual std::string generate_code([[maybe_unused]] const int& id,
                                     [[maybe_unused]] const std::vector<std::string>& input_vars,
@@ -160,6 +187,8 @@ class VisualShaderNodeGeneratorFunction : public VisualShaderNodeGenerator {
   const float scale_x;
   const float scale_y;
   const std::vector<VisualShaderColorGradientStop> gradient;
+  // The node's coordinate transformation (a Matrix3x3 field of the node type message).
+  const Matrix3x3 transformation;
 };
 
 /*************************************/
@@ -173,7 +202,8 @@ class VisualShaderNodeGeneratorCellular : public VisualShaderNodeGenerator {
       const VisualShaderNodeCellular::VisualShaderNodeCellularDistance& distance,
       const VisualShaderNodeCellular::VisualShaderNodeCellularPointGen& point_gen, const int& seed,
       const float& intensity, const float& jitter, const int& num_points, const bool& rand_color,
-      const bool& periodic, const std::vector<VisualShaderColorGradientStop>& gradient)
+      const bool& periodic, const std::vector<VisualShaderColorGradientStop>& gradient,
+      const Matrix3x3& transformation = make_identity_transformation())
       : VisualShaderNodeGenerator(),
         cell_type(cell_type),
         distance(distance),
@@ -184,7 +214,8 @@ class VisualShaderNodeGeneratorCellular : public VisualShaderNodeGenerator {
         num_points(num_points),
         rand_color(rand_color),
         periodic(periodic),
-        gradient(gradient) {}
+        gradient(gradient),
+        transformation(transformation) {}
 
   virtual std::string generate_global([[maybe_unused]] const int& id) const override;
 
@@ -203,6 +234,8 @@ class VisualShaderNodeGeneratorCellular : public VisualShaderNodeGenerator {
   const bool rand_color;
   const bool periodic;
   const std::vector<VisualShaderColorGradientStop> gradient;
+  // The node's coordinate transformation (a Matrix3x3 field of the node type message).
+  const Matrix3x3 transformation;
 };
 
 /*************************************/
@@ -211,7 +244,9 @@ class VisualShaderNodeGeneratorCellular : public VisualShaderNodeGenerator {
 
 class VisualShaderNodeGeneratorValueNoise : public VisualShaderNodeGenerator {
  public:
-  VisualShaderNodeGeneratorValueNoise(const float& scale) : VisualShaderNodeGenerator(), scale(scale) {}
+  VisualShaderNodeGeneratorValueNoise(const float& scale,
+                                      const Matrix3x3& transformation = make_identity_transformation())
+      : VisualShaderNodeGenerator(), scale(scale), transformation(transformation) {}
 
   virtual std::string generate_global_per_node([[maybe_unused]] const int& id) const override;
 
@@ -221,6 +256,8 @@ class VisualShaderNodeGeneratorValueNoise : public VisualShaderNodeGenerator {
 
  private:
   const float scale;
+  // The node's coordinate transformation (a Matrix3x3 field of the node type message).
+  const Matrix3x3 transformation;
 };
 
 /*************************************/
@@ -232,7 +269,8 @@ class VisualShaderNodeGeneratorPerlinNoise : public VisualShaderNodeGenerator {
   VisualShaderNodeGeneratorPerlinNoise(const float& scale_x, const float& scale_y, const float& value_scale,
                                        const float& persistence, const int& start_band, const int& end_band,
                                        const int& seed, const bool& periodic,
-                                       const std::vector<VisualShaderColorGradientStop>& gradient)
+                                       const std::vector<VisualShaderColorGradientStop>& gradient,
+                                       const Matrix3x3& transformation = make_identity_transformation())
       : VisualShaderNodeGenerator(),
         scale_x(scale_x),
         scale_y(scale_y),
@@ -242,7 +280,8 @@ class VisualShaderNodeGeneratorPerlinNoise : public VisualShaderNodeGenerator {
         end_band(end_band),
         seed(seed),
         periodic(periodic),
-        gradient(gradient) {}
+        gradient(gradient),
+        transformation(transformation) {}
 
   virtual std::string generate_global([[maybe_unused]] const int& id) const override;
 
@@ -260,6 +299,8 @@ class VisualShaderNodeGeneratorPerlinNoise : public VisualShaderNodeGenerator {
   const int seed;
   const bool periodic;
   const std::vector<VisualShaderColorGradientStop> gradient;
+  // The node's coordinate transformation (a Matrix3x3 field of the node type message).
+  const Matrix3x3 transformation;
 };
 
 #endif  // ENIGMA_VISUAL_SHADER_NODE_PATTERN_GENERATORS_HPP

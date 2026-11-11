@@ -1,6 +1,6 @@
 /*********************************************************************************/
 /*                                                                               */
-/*  Copyright (C) 2024 Seif Kandil (k0T0z)                                       */
+/*  Copyright (C) 2026 Seif Kandil (k0T0z)                                       */
 /*                                                                               */
 /*  This file is a part of the ENIGMA Development Environment.                   */
 /*                                                                               */
@@ -33,6 +33,7 @@
 #include "generator/proto_node_factory.hpp"
 #include "generator/visual_shader_generator.hpp"
 #include "gui/controller/utils/utils.hpp"
+#include "gui/controller/visual_shader_editor.hpp"
 #include "gui/model/message_model.hpp"
 #include "gui/model/repeated_message_model.hpp"
 #include "gui/model/utils/field_path.hpp"
@@ -197,6 +198,59 @@ void VisualShaderEditorTest::repro_add_gradient_stop_in_brick()
     delete root_model;
 }
 
+// Regression test for: "when i add a cellular node, i get this:
+//   ERROR: Cannot set data in a MessageModel.
+//   ERROR: Failed to write the default value of column 1..9".
+// Drives the real entry point used by the "Create node" dialog:
+// VisualShaderGraphicsScene::add_node_to_model(), which appends the node row, switches the node_type
+// oneof to Cellular and then writes the default values (including the identity Matrix3x3
+// transformation of the Cellular node).
+void VisualShaderEditorTest::repro_add_cellular_node_writes_transformation_default()
+{
+    using VisualShaderNode = VisualShader::VisualShaderNode;
+    using VisualShaderNodeCellular = gui::model::schema::VisualShaderNodeCellular;
+    using Matrix3x3 = gui::model::schema::Matrix3x3;
+
+    gui::model::schema::VisualShader visual_shader;
+    {
+        VisualShader::VisualShaderNode* node = visual_shader.add_nodes();
+        node->set_id(0);
+        node->mutable_output();
+    }
+
+    MessageModel* root_model = new MessageModel(&visual_shader);
+    root_model->build_sub_models();
+
+    VisualShaderGraphicsScene scene;
+    scene.set_model(root_model);
+    scene.set_nodes_model(const_cast<ProtoModel*>(root_model->get_sub_model(
+        FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber)))));
+
+    const std::shared_ptr<IVisualShaderProtoNode> cellular{
+        shadergen_utils::get_proto_node_by_oneof_value_field_number(VisualShaderNode::kCellularFieldNumber)};
+    QVERIFY(cellular != nullptr);
+
+    // Exactly what happens when the user picks Cellular in the "Create node" dialog.
+    QVERIFY(scene.add_node_to_model(1, cellular, QPointF(0.0, 0.0)));
+
+    // The identity transformation default must have been written. If
+    // write_default_message_field_values_to_node() fails to resolve the column, the value stays
+    // unset (reported as an invalid QVariant) and this assertion fails.
+    bool all_written{true};
+    for (int sub_field_number{Matrix3x3::kM00FieldNumber};
+         sub_field_number <= Matrix3x3::kM22FieldNumber; ++sub_field_number) {
+        const ProtoModel* column_model{root_model->get_sub_model(FieldPath::Of<VisualShader>(
+            FieldPath::FieldNumber(VisualShader::kNodesFieldNumber), FieldPath::RepeatedAt(1),
+            FieldPath::FieldNumber(VisualShaderNode::kCellularFieldNumber),
+            FieldPath::FieldNumber(VisualShaderNodeCellular::kTransformationFieldNumber),
+            FieldPath::FieldNumber(sub_field_number)))};
+        if (column_model == nullptr || !column_model->data().isValid()) all_written = false;
+    }
+    QVERIFY(all_written);
+
+    delete root_model;
+}
+
 namespace {
 // Encodes the given graph and generates the preview shader for @p node_id, exercising the same
 // generator entry point used by the editor's renderer widget refresh.
@@ -220,7 +274,7 @@ std::string generate_preview_for_node(gui::model::schema::VisualShader& visual_s
 }
 }  // namespace
 
-// Regression test for the newly ported NeoTextureEdit nodes. Each test builds a minimal graph that
+// Regression test for the newly nodes. Each test builds a minimal graph that
 // feeds the node's inputs and verifies the generator can produce a preview without throwing.
 void VisualShaderEditorTest::new_node_cellular_generates_preview()
 {
@@ -445,4 +499,133 @@ void VisualShaderEditorTest::new_node_normal_map_generates_preview()
     }
 
     QVERIFY(!generate_preview_for_node(visual_shader, 1).empty());
+}
+
+// Confirms that a Cellular node's Matrix3x3 transformation is honoured by the code generator when it
+// is present in the Protobuf model: the pattern node must emit the matrix form
+//   vec2 cell_uv_n1 = fract(vec2(m00 * in.x + m01 * in.y + m02, m10 * in.x + m11 * in.y + m12));
+// instead of the identity short-circuit `vec2 cell_uv_n1 = fract(in);`.
+void VisualShaderEditorTest::cellular_transformation_from_proto_reaches_generated_shader()
+{
+    using VisualShaderNodeCellular = gui::model::schema::VisualShaderNodeCellular;
+
+    gui::model::schema::VisualShader visual_shader;
+    {
+        VisualShader::VisualShaderNode* node = visual_shader.add_nodes();
+        node->set_id(0);
+        node->mutable_output();
+    }
+    {
+        VisualShader::VisualShaderNode* node = visual_shader.add_nodes();
+        node->set_id(1);
+        VisualShaderNodeCellular* cellular = node->mutable_cellular();
+        cellular->set_cell_type(VisualShaderNodeCellular::CELL_F2_MINUS_F1);
+        cellular->set_distance(VisualShaderNodeCellular::DIST_EUCLID);
+        cellular->set_point_gen(VisualShaderNodeCellular::POINT_GEN_RANDOM);
+        cellular->set_num_points(16);
+        // A non-identity transformation: m00 = 2.0.
+        cellular->mutable_transformation()->set_m00(2.0f);
+    }
+    {
+        VisualShader::VisualShaderNode* node = visual_shader.add_nodes();
+        node->set_id(2);
+        node->mutable_input()->set_type(VisualShaderNodeInput::INPUT_TYPE_UV);
+    }
+    {
+        VisualShader::VisualShaderConnection* connection = visual_shader.add_connections();
+        connection->set_id(0);
+        connection->set_from_node_id(2);
+        connection->set_from_port_index(0);
+        connection->set_to_node_id(1);
+        connection->set_to_port_index(0);
+    }
+    {
+        VisualShader::VisualShaderConnection* connection = visual_shader.add_connections();
+        connection->set_id(1);
+        connection->set_from_node_id(1);
+        connection->set_from_port_index(0);
+        connection->set_to_node_id(0);
+        connection->set_to_port_index(0);
+    }
+
+    const std::string preview{generate_preview_for_node(visual_shader, 1)};
+    DEBUG_PRINT(std::string("PROTO-SET TRANSFORMATION -> GENERATED SHADER:\n") + preview);
+
+    // The transformation is consumed: the matrix terms must appear in the generated GLSL.
+    QVERIFY2(preview.find("fract(vec2(2.000000 * var_from_n2_p0.x") != std::string::npos, preview.c_str());
+}
+
+// Reproduces the user's report: manipulating the Cellular node's transformation in the editor
+//   ERROR: PrimitiveModel::setData ... "Enum value is not valid."
+//   ERROR: VisualShaderGraphicsScene::update_node_transformation_in_model ... "Failed to update node transformation in model"
+// and confirms (via the generated shader) whether the change reaches the generated GLSL.
+//
+// Each Matrix3x3 entry commits through VisualShaderGraphicsScene::update_node_transformation_in_model().
+// After the write, the model is encoded and the preview shader is generated: a working write must make
+// the Cellular node emit `vec2 cell_uv_n1 = fract(vec2(2.000000 * var_from_n2_p0.x ...));`.
+void VisualShaderEditorTest::repro_cellular_transformation_gui_path_reaches_generated_shader()
+{
+    using VisualShaderNode = VisualShader::VisualShaderNode;
+    using VisualShaderNodeCellular = gui::model::schema::VisualShaderNodeCellular;
+    using Matrix3x3 = gui::model::schema::Matrix3x3;
+
+    gui::model::schema::VisualShader visual_shader;
+    {
+        VisualShader::VisualShaderNode* node = visual_shader.add_nodes();
+        node->set_id(0);
+        node->mutable_output();
+    }
+    {
+        VisualShader::VisualShaderNode* node = visual_shader.add_nodes();
+        node->set_id(1);
+        node->mutable_cellular();
+    }
+    {
+        VisualShader::VisualShaderNode* node = visual_shader.add_nodes();
+        node->set_id(2);
+        node->mutable_input()->set_type(VisualShaderNodeInput::INPUT_TYPE_UV);
+    }
+    {
+        VisualShader::VisualShaderConnection* connection = visual_shader.add_connections();
+        connection->set_id(0);
+        connection->set_from_node_id(2);
+        connection->set_from_port_index(0);
+        connection->set_to_node_id(1);
+        connection->set_to_port_index(0);
+    }
+    {
+        VisualShader::VisualShaderConnection* connection = visual_shader.add_connections();
+        connection->set_id(1);
+        connection->set_from_node_id(1);
+        connection->set_from_port_index(0);
+        connection->set_to_node_id(0);
+        connection->set_to_port_index(0);
+    }
+
+    MessageModel* root_model = new MessageModel(&visual_shader);
+    root_model->build_sub_models();
+
+    VisualShaderGraphicsScene scene;
+    scene.set_model(root_model);
+    scene.set_nodes_model(const_cast<ProtoModel*>(root_model->get_sub_model(
+        FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber)))));
+
+    // Exactly what the transformation widget does when the user edits the m00 entry.
+    const bool written{scene.update_node_transformation_in_model(
+        1, VisualShaderNodeCellular::kTransformationFieldNumber, Matrix3x3::kM00FieldNumber, QVariant(2.0f))};
+
+    const ProtoModel* nodes = root_model->get_sub_model(
+        FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kNodesFieldNumber)));
+    const ProtoModel* connections = root_model->get_sub_model(
+        FieldPath::Of<VisualShader>(FieldPath::FieldNumber(VisualShader::kConnectionsFieldNumber)));
+    const std::string graph{controller_utils::encode_graph(nodes, connections)};
+    const std::string preview{shadergen_visual_shader_generator::generate_preview_shader(graph, 1, 0)};
+
+    DEBUG_PRINT(std::string("GUI TRANSFORMATION WRITE returned ") + (written ? "true" : "false") +
+                "\nENCODED GRAPH:\n" + graph + "\nGENERATED SHADER:\n" + preview);
+
+    delete root_model;
+
+    QVERIFY2(written, "update_node_transformation_in_model() failed for the Cellular node");
+    QVERIFY2(preview.find("fract(vec2(2.000000 * var_from_n2_p0.x") != std::string::npos, preview.c_str());
 }

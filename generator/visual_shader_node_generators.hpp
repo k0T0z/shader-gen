@@ -1,6 +1,6 @@
 /*********************************************************************************/
 /*                                                                               */
-/*  Copyright (C) 2024 Seif Kandil (k0T0z)                                       */
+/*  Copyright (C) 2026 Seif Kandil (k0T0z)                                       */
 /*                                                                               */
 /*  This file is a part of the ENIGMA Development Environment.                   */
 /*                                                                               */
@@ -35,6 +35,27 @@
 #include "generator/visual_shader_node_port_type_generator.hpp"
 
 using namespace gui::model::schema;
+
+/**
+ * @brief Row-major 3x3 homogeneous coordinate transformation.
+ *
+ * The incoming coordinate @c (u, v) is mapped to @c (m00*u + m01*v + m02, m10*u + m11*v + m12). The
+ * protobuf message defaults to zero, so an identity matrix is built explicitly and an untouched node
+ * leaves its coordinate unchanged.
+ */
+inline Matrix3x3 make_identity_transformation() {
+  Matrix3x3 transformation;
+  transformation.set_m00(1.0f);
+  transformation.set_m11(1.0f);
+  transformation.set_m22(1.0f);
+  return transformation;
+}
+
+inline bool is_identity_transformation(const Matrix3x3& transformation) {
+  return transformation.m00() == 1.0f && transformation.m01() == 0.0f && transformation.m02() == 0.0f &&
+         transformation.m10() == 0.0f && transformation.m11() == 1.0f && transformation.m12() == 0.0f &&
+         transformation.m20() == 0.0f && transformation.m21() == 0.0f && transformation.m22() == 1.0f;
+}
 
 class VisualShaderNodeGenerator {
  public:

@@ -1,6 +1,6 @@
 /*********************************************************************************/
 /*                                                                               */
-/*  Copyright (C) 2024 Seif Kandil (k0T0z)                                       */
+/*  Copyright (C) 2026 Seif Kandil (k0T0z)                                       */
 /*                                                                               */
 /*  This file is a part of the ENIGMA Development Environment.                   */
 /*                                                                               */
@@ -40,6 +40,26 @@ std::string to_glsl_float(const float& value) {
   std::ostringstream oss;
   oss << std::fixed << std::setprecision(6) << value;
   return oss.str();
+}
+
+/**
+ * @brief Emit the coordinate preamble of a pattern node into @c uv_var (a @c vec2).
+ *
+ * The incoming coordinate is transformed by the node's 3x3 homogeneous matrix (@c p = M * vec3(u, v, 1)) 
+ * and wrapped into [0,1) with @c fract. The identity matrix is skipped so that an untransformed 
+ * node emits the original single expression.
+ */
+std::string emit_pattern_uv(const std::string& uv_var, const std::string& input_var,
+                            const Matrix3x3& transformation) {
+  if (is_identity_transformation(transformation)) {
+    return std::string("\t") + "vec2 " + uv_var + " = fract(" + input_var + ");" + std::string("\n");
+  }
+
+  return std::string("\t") + "vec2 " + uv_var + " = fract(vec2(" + to_glsl_float(transformation.m00()) + " * " +
+         input_var + ".x + " + to_glsl_float(transformation.m01()) + " * " + input_var + ".y + " +
+         to_glsl_float(transformation.m02()) + ", " + to_glsl_float(transformation.m10()) + " * " + input_var + ".x + " +
+         to_glsl_float(transformation.m11()) + " * " + input_var + ".y + " + to_glsl_float(transformation.m12()) + "));" +
+         std::string("\n");
 }
 
 // Color channels are stored on the same 0-255 scale as VisualShaderNodeColorConstant, so they are
@@ -326,7 +346,7 @@ std::string VisualShaderNodeGeneratorGradient::generate_code(
   std::string code;
 
   code += std::string("\t") + "// Gradient" + std::string("\n");
-  code += std::string("\t") + "vec2 " + uv + " = fract(" + input_vars.at(0) + ");" + std::string("\n");
+  code += emit_pattern_uv(uv, input_vars.at(0), transformation);
   code += std::string("\t") + "float " + pos + " = 0.0;" + std::string("\n");
 
   switch (gradient_type) {
@@ -380,7 +400,7 @@ std::string VisualShaderNodeGeneratorChecker::generate_code(
   std::string code;
 
   code += std::string("\t") + "// Checker" + std::string("\n");
-  code += std::string("\t") + "vec2 " + uv + " = fract(" + input_vars.at(0) + ");" + std::string("\n");
+  code += emit_pattern_uv(uv, input_vars.at(0), transformation);
   code += std::string("\t") + "int " + checker + " = (int(floor(" + uv + ".x * " + to_glsl_float(scale_x) +
           " * 2.0)) + int(floor(" + uv + ".y * " + to_glsl_float(scale_y) + " * 2.0))) & 1;" + std::string("\n");
   code += std::string("\t") + "float " + pos + " = " + checker + " == 0 ? 1.0 : 0.0;" + std::string("\n");
@@ -446,7 +466,7 @@ std::string VisualShaderNodeGeneratorBrick::generate_code(
           to_glsl_array(colors) + ";" + std::string("\n");
   code += std::string("\t") + "const float " + shifts_array + "[" + std::to_string(shifts.size()) + "] = " +
           to_glsl_array(shifts) + ";" + std::string("\n");
-  code += std::string("\t") + "vec2 " + uv + " = fract(" + input_vars.at(0) + ");" + std::string("\n");
+  code += emit_pattern_uv(uv, input_vars.at(0), transformation);
   code += std::string("\t") + "float " + norm_x + " = " + to_glsl_float(static_cast<float>(num_x)) + ";" +
           std::string("\n");
   code += std::string("\t") + "float " + norm_y + " = " + to_glsl_float(static_cast<float>(num_y)) + ";" +
@@ -523,7 +543,7 @@ std::string VisualShaderNodeGeneratorTile::generate_code(
   std::string code;
 
   code += std::string("\t") + "// Tile" + std::string("\n");
-  code += std::string("\t") + "vec2 " + uv + " = fract(" + input_vars.at(0) + ");" + std::string("\n");
+  code += emit_pattern_uv(uv, input_vars.at(0), transformation);
   code += std::string("\t") + "float " + pos + " = 0.0;" + std::string("\n");
   code += std::string("\t") + "if (" + uv + ".x < " + border_x_s + " || " + uv + ".x > " + border_x_inv_s + " || " +
           uv + ".y < " + border_y_s + " || " + uv + ".y > " + border_y_inv_s + ") {" + std::string("\n");
@@ -598,7 +618,7 @@ std::string VisualShaderNodeGeneratorFunction::generate_code(
   std::string code;
 
   code += std::string("\t") + "// Function" + std::string("\n");
-  code += std::string("\t") + "vec2 " + uv + " = fract(" + input_vars.at(0) + ");" + std::string("\n");
+  code += emit_pattern_uv(uv, input_vars.at(0), transformation);
   code += emit_function(function_u, scale_x, uv + ".x", su, "pattern_fu_n" + std::to_string(id));
   code += emit_function(function_v, scale_y, uv + ".y", sv, "pattern_fv_n" + std::to_string(id));
 
@@ -707,7 +727,7 @@ std::string VisualShaderNodeGeneratorCellular::generate_code(
   std::string code;
 
   code += std::string("\t") + "// Cellular" + std::string("\n");
-  code += std::string("\t") + "vec2 " + uv + " = fract(" + input_vars.at(0) + ");" + std::string("\n");
+  code += emit_pattern_uv(uv, input_vars.at(0), transformation);
   code += std::string("\t") + "float " + d1 + " = 1e20;" + std::string("\n");
   code += std::string("\t") + "float " + d2 + " = 1e20;" + std::string("\n");
   code += std::string("\t") + "float " + d3 + " = 1e20;" + std::string("\n");
@@ -929,7 +949,10 @@ std::string VisualShaderNodeGeneratorPerlinNoise::generate_code(
     [[maybe_unused]] const int& id, [[maybe_unused]] const std::vector<std::string>& input_vars,
     [[maybe_unused]] const std::vector<std::string>& output_vars) const {
   const std::string id_str{std::to_string(id)};
-  const std::string uv{input_vars.at(0)};
+  const std::string transformed_uv{"pattern_uv_n" + id_str};
+  // Perlin historically sampled the raw input coordinate, so the transformed variable is only introduced
+  // when the node actually carries a non-identity transformation (keeps untransformed output unchanged).
+  const std::string uv{is_identity_transformation(transformation) ? input_vars.at(0) : transformed_uv};
   const std::string sample_var{"perlin_sample3d_n" + id_str};
   const std::string sample_periodic_var{"perlin_sample3d_periodic_n" + id_str};
   const std::string val_var{"perlin_val_n" + id_str};
@@ -938,6 +961,7 @@ std::string VisualShaderNodeGeneratorPerlinNoise::generate_code(
   std::string code;
 
   code += std::string("\t") + "// Perlin Noise" + std::string("\n");
+  if (!is_identity_transformation(transformation)) code += emit_pattern_uv(transformed_uv, input_vars.at(0), transformation);
   code += std::string("\t") + "float " + val_var + " = 0.0;" + std::string("\n");
 
   // Sum the "Start Band" .. "End Band" octaves the same way @c PatternPerlinNoise._valueRGBA does. The
@@ -1039,9 +1063,15 @@ std::string VisualShaderNodeGeneratorValueNoise::generate_code(
     [[maybe_unused]] const std::vector<std::string>& output_vars) const {
   std::string code;
 
+  const std::string transformed_uv{"pattern_uv_n" + std::to_string(id)};
+  // Value noise historically sampled the raw input coordinate, so the transformed variable is only
+  // introduced when a non-identity transformation is present (keeps untransformed output unchanged).
+  const std::string uv{is_identity_transformation(transformation) ? input_vars[0] : transformed_uv};
+
   code += std::string("\t") + "// Value Noise" + std::string("\n");
+  if (!is_identity_transformation(transformation)) code += emit_pattern_uv(transformed_uv, input_vars[0], transformation);
   code += std::string("\t") + "float out_buffer_n" + std::to_string(id) + " = 0.0;" + std::string("\n");
-  code += std::string("\t") + "generate_value_noise_float(" + input_vars[0] + ", " + to_glsl_float(scale) + ", out_buffer_n" +
+  code += std::string("\t") + "generate_value_noise_float(" + uv + ", " + to_glsl_float(scale) + ", out_buffer_n" +
           std::to_string(id) + ");" + std::string("\n");
   code += std::string("\t") + output_vars[0] + " = vec4(out_buffer_n" + std::to_string(id) + ", out_buffer_n" + std::to_string(id) + ", out_buffer_n" + std::to_string(id) + ", 1.0);" + std::string("\n");
   code += std::string("\t") + std::string("\n");

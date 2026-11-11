@@ -46,6 +46,10 @@ private slots:
 
     void repro_create_input_select_uv();
     void repro_add_gradient_stop_in_brick();
+    void repro_add_cellular_node_writes_transformation_default();
+
+    void cellular_transformation_from_proto_reaches_generated_shader();
+    void repro_cellular_transformation_gui_path_reaches_generated_shader();
 
     void new_node_cellular_generates_preview();
     void new_node_illuminate_generates_preview();

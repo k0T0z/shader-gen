@@ -1,6 +1,6 @@
 /*********************************************************************************/
 /*                                                                               */
-/*  Copyright (C) 2024 Seif Kandil (k0T0z)                                       */
+/*  Copyright (C) 2026 Seif Kandil (k0T0z)                                       */
 /*                                                                               */
 /*  This file is a part of the ENIGMA Development Environment.                   */
 /*                                                                               */
@@ -104,6 +104,10 @@ inline static int get_node_type_field_number(const google::protobuf::Descriptor*
  *       gradient stops) is described as a @c QVariantList with one @c QVariantMap entry per row, each
  *       mapping the field number of a column inside the repeated message to its default value.
  *
+ * @note A singular message field (e.g. a node's optional Matrix3x3 transformation) is described the
+ *       same way but as a single @c QVariantMap, mapping the field number of a column inside the
+ *       message to its default value.
+ *
  * @param field_desc
  * @return QVariant The overridden default value, or an invalid @c QVariant when the field keeps its
  *         Protobuf default.
@@ -114,9 +118,26 @@ inline static QVariant get_proto_field_default_value_override(const google::prot
   const google::protobuf::Descriptor* node_type{field_desc->containing_type()};
   CHECK_PARAM_NULLPTR_NON_VOID(node_type, QVariant(), "Field containing type is null.");
 
-  // The default color ramp of every node ported with a color gradient (NTE's @c ColorGradientParam):
-  // an opaque black stop at 0.0 and an opaque white stop at 1.0. Color channels share the same 0-255
-  // scale as @c VisualShaderNodeColorConstant; the generator divides them by 255 before use.
+  // The coordinate consuming nodes carry an optional coordinate transformation (a Matrix3x3 message
+  // field) whose default is the identity matrix. Protobuf defaults are always zero, so the identity
+  // is restored here. Like @c default_color_gradient_stops below, the matrix is described as one
+  // @c QVariantMap keyed by the field number (as a string) of a column inside the message, and is
+  // referenced by the @c transformation entry of every consuming node in the table below.
+  static const QVariantMap default_matrix3x3_transformation{
+      {QString::number(Matrix3x3::kM00FieldNumber), 1.0f},
+      {QString::number(Matrix3x3::kM01FieldNumber), 0.0f},
+      {QString::number(Matrix3x3::kM02FieldNumber), 0.0f},
+      {QString::number(Matrix3x3::kM10FieldNumber), 0.0f},
+      {QString::number(Matrix3x3::kM11FieldNumber), 1.0f},
+      {QString::number(Matrix3x3::kM12FieldNumber), 0.0f},
+      {QString::number(Matrix3x3::kM20FieldNumber), 0.0f},
+      {QString::number(Matrix3x3::kM21FieldNumber), 0.0f},
+      {QString::number(Matrix3x3::kM22FieldNumber), 1.0f},
+  };
+
+  // The default color ramp of every node with a color gradient: an opaque black stop at 0.0 and an
+  // opaque white stop at 1.0. Color channels share the same 0-255 scale as
+  // @c VisualShaderNodeColorConstant; the generator divides them by 255 before use.
   static const QVariantList default_color_gradient_stops{
       QVariantMap{
           {QString::number(ColorGradientStop::kPositionFieldNumber), 0.0f},
@@ -177,6 +198,7 @@ inline static QVariant get_proto_field_default_value_override(const google::prot
        {
            {VisualShaderNodeGradient::kGradientTypeFieldNumber, 0},
            {VisualShaderNodeGradient::kGradientFieldNumber, default_color_gradient_stops},
+           {VisualShaderNodeGradient::kTransformationFieldNumber, default_matrix3x3_transformation},
        }},
       // Checker
       {VisualShader::VisualShaderNode::kCheckerFieldNumber,
@@ -184,6 +206,7 @@ inline static QVariant get_proto_field_default_value_override(const google::prot
            {VisualShaderNodeChecker::kScaleXFieldNumber, 1.0f},
            {VisualShaderNodeChecker::kScaleYFieldNumber, 1.0f},
            {VisualShaderNodeChecker::kGradientFieldNumber, default_color_gradient_stops},
+           {VisualShaderNodeChecker::kTransformationFieldNumber, default_matrix3x3_transformation},
        }},
       // Brick
       {VisualShader::VisualShaderNode::kBrickFieldNumber,
@@ -196,6 +219,7 @@ inline static QVariant get_proto_field_default_value_override(const google::prot
            {VisualShaderNodeBrick::kGapYFieldNumber, 0.03f},
            {VisualShaderNodeBrick::kSmoothFieldNumber, 0.05f},
            {VisualShaderNodeBrick::kGradientFieldNumber, default_color_gradient_stops},
+           {VisualShaderNodeBrick::kTransformationFieldNumber, default_matrix3x3_transformation},
        }},
       // Tile
       {VisualShader::VisualShaderNode::kTileFieldNumber,
@@ -203,6 +227,7 @@ inline static QVariant get_proto_field_default_value_override(const google::prot
            {VisualShaderNodeTile::kBorderXFieldNumber, 0.1f},
            {VisualShaderNodeTile::kBorderYFieldNumber, 0.1f},
            {VisualShaderNodeTile::kGradientFieldNumber, default_color_gradient_stops},
+           {VisualShaderNodeTile::kTransformationFieldNumber, default_matrix3x3_transformation},
        }},
       // Function
       {VisualShader::VisualShaderNode::kFunctionFieldNumber,
@@ -213,6 +238,7 @@ inline static QVariant get_proto_field_default_value_override(const google::prot
            {VisualShaderNodeFunction::kScaleXFieldNumber, 1.0f},
            {VisualShaderNodeFunction::kScaleYFieldNumber, 1.0f},
            {VisualShaderNodeFunction::kGradientFieldNumber, default_color_gradient_stops},
+           {VisualShaderNodeFunction::kTransformationFieldNumber, default_matrix3x3_transformation},
        }},
       // Cellular
       {VisualShader::VisualShaderNode::kCellularFieldNumber,
@@ -221,6 +247,7 @@ inline static QVariant get_proto_field_default_value_override(const google::prot
            {VisualShaderNodeCellular::kNumPointsFieldNumber, 16},
            {VisualShaderNodeCellular::kPeriodicFieldNumber, true},
            {VisualShaderNodeCellular::kGradientFieldNumber, default_color_gradient_stops},
+           {VisualShaderNodeCellular::kTransformationFieldNumber, default_matrix3x3_transformation},
        }},
       // Illuminate
       {VisualShader::VisualShaderNode::kIlluminateFieldNumber,
@@ -252,6 +279,12 @@ inline static QVariant get_proto_field_default_value_override(const google::prot
            {VisualShaderNodePerlinNoise::kSeedFieldNumber, -1},
            {VisualShaderNodePerlinNoise::kPeriodicFieldNumber, true},
            {VisualShaderNodePerlinNoise::kGradientFieldNumber, default_color_gradient_stops},
+           {VisualShaderNodePerlinNoise::kTransformationFieldNumber, default_matrix3x3_transformation},
+       }},
+      // ValueNoise
+      {VisualShader::VisualShaderNode::kValueNoiseFieldNumber,
+       {
+           {VisualShaderNodeValueNoise::kTransformationFieldNumber, default_matrix3x3_transformation},
        }},
   };
 
@@ -274,7 +307,8 @@ inline static QVariant get_proto_field_default_value_override(const google::prot
  *       parameter).
  *
  * @param field_desc
- * @return QVariant The default value of the field, or an invalid @c QVariant for message fields.
+ * @return QVariant The default value of the field, or an invalid @c QVariant for message fields
+ *         without an override (a message field with an override reports it as a @c QVariantMap).
  */
 inline static QVariant get_proto_field_default_value(const google::protobuf::FieldDescriptor* field_desc) noexcept {
   CHECK_PARAM_NULLPTR_NON_VOID(field_desc, QVariant(), "Field descriptor is null.");

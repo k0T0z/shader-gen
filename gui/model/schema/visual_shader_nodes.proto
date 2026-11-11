@@ -1,6 +1,6 @@
 /*********************************************************************************/
 /*                                                                               */
-/*  Copyright (C) 2024 Seif Kandil (k0T0z)                                       */
+/*  Copyright (C) 2026 Seif Kandil (k0T0z)                                       */
 /*                                                                               */
 /*  This file is a part of the ENIGMA Development Environment.                   */
 /*                                                                               */
@@ -551,6 +551,7 @@ message VisualShaderNodeValueNoise {
      "'Scale'.";
 
     optional float scale = 1;
+    optional Matrix3x3 transformation = 2;
 }
 
 message VisualShaderNodePerlinNoise {
@@ -577,6 +578,7 @@ message VisualShaderNodePerlinNoise {
     optional int32 seed = 7;
     optional bool periodic = 8;
     repeated ColorGradientStop gradient = 9;
+    optional Matrix3x3 transformation = 10;
 }
 
 /*************************************/
@@ -870,6 +872,25 @@ message ColorGradientStop {
     optional float a = 5;
 }
 
+// A 3x3 row-major homogeneous coordinate transformation. The coordinate consuming nodes declare it as an optional
+// "transformation" field so that they can re-sample their input at the transformed coordinate:
+//
+//     x' = m00 * x + m01 * y + m02
+//     y' = m10 * x + m11 * y + m12
+//
+// The defaults are the identity matrix (1, 0, 0, 0, 1, 0, 0, 0, 1).
+message Matrix3x3 {
+    optional float m00 = 1;
+    optional float m01 = 2;
+    optional float m02 = 3;
+    optional float m10 = 4;
+    optional float m11 = 5;
+    optional float m12 = 6;
+    optional float m20 = 7;
+    optional float m21 = 8;
+    optional float m22 = 9;
+}
+
 message VisualShaderNodeColorize {
     option (node_caption) = "Colorize";
     option (node_input_port_count) = 1;
@@ -1057,6 +1078,7 @@ message VisualShaderNodeGradient {
 
     optional VisualShaderNodeGradientType gradient_type = 1;
     repeated ColorGradientStop gradient = 2;
+    optional Matrix3x3 transformation = 3;
 }
 
 message VisualShaderNodeChecker {
@@ -1075,6 +1097,7 @@ message VisualShaderNodeChecker {
     optional float scale_x = 1;
     optional float scale_y = 2;
     repeated ColorGradientStop gradient = 3;
+    optional Matrix3x3 transformation = 4;
 }
 
 message VisualShaderNodeBrick {
@@ -1099,6 +1122,7 @@ message VisualShaderNodeBrick {
     optional float smooth = 7;
     optional bool rand_color = 8;
     repeated ColorGradientStop gradient = 9;
+    optional Matrix3x3 transformation = 10;
 }
 
 message VisualShaderNodeTile {
@@ -1117,6 +1141,7 @@ message VisualShaderNodeTile {
     optional float border_y = 2;
     optional float smooth = 3;
     repeated ColorGradientStop gradient = 4;
+    optional Matrix3x3 transformation = 5;
 }
 
 message VisualShaderNodeFunction {
@@ -1152,6 +1177,7 @@ message VisualShaderNodeFunction {
     optional float scale_x = 4;
     optional float scale_y = 5;
     repeated ColorGradientStop gradient = 6;
+    optional Matrix3x3 transformation = 7;
 }
 
 /*************************************/
@@ -1204,6 +1230,7 @@ message VisualShaderNodeCellular {
     optional bool rand_color = 8;
     optional bool periodic = 9;
     repeated ColorGradientStop gradient = 10;
+    optional Matrix3x3 transformation = 11;
 }
 
 message VisualShaderNodeIlluminate {
