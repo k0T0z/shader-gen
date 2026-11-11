@@ -98,7 +98,7 @@ namespace ai_agent_main {
                             int sub_field{-1};
                             if (key_tokens.size() > 1) {
                                 field_number = std::stoi(key_tokens.at(0));
-                                sub_field = std::stoi(key_tokens.at(2));
+                                sub_field = std::stoi(key_tokens.at(key_tokens.size() - 1));
                             } else {
                                 field_number = std::stoi(parameter_key);
                             }
